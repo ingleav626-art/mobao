@@ -1,0 +1,74 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.mobao.game'
+    compileSdk 34
+    buildToolsVersion "34.0.0"
+
+    defaultConfig {
+        applicationId "com.mobao.game"
+        minSdk 24
+        targetSdk 34
+        versionCode 6
+        versionName "1.4.1"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs += ['-Xlint:all']
+        options.encoding = 'UTF-8'
+    }
+
+    applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach {
+            outputFileName = "mobao-warehouse-${variant.versionName}-${variant.buildType.name}.apk"
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs = ['src/main/assets']
+        }
+    }
+}
+
+task copyWebAssets(type: Copy) {
+    from('../../') {
+        include 'index.html'
+        include 'settings.html'
+        include 'scripts/**'
+        include 'styles/**'
+        include 'lib/**'
+        include 'lan/client/**'
+        exclude 'scripts/game/main.js'
+    }
+    from('../../') {
+        include 'scripts/game/main.js'
+    }
+    into 'src/main/assets'
+}
+
+preBuild.dependsOn copyWebAssets
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.webkit:webkit:1.8.0'
+    implementation 'org.java-websocket:Java-WebSocket:1.5.4'
+    implementation 'com.google.code.gson:gson:2.10.1'
+}

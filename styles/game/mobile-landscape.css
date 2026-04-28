@@ -1,0 +1,656 @@
+@media (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  select {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+
+  button,
+  .lobby-nav-btn,
+  .lobby-map-card,
+  .shop-item-buy,
+  .carousel-arrow {
+    touch-action: manipulation;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  body {
+    padding: 0px 0px;
+    gap: 3px;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .game-area {
+    min-height: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .hud {
+    padding: 4px 8px;
+    gap: 6px;
+    border-radius: 6px;
+  }
+
+  .hud h1 {
+    font-size: 13px;
+    display: none;
+  }
+
+  .hud p {
+    font-size: 11px;
+  }
+
+  .hud button {
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 5px;
+  }
+
+  .hud {
+    padding: 3px 6px;
+    gap: 4px;
+    border-radius: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hud-left,
+  .hud-right {
+    gap: 3px;
+  }
+
+  .hud button {
+    padding: 3px 6px;
+    font-size: 10px;
+    border-radius: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .hud-round,
+  .hud-timer,
+  .hud-money {
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .table-wrap {
+    grid-template-columns: minmax(60px, 1.5fr) minmax(0, 2fr) minmax(60px, 1.5fr);
+    grid-template-rows: 1fr auto;
+    gap: 0 4px;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .middle-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    grid-column: 2;
+    grid-row: 1 / -1;
+    min-height: 0;
+  }
+
+  .player-side {
+    gap: 0px;
+    min-width: 0;
+    align-items: stretch !important;
+  }
+
+  .player-card {
+    width: 100%;
+    padding: 4px 6px;
+    border-radius: 6px;
+    gap: 4px;
+  }
+
+  .side-panel {
+    min-height: 0;
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    font-size: 10px;
+  }
+
+  .meta {
+    min-height: 28px;
+    gap: 2px;
+    font-size: 10px;
+  }
+
+  .meta strong {
+    font-size: 11px;
+  }
+
+  .player-card-bid {
+    font-size: 10px;
+  }
+
+  .side-panel h3 {
+    font-size: 11px;
+    margin: 0 0 2px;
+  }
+
+  .side-panel-scroll {
+    font-size: 10px;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+
+  #game-root {
+    max-height: calc(100vh - 180px);
+    width: 100% !important;
+    max-width: 100%;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    flex: 1;
+    touch-action: pan-y;
+  }
+
+  #game-root canvas {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+    touch-action: pan-y;
+    pointer-events: auto;
+  }
+
+  .bottom-bid-bar {
+    padding: 3px 6px;
+    gap: 4px;
+    border-radius: 6px;
+  }
+
+  #itemDrawerToggleBtn,
+  .bottom-bid-bar #skillBtn {
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 5px;
+  }
+
+  .bottom-bid-bar #bidInput {
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+
+  .item-drawer {
+    left: 4px;
+    right: 4px;
+    bottom: 48px;
+    padding: 4px 6px;
+    border-radius: 8px;
+  }
+
+  .settlement-page {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .settlement-page h2 {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .settle-meta {
+    padding: 6px 8px;
+    margin: 4px 0;
+  }
+
+  .settle-meta strong {
+    font-size: 14px;
+  }
+
+  .settle-actions {
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .settle-actions button {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .item-drawer-head {
+    font-size: 12px;
+  }
+
+  .item-drawer-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .settlement-page {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .settlement-page h2 {
+    font-size: 15px;
+    margin: 0 0 6px;
+  }
+
+  .settle-meta {
+    padding: 4px 8px;
+    margin: 3px 0;
+  }
+
+  .settle-meta strong {
+    font-size: 14px;
+  }
+
+  .settle-actions button {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
+  .settle-overlay {
+    padding: 4px;
+  }
+
+  .settle-card {
+    padding: 8px;
+  }
+
+  .preview-popover {
+    font-size: 11px;
+    max-width: 260px;
+  }
+
+  .preview-list {
+    max-height: 160px;
+  }
+
+  .bid-keypad {
+    padding: 6px;
+  }
+
+  .keypad-grid button {
+    padding: 8px;
+    font-size: 16px;
+  }
+
+  .keypad-actions button {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .keypad-direct-hint {
+    font-size: 11px;
+  }
+
+  .settings-panel {
+    max-width: 96vw;
+    max-height: 90vh;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-grid label {
+    font-size: 11px;
+  }
+
+  .settings-grid input {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+
+  .ai-logic-panel {
+    max-width: 96vw;
+    max-height: 90vh;
+  }
+
+  .battle-record-panel {
+    max-width: 96vw;
+    max-height: 90vh;
+  }
+
+  .shop-panel {
+    max-width: 96vw;
+    max-height: 90vh;
+  }
+
+  .shop-item {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .shop-item-icon {
+    font-size: 22px;
+  }
+
+  .shop-item-name {
+    font-size: 13px;
+  }
+
+  .shop-item-desc {
+    font-size: 11px;
+  }
+
+  .shop-item-buy {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  body.settlement-mode .table-wrap {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px;
+  }
+
+  body.settlement-mode .player-side {
+    display: none !important;
+  }
+
+  body.settlement-mode .middle-wrapper {
+    grid-column: 2 !important;
+  }
+
+  body.settlement-mode .settlement-page {
+    grid-column: 1 !important;
+    display: block !important;
+  }
+
+  body.settlement-mode #game-root {
+    max-height: calc(100vh - 8px) !important;
+    height: auto !important;
+  }
+
+  .settlement-page {
+    padding: 6px;
+    border-radius: 6px;
+  }
+
+  .settlement-page h2 {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .settle-meta {
+    padding: 4px 6px;
+    margin: 3px 0;
+    font-size: 11px;
+  }
+
+  .settle-meta strong {
+    font-size: 12px;
+  }
+
+  .settle-actions {
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .settle-actions button {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+@media (max-height: 400px) and (orientation: landscape) {
+  .game-area {
+    min-height: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .hud {
+    padding: 2px 6px;
+    gap: 4px;
+  }
+
+  .hud p {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .hud {
+    padding: 2px 4px;
+    gap: 3px;
+  }
+
+  .hud button {
+    padding: 2px 5px;
+    font-size: 9px;
+  }
+
+  .hud-round,
+  .hud-timer,
+  .hud-money {
+    font-size: 15px;
+  }
+
+  .side-panel-scroll {
+    max-height: 60px;
+  }
+
+  #game-root {
+    max-height: calc(100vh - 140px);
+    width: 100% !important;
+    max-width: 100%;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  #game-root canvas {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+    touch-action: pan-y;
+    pointer-events: auto;
+  }
+
+  .bottom-bid-bar {
+    padding: 2px 4px;
+    gap: 3px;
+  }
+
+  #itemDrawerToggleBtn,
+  .bottom-bid-bar #skillBtn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .bottom-bid-bar #bidInput {
+    padding: 3px 4px;
+    font-size: 11px;
+  }
+
+  .item-drawer {
+    bottom: 40px;
+  }
+
+  .item-drawer-btn {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  body.settlement-mode .table-wrap {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px;
+  }
+
+  body.settlement-mode .player-side {
+    display: none !important;
+  }
+
+  body.settlement-mode .middle-wrapper {
+    grid-column: 2 !important;
+  }
+
+  body.settlement-mode .settlement-page {
+    grid-column: 1 !important;
+    display: block !important;
+  }
+
+  body.settlement-mode #game-root {
+    max-height: calc(100vh - 8px) !important;
+    height: auto !important;
+  }
+
+  .settlement-page {
+    padding: 5px;
+    border-radius: 5px;
+  }
+
+  .settlement-page h2 {
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  .settle-meta {
+    padding: 3px 5px;
+    margin: 2px 0;
+    font-size: 10px;
+  }
+
+  .settle-meta strong {
+    font-size: 11px;
+  }
+
+  .settle-actions {
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 5px;
+  }
+
+  .settle-actions button {
+    width: 100%;
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 950px) and (orientation: landscape) {
+  .player-side {
+    min-width: 0;
+    align-items: stretch !important;
+  }
+
+  .player-card {
+    width: 100%;
+  }
+
+  .side-panel {
+    min-height: 0;
+  }
+
+  #game-root {
+    height: min(48vh, 500px);
+    max-height: calc(100vh - 65px);
+    width: 100% !important;
+    max-width: 100%;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  #game-root canvas {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+    touch-action: pan-y;
+    pointer-events: auto;
+  }
+
+  body.settlement-mode .table-wrap {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px;
+  }
+
+  body.settlement-mode .player-side {
+    display: none !important;
+  }
+
+  body.settlement-mode .middle-wrapper {
+    grid-column: 2 !important;
+  }
+
+  body.settlement-mode .settlement-page {
+    grid-column: 1 !important;
+    display: block !important;
+  }
+
+  body.settlement-mode #game-root {
+    max-height: calc(100vh - 8px) !important;
+    height: auto !important;
+  }
+
+  .settlement-page {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .settlement-page h2 {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  .settle-meta {
+    padding: 6px 8px;
+    margin: 4px 0;
+    font-size: 11px;
+  }
+
+  .settle-meta strong {
+    font-size: 13px;
+  }
+
+  .settle-actions {
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .settle-actions button {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+
+  .bottom-bid-bar {
+    flex-wrap: wrap;
+  }
+
+  .bottom-bid-bar #bidInput {
+    flex: 1 1 140px;
+    width: auto;
+  }
+
+  .item-drawer {
+    left: 4px;
+    right: 4px;
+    bottom: 60px;
+  }
+}

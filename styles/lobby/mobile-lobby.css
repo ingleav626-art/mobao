@@ -1,0 +1,210 @@
+@media (max-height: 500px) and (orientation: landscape) {
+  .game-area {
+    min-height: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .lobby-container {
+    width: min(96vw, 640px);
+    padding: 16px 20px;
+    gap: 16px;
+  }
+
+  .lobby-sub-page {
+    width: 100%;
+    max-width: none;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .lobby-title {
+    font-size: 26px;
+    letter-spacing: 3px;
+  }
+
+  .lobby-subtitle {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .lobby-nav {
+    gap: 12px;
+  }
+
+  .lobby-nav-btn {
+    flex-direction: row;
+    padding: 14px 16px;
+    gap: 12px;
+    border-radius: 10px;
+  }
+
+  .lobby-nav-icon {
+    font-size: 28px;
+  }
+
+  .lobby-nav-label {
+    font-size: 15px;
+  }
+
+  .lobby-nav-desc {
+    font-size: 11px;
+  }
+
+  .lobby-footer {
+    gap: 10px;
+  }
+
+  .lobby-link-btn {
+    padding: 6px 16px;
+    font-size: 12px;
+  }
+
+  .lobby-money-badge {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .lobby-sub-header {
+    gap: 8px;
+  }
+
+  .lobby-back-btn {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+
+  .lobby-sub-title {
+    font-size: 16px;
+  }
+
+  .lobby-sub-actions {
+    gap: 8px;
+  }
+
+  .lobby-map-card {
+    width: 130px;
+    padding: 12px 10px 10px;
+    gap: 6px;
+  }
+
+  .lobby-map-card-icon {
+    font-size: 24px;
+  }
+
+  .lobby-map-card-name {
+    font-size: 13px;
+  }
+
+  .lobby-map-card-desc {
+    font-size: 10px;
+  }
+
+  .lobby-map-detail {
+    padding: 10px 12px;
+    font-size: 12px;
+    overflow: auto;
+    max-height: 120px;
+    position: relative;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .lobby-map-detail-title {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lobby-map-detail-row {
+    overflow: hidden;
+  }
+
+  .lobby-map-detail-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lobby-map-detail-value {
+    flex-shrink: 0;
+  }
+
+  .lobby-map-detail-hint {
+    text-align: center;
+    color: #8a7a60;
+    font-size: 11px;
+    padding: 4px 0 0;
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(transparent, rgba(30, 22, 12, 0.85) 30%);
+    animation: hint-bounce 1.2s ease-in-out infinite;
+  }
+
+  @keyframes hint-bounce {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(3px);
+    }
+  }
+
+  .lobby-start-btn {
+    padding: 10px 40px;
+    font-size: 15px;
+    letter-spacing: 2px;
+  }
+
+  .carousel-arrow {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+
+  .lobby-online-placeholder {
+    padding: 24px 16px;
+    gap: 8px;
+  }
+
+  .lobby-online-icon {
+    font-size: 36px;
+  }
+
+  .lobby-online-placeholder p {
+    font-size: 14px;
+  }
+}
+
+@media (max-height: 380px) and (orientation: landscape) {
+  .lobby-container {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+
+  .lobby-title {
+    font-size: 22px;
+  }
+
+  .lobby-nav-btn {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .lobby-nav-icon {
+    font-size: 22px;
+  }
+
+  .lobby-nav-label {
+    font-size: 13px;
+  }
+
+  .lobby-start-btn {
+    padding: 8px 32px;
+    font-size: 14px;
+  }
+}

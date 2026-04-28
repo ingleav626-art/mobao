@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>摸宝仓库 · 联机联通测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(160deg, #2a1f14, #3d2e1e, #4a3728);
+      color: #f4dec0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 22px;
+      letter-spacing: 3px;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #9a8a6f;
+      margin-bottom: 20px;
+    }
+
+    .panel {
+      max-width: 480px;
+      margin: 0 auto 16px;
+      padding: 16px;
+      border: 1px solid #5a4a36;
+      border-radius: 12px;
+      background: rgba(255, 248, 233, 0.04);
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #d4a843;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: #9a8a6f;
+      margin-bottom: 4px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #6b5a42;
+      border-radius: 8px;
+      background: rgba(255, 248, 233, 0.06);
+      color: #f4dec0;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .field input:focus {
+      border-color: #c9a45c;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: 1px solid #6b5a42;
+      border-radius: 8px;
+      background: rgba(255, 248, 233, 0.06);
+      color: #bcae93;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: #c9a45c;
+      color: #f4dec0;
+      background: rgba(255, 248, 233, 0.12);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      border-color: #c9a45c;
+      background: linear-gradient(135deg, rgba(212, 168, 67, 0.2), rgba(201, 164, 92, 0.1));
+      color: #f4dec0;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, rgba(212, 168, 67, 0.35), rgba(201, 164, 92, 0.2));
+    }
+
+    .btn-danger {
+      border-color: #8b3a3a;
+      color: #d48a8a;
+    }
+
+    .btn-danger:hover {
+      border-color: #c45c5c;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #6b5a42;
+      flex-shrink: 0;
+    }
+
+    .status-dot.connected {
+      background: #5aad55;
+      box-shadow: 0 0 8px rgba(90, 173, 85, 0.4);
+    }
+
+    .status-dot.error {
+      background: #c45c5c;
+    }
+
+    .player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .player-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(255, 248, 233, 0.04);
+      font-size: 13px;
+    }
+
+    .player-item .host-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(212, 168, 67, 0.2);
+      color: #d4a843;
+    }
+
+    .chat-area {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #5a4a36;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: rgba(0, 0, 0, 0.15);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .chat-area::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .chat-area::-webkit-scrollbar-thumb {
+      background: #6b5a42;
+      border-radius: 2px;
+    }
+
+    .chat-msg {
+      padding: 2px 0;
+    }
+
+    .chat-msg .name {
+      color: #d4a843;
+      font-weight: 600;
+    }
+
+    .chat-msg .time {
+      color: #6b5a42;
+      font-size: 11px;
+      margin-left: 6px;
+    }
+
+    .chat-msg.system {
+      color: #8a7a60;
+      font-style: italic;
+    }
+
+    .log-area {
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid #5a4a36;
+      border-radius: 8px;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.15);
+      font-family: "Cascadia Code", "Fira Code", monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #8a7a60;
+    }
+
+    .log-area::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .log-area::-webkit-scrollbar-thumb {
+      background: #6b5a42;
+      border-radius: 2px;
+    }
+
+    .log-line.in {
+      color: #5aad55;
+    }
+
+    .log-line.out {
+      color: #d4a843;
+    }
+
+    .log-line.err {
+      color: #c45c5c;
+    }
+
+    .ping-result {
+      font-size: 13px;
+      color: #bcae93;
+      margin-top: 6px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 500px) {
+      body {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+
+      .panel {
+        padding: 12px;
+      }
+
+      .btn {
+        padding: 8px 14px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🏚️ 摸宝仓库 · 联机联通测试</h1>
+  <p class="subtitle">局域网 WebSocket 连通性验证</p>
+
+  <div style="text-align:center;margin-bottom:16px">
+    <a href="game-test.html" style="display:inline-block;padding:10px 24px;background:rgba(212,168,67,0.2);border:1px solid #d4a843;border-radius:8px;color:#d4a843;font-size:15px;font-weight:700;text-decoration:none;letter-spacing:1px">🎮 进入联机对战测试</a>
+  </div>
+
+  <!-- 连接面板 -->
+  <div class="panel" id="connectPanel">
+    <div class="panel-title">📡 服务器连接</div>
+    <div class="field">
+      <label>服务器地址</label>
+      <input type="text" id="serverUrl" value="" placeholder="ws://IP:9720" />
+    </div>
+    <div class="field">
+      <label>你的昵称</label>
+      <input type="text" id="playerName" value="" placeholder="输入昵称" maxlength="12" />
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="connectBtn" type="button">连接服务器</button>
+      <button class="btn btn-danger" id="disconnectBtn" type="button" disabled>断开</button>
+      <button class="btn" id="pingBtn" type="button" disabled>测延迟</button>
+    </div>
+    <div class="status-bar" style="margin-top:10px">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">未连接</span>
+    </div>
+    <div class="ping-result" id="pingResult"></div>
+  </div>
+
+  <!-- 房间面板 -->
+  <div class="panel hidden" id="roomPanel">
+    <div class="panel-title">🏠 房间</div>
+    <div class="btn-row" style="margin-bottom:12px">
+      <button class="btn btn-primary" id="createRoomBtn" type="button">创建房间</button>
+      <div class="field" style="flex:1;margin:0">
+        <input type="text" id="joinCode" placeholder="输入房间号" maxlength="4" style="text-transform:uppercase" />
+      </div>
+      <button class="btn" id="joinRoomBtn" type="button">加入房间</button>
+    </div>
+
+    <div class="hidden" id="roomInfo">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:13px;color:#9a8a6f">房间号：</span>
+        <span id="roomCodeDisplay" style="font-size:24px;font-weight:800;letter-spacing:4px;color:#d4a843"></span>
+      </div>
+      <div class="player-list" id="playerList"></div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-primary hidden" id="startGameBtn" type="button">开始游戏（测试）</button>
+        <button class="btn btn-danger" id="leaveRoomBtn" type="button">离开房间</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 聊天面板 -->
+  <div class="panel hidden" id="chatPanel">
+    <div class="panel-title">💬 聊天测试</div>
+    <div class="chat-area" id="chatArea"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="chatInput" placeholder="输入消息..."
+        style="flex:1;padding:8px 12px;border:1px solid #6b5a42;border-radius:8px;background:rgba(255,248,233,0.06);color:#f4dec0;font-size:14px;outline:none" />
+      <button class="btn" id="chatSendBtn" type="button">发送</button>
+    </div>
+  </div>
+
+  <!-- 出价测试面板 -->
+  <div class="panel hidden" id="bidPanel">
+    <div class="panel-title">💰 出价测试</div>
+    <div class="field">
+      <label>出价金额</label>
+      <input type="number" id="bidAmount" value="50000" min="0" step="1000" />
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="sendBidBtn" type="button">提交出价</button>
+      <button class="btn" id="sendActionBtn" type="button">发送技能测试</button>
+    </div>
+  </div>
+
+  <!-- 原始日志 -->
+  <div class="panel">
+    <div class="panel-title">📋 原始通信日志</div>
+    <div class="log-area" id="logArea"></div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn" id="clearLogBtn" type="button">清空日志</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const $ = (id) => document.getElementById(id);
+
+      let ws = null;
+      let myPlayerId = null;
+      let myRoomCode = null;
+      let isHost = false;
+      let pingStart = 0;
+
+      const logArea = $("logArea");
+      const chatArea = $("chatArea");
+
+      function log(text, cls) {
+        const div = document.createElement("div");
+        div.className = "log-line" + (cls ? " " + cls : "");
+        div.textContent = "[" + new Date().toLocaleTimeString() + "] " + text;
+        logArea.appendChild(div);
+        logArea.scrollTop = logArea.scrollHeight;
+      }
+
+      function addChat(name, text, isSystem) {
+        const div = document.createElement("div");
+        div.className = "chat-msg" + (isSystem ? " system" : "");
+        if (isSystem) {
+          div.textContent = text;
+        } else {
+          const time = new Date().toLocaleTimeString();
+          div.innerHTML = '<span class="name">' + escHtml(name) + "</span>: " + escHtml(text) + '<span class="time">' + time + "</span>";
+        }
+        chatArea.appendChild(div);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+
+      function escHtml(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      function setStatus(text, state) {
+        $("statusText").textContent = text;
+        const dot = $("statusDot");
+        dot.className = "status-dot";
+        if (state === "ok") dot.classList.add("connected");
+        if (state === "err") dot.classList.add("error");
+      }
+
+      function setConnected(connected) {
+        $("connectBtn").disabled = connected;
+        $("disconnectBtn").disabled = !connected;
+        $("pingBtn").disabled = !connected;
+        if (connected) {
+          $("roomPanel").classList.remove("hidden");
+        } else {
+          $("roomPanel").classList.add("hidden");
+          $("chatPanel").classList.add("hidden");
+          $("bidPanel").classList.add("hidden");
+          $("roomInfo").classList.add("hidden");
+          myPlayerId = null;
+          myRoomCode = null;
+          isHost = false;
+        }
+      }
+
+      function updatePlayerList(players) {
+        const list = $("playerList");
+        list.innerHTML = "";
+        players.forEach(function (p) {
+          const div = document.createElement("div");
+          div.className = "player-item";
+          div.innerHTML = "👤 " + escHtml(p.name) + (p.isHost ? ' <span class="host-badge">房主</span>' : "");
+          list.appendChild(div);
+        });
+        $("startGameBtn").classList.toggle("hidden", !isHost);
+      }
+
+      function connect() {
+        const url = $("serverUrl").value.trim();
+        if (!url) return;
+
+        log("正在连接 " + url + " ...", "out");
+        log("WebSocket readyState before: " + (ws ? ws.readyState : "null"), "out");
+        try {
+          ws = new WebSocket(url);
+          log("WebSocket created, readyState=" + ws.readyState + " (0=CONNECTING)", "out");
+        } catch (e) {
+          log("连接失败: " + e.message, "err");
+          return;
+        }
+
+        ws.onopen = function () {
+          log("✅ 连接成功, readyState=" + ws.readyState, "in");
+          setStatus("已连接", "ok");
+          setConnected(true);
+        };
+
+        ws.onclose = function (evt) {
+          log("连接已关闭 (code=" + evt.code + ", reason=" + (evt.reason || "无") + ", wasClean=" + evt.wasClean + ")", "err");
+          setStatus("已断开", "err");
+          setConnected(false);
+        };
+
+        ws.onerror = function (evt) {
+          log("连接错误 - 请确认服务器已启动且地址正确", "err");
+          log("  evt.type=" + evt.type + ", readyState=" + ws.readyState, "err");
+          setStatus("连接失败", "err");
+        };
+
+        ws.onmessage = function (evt) {
+          var msg;
+          try { msg = JSON.parse(evt.data); } catch (_) { return; }
+          log("◀ " + JSON.stringify(msg), "in");
+
+          switch (msg.type) {
+            case "room:created":
+              myPlayerId = msg.playerId;
+              myRoomCode = msg.roomCode;
+              isHost = true;
+              $("roomCodeDisplay").textContent = msg.roomCode;
+              $("roomInfo").classList.remove("hidden");
+              $("chatPanel").classList.remove("hidden");
+              $("bidPanel").classList.remove("hidden");
+              updatePlayerList([{ id: msg.playerId, name: msg.playerName, isHost: true }]);
+              addChat("", "你创建了房间 " + msg.roomCode, true);
+              break;
+
+            case "room:joined":
+              myPlayerId = msg.playerId;
+              myRoomCode = msg.roomCode;
+              isHost = false;
+              $("roomCodeDisplay").textContent = msg.roomCode;
+              $("roomInfo").classList.remove("hidden");
+              $("chatPanel").classList.remove("hidden");
+              $("bidPanel").classList.remove("hidden");
+              updatePlayerList(msg.players);
+              addChat("", "你加入了房间 " + msg.roomCode, true);
+              break;
+
+            case "room:join-failed":
+              alert("加入失败: " + msg.reason);
+              break;
+
+            case "room:player-joined":
+              updatePlayerList(msg.players);
+              addChat("", msg.playerName + " 加入了房间 (" + msg.playerCount + "人)", true);
+              break;
+
+            case "room:player-left":
+              if (msg.playerId === myPlayerId) break;
+              addChat("", "有玩家离开了 (" + msg.playerCount + "人)", true);
+              break;
+
+            case "pong":
+              var rtt = Date.now() - msg.ts;
+              $("pingResult").textContent = "延迟: " + rtt + "ms";
+              log("🏓 RTT = " + rtt + "ms", "in");
+              break;
+
+            case "chat":
+              addChat(msg.fromName, msg.text, false);
+              break;
+
+            case "game:started":
+              addChat("", "🎮 游戏开始！种子=" + msg.seed + " 玩家=" + msg.players.length, true);
+              break;
+
+            case "game:start-failed":
+              alert("开始失败: " + msg.reason);
+              break;
+
+            case "game:bid-received":
+              addChat(msg.playerName, "出价 " + msg.bid, false);
+              break;
+
+            case "game:bid-ack":
+              addChat("", "✅ 你的出价 " + msg.bid + " 已确认", true);
+              break;
+
+            case "game:action":
+              addChat(msg.playerName, "使用了 " + (msg.action && msg.action.type || "技能"), false);
+              break;
+
+            case "error":
+              log("❌ " + msg.reason, "err");
+              break;
+          }
+        };
+      }
+
+      function sendMsg(obj) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        var json = JSON.stringify(obj);
+        log("▶ " + json, "out");
+        ws.send(json);
+      }
+
+      $("connectBtn").addEventListener("click", connect);
+      $("disconnectBtn").addEventListener("click", function () {
+        if (ws) ws.close();
+      });
+
+      $("pingBtn").addEventListener("click", function () {
+        pingStart = Date.now();
+        sendMsg({ type: "ping", ts: pingStart });
+      });
+
+      $("createRoomBtn").addEventListener("click", function () {
+        var name = $("playerName").value.trim() || "Host";
+        sendMsg({ type: "room:create", playerName: name });
+      });
+
+      $("joinRoomBtn").addEventListener("click", function () {
+        var code = $("joinCode").value.trim().toUpperCase();
+        var name = $("playerName").value.trim() || "Player";
+        if (!code) { alert("请输入房间号"); return; }
+        sendMsg({ type: "room:join", roomCode: code, playerName: name });
+      });
+
+      $("leaveRoomBtn").addEventListener("click", function () {
+        sendMsg({ type: "room:leave" });
+        $("roomInfo").classList.add("hidden");
+        $("chatPanel").classList.add("hidden");
+        $("bidPanel").classList.add("hidden");
+        myRoomCode = null;
+        isHost = false;
+      });
+
+      $("startGameBtn").addEventListener("click", function () {
+        sendMsg({ type: "game:start" });
+      });
+
+      $("chatSendBtn").addEventListener("click", function () {
+        var text = $("chatInput").value.trim();
+        if (!text) return;
+        sendMsg({ type: "chat", text: text });
+        $("chatInput").value = "";
+      });
+
+      $("chatInput").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") $("chatSendBtn").click();
+      });
+
+      $("sendBidBtn").addEventListener("click", function () {
+        var bid = Number($("bidAmount").value) || 0;
+        sendMsg({ type: "game:bid", bid: bid });
+      });
+
+      $("sendActionBtn").addEventListener("click", function () {
+        sendMsg({ type: "game:action", action: { type: "skill-tuoying", target: "random" } });
+      });
+
+      $("clearLogBtn").addEventListener("click", function () {
+        logArea.innerHTML = "";
+      });
+
+      var names = ["探险家", "鉴定师", "收藏家", "古董商", "寻宝人", "拍卖师"];
+      $("playerName").value = names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random() * 100);
+
+      (function () {
+        var loc = window.location;
+        var defaultUrl = "ws://localhost:9720";
+        if (loc.protocol === "http:" || loc.protocol === "https:") {
+          var wsProto = loc.protocol === "https:" ? "wss:" : "ws:";
+          defaultUrl = wsProto + "//" + loc.host;
+        }
+        $("serverUrl").value = defaultUrl;
+        log("自动检测服务器地址: " + defaultUrl, "out");
+      })();
+    })();
+  </script>
+</body>
+
+</html>
