@@ -7389,7 +7389,8 @@ class WarehouseScene extends Phaser.Scene {
       startedAt: Date.now(),
       actionLogs: [],
       aiThoughtLogs: [],
-      roundLogsByRound: {}
+      roundLogsByRound: {},
+      roundPanelTexts: {}
     };
     this.currentRunLog = runLog;
     this.runLogHistory.push(runLog);
@@ -7435,6 +7436,15 @@ class WarehouseScene extends Phaser.Scene {
     if (this.currentRunLog.aiThoughtLogs.length > 80) {
       this.currentRunLog.aiThoughtLogs = this.currentRunLog.aiThoughtLogs.slice(-80);
     }
+
+    const roundNo = Math.max(1, Math.round(Number(telemetry.round) || 1));
+    if (typeof this.buildAiDecisionPanelSnapshot === "function") {
+      const panelText = this.buildAiDecisionPanelSnapshot(telemetry);
+      if (panelText) {
+        this.currentRunLog.roundPanelTexts[String(roundNo)] = panelText;
+      }
+    }
+
     this.renderAiThoughtLog();
   }
 

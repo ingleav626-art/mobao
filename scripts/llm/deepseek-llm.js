@@ -44,7 +44,7 @@
       apiKey: "",
       timeoutMs: 40000,
       temperature: 0.2,
-      maxTokens: 256
+      maxTokens: 2048
     };
   }
 
@@ -323,7 +323,7 @@
       const maxTokens = clamp(
         Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens)),
         32,
-        4096
+        8192
       );
 
       const isThinkingModel = /deepseek-v4-pro|deepseek-reasoner/i.test(mergedSettings.model);

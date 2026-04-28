@@ -124,7 +124,8 @@
               aiDecisionPanelText,
               runNo: runLog && Number.isFinite(Number(runLog.runNo)) ? Math.round(Number(runLog.runNo)) : null,
               aiThoughtLogs: runLog && Array.isArray(runLog.aiThoughtLogs) ? runLog.aiThoughtLogs : [],
-              roundLogsByRound: runLog && runLog.roundLogsByRound ? runLog.roundLogsByRound : {}
+              roundLogsByRound: runLog && runLog.roundLogsByRound ? runLog.roundLogsByRound : {},
+              roundPanelTexts: runLog && runLog.roundPanelTexts ? runLog.roundPanelTexts : {}
             }
             : null
         };
@@ -294,10 +295,14 @@
         const roundLogsByRound = record.logs && record.logs.roundLogsByRound
           ? record.logs.roundLogsByRound
           : {};
+        const roundPanelTexts = record.logs && record.logs.roundPanelTexts
+          ? record.logs.roundPanelTexts
+          : {};
 
         const roundSet = new Set();
         aiThoughtLogs.forEach((e) => { if (e.round) roundSet.add(e.round); });
         Object.keys(roundLogsByRound).forEach((k) => { const n = Number(k); if (Number.isFinite(n) && n > 0) roundSet.add(n); });
+        Object.keys(roundPanelTexts).forEach((k) => { const n = Number(k); if (Number.isFinite(n) && n > 0) roundSet.add(n); });
         const allRounds = Array.from(roundSet).sort((a, b) => a - b);
         const maxRound = allRounds.length > 0 ? allRounds[allRounds.length - 1] : 0;
 
@@ -308,6 +313,7 @@
 
         let bodyContent = "";
         if (maxRound > 0) {
+          const roundPanelText = roundPanelTexts[String(currentPage)];
           const roundThoughts = aiThoughtLogs.filter((e) => e.round === currentPage);
           const roundActionLogs = roundLogsByRound[String(currentPage)] || [];
 
@@ -315,7 +321,14 @@
           lines.push(`═══ 第 ${currentPage} 轮 / 共 ${maxRound} 轮 ═══`);
           lines.push("");
 
+          if (roundPanelText) {
+            lines.push("──── 完整AI决策详情 ────");
+            roundPanelText.split("\n").forEach((line) => lines.push(line));
+            lines.push("");
+          }
+
           if (roundThoughts.length > 0) {
+            lines.push("──── AI思考摘要 ────");
             roundThoughts.forEach((entry) => {
               lines.push(`【${entry.playerName || "AI"}】`);
               if (entry.thought) {
@@ -323,13 +336,10 @@
               }
               lines.push("");
             });
-          } else {
-            lines.push("  该轮无AI思考记录");
-            lines.push("");
           }
 
           if (roundActionLogs.length > 0) {
-            lines.push("── 行动日志 ──");
+            lines.push("──── 行动日志 ────");
             roundActionLogs.forEach((line) => lines.push(`  ${line}`));
           }
 

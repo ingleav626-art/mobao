@@ -148,6 +148,9 @@
             if (entry.controlMode) {
               lines.push(`  接管模式: ${entry.controlMode}`);
             }
+            if (entry.historyMessagesCount > 0) {
+              lines.push(`  跨局记忆注入: ${entry.historyMessagesCount}条${entry.historyMessagesPreview ? ` | ${entry.historyMessagesPreview.slice(0, 120)}` : ""}`);
+            }
             if (entry.llmActionName) {
               lines.push(`  大模型动作: ${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}`);
             }
@@ -687,9 +690,13 @@
 
         try {
           const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000));
+          const isThinkingModel = /deepseek-v4-pro|deepseek-reasoner/i.test(LLM_SETTINGS.model || "");
+          const requestMaxTokens = isThinkingModel
+            ? Math.max(3000, Number(LLM_SETTINGS.maxTokens) || 3000)
+            : Math.max(300, Number(LLM_SETTINGS.maxTokens) || 300);
           const result = await this.deepSeekClient.requestChat({
             temperature: 0.1,
-            maxTokens: Math.max(300, Number(LLM_SETTINGS.maxTokens) || 300),
+            maxTokens: requestMaxTokens,
             timeoutMs: requestTimeoutMs,
             messages
           });
@@ -720,7 +727,20 @@
 
           const responseText = String(result.content || "");
           const reasoningContent = String(result.reasoningContent || "");
-          const decision = this.extractAiDecisionObject(responseText);
+          let decision = this.extractAiDecisionObject(responseText);
+          const hasValidBid = decision && Number.isFinite(Number(decision.bid)) && Number(decision.bid) > 0;
+          const hasValidAction = (decision && decision.skill && String(decision.skill).trim() !== "无"
+            && String(decision.skill).trim() !== "") || (decision && decision.item && String(decision.item).trim() !== "无"
+              && String(decision.item).trim() !== "");
+          if ((!hasValidBid && !hasValidAction) && reasoningContent) {
+            const fallbackDecision = this.extractAiDecisionObject(reasoningContent);
+            if (fallbackDecision && Number.isFinite(Number(fallbackDecision.bid)) && Number(fallbackDecision.bid) > 0) {
+              decision = fallbackDecision;
+              if (typeof this.writeLog === "function") {
+                this.writeLog(`${player.name}：从思维链中提取到决策，出价${fallbackDecision.bid}`);
+              }
+            }
+          }
           const plan = this.normalizeAiLlmPlan(player.id, decision, responseText, {
             allowAction: options.allowAction !== false
           });
@@ -844,6 +864,11 @@
 
           if (plan.failed) {
             summary.push(`${player.name}:失败(${plan.error || "未知"})`);
+            return;
+          }
+
+          if (!plan.hasBidDecision) {
+            summary.push(`${player.name}:出价无效(hasBidDecision=false), 模型回复预览:${(plan.modelResponse || "").slice(0, 120)}`);
             return;
           }
 
