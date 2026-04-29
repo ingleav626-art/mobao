@@ -127,7 +127,8 @@
               roundLogsByRound: runLog && runLog.roundLogsByRound ? runLog.roundLogsByRound : {},
               roundPanelTexts: runLog && runLog.roundPanelTexts ? runLog.roundPanelTexts : {}
             }
-            : null
+            : null,
+          logsRound: this.round || 0
         };
 
         this.battleRecords = [record, ...(this.battleRecords || [])].slice(0, 20);
@@ -325,12 +326,24 @@
             lines.push("──── 完整AI决策详情 ────");
             roundPanelText.split("\n").forEach((line) => lines.push(line));
             lines.push("");
+          } else if (panelText && Object.keys(roundPanelTexts).length === 0) {
+            const isLegacy = currentPage === 1 ? "（该局在旧版本中运行，此为最终轮快照）" : "";
+            lines.push(`──── 完整AI决策详情 ${isLegacy}────`.trim());
+            panelText.split("\n").forEach((line) => lines.push(line));
+            lines.push("");
           }
 
           if (roundThoughts.length > 0) {
-            lines.push("──── AI思考摘要 ────");
+            lines.push("──── AI决策摘要 ────");
             roundThoughts.forEach((entry) => {
-              lines.push(`【${entry.playerName || "AI"}】`);
+              const isLlm = entry.controlMode === "llm";
+              lines.push(`【${entry.playerName || "AI"}】| ${isLlm ? "大模型" : "规则AI"} | 出价: ${formatBidRevealNumber(entry.finalBid)} | 来源: ${entry.decisionSource || "?"}`);
+              if (entry.llmActionName) {
+                lines.push(`  动作: ${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}${entry.ruleActionName ? ` | 规则动作: ${entry.ruleActionName}` : ""}`);
+              }
+              if (entry.error) {
+                lines.push(`  错误: ${entry.error}`);
+              }
               if (entry.thought) {
                 entry.thought.split("\n").forEach((line) => lines.push(`  ${line}`));
               }

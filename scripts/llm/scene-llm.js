@@ -1,19 +1,54 @@
 (function setupMobaoSceneLlm(global) {
   const LLM_DECISION_SYSTEM_PROMPT = [
+    "【身份与目标】",
     "你是仓库摸宝中的竞拍AI玩家。目标是在有限轮次内，以低于仓库真实总价值的成交价来盈利。",
-    "【规则摘要】每轮结算后所有玩家同时公布出价；非最终轮可以提前获胜（由 directWinRatio 触发然后提前拿下）；最终轮最高出价者获胜。",
-    "【分红机制】若拍下者亏损，非拍下者各获得亏损额的15%作为分红（鼓励欺诈对手高价拍下）。",
-    "【门票机制】若拍下者盈利，非拍下者各被扣除盈利额的5%作为门票（鼓励积极竞拍）。",
-    "【策略影响】分红机制意味着你可以通过抬价让对手高价拍下后亏损来获利；门票机制意味着不拍下而对手盈利时你会被扣钱。权衡出价与放弃的利弊。",
-    "【信息可见性】otherPlayersPublic、bidHistory、publicEvents 属于公开信息；privateIntel 仅代表你当前可见，不可推断他人也知道。",
-    "【禁止臆造】任何输入中未出现的藏品信息、他人私有情报、额外规则一律视为不存在。",
-    "【动作约束】本局禁止弃标(canFold=false)。",
-    "【两段式流程】可能存在 initial 与 follow-up-after-tool 两阶段：若第一阶段执行了工具，才会进入第二阶段。",
-    "【同轮动作上限】同一轮最多一次技能或道具；若是 follow-up 阶段，必须 skill=无 且 item=无，仅允许更新 bid/thought。",
-    "【输出合同】只返回 JSON 对象，且仅包含 bid、skill、item、thought 四个字段，不要输出 markdown 代码块或额外解释。",
-    "【bid要求】bid 必须为正整数；会被系统做钱包/步长等归一化校验。",
-    "【thought要求】thought 仅用于日志复盘，最长 200 字。",
-    "若输出不合法或动作非法，系统可能忽略你的该部分决策并回退到规则AI结果。"
+    "",
+    "【游戏机制】",
+    "- 多轮竞价：每轮所有玩家同时提交出价，轮间需要猜测其他玩家出价和自行决策，轮次结束后公开所有出价。",
+    "- 提前获胜（非最终轮）：第一名出价 > 第二名出价 × directWinRatio，则第一名直接赢得仓库。",
+    "- 正常结束：最终轮出价最高者赢得仓库。",
+    "- 分红机制：若拍下者亏损，非拍下者各获得亏损额的15%作为分红（鼓励欺诈对手高价拍下）。",
+    "- 门票机制：若拍下者盈利，非拍下者各被扣除盈利额的5%作为门票（鼓励积极竞拍）。",
+    "- 策略权衡：分红机制意味你可以通过抬价让对手亏损来获利；门票机制意味不拍下而对手以低价格拍下盈利时你会被扣钱。",
+    "",
+    "【字段参考】",
+    "- warehouseDefinition：藏品网格定义。藏品有品质、品类、尺寸和基础价格。",
+    "- qualityPriceGuide（首轮）/ qualityPriceRangeTable（后续轮）：每个品质的价格区间与均值，估价优先参考均值再结合线索修正。",
+    "- specialMechanismHint：高价值藏品可能单格高价或多格组合高价。",
+    "- privateIntel：你的私有探查结果，结构为 aggregate + highValueTracks，用于估值和判断高价值目标。",
+    "- otherPlayersPublic / bidHistory / publicEvents：公开信息，可用于判断对手行为。",
+    "- roundPublicStateTable（后续轮）：多轮趋势表，列名已标注语义，请优先读取。",
+    "- Previousbid：上一轮全场最高成交出价，用于判断本轮报价区间和提前获胜可能。首轮为 null。",
+    "- currentLeader：上轮领先者，帮助判断本轮报价区间。",
+    "- wallet：你的剩余资金上限。",
+    "- directWinRatio：提前获胜系数，出价相对第二名足够高时可提前结束本局。",
+    "- catalogSummary：仓库概览，含 qualityPriceGuide 或 qualityPriceRangeTable。",
+    "- totalArtifacts：图鉴收录的藏品总种类数（全部可能出现的藏品有多少种），并非本局仓库实际拥有的藏品数量，实际数量见 warehouseDefinition。",
+    "- bottomCell：探查轮廓道具的结果——被探查藏品在仓库中纵坐标最大的单元格坐标（单个藏品即其最底部格）。",
+    "- actionConstraints：含 canBid、canFold、availableSkills、availableItems、notes。",
+    "- responseContract：含 requiredFields、bidRule、skillRule、itemRule、thoughtRule。",
+    "",
+    "【硬约束】",
+    "- 禁止弃标（canFold=false）。",
+    "- 同一轮最多选择一个技能或道具。",
+    "- 两段式流程：initial 阶段可出价+选技能/道具；若执行了工具才进入 follow-up-after-tool 阶段，此时 skill=无、item=无，仅允许更新 bid/thought。",
+    "- 禁止臆造：只基于输入数据推理，不得臆造未出现的藏品信息、他人私有情报或额外规则。",
+    "- privateIntel 仅代表你个人可见，不可推断他人也知晓。",
+    "- 每局仓库随机生成，上一局的仓库布局与线索不可直接当作本局事实。",
+    "- 每局技能次数与道具库存已重置，仅策略经验可跨局复用，不可复用次数。",
+    "- 若输出不合法或动作非法，系统可能忽略该部分决策并回退到规则AI结果。",
+    "",
+    "【策略建议】",
+    "- 建议首轮更大胆出价，防止被对手低价拍下。",
+    "- 私有线索不足时，优先参考跨局记忆中的历史结果与反思来判断出价策略。",
+    "- 注意跨局记忆中的经验可复用，但每局仓库随机生成且技能/道具重置，不可机械套用上次出价。",
+    "",
+    "【输出格式】",
+    "- 只返回 JSON 对象，仅包含 bid、skill、item、thought 四个字段。",
+    "- 不要输出 markdown 代码块或额外解释文本。",
+    "- bid 为正整数，会被系统做钱包/步长归一化校验。",
+    "- skill/item 必须来自可用列表，否则填\"无\"。",
+    "- thought 仅用于日志复盘，最长 200 字。"
   ].join("\n");
 
   function safeParseJson(text) {
@@ -148,8 +183,15 @@
             if (entry.controlMode) {
               lines.push(`  接管模式: ${entry.controlMode}`);
             }
-            if (entry.historyMessagesCount > 0) {
-              lines.push(`  跨局记忆注入: ${entry.historyMessagesCount}条${entry.historyMessagesPreview ? ` | ${entry.historyMessagesPreview.slice(0, 120)}` : ""}`);
+            if (entry.correctionAttempt > 0) {
+              lines.push(`  纠错次数: ${entry.correctionAttempt}/2`);
+              if (entry.originalError) {
+                lines.push(`  原始错误: ${entry.originalError}`);
+              }
+            }
+            if (entry.historyMessagesCount > 0 || entry.crossGameMemoryCount > 0) {
+              const gameInfo = entry.crossGameMemoryCount > 0 ? (entry.inGameHistoryCount > 0 ? `${entry.crossGameMemoryCount}局跨局记忆+${entry.inGameHistoryCount}条本局历史` : `${entry.crossGameMemoryCount}局跨局记忆`) : `${entry.inGameHistoryCount}条本局历史`;
+              lines.push(`  跨局记忆注入: ${gameInfo}`);
             }
             if (entry.llmActionName) {
               lines.push(`  大模型动作: ${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}`);
@@ -170,8 +212,14 @@
               lines.push(`  回退规则出价参考: ${formatBidRevealNumber(entry.fallbackRuleBid)}`);
             }
 
-            lines.push("  [System Prompt]");
-            lines.push(indentMultiline(compactPanelText(entry.systemPrompt, 2200), "    "));
+            if (entry.systemPrompt) {
+              lines.push("  [System Prompt]");
+              lines.push(indentMultiline(compactPanelText(entry.systemPrompt, 2200), "    "));
+            }
+            if (entry.crossGameMemoryText) {
+              lines.push("  [Cross-game Memory]");
+              lines.push(indentMultiline(compactPanelText(entry.crossGameMemoryText, 5000), "    "));
+            }
             lines.push("  [User Prompt]");
             lines.push(indentMultiline(compactPanelText(entry.userPrompt, 10000), "    "));
             lines.push("  [Model Response]");
@@ -179,6 +227,12 @@
             if (entry.toolResultSummary) {
               lines.push("  [Tool Result]");
               lines.push(indentMultiline(compactPanelText(entry.toolResultSummary, 800), "    "));
+            }
+            if (entry.errorCorrectionPrompt || entry.errorCorrectionResponse) {
+              lines.push("  [Error Correction Prompt]");
+              lines.push(indentMultiline(compactPanelText(entry.errorCorrectionPrompt, 4200), "    "));
+              lines.push("  [Error Correction Response]");
+              lines.push(indentMultiline(compactPanelText(entry.errorCorrectionResponse, 4000), "    "));
             }
             if (entry.followupPrompt || entry.followupResponse || entry.followupError) {
               lines.push("  [Follow-up Prompt]");
@@ -231,6 +285,9 @@
         if (this.dom.settingDeepseekModel) {
           this.dom.settingDeepseekModel.value = source.model || "deepseek-v4-flash";
         }
+        if (this.dom.settingMaxTokens) {
+          this.dom.settingMaxTokens.value = Number(source.maxTokens) || 2048;
+        }
 
         if (!source.apiKey) {
           this.setLlmSettingsStatus("尚未填写 DeepSeek API Key。", "normal");
@@ -253,7 +310,7 @@
           endpoint: LLM_SETTINGS.endpoint,
           timeoutMs: LLM_SETTINGS.timeoutMs,
           temperature: LLM_SETTINGS.temperature,
-          maxTokens: LLM_SETTINGS.maxTokens
+          maxTokens: this.dom.settingMaxTokens ? Math.max(100, Number(this.dom.settingMaxTokens.value) || 2048) : LLM_SETTINGS.maxTokens
         };
         return normalizeDeepSeekSettings(draft, LLM_SETTINGS);
       },
@@ -334,7 +391,7 @@
             wallet: this.getAiWallet(playerId),
             directWinRatio: Number((1 + GAME_SETTINGS.directTakeRatio).toFixed(2)),
             folded: false,
-            currentBid: this.currentBid,
+            Previousbid: this.round === 1 ? null : this.currentBid,
             currentLeader: this.bidLeader
           },
           selfRoleAndTools: {
@@ -390,7 +447,7 @@
             selfName: player.name,
             wallet: this.getAiWallet(player.id),
             directWinRatio: Number((1 + GAME_SETTINGS.directTakeRatio).toFixed(2)),
-            currentBid: this.currentBid,
+            Previousbid: this.round === 1 ? null : this.currentBid,
             currentLeader: this.bidLeader
           },
           followupContext: {
@@ -443,93 +500,31 @@
           ? Math.max(roundNo, Math.round(Number(totalRoundRaw)))
           : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo);
         const isFinalRound = roundNo >= totalRounds;
-        const isFirstRound = roundNo <= 1;
-        const roundStateText = isFinalRound ? "最终轮" : (isFirstRound ? "首轮" : "后续轮");
+        const roundStateText = isFinalRound ? "最终轮" : "后续轮";
         const finalRoundHint = isFinalRound
           ? "【最终轮提醒】本轮直接按最高出价者获胜，不再看相对第二名高出比例。"
           : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。";
+
         const base = isFollowup
           ? [
-            "【任务】请根据本轮工具结果修正最终出价。",
-            `【阶段】${requestStage}`,
-            `【回合状态】第 ${roundNo}/${totalRounds} 轮（${roundStateText}）`,
+            "【任务】第 " + roundNo + "/" + totalRounds + " 轮 follow-up。根据工具结果修正最终出价。",
             finalRoundHint,
-            "【硬约束】同一轮次只能执行一次技能或道具；本阶段 skill=无,item=无，只允许更新 bid/thought。",
+            "【硬约束】skill=无, item=无，只允许更新 bid/thought。",
             "【当前状态数据】",
             JSON.stringify(payload, null, 2)
           ]
-          : (isFirstRound ? [
-            "【任务】请基于本轮状态，给出合法竞拍决策（bid/skill/item/thought）。",
-            `【阶段】${requestStage}`,
-            `【回合状态】第 ${roundNo}/${totalRounds} 轮（${roundStateText}）`,
+          : [
+            "【任务】第 " + roundNo + "/" + totalRounds + " 轮（" + roundStateText + "）。给出合法竞拍决策（bid/skill/item/thought）。",
             finalRoundHint,
-            "",
-            "【决策规则】",
-            "1) 严格遵守 actionConstraints 与 responseContract。",
-            "2) 仅可基于输入数据推理，不得臆造未给出信息。",
-            "3) 本局禁止弃标（canFold=false）。",
-            "4) bid 输出正整数；skill/item 必须来自可用列表，否则应填写 无。",
-            "5) 输出必须是纯 JSON 对象，不得附带额外解释文本。",
-            "",
-            "【仓库与价格参考】",
-            "- warehouseDefinition 会告诉你仓库是什么：它是一个藏品网格，藏品有品质、品类、尺寸和基础价格。",
-            "- qualityPriceGuide 提供每个品质阶段的价格区间与平均值；估价时优先参考均值，再结合当前线索修正。",
-            "- specialMechanismHint 用于理解高价值藏品可能单格高价或多格组合高价。",
-            "",
-            "【信息分层提醒】",
-            "- 公开信息：otherPlayersPublic / bidHistory / publicEvents。",
-            "- 私有信息：privateIntel（仅你可见）。",
-            "",
-            "【参数用途说明】",
-            "- currentBid：上一轮全场最高出价，用来判断本轮报价压力和提前获胜可能。",
-            "- 首轮 currentBid 是系统起拍参考价，当前实现固定为 1000（由 startNewRun 初始化），不代表仓库真实估值。",
-            "- currentLeader：上一轮领先者，帮助你判断要对谁追价。",
-            "- wallet：你的剩余资金上限。",
-            "- directWinRatio：提前获胜系数，若你的出价相对第二名足够高，可提前结束本局并拿下仓库。",
-            "- bidHistory：历史出价趋势，可用于判断对手是否突然抬价。",
-            "- publicEvents：公开动作记录，可用于判断谁在主动探查。",
-            "- privateIntel.aggregate / highValueTracks：你的私有探查结果，用来估值和判断高价值目标。",
-            "- catalogSummary.qualityPriceGuide：每个品质阶段的价格区间与平均值，首轮估价优先参考它。",
-            "- bottomCell: 如果你使用了有探查藏品轮廓性质的道具则返回所有被探查藏品在仓库绝对坐标系下纵坐标最大的单元格坐标（单个藏品时即取其自身的最底部单元格，含纵向多格情况）",
-            "- 每局仓库都是随机生成，不能把上一局的仓库布局直接当成本局事实。",
-            "- 每局开始后，道具库存与技能次数会重置；跨局只能复用策略经验，不可复用次数。",
-            "【关键字段说明（以当前实现为准）】",
-            "- privateIntel 使用 aggregate + highValueTracks 结构，不是 batchStats/highValueTargets。",
-            "- actionConstraints 使用 canBid/canFold/availableSkills/availableItems/notes。",
-            "- responseContract 给出字段要求与文本规则。",
-            "- catalogSummary 是仓库概览与价格参考，不要忽略其中的 qualityPriceGuide。",
-            "",
-            "【游戏提示】",
-            "- 轮廓是指藏品在仓库中占据的格子情况；品质是指藏品的价值等级，在藏品格数相同时高品质的藏品一般更有价值。",
-            "- 若看到更高品质阶段的候选范围很宽，优先用道具/技能缩小范围，而不是盲目抬价。",
-            "- 在没有新线索时，follow-up 只需要修正 bid，不要重复声明工具动作。",
-            "- 首轮的系统参考价通常极低，建议不要完全参考它来定价，以免被对手轻易压过（如轻易被对手以较低价格中标）",
             "【当前状态数据】",
             JSON.stringify(payload, null, 2)
-          ] : [
-            "【任务】请基于本轮状态更新，给出本轮合法竞拍决策（bid/skill/item/thought）。",
-            `【阶段】${requestStage}`,
-            `【回合状态】第 ${roundNo}/${totalRounds} 轮（${roundStateText}）`,
-            finalRoundHint,
-
-            "【多轮数据】历史数据以 roundPublicStateTable 提供；列名已标注变量语义，请优先读取该表并避免重复推导。",
-            "【价格参考】后续轮不再发送完整 qualityPriceGuide，改读 catalogSummary.qualityPriceRangeTable（表格列名已标注）。",
-            "【约束】遵守 actionConstraints 与 responseContract；禁止弃标；输出纯 JSON。",
-            "【重点关注】当前最高价变化、对手最近出价与动作、你的私有线索增量。",
-            "【当前状态数据】",
-            JSON.stringify(payload, null, 2)
-          ]);
+          ];
 
         if (Array.isArray(extraBlocks) && extraBlocks.length > 0) {
-          if (!isFollowup) {
-            base.push("");
-            base.push("补充信息（优先参考）：");
-          } else {
-            base.push("");
-            base.push("【补充信息】");
-          }
+          base.push("");
+          base.push("补充信息（优先参考）：");
           extraBlocks.forEach((block, index) => {
-            base.push(`- 补充${index + 1}: ${String(block || "")}`);
+            base.push("- 补充" + (index + 1) + ": " + String(block || ""));
           });
         }
 
@@ -682,18 +677,45 @@
         const historyMessages = useMultiGameMemory && typeof this.getAiConversationMessages === "function"
           ? this.getAiConversationMessages(player.id)
           : [];
-        const messages = [
-          { role: "system", content: systemPrompt },
-          ...(Array.isArray(historyMessages) ? historyMessages : []),
-          { role: "user", content: userPrompt }
-        ];
+        let crossGameMemoryCount = 0;
+        let inGameHistoryCount = 0;
+        if (useMultiGameMemory) {
+          if (typeof this.getAiCrossGameMemoryCount === "function") {
+            crossGameMemoryCount = this.getAiCrossGameMemoryCount(player.id);
+          }
+          if (typeof this.getAiInGameHistoryCount === "function") {
+            inGameHistoryCount = this.getAiInGameHistoryCount(player.id);
+          }
+        }
+        // 对话缓存：首轮发 system+history，后续轮只追加 user
+        if (!this.aiConversationCache) {
+          this.aiConversationCache = {};
+        }
+        const isNewGame = requestStage === "initial" && Number(this.round) === 1;
+        if (isNewGame) {
+          this.aiConversationCache[player.id] = null;
+        }
+        const playerCache = this.aiConversationCache[player.id];
+        let messages;
+        if (playerCache) {
+          messages = [...playerCache, { role: "user", content: userPrompt }];
+        } else {
+          messages = [
+            { role: "system", content: systemPrompt },
+            ...(Array.isArray(historyMessages) ? historyMessages : []),
+            { role: "user", content: userPrompt }
+          ];
+        }
 
         try {
           const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000));
-          const isThinkingModel = /deepseek-v4-pro|deepseek-reasoner/i.test(LLM_SETTINGS.model || "");
-          const requestMaxTokens = isThinkingModel
-            ? Math.max(3000, Number(LLM_SETTINGS.maxTokens) || 3000)
-            : Math.max(300, Number(LLM_SETTINGS.maxTokens) || 300);
+          const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.llmProxyAsync);
+          const isFlashModel = /deepseek-v4-flash/i.test(LLM_SETTINGS.model || "");
+          let baseTokens = Number(LLM_SETTINGS.maxTokens) || 600;
+          if (isNativeEnv && isFlashModel && baseTokens < 1500) {
+            baseTokens = 1500;
+          }
+          const requestMaxTokens = Math.max(300, baseTokens);
           const result = await this.deepSeekClient.requestChat({
             temperature: 0.1,
             maxTokens: requestMaxTokens,
@@ -748,13 +770,28 @@
             this.pushAiRoundSummary(player.id, plan);
           }
           plan.elapsedMs = result.elapsedMs;
-          plan.systemPrompt = systemPrompt;
+          plan.systemPrompt = playerCache ? "" : systemPrompt;
           plan.userPrompt = userPrompt;
           plan.modelResponse = responseText;
           plan.reasoningContent = reasoningContent;
           plan.requestStage = requestStage;
           plan.historyMessagesCount = historyMessages.length;
+          plan.crossGameMemoryCount = crossGameMemoryCount;
+          plan.inGameHistoryCount = inGameHistoryCount;
           plan.historyMessagesPreview = historyMessages.map((m) => String(m.content || "").slice(0, 80)).join(" | ");
+          plan.crossGameMemoryText = !playerCache && useMultiGameMemory && crossGameMemoryCount > 0
+            ? String(historyMessages[0]?.content || "")
+            : "";
+
+          // 缓存本轮对话（仅 initial 阶段），跨局记忆仅首轮注入，不进入缓存
+          if (requestStage === "initial") {
+            this.aiConversationCache[player.id] = playerCache
+              ? [...messages, { role: "assistant", content: responseText }]
+              : [
+                { role: "user", content: userPrompt },
+                { role: "assistant", content: responseText }
+              ];
+          }
           return plan;
         } catch (error) {
           const message = error && error.message ? error.message : "LLM请求异常";
@@ -836,6 +873,182 @@
         }
 
         return followupPlan;
+      },
+
+      async requestAiLlmErrorCorrection(player, currentPlan, errorInfo, correctionHistory, previousMessages = []) {
+        const correctionCount = correctionHistory ? correctionHistory.length : 0;
+        const maxCorrections = 2;
+
+        if (correctionCount >= maxCorrections) {
+          return {
+            source: "llm",
+            failed: true,
+            error: `已达最大纠错次数(${maxCorrections})，不再回调`,
+            correctionSkipped: true,
+            actionType: "none",
+            actionId: "none"
+          };
+        }
+
+        const errorDetail = errorInfo || "未知错误";
+        const previousCorrections = correctionHistory && correctionHistory.length > 0
+          ? correctionHistory.map((entry, idx) => `第${idx + 1}次纠错: ${entry.error} -> AI回复: ${entry.aiResponse || "无"}`).join("\n")
+          : "";
+
+        const errorCorrectionBlock = [
+          "【工具执行报错回调】",
+          `你的上次决策执行失败，错误原因：${errorDetail}`,
+          `当前纠错次数：${correctionCount + 1}/${maxCorrections}`,
+          "",
+          "【原始决策】",
+          JSON.stringify({
+            bid: currentPlan && currentPlan.bid ? currentPlan.bid : 0,
+            skill: currentPlan && currentPlan.actionType === "skill" ? (currentPlan.rawSkill || currentPlan.actionId || "无") : "无",
+            item: currentPlan && currentPlan.actionType === "item" ? (currentPlan.rawItem || currentPlan.actionId || "无") : "无",
+            thought: currentPlan && currentPlan.thought ? currentPlan.thought : ""
+          }, null, 2),
+          "",
+          "【硬约束】",
+          "- skill/item 必须来自 availableSkills/availableItems 列表",
+          "- 如果不确定可用选项，使用\"无\"",
+          "- 只返回 JSON 对象，包含 bid、skill、item、thought 四个字段",
+          "- thought 中说明你对错误的理解和修正策略"
+        ];
+
+        if (previousCorrections) {
+          errorCorrectionBlock.push("", "【过往纠错记录】", previousCorrections);
+        }
+
+        const payload = {
+          gameState: {
+            round: {
+              current: this.round,
+              total: GAME_SETTINGS.maxRounds
+            },
+            selfId: player.id,
+            selfName: player.name,
+            wallet: this.getAiWallet(player.id),
+            directWinRatio: Number((1 + GAME_SETTINGS.directTakeRatio).toFixed(2)),
+            folded: false,
+            Previousbid: this.round === 1 ? null : this.currentBid,
+            currentLeader: this.bidLeader
+          },
+          selfRoleAndTools: {
+            roleName: currentPlan && currentPlan.roleName ? currentPlan.roleName : "规则型",
+            passive: currentPlan && currentPlan.passive ? currentPlan.passive : "默认规则人格",
+            activeSkills: this.getAiResourceSnapshot(player.id).skills ? Object.entries(this.getAiResourceSnapshot(player.id).skills).map(([id, remain]) => {
+              const def = this.getActionDefById(id);
+              return { name: def ? def.name : id, description: def ? def.description : "", remaining: Number(remain) || 0 };
+            }) : [],
+            items: this.getAiResourceSnapshot(player.id).items ? Object.entries(this.getAiResourceSnapshot(player.id).items).map(([id, remain]) => {
+              const def = this.getActionDefById(id);
+              return { name: def ? def.name : id, description: def ? def.description : "", remaining: Number(remain) || 0 };
+            }) : []
+          },
+          actionConstraints: this.buildAiActionConstraintBlock(player.id),
+          responseContract: {
+            requiredFields: ["bid", "skill", "item", "thought"],
+            bidRule: "正整数",
+            skillRule: "无 或 技能名称",
+            itemRule: "无 或 道具名称",
+            thoughtRule: "简短说明，不超过200字"
+          }
+        };
+
+        const userPrompt = this.buildAiDecisionUserPrompt(payload, errorCorrectionBlock);
+        const systemPrompt = LLM_DECISION_SYSTEM_PROMPT;
+
+        const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000));
+        const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.llmProxyAsync);
+        const isFlashModel = /deepseek-v4-flash/i.test(LLM_SETTINGS.model || "");
+        let baseTokens = Number(LLM_SETTINGS.maxTokens) || 600;
+        if (isNativeEnv && isFlashModel && baseTokens < 1500) {
+          baseTokens = 1500;
+        }
+        const requestMaxTokens = Math.max(300, baseTokens);
+
+        const messages = [
+          { role: "system", content: systemPrompt },
+          ...(Array.isArray(previousMessages) ? previousMessages : []),
+          { role: "user", content: userPrompt }
+        ];
+
+        try {
+          const result = await this.deepSeekClient.requestChat({
+            temperature: 0.1,
+            maxTokens: requestMaxTokens,
+            timeoutMs: requestTimeoutMs,
+            messages
+          });
+
+          if (!result.ok) {
+            const detail = result && result.meta ? result.meta : {};
+            const errorPieces = [
+              result.error || "请求失败",
+              result.code ? `code=${result.code}` : "",
+              result.stage ? `stage=${result.stage}` : "",
+              detail.endpoint ? `endpoint=${detail.endpoint}` : "",
+              detail.model ? `model=${detail.model}` : "",
+              detail.timeoutMs ? `timeout=${detail.timeoutMs}ms` : "",
+              result.requestId ? `req=${result.requestId}` : "",
+              detail.hint ? `hint=${detail.hint}` : ""
+            ].filter(Boolean);
+            return {
+              source: "llm",
+              failed: true,
+              error: errorPieces.join(" | "),
+              actionType: "none",
+              actionId: "none",
+              systemPrompt,
+              userPrompt,
+              modelResponse: String(result.error || ""),
+              correctionAttempt: correctionCount + 1
+            };
+          }
+
+          const responseText = String(result.content || "");
+          const reasoningContent = String(result.reasoningContent || "");
+          let decision = this.extractAiDecisionObject(responseText);
+          const hasValidBid = decision && Number.isFinite(Number(decision.bid)) && Number(decision.bid) > 0;
+
+          if (!hasValidBid && reasoningContent) {
+            const fallbackDecision = this.extractAiDecisionObject(reasoningContent);
+            if (fallbackDecision && Number.isFinite(Number(fallbackDecision.bid)) && Number(fallbackDecision.bid) > 0) {
+              decision = fallbackDecision;
+              if (typeof this.writeLog === "function") {
+                this.writeLog(`${player.name}：从思维链中提取到纠错决策，出价${fallbackDecision.bid}`);
+              }
+            }
+          }
+
+          const plan = this.normalizeAiLlmPlan(player.id, decision, responseText, {
+            allowAction: true
+          });
+
+          plan.elapsedMs = result.elapsedMs;
+          plan.systemPrompt = systemPrompt;
+          plan.userPrompt = userPrompt;
+          plan.modelResponse = responseText;
+          plan.reasoningContent = reasoningContent;
+          plan.requestStage = "error-correction";
+          plan.correctionAttempt = correctionCount + 1;
+          plan.originalError = errorDetail;
+
+          return plan;
+        } catch (error) {
+          const message = error && error.message ? error.message : "LLM请求异常";
+          return {
+            source: "llm",
+            failed: true,
+            error: message,
+            actionType: "none",
+            actionId: "none",
+            systemPrompt,
+            userPrompt,
+            modelResponse: "",
+            correctionAttempt: correctionCount + 1
+          };
+        }
       },
 
       async prepareAiLlmRoundPlans() {
@@ -946,8 +1159,15 @@
             followupResponse: plan && plan.followupResponse ? plan.followupResponse : "",
             followupError: plan && plan.followupError ? plan.followupError : "",
             followupActionRejected: plan && plan.followupActionRejected ? plan.followupActionRejected : "",
+            correctionAttempt: plan && plan.correctionAttempt ? plan.correctionAttempt : 0,
+            originalError: plan && plan.originalError ? plan.originalError : "",
+            errorCorrectionPrompt: plan && plan.errorCorrectionPrompt ? plan.errorCorrectionPrompt : "",
+            errorCorrectionResponse: plan && plan.errorCorrectionResponse ? plan.errorCorrectionResponse : "",
             historyMessagesCount: plan && plan.historyMessagesCount ? plan.historyMessagesCount : 0,
-            historyMessagesPreview: plan && plan.historyMessagesPreview ? plan.historyMessagesPreview : ""
+            crossGameMemoryCount: plan && plan.crossGameMemoryCount ? plan.crossGameMemoryCount : 0,
+            inGameHistoryCount: plan && plan.inGameHistoryCount ? plan.inGameHistoryCount : 0,
+            historyMessagesPreview: plan && plan.historyMessagesPreview ? plan.historyMessagesPreview : "",
+            crossGameMemoryText: plan && plan.crossGameMemoryText ? plan.crossGameMemoryText : ""
           };
         });
 

@@ -12,10 +12,19 @@
       llmProxyResolvers.delete(requestId);
       try {
         var decoded = atob(b64Result);
-        var resultJson = decodeURIComponent(decoded.split("").map(function (c) {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(""));
-        entry.resolve(resultJson);
+        // 用 TextDecoder 替代 decodeURIComponent，避免无效 UTF-8 序列抛异常导致空响应
+        if (typeof TextDecoder !== "undefined") {
+          var bytes = new Uint8Array(decoded.length);
+          for (var i = 0; i < decoded.length; i++) {
+            bytes[i] = decoded.charCodeAt(i);
+          }
+          entry.resolve(new TextDecoder("utf-8", { fatal: false }).decode(bytes));
+        } else {
+          var resultJson = unescape(decoded.split("").map(function (c) {
+            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(""));
+          entry.resolve(resultJson);
+        }
       } catch (e) {
         entry.resolve(b64Result);
       }
@@ -326,7 +335,7 @@
         8192
       );
 
-      const isThinkingModel = /deepseek-v4-pro|deepseek-reasoner/i.test(mergedSettings.model);
+      const isThinkingModel = /deepseek-v4|deepseek-reasoner/i.test(mergedSettings.model);
       const requestBody = {
         model: mergedSettings.model,
         messages,

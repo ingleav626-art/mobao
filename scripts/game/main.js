@@ -385,6 +385,7 @@ class WarehouseScene extends Phaser.Scene {
     this.dom.settingLlmMultiGameMemoryEnabled = document.getElementById("setting-llmMultiGameMemoryEnabled");
     this.dom.settingDeepseekApiKey = document.getElementById("setting-deepseekApiKey");
     this.dom.settingDeepseekModel = document.getElementById("setting-deepseekModel");
+    this.dom.settingMaxTokens = document.getElementById("setting-maxTokens");
     this.dom.settingsTestDeepSeekBtn = document.getElementById("settingsTestDeepSeekBtn");
     this.dom.settingsLlmStatusText = document.getElementById("settingsLlmStatusText");
     this.dom.clearAiMemoryBtn = document.getElementById("clearAiMemoryBtn");
@@ -5196,6 +5197,10 @@ class WarehouseScene extends Phaser.Scene {
     return LLM_BRIDGE.methods.requestAiLlmFollowupBid.call(this, player, currentPlan, toolSummary);
   }
 
+  async requestAiLlmErrorCorrection(player, currentPlan, errorInfo, correctionHistory, previousMessages) {
+    return LLM_BRIDGE.methods.requestAiLlmErrorCorrection.call(this, player, currentPlan, errorInfo, correctionHistory, previousMessages);
+  }
+
   async prepareAiLlmRoundPlans() {
     return LLM_BRIDGE.methods.prepareAiLlmRoundPlans.call(this);
   }
@@ -5267,6 +5272,10 @@ class WarehouseScene extends Phaser.Scene {
     this.aiRoundEffects = {};
     this.lastAiIntelActions = [];
 
+    if (!this.aiErrorCorrectionHistory) {
+      this.aiErrorCorrectionHistory = {};
+    }
+
     for (const player of aiPlayers) {
       if (!this.isLanMode && this.roundPaused) await this.waitUntilResumed();
       const intelSummary = this.getAiIntelSummary(player.id);
@@ -5318,6 +5327,161 @@ class WarehouseScene extends Phaser.Scene {
       });
 
       this.aiRoundEffects[player.id] = effect;
+
+      if (!result.ok && plan.actionType !== "none" && llmBidReady && this.canUseLlmDecisionForPlayer(player.id)) {
+        const correctionHistory = this.aiErrorCorrectionHistory[player.id] || [];
+        const errorDetail = result.message || "未知错误";
+
+        this.writeLog(`[AI纠错] ${player.name} 工具执行失败: ${errorDetail}`);
+
+        if (!this.currentRunLog) {
+          this.currentRunLog = { aiThoughtLogs: [], actionLogs: [] };
+        }
+        const errorLogEntry = {
+          round: this.round,
+          playerName: player.name,
+          thought: `[工具报错] 错误: ${errorDetail}\n原始决策: skill=${plan.actionType === "skill" ? plan.actionId : "无"}, item=${plan.actionType === "item" ? plan.actionId : "无"}`,
+          controlMode: "error-correction",
+          error: errorDetail,
+          at: Date.now()
+        };
+        this.currentRunLog.aiThoughtLogs.push(errorLogEntry);
+
+        const correctionPlan = await this.requestAiLlmErrorCorrection(
+          player,
+          llmPlan,
+          errorDetail,
+          correctionHistory,
+          this.getAiConversationMessages ? this.getAiConversationMessages(player.id) : []
+        );
+
+        if (!this.aiErrorCorrectionHistory[player.id]) {
+          this.aiErrorCorrectionHistory[player.id] = [];
+        }
+        this.aiErrorCorrectionHistory[player.id].push({
+          error: errorDetail,
+          aiResponse: correctionPlan && !correctionPlan.failed ? `出价${correctionPlan.bid}` : correctionPlan.error || "失败",
+          at: Date.now()
+        });
+
+        if (correctionPlan && !correctionPlan.failed && correctionPlan.hasBidDecision) {
+          const correctionResult = this.executeAiIntelAction(player.id, {
+            actionType: correctionPlan.actionType,
+            actionId: correctionPlan.actionId,
+            expectedReveal: 0,
+            score: 1,
+            candidates: [],
+            decisionSource: "llm-correction",
+            lockedByLlm: true
+          });
+
+          if (correctionResult.ok) {
+            llmPlan.bid = correctionPlan.bid;
+            llmPlan.hasBidDecision = true;
+            llmPlan.actionType = correctionPlan.actionType;
+            llmPlan.actionId = correctionPlan.actionId;
+            llmPlan.thought = correctionPlan.thought || llmPlan.thought;
+            llmPlan.controlMode = "llm-corrected";
+            llmPlan.correctionAttempt = correctionPlan.correctionAttempt;
+            llmPlan.originalError = errorDetail;
+            llmPlan.errorCorrectionPrompt = correctionPlan.userPrompt || "";
+            llmPlan.errorCorrectionResponse = correctionPlan.modelResponse || "";
+
+            const correctionLogEntry = {
+              round: this.round,
+              playerName: player.name,
+              thought: `[纠错成功] 纠错次数: ${correctionPlan.correctionAttempt}/2\n新出价: ${correctionPlan.bid}\n思考: ${correctionPlan.thought || "无"}`,
+              controlMode: "llm-corrected",
+              correctionAttempt: correctionPlan.correctionAttempt,
+              at: Date.now()
+            };
+            this.currentRunLog.aiThoughtLogs.push(correctionLogEntry);
+
+            if (correctionPlan.actionType !== "none" && correctionPlan.actionId !== "none") {
+              this.recordPlayerUsage(player.id, correctionPlan.actionId);
+              const correctionToolSummary = this.buildAiToolResultSummary(correctionResult, correctionPlan.actionType, correctionPlan.actionId);
+              llmPlan.toolResultSummary = correctionToolSummary;
+              llmPlan.toolActionType = correctionPlan.actionType;
+              llmPlan.toolActionId = correctionPlan.actionId;
+
+              const actionDef = this.getActionDefById(correctionPlan.actionId);
+              this.addPublicInfoEntry({
+                source: `${player.name}-${actionDef.name}(纠错)`,
+                text: actionDef.description
+              });
+
+              if (this.isLanMode && this.lanIsHost) {
+                this.lanBridge.send({
+                  type: "lan:ai-item-use",
+                  aiPlayerId: player.lanId || player.id,
+                  aiPlayerName: player.name,
+                  actionId: correctionPlan.actionId,
+                  actionType: correctionPlan.actionType,
+                  itemName: actionDef.name,
+                  itemDesc: actionDef.description,
+                });
+              }
+
+              if (this.canUseLlmDecisionForPlayer(player.id)) {
+                const followup = await this.requestAiLlmFollowupBid(player, llmPlan, correctionToolSummary);
+                if (followup && !followup.failed && followup.hasBidDecision) {
+                  llmPlan.bid = followup.bid;
+                  llmPlan.hasBidDecision = true;
+                  llmPlan.thought = followup.thought || llmPlan.thought;
+                  llmPlan.followupPrompt = followup.userPrompt || "";
+                  llmPlan.followupResponse = followup.modelResponse || "";
+                  llmPlan.followupElapsedMs = followup.elapsedMs || 0;
+                  llmPlan.followupActionRejected = followup.followupActionRejected || "";
+                } else if (followup && followup.failed) {
+                  llmPlan.followupError = followup.error || "二次请求失败";
+                  llmPlan.followupPrompt = followup.userPrompt || "";
+                  llmPlan.followupResponse = followup.modelResponse || "";
+                  llmPlan.controlMode = "rule-fallback-after-llm-tool";
+                }
+              }
+            } else {
+              const followup = await this.requestAiLlmFollowupBid(player, llmPlan, "工具执行失败，直接给出价");
+              if (followup && !followup.failed && followup.hasBidDecision) {
+                llmPlan.bid = followup.bid;
+                llmPlan.hasBidDecision = true;
+                llmPlan.thought = followup.thought || llmPlan.thought;
+                llmPlan.followupPrompt = followup.userPrompt || "";
+                llmPlan.followupResponse = followup.modelResponse || "";
+                llmPlan.followupElapsedMs = followup.elapsedMs || 0;
+                llmPlan.followupActionRejected = followup.followupActionRejected || "";
+              } else if (followup && followup.failed) {
+                llmPlan.followupError = followup.error || "二次请求失败";
+                llmPlan.followupPrompt = followup.userPrompt || "";
+                llmPlan.followupResponse = followup.modelResponse || "";
+                llmPlan.controlMode = "rule-fallback-after-llm-tool";
+              }
+            }
+          } else {
+            const failLogEntry = {
+              round: this.round,
+              playerName: player.name,
+              thought: `[纠错后执行失败] ${correctionResult.message || "未知错误"}`,
+              controlMode: "rule-fallback-after-correction",
+              error: correctionResult.message,
+              at: Date.now()
+            };
+            this.currentRunLog.aiThoughtLogs.push(failLogEntry);
+            llmPlan.controlMode = "rule-fallback-after-correction";
+          }
+        } else {
+          const skipLogEntry = {
+            round: this.round,
+            playerName: player.name,
+            thought: `[纠错跳过] ${correctionPlan ? correctionPlan.error || "已达最大纠错次数" : "纠错请求失败"}`,
+            controlMode: "rule-fallback-correction-skipped",
+            error: correctionPlan ? correctionPlan.error : "纠错请求失败",
+            at: Date.now()
+          };
+          this.currentRunLog.aiThoughtLogs.push(skipLogEntry);
+          llmPlan.controlMode = "rule-fallback-correction-skipped";
+        }
+        continue;
+      }
 
       if (!result.ok || plan.actionType === "none") {
         continue;
@@ -6768,6 +6932,15 @@ class WarehouseScene extends Phaser.Scene {
     return this.aiCrossGameMemory[playerId];
   }
 
+  getAiCrossGameMemoryCount(playerId) {
+    return this.ensureAiCrossGameMemory(playerId).length;
+  }
+
+  getAiInGameHistoryCount(playerId) {
+    const bucket = this.aiConversationByPlayer[playerId];
+    return Array.isArray(bucket) ? bucket.length : 0;
+  }
+
   getQualityCounts() {
     const counts = { poor: 0, normal: 0, fine: 0, rare: 0, legendary: 0 };
     this.items.forEach((item) => {
@@ -7051,7 +7224,7 @@ class WarehouseScene extends Phaser.Scene {
       try {
         const result = await this.deepSeekClient.requestChat({
           temperature: 0.3,
-          maxTokens: 300,
+          maxTokens: 600,
           timeoutMs: 30000,
           messages: [
             { role: "system", content: `你是仓库摸宝竞拍AI玩家${player.name}(${player.id})，正在对本局自己的表现进行反思总结。只反思你自己的出价和决策，不要混淆其他玩家的行为。` },
@@ -7059,7 +7232,7 @@ class WarehouseScene extends Phaser.Scene {
           ]
         });
         if (result.ok && result.content) {
-          const reflection = String(result.content).trim().slice(0, 200);
+          const reflection = String(result.content).trim().slice(0, 600);
           if (this.isAiMultiGameMemoryEnabled()) {
             this.updateCrossGameReflection(player.id, record.run, reflection);
           } else {
@@ -7269,12 +7442,7 @@ class WarehouseScene extends Phaser.Scene {
     }
 
     const blocks = [
-      [
-        `【系统事件】第 ${this.runSerial} 局开始。`,
-        "本局仓库随机生成，上一局仓库布局与线索不可直接当作本局事实。",
-        "本局技能次数与道具库存已重置，请以本局 remaining 字段为准。",
-        `首轮参考起拍价 currentBid=${this.currentBid}（当前实现固定初始化为 1000，仅作系统参考价，不代表仓库估值）。`
-      ].join(" ")
+      `【系统事件】第 ${this.runSerial} 局开始。本局仓库随机生成，技能与道具已重置。`
     ];
 
     if (this.pendingNextRunAiSummary) {
@@ -7294,8 +7462,10 @@ class WarehouseScene extends Phaser.Scene {
     }
 
     const lines = [];
-    lines.push(`回合 ${telemetry.round} | 决策模式：DeepSeek（独立并行请求）`);
+    lines.push(`回合 ${telemetry.round} | 决策模式：混合（大模型+规则AI）`);
+    lines.push("说明：大模型接管显示完整提示词与回复；规则AI显示信心拆解与估值。");
     lines.push("");
+    lines.push("-");
 
     const rulePayload = this.aiEngine && typeof this.aiEngine.getLastDecisionLog === "function"
       ? this.aiEngine.getLastDecisionLog()
@@ -7310,8 +7480,15 @@ class WarehouseScene extends Phaser.Scene {
       lines.push(`  最终出价: ${formatBidRevealNumber(entry.finalBid)} | 决策来源: ${entry.decisionSource}`);
 
       if (isLlm) {
-        if (entry.historyMessagesCount > 0) {
-          lines.push(`  跨局记忆注入: ${entry.historyMessagesCount}条`);
+        if (entry.correctionAttempt > 0) {
+          lines.push(`  纠错次数: ${entry.correctionAttempt}/2`);
+          if (entry.originalError) {
+            lines.push(`  原始错误: ${entry.originalError}`);
+          }
+        }
+        if (entry.historyMessagesCount > 0 || entry.crossGameMemoryCount > 0) {
+          const gameInfo = entry.crossGameMemoryCount > 0 ? (entry.inGameHistoryCount > 0 ? `${entry.crossGameMemoryCount}局跨局记忆+${entry.inGameHistoryCount}条本局历史` : `${entry.crossGameMemoryCount}局跨局记忆`) : `${entry.inGameHistoryCount}条本局历史`;
+          lines.push(`  跨局记忆注入: ${gameInfo}`);
         }
         if (entry.llmActionName) {
           lines.push(`  大模型动作: ${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}`);
@@ -7331,8 +7508,14 @@ class WarehouseScene extends Phaser.Scene {
         if (entry.fallbackRuleBid !== null && entry.fallbackRuleBid !== undefined) {
           lines.push(`  回退规则出价参考: ${formatBidRevealNumber(entry.fallbackRuleBid)}`);
         }
-        lines.push("  [System Prompt]");
-        lines.push(this.compactPanelTextForSnapshot(entry.systemPrompt, 2200));
+        if (entry.systemPrompt) {
+          lines.push("  [System Prompt]");
+          lines.push(this.compactPanelTextForSnapshot(entry.systemPrompt, 2200));
+        }
+        if (entry.crossGameMemoryText) {
+          lines.push("  [Cross-game Memory]");
+          lines.push(this.compactPanelTextForSnapshot(entry.crossGameMemoryText, 5000));
+        }
         lines.push("  [User Prompt]");
         lines.push(this.compactPanelTextForSnapshot(entry.userPrompt, 10000));
         lines.push("  [Model Response]");
@@ -7340,6 +7523,12 @@ class WarehouseScene extends Phaser.Scene {
         if (entry.toolResultSummary) {
           lines.push("  [Tool Result]");
           lines.push(this.compactPanelTextForSnapshot(entry.toolResultSummary, 800));
+        }
+        if (entry.errorCorrectionPrompt || entry.errorCorrectionResponse) {
+          lines.push("  [Error Correction Prompt]");
+          lines.push(this.compactPanelTextForSnapshot(entry.errorCorrectionPrompt, 4200));
+          lines.push("  [Error Correction Response]");
+          lines.push(this.compactPanelTextForSnapshot(entry.errorCorrectionResponse, 4000));
         }
         if (entry.followupPrompt || entry.followupResponse || entry.followupError) {
           lines.push("  [Follow-up Prompt]");
@@ -7355,11 +7544,16 @@ class WarehouseScene extends Phaser.Scene {
         const ruleEntry = ruleEntryById.get(entry.playerId);
         if (ruleEntry) {
           const parts = ruleEntry.confidenceParts || {};
+          const overheat = Math.round((ruleEntry.overheatRatio || 0) * 100);
+          const threshold = Math.round((ruleEntry.overheatThreshold || 0) * 100);
           lines.push(`  信心 ${Math.round((ruleEntry.confidence || 0) * 100)}% | 人格 ${ruleEntry.archetype || "规则型"}`);
+          lines.push(`  私有线索: 线索率 ${Math.round((ruleEntry.intelClueRate || 0) * 100)}% | 品质率 ${Math.round((ruleEntry.intelQualityRate || 0) * 100)}% | 不确定 ${(ruleEntry.intelUncertainty || 0).toFixed(2)} | 波动 ${(ruleEntry.intelSpreadRatio || 0).toFixed(2)}`);
           lines.push(`  估值: ${formatBidRevealNumber(ruleEntry.perceivedValue || 0)} | 上限 ${formatBidRevealNumber(ruleEntry.hardCap || 0)}`);
           lines.push(`  心理预期: ${formatBidRevealNumber(ruleEntry.psychExpectedBid || 0)}`);
-          lines.push(`  信心拆解: 基础 ${(parts.base || 0).toFixed(2)} + 线索 ${(parts.clue || 0).toFixed(2)} + 品质 ${(parts.quality || 0).toFixed(2)} + 回合 ${(parts.progress || 0).toFixed(2)} + 盘口 ${(parts.market || 0).toFixed(2)} + 工具 ${(parts.tool || 0).toFixed(2)}`);
-          lines.push(`  行为: ${ruleEntry.actionTag || "常规"}${ruleEntry.mistakeTag ? ` | 失误:${ruleEntry.mistakeTag}` : ""}`);
+          lines.push(`  信心拆解: 基础 ${(parts.base || 0).toFixed(2)} + 线索 ${(parts.clue || 0).toFixed(2)} + 品质 ${(parts.quality || 0).toFixed(2)} + 回合 ${(parts.progress || 0).toFixed(2)} + 盘口 ${(parts.market || 0).toFixed(2)} + 工具 ${(parts.tool || 0).toFixed(2)} + 边缘奖励 ${(parts.edgeBonus || 0).toFixed(2)} - 波动惩罚 ${(parts.spreadPenalty || 0).toFixed(2)} - 不确定惩罚 ${(parts.uncertaintyPenalty || 0).toFixed(2)} + 情绪 ${(parts.mood || 0).toFixed(2)}`);
+          lines.push(`  超预期: ${overheat}% | 回撤阈值 ${threshold}%`);
+          lines.push(`  工具影响: ${ruleEntry.toolTag || "无"} | 决策加分 ${(ruleEntry.toolScoreBoost || 0).toFixed(2)}`);
+          lines.push(`  行为: ${ruleEntry.actionTag || "常规"}${ruleEntry.mistakeTag ? ` | 失误:${ruleEntry.mistakeTag}` : ""}${ruleEntry.diversifyTag ? ` | 去同质:${ruleEntry.diversifyTag}` : ""}`);
         } else {
           lines.push("  （无规则AI决策数据）");
         }
@@ -7409,14 +7603,23 @@ class WarehouseScene extends Phaser.Scene {
       const thought = String(entry && entry.thought ? entry.thought : "").trim();
       const reasoningContent = String(entry && entry.reasoningContent ? entry.reasoningContent : "").trim();
       const historyCount = entry && entry.historyMessagesCount ? entry.historyMessagesCount : 0;
-      const historyPreview = entry && entry.historyMessagesPreview ? entry.historyMessagesPreview : "";
-      if (!thought && !reasoningContent && !historyCount) {
+      const crossGameCount = entry && entry.crossGameMemoryCount ? entry.crossGameMemoryCount : 0;
+      const correctionAttempt = entry && entry.correctionAttempt ? entry.correctionAttempt : 0;
+      const originalError = entry && entry.originalError ? entry.originalError : "";
+      if (!thought && !reasoningContent && !historyCount && !crossGameCount && !correctionAttempt && !originalError) {
         return;
       }
 
       const parts = [];
-      if (historyCount > 0) {
-        parts.push(`[注入跨局记忆${historyCount}条] ${historyPreview.slice(0, 120)}`);
+      if (correctionAttempt > 0) {
+        parts.push(`[纠错第${correctionAttempt}次]`);
+        if (originalError) {
+          parts.push(`[原始错误] ${originalError}`);
+        }
+      }
+      if (historyCount > 0 || crossGameCount > 0) {
+        const gameInfo = crossGameCount > 0 ? (entry.inGameHistoryCount > 0 ? `${crossGameCount}局跨局记忆+${entry.inGameHistoryCount}条本局历史` : `${crossGameCount}局跨局记忆`) : `${entry.inGameHistoryCount}条本局历史`;
+        parts.push(`[注入${gameInfo}]`);
       }
       if (reasoningContent) {
         parts.push(`[思维链] ${reasoningContent}`);
@@ -7429,6 +7632,16 @@ class WarehouseScene extends Phaser.Scene {
         round: telemetry.round,
         playerName: entry.playerName || entry.playerId || "AI",
         thought: parts.join("\n"),
+        crossGameMemoryCount: crossGameCount,
+        controlMode: entry.controlMode || "",
+        finalBid: entry.finalBid,
+        decisionSource: entry.decisionSource || "",
+        llmActionName: entry.llmActionName || "",
+        ruleActionName: entry.ruleActionName || "",
+        actionExecuted: Boolean(entry.actionExecuted),
+        error: entry.error || "",
+        correctionAttempt: correctionAttempt,
+        originalError: originalError,
         at: Date.now()
       });
     });
@@ -7438,6 +7651,9 @@ class WarehouseScene extends Phaser.Scene {
     }
 
     const roundNo = Math.max(1, Math.round(Number(telemetry.round) || 1));
+    if (!this.currentRunLog.roundPanelTexts) {
+      this.currentRunLog.roundPanelTexts = {};
+    }
     if (typeof this.buildAiDecisionPanelSnapshot === "function") {
       const panelText = this.buildAiDecisionPanelSnapshot(telemetry);
       if (panelText) {

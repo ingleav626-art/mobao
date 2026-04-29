@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.text.format.Formatter;
+import android.util.Base64;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
 
@@ -19,6 +20,11 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -326,6 +332,23 @@ public class NativeBridge {
 
                 java.net.URL url = new java.net.URL(targetUrl);
                 javax.net.ssl.HttpsURLConnection conn = (javax.net.ssl.HttpsURLConnection) url.openConnection();
+                try {
+                    SSLContext sslContext = SSLContext.getInstance("TLS");
+                    sslContext.init(null, new TrustManager[] { new X509TrustManager() {
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[0];
+                        }
+
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                        }
+
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                        }
+                    } }, new java.security.SecureRandom());
+                    conn.setSSLSocketFactory(sslContext.getSocketFactory());
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed to set custom SSL context: " + e.getMessage());
+                }
                 conn.setRequestMethod("POST");
                 conn.setDoOutput(true);
                 conn.setConnectTimeout(15000);

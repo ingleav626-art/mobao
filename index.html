@@ -323,6 +323,9 @@
             <label>模型名称：
               <input type="text" id="setting-deepseekModel" autocomplete="off" placeholder="deepseek-v4-flash" />
             </label>
+            <label>最大输出 Token（含思考链）：
+              <input type="number" id="setting-maxTokens" min="100" max="8192" step="50" />
+            </label>
             <div class="settings-inline-actions">
               <button id="settingsTestDeepSeekBtn" type="button">测试 DeepSeek 连接</button>
               <span class="settings-inline-hint" id="settingsLlmStatusText">尚未测试连接。</span>
