@@ -710,7 +710,7 @@
         try {
           const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000));
           const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.llmProxyAsync);
-          const isFlashModel = /deepseek-v4-flash/i.test(LLM_SETTINGS.model || "");
+          const isFlashModel = /deepseek.*flash|qwen.*turbo|glm.*flash|gpt-3\.5|gpt-4o-mini/i.test(LLM_SETTINGS.model || "");
           let baseTokens = Number(LLM_SETTINGS.maxTokens) || 600;
           if (isNativeEnv && isFlashModel && baseTokens < 1500) {
             baseTokens = 1500;
@@ -960,7 +960,7 @@
 
         const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000));
         const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.llmProxyAsync);
-        const isFlashModel = /deepseek-v4-flash/i.test(LLM_SETTINGS.model || "");
+        const isFlashModel = /deepseek.*flash|qwen.*turbo|glm.*flash|gpt-3\.5|gpt-4o-mini/i.test(LLM_SETTINGS.model || "");
         let baseTokens = Number(LLM_SETTINGS.maxTokens) || 600;
         if (isNativeEnv && isFlashModel && baseTokens < 1500) {
           baseTokens = 1500;

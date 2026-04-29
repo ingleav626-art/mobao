@@ -335,7 +335,8 @@
         8192
       );
 
-      const isThinkingModel = /deepseek-v4|deepseek-reasoner/i.test(mergedSettings.model);
+      const isThinkingModel = /deepseek-(v4|reasoner)|qwen.*think|glm.*z1|o1-|o3-/i.test(mergedSettings.model);
+      const isDeepSeekThinking = /deepseek-(v4|reasoner)/i.test(mergedSettings.model);
       const requestBody = {
         model: mergedSettings.model,
         messages,
@@ -343,10 +344,10 @@
         stream: false
       };
 
-      if (isThinkingModel) {
+      if (isDeepSeekThinking) {
         requestBody.thinking = { type: "enabled" };
         requestBody.reasoning_effort = "high";
-      } else {
+      } else if (!isThinkingModel) {
         requestBody.temperature = temperature;
       }
 
