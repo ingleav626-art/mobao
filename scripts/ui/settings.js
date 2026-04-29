@@ -1,9 +1,9 @@
-const SETTINGS_STORAGE_KEY = "mobao_settings_v1";
+const SETTINGS_STORAGE_KEY = "mobao_settings_v2";
 
 const SETTINGS_META = [
-  ["maxRounds", 6, 3, 12],
+  ["maxRounds", 5, 3, 12],
   ["actionsPerRound", 2, 1, 4],
-  ["roundSeconds", 18, 10, 60],
+  ["roundSeconds", 40, 10, 60],
   ["directTakeRatio", 0.2, 0.05, 0.6],
   ["bidRevealIntervalMs", 650, 250, 1800],
   ["postRevealWaitMs", 3000, 800, 6000],
