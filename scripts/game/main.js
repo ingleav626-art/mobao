@@ -6003,6 +6003,10 @@ class WarehouseScene extends Phaser.Scene {
     return SETTLEMENT_BRIDGE.methods.revealAllArtifactsForSettlement.call(this);
   }
 
+  isSettlementPageActive() {
+    return SETTLEMENT_BRIDGE.methods.isSettlementPageActive.call(this);
+  }
+
   async playSettlementRevealStep(item) {
     return SETTLEMENT_BRIDGE.methods.playSettlementRevealStep.call(this, item);
   }
