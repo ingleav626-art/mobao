@@ -98,9 +98,7 @@
       GAME_SETTINGS,
       SKILL_DEFS,
       ITEM_DEFS,
-      normalizeDeepSeekSettings,
       maskApiKey,
-      saveDeepSeekSettings,
       pickFirstDefined,
       compactOneLine,
       normalizeActionToken,
@@ -203,7 +201,8 @@
               lines.push(`  思考: ${entry.thought}`);
             }
             if (entry.reasoningContent) {
-              lines.push(`  思维链: ${entry.reasoningContent}`);
+              lines.push(`  思考过程:`);
+              lines.push(indentMultiline(compactPanelText(entry.reasoningContent, 3000), "    "));
             }
             if (entry.error) {
               lines.push(`  错误: ${entry.error}`);
@@ -269,7 +268,7 @@
       },
 
       fillLlmSettingsForm(values) {
-        const source = normalizeDeepSeekSettings(values, LLM_SETTINGS);
+        const source = values || {};
         if (this.dom.settingLlmEnabled) {
           this.dom.settingLlmEnabled.checked = Boolean(source.enabled);
         }
@@ -279,40 +278,69 @@
         if (this.dom.settingLlmReflectionEnabled) {
           this.dom.settingLlmReflectionEnabled.checked = Boolean(source.reflectionEnabled);
         }
-        if (this.dom.settingDeepseekApiKey) {
-          this.dom.settingDeepseekApiKey.value = source.apiKey || "";
+        if (this.dom.settingLlmThinkingEnabled) {
+          this.dom.settingLlmThinkingEnabled.checked = Boolean(source.thinkingEnabled);
         }
-        if (this.dom.settingDeepseekModel) {
-          this.dom.settingDeepseekModel.value = source.model || "deepseek-v4-flash";
+        const thinkingParamsInput = document.getElementById("setting-thinkingParams");
+        if (thinkingParamsInput) {
+          thinkingParamsInput.value = source.thinkingParams || "";
+        }
+        const thinkingModeParams = document.getElementById("thinkingModeParams");
+        if (thinkingModeParams && this.dom.settingLlmThinkingEnabled) {
+          if (this.dom.settingLlmThinkingEnabled.checked) {
+            thinkingModeParams.classList.remove("hidden");
+          } else {
+            thinkingModeParams.classList.add("hidden");
+          }
+        }
+        const apiKeyInput = this.dom.settingDeepseekApiKey || document.getElementById("setting-llmApiKey");
+        if (apiKeyInput) {
+          apiKeyInput.value = source.apiKey || "";
+        }
+        const modelInput = this.dom.settingDeepseekModel || document.getElementById("setting-llmModel");
+        if (modelInput) {
+          modelInput.value = source.model || "";
+        }
+        const endpointInput = document.getElementById("setting-llmEndpoint");
+        if (endpointInput) {
+          endpointInput.value = source.endpoint || "";
         }
         if (this.dom.settingMaxTokens) {
           this.dom.settingMaxTokens.value = Number(source.maxTokens) || 2048;
         }
 
         if (!source.apiKey) {
-          this.setLlmSettingsStatus("尚未填写 DeepSeek API Key。", "normal");
+          this.setLlmSettingsStatus("尚未填写 API Key。", "normal");
           return;
         }
         this.setLlmSettingsStatus(`已读取本地密钥：${maskApiKey(source.apiKey)}`, "normal");
       },
 
       readLlmSettingsForm() {
-        const draft = {
-          enabled: this.dom.settingLlmEnabled ? this.dom.settingLlmEnabled.checked : LLM_SETTINGS.enabled,
+        const currentSettings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
+        const apiKeyInput = this.dom.settingDeepseekApiKey || document.getElementById("setting-llmApiKey");
+        const modelInput = this.dom.settingDeepseekModel || document.getElementById("setting-llmModel");
+        const endpointInput = document.getElementById("setting-llmEndpoint");
+
+        return {
+          enabled: this.dom.settingLlmEnabled ? this.dom.settingLlmEnabled.checked : currentSettings.enabled,
           multiGameMemoryEnabled: this.dom.settingLlmMultiGameMemoryEnabled
             ? this.dom.settingLlmMultiGameMemoryEnabled.checked
-            : LLM_SETTINGS.multiGameMemoryEnabled,
+            : currentSettings.multiGameMemoryEnabled,
           reflectionEnabled: this.dom.settingLlmReflectionEnabled
             ? this.dom.settingLlmReflectionEnabled.checked
-            : LLM_SETTINGS.reflectionEnabled,
-          apiKey: this.dom.settingDeepseekApiKey ? this.dom.settingDeepseekApiKey.value : LLM_SETTINGS.apiKey,
-          model: this.dom.settingDeepseekModel ? this.dom.settingDeepseekModel.value : LLM_SETTINGS.model,
-          endpoint: LLM_SETTINGS.endpoint,
-          timeoutMs: LLM_SETTINGS.timeoutMs,
-          temperature: LLM_SETTINGS.temperature,
-          maxTokens: this.dom.settingMaxTokens ? Math.max(100, Number(this.dom.settingMaxTokens.value) || 2048) : LLM_SETTINGS.maxTokens
+            : currentSettings.reflectionEnabled,
+          thinkingEnabled: this.dom.settingLlmThinkingEnabled
+            ? this.dom.settingLlmThinkingEnabled.checked
+            : (currentSettings.thinkingEnabled || false),
+          thinkingParams: currentSettings.thinkingParams || "",
+          apiKey: apiKeyInput ? apiKeyInput.value : currentSettings.apiKey,
+          model: modelInput ? modelInput.value : currentSettings.model,
+          endpoint: endpointInput ? endpointInput.value || currentSettings.endpoint : currentSettings.endpoint,
+          timeoutMs: currentSettings.timeoutMs,
+          temperature: currentSettings.temperature,
+          maxTokens: this.dom.settingMaxTokens ? Math.max(100, Number(this.dom.settingMaxTokens.value) || 2048) : currentSettings.maxTokens
         };
-        return normalizeDeepSeekSettings(draft, LLM_SETTINGS);
       },
 
       setLlmSettingsStatus(text, state) {
@@ -336,9 +364,10 @@
         }
 
         const input = this.readLlmSettingsForm();
+        const modelName = (input && input.model) || "大模型";
         if (!input.apiKey) {
           this.setLlmSettingsStatus("请先填写 API Key，再进行连接测试。", "error");
-          this.writeLog("DeepSeek连接测试取消：未填写 API Key。");
+          this.writeLog(`${modelName}连接测试取消：未填写 API Key。`);
           return;
         }
 
@@ -346,21 +375,26 @@
         if (this.dom.settingsTestDeepSeekBtn) {
           this.dom.settingsTestDeepSeekBtn.disabled = true;
         }
-        this.setLlmSettingsStatus("正在连接 DeepSeek，请稍候...", "pending");
+        this.setLlmSettingsStatus(`正在连接 ${modelName}，请稍候...`, "pending");
 
         try {
-          const result = await this.deepSeekClient.testConnection(input);
+          const provider = typeof this.getLlmProvider === "function" ? this.getLlmProvider() : null;
+          if (!provider) {
+            this.setLlmSettingsStatus("LLM Provider 未初始化", "error");
+            return;
+          }
+          const result = await provider.testConnection(input);
           if (result.ok) {
-            this.setLlmSettingsStatus(`连接成功：${result.message || "已返回响应"}`, "success");
-            this.writeLog(`DeepSeek连接成功，耗时 ${result.elapsedMs}ms。`);
+            this.setLlmSettingsStatus(`${modelName}连接成功${result.message ? `：${result.message}` : ""}`, "success");
+            this.writeLog(`${modelName}连接成功，耗时 ${result.elapsedMs}ms。`);
           } else {
-            this.setLlmSettingsStatus(`连接失败：${result.error || "未知错误"}`, "error");
-            this.writeLog(`DeepSeek连接失败：${result.error || "未知错误"}`);
+            this.setLlmSettingsStatus(`${modelName}连接失败：${result.error || "未知错误"}`, "error");
+            this.writeLog(`${modelName}连接失败：${result.error || "未知错误"}`);
           }
         } catch (error) {
           const message = error && error.message ? error.message : "未知异常";
-          this.setLlmSettingsStatus(`连接异常：${message}`, "error");
-          this.writeLog(`DeepSeek连接异常：${message}`);
+          this.setLlmSettingsStatus(`${modelName}连接异常：${message}`, "error");
+          this.writeLog(`${modelName}连接异常：${message}`);
         } finally {
           this.deepSeekTesting = false;
           if (this.dom.settingsTestDeepSeekBtn) {
@@ -464,12 +498,22 @@
       },
 
       canUseLlmDecision() {
-        return Boolean(
-          LLM_SETTINGS.enabled
-          && typeof LLM_SETTINGS.apiKey === "string"
-          && LLM_SETTINGS.apiKey.trim().length > 0
-          && this.deepSeekClient
-        );
+        const provider = typeof this.getLlmProvider === "function" ? this.getLlmProvider() : null;
+        const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
+        if (!settings || !settings.enabled || !provider) {
+          return false;
+        }
+        const hasApiKey = typeof settings.apiKey === "string" && settings.apiKey.trim().length > 0;
+        if (hasApiKey) {
+          return true;
+        }
+        const endpoint = typeof settings.endpoint === "string" ? settings.endpoint.trim() : "";
+        const isProxyEndpoint = endpoint.length > 0 && endpoint.startsWith("/");
+        const isNative = !!(window.NativeBridge && window.NativeBridge.getServerUrl);
+        if (isProxyEndpoint && !isNative) {
+          return true;
+        }
+        return false;
       },
 
       isAiLlmEnabledForPlayer(playerId) {
@@ -708,15 +752,29 @@
         }
 
         try {
+          const provider = typeof this.getLlmProvider === "function" ? this.getLlmProvider() : null;
+          if (!provider) {
+            return {
+              source: "llm",
+              failed: true,
+              error: "LLM Provider 未初始化",
+              actionType: "none",
+              actionId: "none",
+              systemPrompt,
+              userPrompt,
+              modelResponse: ""
+            };
+          }
+          const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
           const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000));
           const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.llmProxyAsync);
-          const isFlashModel = /deepseek.*flash|qwen.*turbo|glm.*flash|gpt-3\.5|gpt-4o-mini/i.test(LLM_SETTINGS.model || "");
-          let baseTokens = Number(LLM_SETTINGS.maxTokens) || 600;
+          const isFlashModel = /deepseek.*flash|qwen.*turbo|glm.*flash|gpt-3\.5|gpt-4o-mini/i.test(settings.model || "");
+          let baseTokens = Number(settings.maxTokens) || 600;
           if (isNativeEnv && isFlashModel && baseTokens < 1500) {
             baseTokens = 1500;
           }
           const requestMaxTokens = Math.max(300, baseTokens);
-          const result = await this.deepSeekClient.requestChat({
+          const result = await provider.requestChat({
             temperature: 0.1,
             maxTokens: requestMaxTokens,
             timeoutMs: requestTimeoutMs,
@@ -960,8 +1018,9 @@
 
         const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000));
         const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.llmProxyAsync);
-        const isFlashModel = /deepseek.*flash|qwen.*turbo|glm.*flash|gpt-3\.5|gpt-4o-mini/i.test(LLM_SETTINGS.model || "");
-        let baseTokens = Number(LLM_SETTINGS.maxTokens) || 600;
+        const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
+        const isFlashModel = /deepseek.*flash|qwen.*turbo|glm.*flash|gpt-3\.5|gpt-4o-mini/i.test(settings.model || "");
+        let baseTokens = Number(settings.maxTokens) || 600;
         if (isNativeEnv && isFlashModel && baseTokens < 1500) {
           baseTokens = 1500;
         }
@@ -974,7 +1033,20 @@
         ];
 
         try {
-          const result = await this.deepSeekClient.requestChat({
+          const provider = typeof this.getLlmProvider === "function" ? this.getLlmProvider() : null;
+          if (!provider) {
+            return {
+              source: "llm",
+              failed: true,
+              error: "LLM Provider 未初始化",
+              actionType: "none",
+              actionId: "none",
+              systemPrompt,
+              userPrompt,
+              modelResponse: ""
+            };
+          }
+          const result = await provider.requestChat({
             temperature: 0.1,
             maxTokens: requestMaxTokens,
             timeoutMs: requestTimeoutMs,
@@ -1096,7 +1168,9 @@
         });
 
         if (summary.length > 0) {
-          this.writeLog(`DeepSeek决策：${summary.join("；")}`);
+          const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
+          const modelName = (settings && settings.model) || "大模型";
+          this.writeLog(`${modelName}决策：${summary.join("；")}`);
         }
       },
 
@@ -1131,9 +1205,11 @@
           const ruleActionName = ruleActionIds.length > 0
             ? ruleActionIds.map((actionId) => this.getActionDefById(actionId).name).join("、")
             : "";
+          const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
+          const modelName = (settings && settings.model) || "大模型";
           const decisionSource = !plan || !llmSeatEnabled
             ? "规则AI"
-            : (plan.failed ? "规则AI回退" : "DeepSeek");
+            : (plan.failed ? "规则AI回退" : modelName);
 
           return {
             playerId: player.id,

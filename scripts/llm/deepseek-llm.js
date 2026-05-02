@@ -335,8 +335,8 @@
         8192
       );
 
-      const isThinkingModel = /deepseek-(v4|reasoner)|qwen.*think|glm.*z1|o1-|o3-/i.test(mergedSettings.model);
-      const isDeepSeekThinking = /deepseek-(v4|reasoner)/i.test(mergedSettings.model);
+      const isV4OrReasoner = /deepseek-(v4|reasoner)/i.test(mergedSettings.model);
+      const userEnabledThinking = input.isThinking === true;
       const requestBody = {
         model: mergedSettings.model,
         messages,
@@ -344,11 +344,27 @@
         stream: false
       };
 
-      if (isDeepSeekThinking) {
-        requestBody.thinking = { type: "enabled" };
-        requestBody.reasoning_effort = "high";
-      } else if (!isThinkingModel) {
+      if (isV4OrReasoner) {
+        if (userEnabledThinking) {
+          requestBody.thinking = { type: "enabled" };
+          requestBody.reasoning_effort = "high";
+        } else {
+          requestBody.thinking = { type: "disabled" };
+          requestBody.temperature = temperature;
+        }
+      } else {
         requestBody.temperature = temperature;
+      }
+
+      if (userEnabledThinking && mergedSettings.thinkingParams) {
+        try {
+          const customParams = JSON.parse(mergedSettings.thinkingParams);
+          if (customParams && typeof customParams === "object") {
+            Object.assign(requestBody, customParams);
+          }
+        } catch (_e) {
+          this.log("warn", "thinkingParams.parse.error", { thinkingParams: mergedSettings.thinkingParams });
+        }
       }
 
       const startedAt = Date.now();
@@ -470,9 +486,12 @@
           ? message.content
           : "";
 
-        const reasoningContent = message && typeof message.reasoning_content === "string"
-          ? message.reasoning_content
-          : (message && typeof message.reasoning === "string" ? message.reasoning : "");
+        let reasoningContent = "";
+        if (message && typeof message.reasoning_content === "string") {
+          reasoningContent = message.reasoning_content;
+        } else if (message && typeof message.reasoning === "string") {
+          reasoningContent = message.reasoning;
+        }
 
         this.log("info", "request.success", {
           requestId,

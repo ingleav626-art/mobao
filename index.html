@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>摸宝仓库 - 首版原型-trae</title>
+  <title>摸宝仓库-trae</title>
   <link rel="stylesheet" href="./styles/game/styles.css" />
   <link rel="stylesheet" href="./styles/game/mobile-landscape.css" />
   <link rel="stylesheet" href="./styles/lobby/lobby.css" />
@@ -297,8 +297,17 @@
             <input type="checkbox" id="setting-showQualityText" checked />
           </label>
           <div class="settings-group settings-span-2" id="llmSettingsGroup">
-            <h3>AI实验接入（DeepSeek）</h3>
-            <p class="settings-group-sub">首版仅支持 DeepSeek API。密钥仅保存在本地浏览器。</p>
+            <h3>AI实验接入</h3>
+            <p class="settings-group-sub">支持多种大模型 API。密钥仅保存在本地浏览器。</p>
+            <label>模型提供商：
+              <select id="setting-llmProvider">
+              </select>
+            </label>
+            <div class="settings-inline-actions" style="margin-top: 4px;">
+              <button id="addCustomProviderBtn" type="button">添加自定义模型</button>
+              <button id="deleteProviderBtn" type="button" style="display: none;">删除当前模型</button>
+            </div>
+            <p class="settings-group-sub" id="llmProviderDesc">DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型</p>
             <label>启用实验模式
               <input type="checkbox" id="setting-llmEnabled" />
             </label>
@@ -311,23 +320,47 @@
               <input type="checkbox" id="setting-llmReflectionEnabled" />
             </label>
             <p class="settings-group-sub">每局结算后AI自动反思决策优劣（需多局上下文开启），反思结果写入跨局记忆。</p>
+            <label>启用思考模式
+              <input type="checkbox" id="setting-llmThinkingEnabled" />
+            </label>
+            <p class="settings-group-sub">开启后模型会进行深度推理，适合复杂决策。注意：思考模式需要更长的响应时间（建议超时60秒以上）和更大的Token限制（建议4000以上）。</p>
+            <div id="thinkingModeParams" class="hidden">
+              <label>思考模式请求参数（JSON，可选）：
+                <input type="text" id="setting-thinkingParams" autocomplete="off"
+                  placeholder='{"reasoning_effort":"max"}' />
+              </label>
+              <p class="settings-group-sub">
+                DeepSeek: <code>{"reasoning_effort":"high"}</code> 或 <code>{"reasoning_effort":"max"}</code>（复杂任务）<br />
+                OpenAI o1/o3: <code>{"reasoning_effort":"medium"}</code><br />
+                留空使用默认参数。思考模式下 temperature 等参数不生效。
+              </p>
+            </div>
             <div class="settings-inline-actions">
               <button id="clearAiMemoryBtn" type="button">清空AI记忆</button>
               <button id="viewAiMemoryBtn" type="button">查看AI记忆</button>
               <span class="settings-inline-hint" id="aiMemoryStatusText"></span>
             </div>
             <p class="settings-group-sub">清空：删除所有AI的持久化记忆，不可恢复。查看：浏览AI的跨局记忆内容。</p>
-            <label>DeepSeek API Key：
-              <input type="text" id="setting-deepseekApiKey" autocomplete="off" placeholder="sk-..." inputmode="url" />
-            </label>
-            <label>模型名称：
-              <input type="text" id="setting-deepseekModel" autocomplete="off" placeholder="deepseek-v4-flash" />
-            </label>
-            <label>最大输出 Token（含思考链）：
-              <input type="number" id="setting-maxTokens" min="100" max="8192" step="50" />
-            </label>
+            <div id="llmProviderSettings">
+              <label id="llmApiKeyLabel">API Key：
+                <input type="text" id="setting-llmApiKey" autocomplete="off" placeholder="sk-..." inputmode="url" />
+              </label>
+              <label id="llmEndpointLabel">API Endpoint：
+                <input type="text" id="setting-llmEndpoint" autocomplete="off"
+                  placeholder="https://api.example.com/v1/chat/completions" />
+              </label>
+              <label>模型名称：
+                <input type="text" id="setting-llmModel" autocomplete="off" placeholder="model-name" />
+              </label>
+              <label>最大输出 Token（含思考链）：
+                <input type="number" id="setting-maxTokens" min="100" max="8192" step="50" />
+              </label>
+              <label>请求超时时间（毫秒）：
+                <input type="number" id="setting-timeoutMs" min="5000" max="120000" step="1000" />
+              </label>
+            </div>
             <div class="settings-inline-actions">
-              <button id="settingsTestDeepSeekBtn" type="button">测试 DeepSeek 连接</button>
+              <button id="settingsTestLlmBtn" type="button">测试连接</button>
               <span class="settings-inline-hint" id="settingsLlmStatusText">尚未测试连接。</span>
             </div>
           </div>
@@ -393,6 +426,30 @@
       <div class="ai-memory-content" id="aiMemoryContent">暂无记忆数据</div>
     </section>
   </div>
+  <div class="custom-provider-overlay hidden" id="customProviderModal">
+    <div class="custom-provider-box">
+      <div class="custom-provider-head">
+        <h3>添加自定义模型</h3>
+        <button type="button" id="customProviderCancel">关闭</button>
+      </div>
+      <div class="custom-provider-content">
+        <label>模型名称：
+          <input type="text" id="customProviderName" placeholder="例如：本地Ollama" />
+        </label>
+        <label>API Endpoint：
+          <input type="text" id="customProviderEndpoint" placeholder="例如：http://localhost:11434/v1/chat/completions" />
+        </label>
+        <label>默认模型：
+          <input type="text" id="customProviderModel" placeholder="例如：llama3" />
+        </label>
+        <p class="settings-group-sub">支持所有 OpenAI 兼容 API，如 Ollama、vLLM、LocalAI 等。</p>
+        <div class="custom-provider-actions">
+          <button type="button" id="customProviderConfirm">确认添加</button>
+          <button type="button" id="customProviderCancel2">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="shop-overlay hidden" id="shopOverlay">
     <section class="shop-panel" id="shopPanel">
       <div class="shop-head">
@@ -405,25 +462,42 @@
       <div class="shop-inventory" id="shopInventory"></div>
     </section>
   </div>
-  <script src="./scripts/game/artifacts.js"></script>
-  <script src="./scripts/game/ai-bidding.js"></script>
-  <script src="./scripts/game/skills.js"></script>
-  <script src="./scripts/game/items.js"></script>
-  <script src="./scripts/game/public-events.js"></script>
-  <script src="./scripts/game/app-state.js"></script>
-  <script src="./scripts/game/map-profiles.js"></script>
-  <script src="./scripts/game/shop-bridge.js"></script>
-  <script src="./scripts/game/battle-record-bridge.js"></script>
-  <script src="./scripts/game/settlement-bridge.js"></script>
+  <script src="./scripts/game/data/artifacts.js"></script>
+  <script src="./scripts/game/ai/bidding.js"></script>
+  <script src="./scripts/game/data/skills.js"></script>
+  <script src="./scripts/game/data/items.js"></script>
+  <script src="./scripts/game/data/public-events.js"></script>
+  <script src="./scripts/game/core/app-state.js"></script>
+  <script src="./scripts/game/data/map-profiles.js"></script>
+  <script src="./scripts/game/bridge/shop.js"></script>
+  <script src="./scripts/game/bridge/battle-record.js"></script>
+  <script src="./scripts/game/bridge/settlement.js"></script>
+  <script src="./scripts/llm/llm-manager.js"></script>
+  <script src="./scripts/llm/deepseek-provider.js"></script>
+  <script src="./scripts/llm/openai-provider.js"></script>
+  <script src="./scripts/llm/qwen-provider.js"></script>
+  <script src="./scripts/llm/glm-provider.js"></script>
+  <script src="./scripts/llm/kimi-provider.js"></script>
   <script src="./scripts/llm/deepseek-llm.js"></script>
   <script src="./scripts/llm/scene-llm.js"></script>
+  <script src="./scripts/llm/llm-ui-bridge.js"></script>
   <script src="./lan/client/lan-bridge.js"></script>
-  <script src="./scripts/game/constants.js"></script>
-  <script src="./scripts/game/utils.js"></script>
-  <script src="./scripts/game/settings.js"></script>
+  <script src="./scripts/game/core/constants.js"></script>
+  <script src="./scripts/game/core/utils.js"></script>
+  <script src="./scripts/game/core/settings.js"></script>
   <script src="./scripts/game/warehouse/index.js"></script>
   <script src="./scripts/game/ai/wallet.js"></script>
   <script src="./scripts/game/ai/intel.js"></script>
+  <script src="./scripts/game/ai/memory.js"></script>
+  <script src="./scripts/game/ai/reflection.js"></script>
+  <script src="./scripts/game/ai/decision.js"></script>
+  <script src="./scripts/game/bidding/index.js"></script>
+  <script src="./scripts/game/ui/overlay.js"></script>
+  <script src="./scripts/game/ui/panels.js"></script>
+  <script src="./scripts/game/ui/history.js"></script>
+  <script src="./scripts/game/lobby/carousel.js"></script>
+  <script src="./scripts/game/lobby/index.js"></script>
+  <script src="./scripts/game/lan/index.js"></script>
   <script src="./scripts/game/main.js"></script>
 </body>
 

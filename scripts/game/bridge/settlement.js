@@ -177,6 +177,9 @@
         this.hidePreview();
         this.closeBidKeypad();
         this.closeItemDrawer();
+        if (typeof this.updateReflectionStatusUI === "function") {
+          this.updateReflectionStatusUI();
+        }
       },
 
       exitSettlementPage() {

@@ -19,7 +19,7 @@ timeout /t 1 /nobreak >nul
 
 echo  [2/2] Starting server...
 echo.
-node server.js --open-browser
+node server.js
 
 if %errorlevel% neq 0 (
     echo.

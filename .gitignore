@@ -19,8 +19,25 @@ local.properties
 *.jar
 !android/gradle/wrapper/gradle-wrapper.jar
 
+*.keystore
+keystore.properties
+
 .DS_Store
 Thumbs.db
 *.log
 
 docs/
+
+.env
+.env.local
+*.local
+
+dist/
+*.exe
+
+*.swp
+*.swo
+*~
+
+tmp/
+temp/
