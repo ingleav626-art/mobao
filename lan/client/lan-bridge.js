@@ -296,6 +296,13 @@
         this._emit("room:player-left", msg);
         break;
 
+      case "room:host-left":
+        LanBridgeLog("warn", "Host left, room destroyed");
+        this.roomCode = null;
+        this.isHost = false;
+        this._emit("room:host-left", msg);
+        break;
+
       case "room:player-reconnected":
         LanBridgeLog("info", msg.playerName + " reconnected");
         this._emit("room:player-reconnected", msg);
@@ -465,6 +472,11 @@
     try { return global.NativeBridge.getServerUrl(); } catch (_) { return null; }
   };
 
+  LanBridge.getLocalServerUrl = function () {
+    if (!global.NativeBridge || !global.NativeBridge.getLocalServerUrl) return null;
+    try { return global.NativeBridge.getLocalServerUrl(); } catch (_) { return null; }
+  };
+
   LanBridge.startNativeServer = function () {
     if (!global.NativeBridge || !global.NativeBridge.startServer) return false;
     try { return global.NativeBridge.startServer(); } catch (_) { return false; }
@@ -541,7 +553,8 @@
     if (ws && ws !== "localhost" && ws !== "127.0.0.1" && ws.indexOf(".") > 0) {
       return [ws];
     }
-    return ["192.168.1.1"];
+    // Try common default gateways as fallback
+    return ["192.168.1.1", "192.168.0.1", "192.168.31.1", "10.0.0.1", "192.168.50.1"];
   };
 
   global.LanBridge = LanBridge;

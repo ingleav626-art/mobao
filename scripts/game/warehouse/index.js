@@ -12,9 +12,57 @@
 
   const { shuffle, clamp, toCellKey, rgbHex, qualityPulseDuration } = global.MobaoUtils;
 
-  const { toSizeTag } = global.ArtifactData;
+  const { toSizeTag, ARTIFACT_LIBRARY } = global.ArtifactData;
+
+  const ARTIFACT_IMAGE_BASE_PATH = "assets/images/artifacts/thumbs/";
 
   const WarehouseCoreMixin = {
+    preloadArtifactImages() {
+      if (!ARTIFACT_LIBRARY || !Array.isArray(ARTIFACT_LIBRARY)) {
+        return;
+      }
+      const toLoad = [];
+      ARTIFACT_LIBRARY.forEach((artifact) => {
+        const textureKey = `artifact-${artifact.key}`;
+        if (!this.textures.exists(textureKey)) {
+          this.load.image(textureKey, ARTIFACT_IMAGE_BASE_PATH + artifact.key + ".png");
+          toLoad.push(artifact.key);
+        }
+      });
+
+      if (toLoad.length === 0) {
+        console.log("[藏品图片] 所有图片已缓存，无需加载");
+        return;
+      }
+
+      console.log(`[藏品图片] 开始加载 ${toLoad.length} 张图片:`, toLoad);
+
+      this.load.on("progress", (value) => {
+        console.log(`[藏品图片] 加载进度: ${Math.round(value * 100)}%`);
+      });
+
+      this.load.on("complete", () => {
+        console.log("[藏品图片] 全部加载完成");
+        ARTIFACT_LIBRARY.forEach((artifact) => {
+          const textureKey = `artifact-${artifact.key}`;
+          const texture = this.textures.get(textureKey);
+          if (texture && texture.frames) {
+            texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+          }
+        });
+      });
+
+      this.load.on("load", (file) => {
+        console.log(`[藏品图片] 已加载: ${file.key}`);
+      });
+
+      this.load.on("loaderror", (file) => {
+        console.warn(`[藏品图片] 加载失败: ${file.key}`, file.src);
+      });
+
+      this.load.start();
+    },
+
     drawUnknownWarehouse() {
       if (this.gridLayer) {
         this.gridLayer.destroy();
@@ -24,24 +72,69 @@
       }
 
       this.gridLayer = this.add.graphics();
-      this.gridLayer.fillStyle(0x403325, 0.95);
-      this.gridLayer.fillRect(MARGIN, MARGIN, GRID_COLS * CELL_SIZE, GRID_ROWS * CELL_SIZE);
-      this.gridLayer.lineStyle(2, 0x9f8a6a, 0.85);
-      this.gridLayer.strokeRect(MARGIN, MARGIN, GRID_COLS * CELL_SIZE, GRID_ROWS * CELL_SIZE);
 
-      if (this.areaTitleText) {
-        this.areaTitleText.destroy();
+      for (let col = 1; col < GRID_COLS; col++) {
+        const x = MARGIN + col * CELL_SIZE;
+        this.gridLayer.lineStyle(1, 0x9f8a6a, 0.4);
+        this.gridLayer.lineBetween(x, MARGIN, x, MARGIN + GRID_ROWS * CELL_SIZE);
       }
-
-      this.areaTitleText = this.add
-        .text(MARGIN, 2, "未知仓库区域（点击已获线索的藏品可预览候选）", {
-          fontSize: "15px",
-          color: "#f4dec0"
-        })
-        .setOrigin(0, 0);
+      for (let row = 1; row < GRID_ROWS; row++) {
+        const y = MARGIN + row * CELL_SIZE;
+        this.gridLayer.lineStyle(1, 0x9f8a6a, 0.4);
+        this.gridLayer.lineBetween(MARGIN, y, MARGIN + GRID_COLS * CELL_SIZE, y);
+      }
 
       this.revealCellLayer = this.add.graphics();
       this.revealedCells = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false));
+
+      this.time.delayedCall(100, () => {
+        this.preloadArtifactImages();
+      });
+    },
+
+    drawGridLines() {
+      if (!this.gridLayer) return;
+      this.gridLayer.clear();
+
+      const occupied = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false));
+      for (const item of this.items) {
+        if (!item.revealed || !item.revealed.outline) continue;
+        for (let r = item.y; r < item.y + item.h; r++) {
+          for (let c = item.x; c < item.x + item.w; c++) {
+            if (r < GRID_ROWS && c < GRID_COLS) {
+              occupied[r][c] = true;
+            }
+          }
+        }
+      }
+
+      for (let col = 1; col < GRID_COLS; col++) {
+        const x = MARGIN + col * CELL_SIZE;
+        for (let row = 0; row < GRID_ROWS; row++) {
+          const leftOccupied = occupied[row][col - 1];
+          const rightOccupied = occupied[row][col];
+          if (!leftOccupied || !rightOccupied) {
+            const y1 = MARGIN + row * CELL_SIZE;
+            const y2 = MARGIN + (row + 1) * CELL_SIZE;
+            this.gridLayer.lineStyle(1, 0x9f8a6a, 0.4);
+            this.gridLayer.lineBetween(x, y1, x, y2);
+          }
+        }
+      }
+
+      for (let row = 1; row < GRID_ROWS; row++) {
+        const y = MARGIN + row * CELL_SIZE;
+        for (let col = 0; col < GRID_COLS; col++) {
+          const topOccupied = occupied[row - 1][col];
+          const bottomOccupied = occupied[row][col];
+          if (!topOccupied || !bottomOccupied) {
+            const x1 = MARGIN + col * CELL_SIZE;
+            const x2 = MARGIN + (col + 1) * CELL_SIZE;
+            this.gridLayer.lineStyle(1, 0x9f8a6a, 0.4);
+            this.gridLayer.lineBetween(x1, y, x2, y);
+          }
+        }
+      }
     },
 
     guardWarehouseCapacity() {
@@ -454,6 +547,7 @@
       }
 
       item.revealed.outline = true;
+      this.drawGridLines();
 
       if (item.revealed.qualityCell) {
         this.syncQualityMarkersForOutlinedItem(item, options);
@@ -494,6 +588,7 @@
 
       item.view.qualityMarkers.removeAll(true);
       item.view.qualityTextObjects = [];
+      item.view.artifactImage = null;
     },
 
     renderQualityVisual(item, options = {}) {
@@ -520,29 +615,29 @@
         markerH = CELL_SIZE;
       }
 
-      const marker = this.add.rectangle(markerX, markerY, markerW, markerH, item.quality.color, 0.24);
+      const isFullyRevealed = item.revealed.exact === true;
+      const shouldShowArtifactImage = (isFullyRevealed || this.isSettlementRevealMode) && item.key;
+      const textureKey = `artifact-${item.key}`;
+      const hasArtifactImage = shouldShowArtifactImage && this.textures.exists(textureKey);
+      const skipImage = options.settlementSkipImage === true;
+
+      if (hasArtifactImage && !skipImage) {
+        const artifactImage = this.add.image(markerX, markerY, textureKey);
+        artifactImage.setOrigin(0, 0);
+        artifactImage.setDisplaySize(markerW, markerH);
+        item.view.qualityMarkers.add(artifactImage);
+        item.view.artifactImage = artifactImage;
+      }
+
+      const marker = this.add.rectangle(markerX, markerY, markerW, markerH, item.quality.color, hasArtifactImage ? 0.35 : 0.45);
       marker.setOrigin(0, 0);
       marker.setStrokeStyle(2, item.quality.color, 1);
 
-      const shouldShowName = options.showName === true || (this.isSettlementRevealMode && options.showName !== false);
-
-      const markerText = this.add
-        .text(markerX + markerW / 2, markerY + markerH / 2, shouldShowName ? item.name : item.quality.label, {
-          fontSize: "13px",
-          color: rgbHex(item.quality.color),
-          fontStyle: "bold",
-          stroke: "#2a2016",
-          strokeThickness: 2
-        })
-        .setOrigin(0.5, 0.5);
-      markerText.setVisible(this.isSettlementRevealMode ? true : this.useQualityText);
-
-      item.view.qualityMarkers.add([marker, markerText]);
-      item.view.qualityTextObjects.push(markerText);
+      item.view.qualityMarkers.add(marker);
 
       item.view.qualityGlowTween = this.tweens.add({
         targets: marker,
-        alpha: { from: 0.24, to: 0.5 },
+        alpha: { from: hasArtifactImage ? 0.35 : 0.45, to: hasArtifactImage ? 0.55 : 0.7 },
         duration: qualityPulseDuration(item.qualityKey),
         yoyo: true,
         repeat: -1,
@@ -573,7 +668,8 @@
         ? true
         : (options.settlementShowName === false ? false : undefined);
       this.renderQualityVisual(item, {
-        showName
+        showName,
+        settlementSkipImage: options.settlementSkipImage
       });
     },
 
@@ -679,18 +775,21 @@
       let touchStartY = 0;
       let touchStartScrollTop = 0;
       pop.addEventListener("touchstart", (e) => {
+        e.stopPropagation();
         if (e.touches.length === 1) {
           touchStartY = e.touches[0].clientY;
           touchStartScrollTop = pop.scrollTop;
         }
       }, { passive: true });
       pop.addEventListener("touchmove", (e) => {
+        e.stopPropagation();
         if (e.touches.length !== 1) return;
         const dy = touchStartY - e.touches[0].clientY;
         const maxScroll = pop.scrollHeight - pop.clientHeight;
         if (maxScroll <= 0) return;
+        e.preventDefault();
         pop.scrollTop = Math.max(0, Math.min(touchStartScrollTop + dy, maxScroll));
-      }, { passive: true });
+      }, { passive: false });
     },
 
     isPointOnSettlementLockedItem(x, y) {
@@ -742,11 +841,12 @@
       const sorted = [...candidates].sort((a, b) => b.expectedPrice - a.expectedPrice);
       const html = sorted
         .map((candidate) => {
-          const qualityText = qualityKey
-            ? `${window.ArtifactData.QUALITY_CONFIG[qualityKey].label}`
-            : "未知";
+          const candidateQuality = window.ArtifactData.QUALITY_CONFIG[candidate.qualityKey];
+          const qualityText = candidateQuality ? candidateQuality.label : "未知";
           const sizeText = candidate.previewSizeTag || "未知";
-          return `<article class="preview-item"><div class="preview-thumb">图片占位 ${sizeText}</div><strong>${candidate.name}</strong><br/>品类: ${candidate.category} | 品质: ${qualityText}<br/>基础价: ${candidate.basePrice} | 估算价: ${candidate.expectedPrice}</article>`;
+          const imgSrc = `assets/images/artifacts/thumbs/${candidate.key}.png`;
+          const qualityColor = candidateQuality ? rgbHex(candidateQuality.color) : "#9f9f9f";
+          return `<article class="preview-item"><div class="preview-thumb preview-thumb-large" style="background: ${qualityColor}44;"><img src="${imgSrc}" alt="${candidate.name}" onerror="this.style.display='none'"/></div><strong>${candidate.name}</strong><br/>品类: ${candidate.category} | 品质: ${qualityText}<br/>基础价: ${candidate.basePrice} | 估算价: ${candidate.expectedPrice}</article>`;
         })
         .join("");
 
@@ -760,9 +860,11 @@
       }
       this.dom.previewTitle.textContent = `藏品详情：${item.name}`;
       this.dom.previewHint.textContent = "结算页点击藏品可直接查看其价值。";
+      const imgSrc = `assets/images/artifacts/thumbs/${item.key}.png`;
+      const qualityColor = rgbHex(item.quality.color);
       this.dom.previewList.innerHTML = [
-        '<article class="preview-item">',
-        `<div class="preview-thumb">图片占位 ${item.w}x${item.h}</div>`,
+        '<article class="preview-item settlement-detail">',
+        `<div class="preview-thumb preview-thumb-large" style="background: ${qualityColor}44;"><img src="${imgSrc}" alt="${item.name}" onerror="this.style.display='none'"/></div>`,
         `<strong>${item.name}</strong><br/>`,
         `品类: ${item.category}<br/>`,
         `基础价: ${item.basePrice}<br/>`,

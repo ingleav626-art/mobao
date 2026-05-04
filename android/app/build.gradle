@@ -17,8 +17,8 @@ android {
         applicationId "com.mobao.game"
         minSdk 24
         targetSdk 34
-        versionCode 10
-        versionName "1.5.0"
+        versionCode 17
+        versionName "1.5.7"
     }
 
     signingConfigs {
@@ -78,6 +78,9 @@ task copyWebAssets(type: Copy) {
         include 'lib/**'
         include 'lan/client/**'
         exclude 'scripts/game/main.js'
+    }
+    from('../../') {
+        include 'assets/**'
     }
     from('../../') {
         include 'scripts/game/main.js'

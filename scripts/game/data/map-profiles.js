@@ -2,9 +2,10 @@ window.MobaoMapProfiles = (function () {
   const MAP_PROFILES = [
     {
       id: "default",
-      name: "标准仓库",
+      name: "废弃仓库",
       desc: "均衡配置，适合入门",
       icon: "🏚️",
+      background: "game-warehouse.png",
       params: {
         maxRounds: 5,
         directTakeRatio: 0.2,
@@ -30,6 +31,7 @@ window.MobaoMapProfiles = (function () {
       name: "珍宝密室",
       desc: "高品质藏品更多，竞争更激烈",
       icon: "💎",
+      background: null,
       params: {
         maxRounds: 6,
         directTakeRatio: 0.25,
@@ -55,6 +57,7 @@ window.MobaoMapProfiles = (function () {
       name: "废品角落",
       desc: "低品质居多，考验捡漏眼光",
       icon: "🗑️",
+      background: null,
       params: {
         maxRounds: 4,
         directTakeRatio: 0.15,
@@ -80,6 +83,7 @@ window.MobaoMapProfiles = (function () {
       name: "书斋雅集",
       desc: "书画金石为主，文人之选",
       icon: "📜",
+      background: null,
       params: {
         maxRounds: 5,
         directTakeRatio: 0.2,

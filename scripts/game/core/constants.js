@@ -2,7 +2,7 @@
   const GRID_COLS = 12;
   const GRID_ROWS = 25;
   const CELL_SIZE = 64;
-  const MARGIN = 16;
+  const MARGIN = 0;
   const CANVAS_NATIVE_HEIGHT = MARGIN * 2 + GRID_ROWS * CELL_SIZE;
   const MAX_WAREHOUSE_CELLS = 300;
   const ARTIFACT_COUNT_RANGE = { min: 50, max: 300 };

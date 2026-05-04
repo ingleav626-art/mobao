@@ -63,6 +63,7 @@
 
   // 藏品总表：每种藏品的品质、价格、轮廓固定唯一。
   const ARTIFACT_LIBRARY = [
+    { key: "porcelain-taowan", category: "瓷器", name: "陶碗", basePrice: 1800, qualityKey: "poor", w: 1, h: 1 },
     { key: "porcelain-qingyou-zhan", category: "瓷器", name: "青釉盏", basePrice: 3200, qualityKey: "normal", w: 1, h: 1 },
     { key: "porcelain-miaojin-ping", category: "瓷器", name: "描金瓶", basePrice: 4200, qualityKey: "fine", w: 1, h: 2 },
     { key: "porcelain-yudian-guan", category: "瓷器", name: "雨点罐", basePrice: 2800, qualityKey: "normal", w: 1, h: 1 },
@@ -236,8 +237,8 @@
         return true;
       }).map((artifact) => ({
         ...artifact,
-        qualityKey,
-        qualityLabel: qualityKey ? QUALITY_CONFIG[qualityKey].label : "未知",
+        revealedQualityKey: qualityKey,
+        revealedQualityLabel: qualityKey ? QUALITY_CONFIG[qualityKey].label : "未知",
         expectedPrice: artifact.basePrice,
         previewSizeTag: toSizeTag(artifact.w, artifact.h)
       }));

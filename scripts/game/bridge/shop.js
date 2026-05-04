@@ -7,17 +7,17 @@ window.MobaoShopBridge = (function () {
       id: "item-outline-lamp",
       name: "探照灯",
       description: "揭示4件藏品轮廓",
-      price: 80000,
+      price: 0,
       icon: "🔦",
-      maxDaily: 3
+      maxDaily: 999
     },
     {
       id: "item-quality-needle",
       name: "鉴定针",
       description: "优先对铜器揭示3件品质格",
-      price: 120000,
+      price: 0,
       icon: "🪡",
-      maxDaily: 3
+      maxDaily: 999
     }
   ];
 

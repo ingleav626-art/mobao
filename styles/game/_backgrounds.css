@@ -1,0 +1,13 @@
+.side-panel.personal-panel {
+  background: var(--bg-personal-panel) var(--panel-bg-position) / var(--panel-bg-size) no-repeat, #fff8e9;
+  padding: var(--personal-panel-padding);
+}
+
+.side-panel.public-panel {
+  background: var(--bg-public-panel) var(--panel-bg-position) / var(--panel-bg-size) no-repeat, #fff8e9;
+  padding: var(--public-panel-padding);
+}
+
+.player-card-human {
+  background: var(--bg-player-card) var(--panel-bg-position) / var(--panel-bg-size) no-repeat, #fff8e9;
+}

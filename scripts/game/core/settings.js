@@ -15,7 +15,8 @@
       revealSpeedMultiplier: 1,
       searchSpeedMultiplier: 1,
       musicVolume: 70,
-      sfxVolume: 80
+      sfxVolume: 80,
+      showQualityText: true
     };
   }
 
@@ -42,7 +43,8 @@
       revealSpeedMultiplier: clamp(Number(input.revealSpeedMultiplier || defaults.revealSpeedMultiplier), 0.5, 2.2),
       searchSpeedMultiplier: clamp(Number(input.searchSpeedMultiplier || defaults.searchSpeedMultiplier), 0.5, 2.5),
       musicVolume: clamp(Math.round(input.musicVolume || defaults.musicVolume), 0, 100),
-      sfxVolume: clamp(Math.round(input.sfxVolume || defaults.sfxVolume), 0, 100)
+      sfxVolume: clamp(Math.round(input.sfxVolume || defaults.sfxVolume), 0, 100),
+      showQualityText: input.showQualityText !== undefined ? Boolean(input.showQualityText) : defaults.showQualityText
     };
   }
 

@@ -7,6 +7,7 @@
 
   const LanIndexMixin = {
     initLanLobby() {
+      console.log('[LAN] initLanLobby called, LanBridge=' + !!LanBridge);
       if (!LanBridge) return;
 
       this.lanBridge = new LanBridge();
@@ -47,6 +48,8 @@
       const leaveBtn = $("lobbyOnlineLeaveBtn");
       const slotsContainer = $("lobbyOnlineSlots");
 
+      console.log('[LAN] DOM elements: createBtn=' + !!createBtn + ', joinBtn=' + !!joinBtn + ', createConfirmBtn=' + !!createConfirmBtn + ', createPanel=' + !!createPanel);
+
       if (!createBtn || !joinBtn) return;
 
       const savedName = localStorage.getItem("mobao_lan_name") || "";
@@ -63,7 +66,13 @@
         if (serverField) serverField.classList.add("hidden");
         var toggleBtn = $("lobbyToggleServerBtn");
         if (toggleBtn) toggleBtn.parentElement.classList.add("hidden");
+        // Listen for native server errors (e.g., port conflict)
+        window.onNativeServerError = function (errorMsg) {
+          setOnlineStatus("服务器错误: " + errorMsg, "error");
+        };
       } else {
+        // Reset native server error handler on non-native
+        window.onNativeServerError = null;
         if (serverUrl) serverUrl.value = "ws://localhost:9720";
       }
 
@@ -94,28 +103,65 @@
         return name;
       };
 
+      const connectWithRetry = (url, name, roomOptions, serverFailedRef, maxAttempts) => {
+        console.log('[LAN] connectWithRetry called, url=' + url);
+        maxAttempts = maxAttempts || 8;
+        var attempt = 1;
+        var doTry = function () {
+          if (serverFailedRef && serverFailedRef.failed) return;
+          setOnlineStatus("连接本地服务器... (" + attempt + "/" + maxAttempts + ")", "");
+          bridge.connect(url, name).then(function () {
+            console.log('[LAN] connect succeeded, creating room...');
+            setOnlineStatus("已连接", "connected");
+            bridge.createRoom(roomOptions);
+          }).catch(function (e) {
+            console.log('[LAN] connect attempt ' + attempt + ' failed: ' + e.message);
+            if (serverFailedRef && serverFailedRef.failed) return;
+            attempt++;
+            if (attempt <= maxAttempts) {
+              var delay = Math.min(500 * Math.pow(1.5, attempt - 2), 4000);
+              setTimeout(doTry, Math.round(delay));
+            } else {
+              setOnlineStatus("连接失败: " + e.message + "，请确认端口未被占用或重启游戏重试", "error");
+            }
+          });
+        };
+        doTry();
+      };
+
       const autoConnectAndCreate = (options) => {
         const name = getPlayerName();
+        console.log('[LAN] autoConnectAndCreate called, isNative=' + isNative + ', name=' + name);
         if (isNative) {
           setOnlineStatus("启动本地服务器...", "");
           const started = LanBridge.startNativeServer();
+          console.log('[LAN] startNativeServer returned: ' + started);
           if (!started) {
             setOnlineStatus("启动服务器失败", "error");
             return;
           }
-          const nativeUrl = LanBridge.getNativeServerUrl();
+          const nativeUrl = LanBridge.getLocalServerUrl() || LanBridge.getNativeServerUrl();
+          console.log('[LAN] nativeUrl: ' + nativeUrl);
           if (!nativeUrl) {
             setOnlineStatus("获取服务器地址失败", "error");
             return;
           }
-          setTimeout(() => {
-            setOnlineStatus("连接本地服务器...", "");
-            bridge.connect(nativeUrl, name).then(() => {
-              bridge.createRoom(options);
-            }).catch((e) => {
-              setOnlineStatus("连接失败: " + e.message, "error");
-            });
-          }, 500);
+          var serverFailedRef = { failed: false };
+          var origErrorHandler = window.onNativeServerError;
+          window.onNativeServerError = function (errorMsg) {
+            serverFailedRef.failed = true;
+            setOnlineStatus("服务器错误: " + errorMsg, "error");
+          };
+          var serverStartedRef = { started: false };
+          window.onNativeServerStarted = function (ip, port) {
+            serverStartedRef.started = true;
+            console.log('[LAN] onNativeServerStarted: ' + ip + ':' + port);
+          };
+          setTimeout(function () {
+            if (!serverFailedRef.failed) {
+              connectWithRetry(nativeUrl, name, options, serverFailedRef);
+            }
+          }, 300);
         } else {
           var url = serverUrl ? serverUrl.value.trim() : "";
           if (!url) {
@@ -216,6 +262,56 @@
         }
       };
 
+      const scanRoomsNativeFull = () => {
+        // Always run subnet scan to find other players' servers
+        setOnlineStatus("正在扫描房间...", "");
+        var nativeIp = LanBridge.getNativeWiFiIP ? LanBridge.getNativeWiFiIP() : null;
+        var found = [];
+        var localDone = false;
+        var scanDone = false;
+
+        var finishScan = function () {
+          if (scanDone) return;
+          scanDone = true;
+          dedupFound(found);
+          discoveredServers = found;
+          renderRoomList();
+          setOnlineStatus("扫描完成", "connected");
+        };
+
+        // Step 1: Try local HTTP discovery (quick)
+        var nativeUrl = LanBridge.getNativeServerUrl();
+        if (nativeUrl) {
+          var httpBase = nativeUrl.replace("ws://", "http://").replace(/:\d+/, ":9721");
+          fetch(httpBase + "/rooms", { mode: "cors" })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              processRoomData(data, nativeIp || "localhost", found);
+              localDone = true;
+            })
+            .catch(function () {
+              localDone = true;
+            });
+        } else {
+          localDone = true;
+        }
+
+        // Step 2: Always run native subnet scan (discovers other servers)
+        setTimeout(function () {
+          var result = LanBridge.discoverRoomsNative();
+          if (result && result.length > 0) {
+            result.forEach(function (server) {
+              var exists = found.some(function (f) { return f.serverIp === server.serverIp; });
+              if (!exists) found.push(server);
+            });
+          }
+          finishScan();
+        }, 200);
+
+        // Safety timeout: render even if native scan hangs
+        setTimeout(finishScan, 8000);
+      };
+
       const scanRooms = () => {
         if (joinList) {
           joinList.innerHTML = '<div class="lobby-room-scanning">正在扫描局域网房间...</div>';
@@ -223,33 +319,7 @@
         if (joinPasswordField) joinPasswordField.classList.add("hidden");
 
         if (isNative) {
-          var nativeUrl = LanBridge.getNativeServerUrl();
-          var nativeIp = LanBridge.getNativeWiFiIP ? LanBridge.getNativeWiFiIP() : null;
-          if (nativeUrl) {
-            var httpBase = nativeUrl.replace("ws://", "http://").replace(/:\d+/, ":9721");
-            fetch(httpBase + "/rooms", { mode: "cors" })
-              .then(function (r) { return r.json(); })
-              .then(function (data) {
-                var found = [];
-                processRoomData(data, nativeIp || "localhost", found);
-                dedupFound(found);
-                discoveredServers = found;
-                renderRoomList();
-              })
-              .catch(function () {
-                setTimeout(function () {
-                  var result = LanBridge.discoverRoomsNative();
-                  discoveredServers = result || [];
-                  renderRoomList();
-                }, 100);
-              });
-          } else {
-            setTimeout(function () {
-              var result = LanBridge.discoverRoomsNative();
-              discoveredServers = result || [];
-              renderRoomList();
-            }, 100);
-          }
+          scanRoomsNativeFull();
           return;
         }
 
@@ -346,7 +416,7 @@
 
       const fallbackScan = (found, finishScan) => {
         var subnets = [];
-        var commonSubnets = ["192.168.1.", "192.168.0.", "192.168.31.", "192.168.43.", "10.0.0.", "192.168.2.", "192.168.3."];
+        var commonSubnets = ["192.168.1.", "192.168.0.", "192.168.31.", "192.168.43.", "10.0.0.", "192.168.2.", "192.168.3.", "192.168.50.", "192.168.10.", "172.16.0.", "172.17.0.", "172.18.0.", "172.19.0.", "172.20.0.", "10.0.1.", "10.1.0."];
 
         detectLocalIP().then(function (ips) {
           ips.forEach(function (ip) {
@@ -568,6 +638,7 @@
       });
 
       bridge.on("room:created", (msg) => {
+        console.log('[LAN] room:created received', msg);
         showPanel(roomPanel);
         if (roomCodeEl) roomCodeEl.textContent = msg.roomCode;
         if (hostBadge) hostBadge.classList.remove("hidden");
@@ -629,6 +700,13 @@
             this.writeLog("主机已断开连接，游戏无法继续。");
           }
         }
+      });
+
+      bridge.on("room:host-left", (msg) => {
+        this.writeLog(msg.message || "房主已离开房间，房间已解散");
+        bridge.disconnect();
+        showPanel(connectPanel);
+        setOnlineStatus("房间已解散", "");
       });
 
       bridge.on("room:player-reconnected", (msg) => {
@@ -915,6 +993,7 @@
 
       if (createConfirmBtn) {
         createConfirmBtn.addEventListener("click", () => {
+          console.log('[LAN] createConfirmBtn clicked');
           var options = {
             roomName: createRoomName ? createRoomName.value.trim() : undefined,
             visibility: selectedVisibility,
@@ -954,6 +1033,7 @@
       if (leaveBtn) {
         leaveBtn.addEventListener("click", () => {
           bridge.leaveRoom();
+          bridge.disconnect();
           showPanel(connectPanel);
           setOnlineStatus("已离开房间", "");
         });
@@ -1375,6 +1455,18 @@
       this.warehouseTrueValue = msg.warehouseTrueValue || this.warehouseTrueValue;
       this.currentBid = msg.currentBid || this.currentBid;
       this.aiMaxBid = msg.aiMaxBid || this.aiMaxBid;
+
+      if (window.PublicEventSystem && this.items.length > 0) {
+        this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent(
+          this.items,
+          GRID_COLS,
+          GRID_ROWS
+        );
+        this.publicInfoEntries = [{
+          source: this.currentPublicEvent.category,
+          text: this.currentPublicEvent.text
+        }];
+      }
     },
 
     lanBroadcastRoundStart() {
@@ -1431,6 +1523,18 @@
       }
       this.setupWarehouseAuction();
       this.rebuildWarehouseCellIndex();
+
+      if (this.lanIsHost && window.PublicEventSystem && this.items.length > 0) {
+        this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent(
+          this.items,
+          GRID_COLS,
+          GRID_ROWS
+        );
+        this.publicInfoEntries = [{
+          source: this.currentPublicEvent.category,
+          text: this.currentPublicEvent.text
+        }];
+      }
 
       if (this.lanIsHost) {
         const warehouseData = this.buildWarehouseSnapshotForSync();

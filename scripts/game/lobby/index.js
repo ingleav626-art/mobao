@@ -6,6 +6,7 @@
       const soloBtn = document.getElementById("lobbySoloBtn");
       const onlineBtn = document.getElementById("lobbyOnlineBtn");
       const lobbySettingsBtn = document.getElementById("lobbySettingsBtn");
+      const lobbyCollectionBtn = document.getElementById("lobbyCollectionBtn");
       const lobbyBattleRecordBtn = document.getElementById("lobbyBattleRecordBtn");
       const lobbyShopBtn = document.getElementById("lobbyShopBtn");
       const lobbySoloBackBtn = document.getElementById("lobbySoloBackBtn");
@@ -24,6 +25,9 @@
       if (lobbySettingsBtn) {
         lobbySettingsBtn.addEventListener("click", () => this.openSettingsOverlay());
       }
+      if (lobbyCollectionBtn) {
+        lobbyCollectionBtn.addEventListener("click", () => this.openCollectionOverlay());
+      }
       if (lobbyBattleRecordBtn) {
         lobbyBattleRecordBtn.addEventListener("click", () => this.openBattleRecordPanel());
       }
@@ -37,7 +41,21 @@
         lobbySoloShopBtn.addEventListener("click", () => this.openShopOverlay());
       }
       if (lobbyOnlineBackBtn) {
-        lobbyOnlineBackBtn.addEventListener("click", () => this.showLobbyMain());
+        lobbyOnlineBackBtn.addEventListener("click", () => {
+          const roomPanel = document.getElementById("lobbyOnlineRoom");
+          const isInRoom = roomPanel && !roomPanel.classList.contains("hidden");
+          if (isInRoom) {
+            if (confirm("确定要离开房间吗？")) {
+              if (this.lanBridge) {
+                this.lanBridge.leaveRoom();
+                this.lanBridge.disconnect();
+              }
+              this.showLobbyMain();
+            }
+          } else {
+            this.showLobbyMain();
+          }
+        });
       }
       if (lobbyStartGameBtn) {
         lobbyStartGameBtn.addEventListener("click", () => this.startSoloGame());
@@ -82,7 +100,11 @@
         if (onlinePlaceholder) onlinePlaceholder.classList.remove("hidden");
         this.updateLobbyMoneyDisplay();
         const onlineMoney = document.getElementById("lobbyOnlineMoney");
-        if (onlineMoney) onlineMoney.textContent = "资金：" + this.playerMoney.toLocaleString();
+        if (onlineMoney) {
+          const textEl = onlineMoney.querySelector('.hud-icon') ? onlineMoney.lastChild : onlineMoney;
+          if (textEl && textEl.nodeType === 3) textEl.textContent = ' ' + this.playerMoney.toLocaleString();
+          else onlineMoney.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${this.playerMoney.toLocaleString()}`;
+        }
       }
     },
 
@@ -90,9 +112,16 @@
       const money = window.MobaoShopBridge ? window.MobaoShopBridge.getPlayerMoney() : loadPlayerMoney();
       const mainMoney = document.getElementById("lobbyMainMoney");
       const soloMoney = document.getElementById("lobbySoloMoney");
-      const text = "资金：" + money.toLocaleString();
-      if (mainMoney) mainMoney.textContent = text;
-      if (soloMoney) soloMoney.textContent = text;
+      if (mainMoney) {
+        const textEl = mainMoney.querySelector('.hud-icon') ? mainMoney.lastChild : mainMoney;
+        if (textEl && textEl.nodeType === 3) textEl.textContent = ' ' + money.toLocaleString();
+        else mainMoney.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${money.toLocaleString()}`;
+      }
+      if (soloMoney) {
+        const textEl = soloMoney.querySelector('.hud-icon') ? soloMoney.lastChild : soloMoney;
+        if (textEl && textEl.nodeType === 3) textEl.textContent = ' ' + money.toLocaleString();
+        else soloMoney.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${money.toLocaleString()}`;
+      }
     },
 
     cleanupGameScene() {
@@ -108,10 +137,6 @@
       if (this.revealCellLayer) {
         this.revealCellLayer.destroy();
         this.revealCellLayer = null;
-      }
-      if (this.areaTitleText) {
-        this.areaTitleText.destroy();
-        this.areaTitleText = null;
       }
       if (this.activeSettlementSpinner) {
         this.activeSettlementSpinner.destroy();
@@ -356,7 +381,11 @@
       if (!listEl || !window.MobaoShopBridge) return;
 
       const money = window.MobaoShopBridge.getPlayerMoney();
-      if (moneyEl) moneyEl.textContent = "资金：" + money.toLocaleString();
+      if (moneyEl) {
+        const textEl = moneyEl.querySelector('.hud-icon') ? moneyEl.lastChild : moneyEl;
+        if (textEl && textEl.nodeType === 3) textEl.textContent = ' ' + money.toLocaleString();
+        else moneyEl.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${money.toLocaleString()}`;
+      }
 
       const items = window.MobaoShopBridge.SHOP_ITEMS;
       listEl.innerHTML = items.map((si) => {
@@ -411,6 +440,124 @@
           item.count = inv.qualityNeedle;
         }
       });
+    },
+
+    openCollectionOverlay() {
+      const overlay = document.getElementById("collectionOverlay");
+      if (!overlay) return;
+      overlay.classList.remove("hidden");
+      this.initCollectionPanel();
+
+      const closeBtn = document.getElementById("collectionCloseBtn");
+      if (closeBtn && !closeBtn._collectionBound) {
+        closeBtn._collectionBound = true;
+        closeBtn.addEventListener("click", () => this.closeCollectionOverlay());
+      }
+
+      overlay.onclick = (e) => {
+        if (e.target === overlay) this.closeCollectionOverlay();
+      };
+    },
+
+    closeCollectionOverlay() {
+      const overlay = document.getElementById("collectionOverlay");
+      if (overlay) overlay.classList.add("hidden");
+    },
+
+    initCollectionPanel() {
+      const categorySelect = document.getElementById("collectionCategoryFilter");
+      const qualitySelect = document.getElementById("collectionQualityFilter");
+      const searchInput = document.getElementById("collectionSearchInput");
+
+      if (categorySelect && !categorySelect._initialized) {
+        categorySelect._initialized = true;
+        const categories = this.getCollectionCategories();
+        categorySelect.innerHTML = '<option value="all">全部品类</option>' +
+          categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        categorySelect.addEventListener('change', () => this.renderCollectionGrid());
+      }
+
+      if (qualitySelect && !qualitySelect._initialized) {
+        qualitySelect._initialized = true;
+        const qualities = Object.entries(window.ArtifactData.QUALITY_CONFIG);
+        qualitySelect.innerHTML = '<option value="all">全部品质</option>' +
+          qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join('');
+        qualitySelect.addEventListener('change', () => this.renderCollectionGrid());
+      }
+
+      if (searchInput && !searchInput._initialized) {
+        searchInput._initialized = true;
+        searchInput.addEventListener('input', () => this.renderCollectionGrid());
+      }
+
+      this.renderCollectionGrid();
+    },
+
+    getCollectionCategories() {
+      const artifacts = window.ArtifactData.ARTIFACT_LIBRARY || [];
+      const categories = new Set();
+      artifacts.forEach(a => {
+        if (a.category) categories.add(a.category);
+      });
+      return Array.from(categories).sort();
+    },
+
+    renderCollectionGrid() {
+      const grid = document.getElementById("collectionGrid");
+      const stats = document.getElementById('collectionStats');
+      if (!grid) return;
+
+      const categoryFilter = document.getElementById('collectionCategoryFilter')?.value || 'all';
+      const qualityFilter = document.getElementById('collectionQualityFilter')?.value || 'all';
+      const searchText = document.getElementById('collectionSearchInput')?.value?.toLowerCase() || '';
+
+      let artifacts = window.ArtifactData.ARTIFACT_LIBRARY || [];
+
+      if (categoryFilter !== 'all') {
+        artifacts = artifacts.filter(a => a.category === categoryFilter);
+      }
+      if (qualityFilter !== 'all') {
+        artifacts = artifacts.filter(a => a.qualityKey === qualityFilter);
+      }
+      if (searchText) {
+        artifacts = artifacts.filter(a =>
+          a.name.toLowerCase().includes(searchText) ||
+          a.key.toLowerCase().includes(searchText)
+        );
+      }
+
+      const total = (window.ArtifactData.ARTIFACT_LIBRARY || []).length;
+      if (stats) {
+        stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`;
+      }
+
+      const rgbHex = window.MobaoUtils.rgbHex;
+
+      grid.innerHTML = artifacts.map(artifact => {
+        const quality = window.ArtifactData.QUALITY_CONFIG[artifact.qualityKey];
+        const qualityLabel = quality ? quality.label : '未知';
+        const qualityColor = quality ? rgbHex(quality.color) : '#9f9f9f';
+        const imgSrc = `assets/images/artifacts/thumbs/${artifact.key}.png`;
+
+        return `
+          <article class="collection-item" data-key="${artifact.key}">
+            <div class="collection-thumb" style="background: ${qualityColor}44;">
+              <img src="${imgSrc}" alt="${artifact.name}" onerror="this.style.display='none'"/>
+            </div>
+            <div class="collection-info">
+              <strong class="collection-name">${artifact.name}</strong>
+              <div class="collection-meta">
+                <span class="collection-quality" style="color: ${qualityColor};">${qualityLabel}</span>
+                <span class="collection-category">${artifact.category}</span>
+              </div>
+              <div class="collection-details">
+                <span>基础价: ${artifact.basePrice}</span>
+                <span>尺寸: ${artifact.w}x${artifact.h}</span>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
     }
   };
 

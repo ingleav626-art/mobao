@@ -218,14 +218,13 @@ class WarehouseScene extends Phaser.Scene {
     this.lanReconnectAttempts = 0;
     this.lanMaxReconnectAttempts = 5;
 
-    this.areaTitleText = null;
     this.previewOpenTick = 0;
     this.roundTimerId = null;
     this.roundPaused = false;
     this.roundResolving = false;
     this.playerBidSubmitted = false;
     this.playerRoundBid = 0;
-    this.useQualityText = true;
+    this.useQualityText = GAME_SETTINGS.showQualityText !== false;
     this.isSettlementRevealMode = false;
     this.settlementRevealRunning = false;
     this.settlementRevealSkipRequested = false;
@@ -284,7 +283,6 @@ class WarehouseScene extends Phaser.Scene {
       actionLog: null,
       aiThoughtContent: null,
       openSettingsBtn: null,
-      battleRecordBtn: null,
       rerollBtn: null,
       nextRoundBtn: null,
       pauseRoundBtn: null,
@@ -371,12 +369,25 @@ class WarehouseScene extends Phaser.Scene {
   create() {
     window.WarehouseScene = WarehouseScene;
     WarehouseScene.instance = this;
+    this.initAudio();
     this.cacheDom();
     this.bindDomEvents();
     this.bindLobbyEvents();
     this.initPlayersUI();
     this.initPreviewFilterOptions();
     this.enterLobby();
+  }
+
+  initAudio() {
+    if (window.AudioManager) {
+      AudioManager.init().then(() => {
+        AudioManager.preload('ui', ['click']);
+        AudioManager.preload('game', ['reveal', 'coinsReveal', 'search', 'countdown']);
+        if (window.AudioUI) {
+          AudioUI.init();
+        }
+      });
+    }
   }
 
   cacheDom() {
@@ -386,7 +397,6 @@ class WarehouseScene extends Phaser.Scene {
     this.dom.actionLog = document.getElementById("actionLog");
     this.dom.aiThoughtContent = document.getElementById("aiThoughtContent");
     this.dom.openSettingsBtn = document.getElementById("openSettingsBtn");
-    this.dom.battleRecordBtn = document.getElementById("battleRecordBtn");
     this.dom.rerollBtn = document.getElementById("rerollBtn");
     this.dom.nextRoundBtn = document.getElementById("nextRoundBtn");
     this.dom.pauseRoundBtn = document.getElementById("pauseRoundBtn");
@@ -484,9 +494,6 @@ class WarehouseScene extends Phaser.Scene {
     this.dom.openSettingsBtn.addEventListener("click", () => {
       this.openSettingsOverlay();
     });
-    if (this.dom.battleRecordBtn) {
-      this.dom.battleRecordBtn.addEventListener("click", () => this.openBattleRecordPanel());
-    }
     const gameShopBtn = document.getElementById("gameShopBtn");
     if (gameShopBtn) {
       gameShopBtn.addEventListener("click", () => this.openShopOverlay());
@@ -617,9 +624,12 @@ class WarehouseScene extends Phaser.Scene {
       this.exitSettlementPage();
       if (this.battleRecordReplayActive) {
         this.battleRecordReplayActive = false;
-        this.openBattleRecordPanel();
-        this.writeLog("已返回战绩列表，可继续选择其他战绩回放。");
-        this.updateHud();
+        this.battleRecordReplayRecordId = null;
+        this.enterLobby();
+        setTimeout(() => {
+          this.openBattleRecordPanel();
+          this.writeLog("已返回战绩列表，可继续选择其他战绩回放。");
+        }, 100);
         return;
       }
       if (this.isLanMode) {
@@ -977,15 +987,7 @@ class WarehouseScene extends Phaser.Scene {
 
     this.privateIntelEntries = [];
     this.publicInfoEntries = [];
-    if (window.PublicEventSystem) {
-      this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent();
-      this.publicInfoEntries.push({
-        source: this.currentPublicEvent.category,
-        text: this.currentPublicEvent.text
-      });
-    } else {
-      this.currentPublicEvent = null;
-    }
+    this.currentPublicEvent = null;
 
     this.skillManager.resetForNewRun();
     this.skillManager.onNewRound();
@@ -998,6 +1000,19 @@ class WarehouseScene extends Phaser.Scene {
     this.hideRevealScrollHints();
     this.drawUnknownWarehouse();
     this.spawnRandomItems();
+
+    if (window.PublicEventSystem && this.items.length > 0) {
+      this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent(
+        this.items,
+        GRID_COLS,
+        GRID_ROWS
+      );
+      this.publicInfoEntries.push({
+        source: this.currentPublicEvent.category,
+        text: this.currentPublicEvent.text
+      });
+    }
+
     this.setupWarehouseAuction();
     this.rebuildWarehouseCellIndex();
     this.initAiWallets();
@@ -1057,6 +1072,9 @@ class WarehouseScene extends Phaser.Scene {
 
       this.roundTimeLeft -= 1;
       this.updateHud();
+      if (this.roundTimeLeft === 5 && window.AudioUI) {
+        AudioUI.playCountdown();
+      }
       if (this.roundTimeLeft <= 0) {
         if (this.isLanMode && this.lanBridge) {
           this.stopRoundTimer();
@@ -1107,7 +1125,11 @@ class WarehouseScene extends Phaser.Scene {
     if (!this.dom.pauseRoundBtn) {
       return;
     }
-    this.dom.pauseRoundBtn.textContent = this.roundPaused ? "继续回合" : "暂停回合";
+    const icon = this.roundPaused
+      ? '<img src="./assets/images/icons/ui/play-button.svg" alt="" class="btn-icon">'
+      : '<img src="./assets/images/icons/ui/pause-button.svg" alt="" class="btn-icon">';
+    const text = this.roundPaused ? "继续回合" : "暂停回合";
+    this.dom.pauseRoundBtn.innerHTML = `${icon}${text}`;
     this.dom.pauseRoundBtn.classList.toggle("is-paused", this.roundPaused);
   }
 
@@ -2056,11 +2078,16 @@ class WarehouseScene extends Phaser.Scene {
     const bidState = this.playerBidSubmitted ? `玩家本轮已出价: ${this.playerRoundBid}` : "玩家本轮未出价";
     const timerClass = this.roundPaused
       ? "round-timer-hot"
-      : (this.roundTimeLeft <= 6 ? "round-timer-hot is-danger" : "round-timer-hot");
+      : (this.roundTimeLeft <= 5 ? "round-timer-hot is-danger" : "round-timer-hot");
     const timerText = this.roundPaused ? `已暂停 ${this.roundTimeLeft}s` : `倒计时 ${this.roundTimeLeft}s`;
-    this.dom.hudRound.textContent = `第 ${this.round}/${GAME_SETTINGS.maxRounds} 回合`;
-    this.dom.hudTimer.innerHTML = `<span class="${timerClass}">${timerText}</span>`;
-    this.dom.hudMoney.textContent = `资金 ${this.playerMoney.toLocaleString()}`;
+
+    const hudRoundText = this.dom.hudRound.querySelector('.hud-text');
+    const hudTimerText = this.dom.hudTimer.querySelector('.hud-text');
+    const hudMoneyText = this.dom.hudMoney.querySelector('.hud-text');
+
+    if (hudRoundText) hudRoundText.textContent = `第 ${this.round}/${GAME_SETTINGS.maxRounds} 回合`;
+    if (hudTimerText) hudTimerText.innerHTML = `<span class="${timerClass}">${timerText}</span>`;
+    if (hudMoneyText) hudMoneyText.textContent = this.playerMoney.toLocaleString();
     this.renderItemDrawer();
     this.updateSidePanels(skillState, itemState, clueCount, occupiedCells, capacity, bidState);
     this.updateActionAvailability();
@@ -2134,11 +2161,12 @@ const config = {
   parent: "game-root",
   width: MARGIN * 2 + GRID_COLS * CELL_SIZE,
   height: MARGIN * 2 + GRID_ROWS * CELL_SIZE,
-  backgroundColor: "#2f261b",
-  pixelArt: true,
-  antialias: false,
-  roundPixels: true,
-  resolution: window.devicePixelRatio || 1,
+  backgroundColor: "transparent",
+  transparent: true,
+  pixelArt: false,
+  antialias: true,
+  roundPixels: false,
+  resolution: Math.min(window.devicePixelRatio || 1, 2),
   input: {
     touch: {
       capture: false

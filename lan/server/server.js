@@ -17,7 +17,19 @@ const MIME_TYPES = {
   ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
   ".ico": "image/x-icon",
+  ".wav": "audio/wav",
+  ".mp3": "audio/mpeg",
+  ".ogg": "audio/ogg",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".otf": "font/otf",
 };
 
 const RECONNECT_GRACE_MS = 30000;
@@ -67,6 +79,27 @@ function removePlayer(ws, immediate) {
       if (seat) {
         seat.connected = false;
         var isHostLeft = (ws.playerId === room.hostId);
+
+        if (isHostLeft && immediate && room.state === "waiting") {
+          broadcastToRoom(room, {
+            type: "room:host-left",
+            hostName: seat.name,
+            message: "房主已离开房间，房间已解散",
+          });
+          logRoom(ws.roomCode, "host-left", `${seat.name}(${ws.playerId}) [HOST] room destroyed`);
+          for (const s of room.seats) {
+            const c = clients.get(s.id);
+            if (c) {
+              c.roomCode = null;
+              c.playerId = null;
+            }
+          }
+          if (room.roundTimer) clearTimeout(room.roundTimer);
+          rooms.delete(ws.roomCode);
+          ws.roomCode = null;
+          ws.playerId = null;
+          return;
+        }
 
         if (!immediate && room.state === "playing") {
           seat.disconnectedAt = Date.now();
@@ -857,9 +890,16 @@ const server = http.createServer((req, res) => {
   let urlPath = req.url.split("?")[0];
   if (urlPath === "/") urlPath = "/index.html";
 
-  const filePath = path.join(CLIENT_DIR, urlPath);
+  const ROOT_DIR = path.join(__dirname, "..", "..");
+  let baseDir = ROOT_DIR;
+  if (urlPath === "/lan-bridge.js") {
+    baseDir = CLIENT_DIR;
+  }
+
+  const filePath = path.join(baseDir, urlPath);
   const resolved = path.resolve(filePath);
-  if (!resolved.startsWith(path.resolve(CLIENT_DIR))) {
+  const allowedBase = urlPath === "/lan-bridge.js" ? path.resolve(CLIENT_DIR) : path.resolve(ROOT_DIR);
+  if (!resolved.startsWith(allowedBase)) {
     res.writeHead(403);
     res.end("forbidden");
     return;

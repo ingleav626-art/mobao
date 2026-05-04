@@ -66,6 +66,8 @@ public class GameServer extends WebSocketServer {
 
         void onServerStopped();
 
+        void onServerError(String error);
+
         void onLog(String message);
     }
 
@@ -244,15 +246,21 @@ public class GameServer extends WebSocketServer {
                     }
                 }
             } catch (Exception e) {
-                log("[discovery-http] error: " + e.getMessage());
+                String errMsg = e.getMessage() != null ? e.getMessage() : "unknown";
+                log("[discovery-http] error: " + errMsg);
+                if (errMsg.contains("Address already in use") || errMsg.contains("bind")) {
+                    log("[discovery-http] 端口 " + DISCOVERY_PORT + " 被占用，房间发现服务不可用");
+                }
             }
         }, "discovery-http").start();
     }
 
     private void startUdpListen() {
         udpListenThread = new Thread(() -> {
-            try (DatagramSocket socket = new DatagramSocket(DISCOVERY_PORT)) {
+            try {
+                DatagramSocket socket = new DatagramSocket(null);
                 socket.setReuseAddress(true);
+                socket.bind(new java.net.InetSocketAddress(DISCOVERY_PORT));
                 byte[] buf = new byte[4096];
                 while (running) {
                     try {
@@ -319,6 +327,7 @@ public class GameServer extends WebSocketServer {
                     } catch (Exception ignored) {
                     }
                 }
+                socket.close();
             } catch (Exception e) {
                 log("[udp-listen] error: " + e.getMessage());
             }
@@ -624,7 +633,19 @@ public class GameServer extends WebSocketServer {
 
     @Override
     public void onError(WebSocket ws, Exception ex) {
-        log("[ws] error: " + (ex.getMessage() != null ? ex.getMessage() : "unknown"));
+        String errMsg = ex.getMessage() != null ? ex.getMessage() : "unknown";
+        log("[ws] error: " + errMsg);
+        if (ws == null) {
+            // Server-level error (e.g., port bind failure)
+            serverRunning = false;
+            running = false;
+            String friendlyMsg = errMsg.contains("Address already in use") || errMsg.contains("bind")
+                    ? "端口 " + PORT + " 已被占用，请关闭其他程序后重试"
+                    : "服务器启动失败: " + errMsg;
+            if (eventListener != null) {
+                eventListener.onServerError(friendlyMsg);
+            }
+        }
     }
 
     @Override

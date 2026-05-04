@@ -35,10 +35,13 @@
         container.innerHTML = '<div class="side-line intel-empty">暂无私有情报</div>';
         return;
       }
+      const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 20;
       container.innerHTML = this.privateIntelEntries
         .map((entry) => `<div class="side-line intel-entry"><span class="intel-source">${escapeHtml(entry.source)}：</span>${escapeHtml(entry.text)}</div>`)
         .join("");
-      container.scrollTop = container.scrollHeight;
+      if (wasAtBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
     },
 
     renderPublicInfoPanel() {
@@ -52,10 +55,13 @@
         return;
       }
 
+      const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 20;
       container.innerHTML = this.publicInfoEntries
         .map((entry) => `<div class="public-line public-event"><span class="intel-source">[${escapeHtml(entry.source)}]</span> ${escapeHtml(entry.text)}</div>`)
         .join("");
-      container.scrollTop = container.scrollHeight;
+      if (wasAtBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
     },
 
     updateSidePanels(skillState, itemState, clueCount, occupiedCells, capacity, bidState) {

@@ -23,6 +23,12 @@
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
+  :root {
+    --personal-panel-padding: 20px 20px 10px 20px;
+    --side-line-padding: 4px 6px;
+    --panel-title-gap: 4px;
+  }
+
   body {
     padding: 0px 0px;
     gap: 3px;
@@ -110,15 +116,24 @@
 
   .player-card {
     width: 100%;
-    padding: 4px 6px;
+    padding: 6px 8px;
     border-radius: 6px;
     gap: 4px;
+    min-height: 70px;
   }
 
   .side-panel {
     min-height: 0;
     padding: 4px 6px;
     border-radius: 6px;
+  }
+
+  .personal-panel {
+    padding: var(--personal-panel-padding);
+  }
+
+  .side-panel.public-panel {
+    padding: var(--public-panel-padding);
   }
 
   .avatar {
@@ -199,9 +214,8 @@
     border-radius: 8px;
   }
 
-  .settlement-page {
-    padding: 8px;
-    border-radius: 8px;
+  .settle-data-wrap {
+    padding: 32px 16px 16px;
   }
 
   .settlement-page h2 {
@@ -239,9 +253,8 @@
     font-size: 11px;
   }
 
-  .settlement-page {
-    padding: 8px;
-    border-radius: 8px;
+  .settle-data-wrap {
+    padding: 32px 16px 16px;
   }
 
   .settlement-page h2 {
@@ -368,7 +381,7 @@
 
   body.settlement-mode .settlement-page {
     grid-column: 1 !important;
-    display: block !important;
+    display: flex !important;
   }
 
   body.settlement-mode #game-root {
@@ -376,9 +389,8 @@
     height: auto !important;
   }
 
-  .settlement-page {
-    padding: 6px;
-    border-radius: 6px;
+  .settle-data-wrap {
+    padding: 28px 12px 12px;
   }
 
   .settlement-page h2 {
@@ -410,6 +422,12 @@
 }
 
 @media (max-height: 400px) and (orientation: landscape) {
+  :root {
+    --personal-panel-padding: 8px 19px 8px 19px;
+    --side-line-padding: 3px 5px;
+    --panel-title-gap: 3px;
+  }
+
   .game-area {
     min-height: 0;
     height: 100vh;
@@ -509,7 +527,7 @@
 
   body.settlement-mode .settlement-page {
     grid-column: 1 !important;
-    display: block !important;
+    display: flex !important;
   }
 
   body.settlement-mode #game-root {
@@ -517,9 +535,8 @@
     height: auto !important;
   }
 
-  .settlement-page {
-    padding: 5px;
-    border-radius: 5px;
+  .settle-data-wrap {
+    padding: 24px 10px 10px;
   }
 
   .settlement-page h2 {
@@ -528,8 +545,7 @@
   }
 
   .settle-meta {
-    padding: 3px 5px;
-    margin: 2px 0;
+    margin: -2px 0;
     font-size: 10px;
   }
 
@@ -539,8 +555,8 @@
 
   .settle-actions {
     flex-direction: column;
-    gap: 3px;
-    margin-top: 5px;
+    gap: 0px;
+    margin-top: -6px;
   }
 
   .settle-actions button {
@@ -562,6 +578,14 @@
 
   .side-panel {
     min-height: 0;
+  }
+
+  .personal-panel {
+    padding: var(--personal-panel-padding);
+  }
+
+  .side-panel.public-panel {
+    padding: var(--public-panel-padding);
   }
 
   #game-root {
@@ -599,7 +623,7 @@
 
   body.settlement-mode .settlement-page {
     grid-column: 1 !important;
-    display: block !important;
+    display: flex !important;
   }
 
   body.settlement-mode #game-root {
@@ -607,19 +631,18 @@
     height: auto !important;
   }
 
-  .settlement-page {
-    padding: 8px;
-    border-radius: 8px;
+  .settle-data-wrap {
+    padding: 50px 24px 0px 24px;
   }
 
   .settlement-page h2 {
     font-size: 15px;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
   }
 
   .settle-meta {
     padding: 6px 8px;
-    margin: 4px 0;
+    margin: -3px 0;
     font-size: 11px;
   }
 
@@ -629,13 +652,12 @@
 
   .settle-actions {
     flex-direction: column;
-    gap: 5px;
-    margin-top: 8px;
+    gap: 0px;
+    margin-top: 0px;
   }
 
   .settle-actions button {
     width: 100%;
-    padding: 8px 10px;
     font-size: 11px;
   }
 
@@ -652,5 +674,43 @@
     left: 4px;
     right: 4px;
     bottom: 60px;
+  }
+
+  .collection-panel {
+    width: 95%;
+    height: 90vh;
+    max-height: 90vh;
+  }
+
+  .collection-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .collection-thumb {
+    height: 80px;
+  }
+
+  .collection-item {
+    border-radius: 8px;
+  }
+
+  .collection-name {
+    font-size: 12px;
+  }
+
+  .collection-info {
+    padding: 8px;
+  }
+
+  .collection-meta {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .collection-details {
+    flex-direction: column;
+    gap: 2px;
   }
 }

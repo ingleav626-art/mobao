@@ -64,7 +64,8 @@
         input.value = String(values[field]);
       });
       if (this.dom.qualityTextToggle) {
-        this.dom.qualityTextToggle.checked = this.useQualityText;
+        this.dom.qualityTextToggle.checked = GAME_SETTINGS.showQualityText !== false;
+        this.useQualityText = GAME_SETTINGS.showQualityText !== false;
       }
     },
 
@@ -75,6 +76,7 @@
         draft[field] = input ? Number(input.value) : GAME_SETTINGS[field];
       });
       if (this.dom.qualityTextToggle) {
+        draft.showQualityText = this.dom.qualityTextToggle.checked;
         this.useQualityText = this.dom.qualityTextToggle.checked;
         this.syncAllQualityTextVisibility();
       }
@@ -289,6 +291,124 @@
       if (!document.getElementById("gameArea").classList.contains("hidden")) {
         this.updateHud();
       }
+    },
+
+    openCollectionOverlay() {
+      const overlay = document.getElementById("collectionOverlay");
+      if (!overlay) return;
+      overlay.classList.remove("hidden");
+      this.initCollectionPanel();
+
+      const closeBtn = document.getElementById("collectionCloseBtn");
+      if (closeBtn && !closeBtn._collectionBound) {
+        closeBtn._collectionBound = true;
+        closeBtn.addEventListener("click", () => this.closeCollectionOverlay());
+      }
+
+      overlay.onclick = (e) => {
+        if (e.target === overlay) this.closeCollectionOverlay();
+      };
+    },
+
+    closeCollectionOverlay() {
+      const overlay = document.getElementById("collectionOverlay");
+      if (overlay) overlay.classList.add("hidden");
+    },
+
+    initCollectionPanel() {
+      const categorySelect = document.getElementById("collectionCategoryFilter");
+      const qualitySelect = document.getElementById("collectionQualityFilter");
+      const searchInput = document.getElementById("collectionSearchInput");
+
+      if (categorySelect && !categorySelect._initialized) {
+        categorySelect._initialized = true;
+        const categories = this.getCollectionCategories();
+        categorySelect.innerHTML = '<option value="all">全部品类</option>' +
+          categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        categorySelect.addEventListener('change', () => this.renderCollectionGrid());
+      }
+
+      if (qualitySelect && !qualitySelect._initialized) {
+        qualitySelect._initialized = true;
+        const qualities = Object.entries(window.ArtifactData.QUALITY_CONFIG);
+        qualitySelect.innerHTML = '<option value="all">全部品质</option>' +
+          qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join('');
+        qualitySelect.addEventListener('change', () => this.renderCollectionGrid());
+      }
+
+      if (searchInput && !searchInput._initialized) {
+        searchInput._initialized = true;
+        searchInput.addEventListener('input', () => this.renderCollectionGrid());
+      }
+
+      this.renderCollectionGrid();
+    },
+
+    getCollectionCategories() {
+      const artifacts = window.ArtifactData.ARTIFACT_LIBRARY || [];
+      const categories = new Set();
+      artifacts.forEach(a => {
+        if (a.category) categories.add(a.category);
+      });
+      return Array.from(categories).sort();
+    },
+
+    renderCollectionGrid() {
+      const grid = document.getElementById("collectionGrid");
+      const stats = document.getElementById('collectionStats');
+      if (!grid) return;
+
+      const categoryFilter = document.getElementById('collectionCategoryFilter')?.value || 'all';
+      const qualityFilter = document.getElementById('collectionQualityFilter')?.value || 'all';
+      const searchText = document.getElementById('collectionSearchInput')?.value?.toLowerCase() || '';
+
+      let artifacts = window.ArtifactData.ARTIFACT_LIBRARY || [];
+
+      if (categoryFilter !== 'all') {
+        artifacts = artifacts.filter(a => a.category === categoryFilter);
+      }
+      if (qualityFilter !== 'all') {
+        artifacts = artifacts.filter(a => a.qualityKey === qualityFilter);
+      }
+      if (searchText) {
+        artifacts = artifacts.filter(a =>
+          a.name.toLowerCase().includes(searchText) ||
+          a.key.toLowerCase().includes(searchText)
+        );
+      }
+
+      const total = (window.ArtifactData.ARTIFACT_LIBRARY || []).length;
+      if (stats) {
+        stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`;
+      }
+
+      const rgbHex = global.MobaoUtils.rgbHex;
+
+      grid.innerHTML = artifacts.map(artifact => {
+        const quality = window.ArtifactData.QUALITY_CONFIG[artifact.qualityKey];
+        const qualityLabel = quality ? quality.label : '未知';
+        const qualityColor = quality ? rgbHex(quality.color) : '#9f9f9f';
+        const imgSrc = `assets/images/artifacts/thumbs/${artifact.key}.png`;
+
+        return `
+          <article class="collection-item" data-key="${artifact.key}">
+            <div class="collection-thumb" style="background: ${qualityColor}44;">
+              <img src="${imgSrc}" alt="${artifact.name}" onerror="this.style.display='none'"/>
+            </div>
+            <div class="collection-info">
+              <strong class="collection-name">${artifact.name}</strong>
+              <div class="collection-meta">
+                <span class="collection-quality" style="color: ${qualityColor};">${qualityLabel}</span>
+                <span class="collection-category">${artifact.category}</span>
+              </div>
+              <div class="collection-details">
+                <span>基础价: ${artifact.basePrice}</span>
+                <span>尺寸: ${artifact.w}x${artifact.h}</span>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
     }
   };
 

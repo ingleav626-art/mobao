@@ -158,6 +158,10 @@
       this.roundResolving = true;
       this.stopRoundTimer();
 
+      if (window.AudioUI) {
+        AudioUI.stopCountdown();
+      }
+
       try {
         if (!this.playerBidSubmitted) {
           this.playerRoundBid = 0;
@@ -280,6 +284,9 @@
         const bidInfo = roundBids.find((entry) => entry.playerId === player.id);
         this.setPlayerBidDisplay(player.id, bidInfo.bid, i + 1);
         this.writeLog(`${player.name} 本轮出价：${bidInfo.bid}`);
+        if (window.AudioUI) {
+          AudioUI.playReveal();
+        }
         await delay(GAME_SETTINGS.bidRevealIntervalMs);
       }
     },

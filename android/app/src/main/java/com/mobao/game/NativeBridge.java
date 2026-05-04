@@ -51,7 +51,16 @@ public class NativeBridge {
     @JavascriptInterface
     public boolean startServer() {
         if (gameServer != null && gameServer.isRunning()) {
+            Log.i(TAG, "GameServer already running");
             return true;
+        }
+        if (gameServer != null) {
+            try {
+                gameServer.stop(100);
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to stop old server: " + e.getMessage());
+            }
+            gameServer = null;
         }
         try {
             gameServer = new GameServer();
@@ -69,6 +78,15 @@ public class NativeBridge {
                 public void onServerStopped() {
                     activity.runOnUiThread(() -> {
                         String js = "if(window.onNativeServerStopped)window.onNativeServerStopped()";
+                        activity.evaluateJs(js);
+                    });
+                }
+
+                @Override
+                public void onServerError(String error) {
+                    activity.runOnUiThread(() -> {
+                        String escaped = error.replace("'", "\\'").replace("\n", "\\n");
+                        String js = "if(window.onNativeServerError)window.onNativeServerError('" + escaped + "')";
                         activity.evaluateJs(js);
                     });
                 }
@@ -143,6 +161,11 @@ public class NativeBridge {
     @JavascriptInterface
     public String getServerUrl() {
         return "ws://" + getWiFiIP() + ":" + getServerPort();
+    }
+
+    @JavascriptInterface
+    public String getLocalServerUrl() {
+        return "ws://localhost:" + getServerPort();
     }
 
     @JavascriptInterface

@@ -1,0 +1,19 @@
+:root {
+  --bg-personal-panel: url('../../assets/images/backgrounds/panels/personal-panel.png');
+  --bg-public-panel: url('../../assets/images/backgrounds/panels/public-panel.png');
+  --bg-player-card: url('../../assets/images/backgrounds/panels/player-card.png');
+  --bg-settlement: none;
+  --bg-lobby: url('../../assets/images/backgrounds/scenes/lobby.png');
+  --bg-game-area: url('../../assets/images/backgrounds/scenes/game-warehouse.png');
+
+  --panel-bg-size: 100% 100%;
+  --panel-bg-position: center;
+
+  --personal-panel-padding: 30px 20px 20px 20px;
+  --public-panel-padding: 8px;
+  --player-card-padding: 8px;
+
+  --side-line-padding: 6px 8px;
+
+  --panel-title-gap: 30px;
+}

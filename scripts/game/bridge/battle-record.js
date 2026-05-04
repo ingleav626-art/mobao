@@ -72,6 +72,7 @@
         return this.items
           .map((item) => ({
             id: item.id,
+            key: item.key,
             name: item.name,
             category: item.category,
             qualityKey: item.qualityKey,
@@ -411,6 +412,12 @@
           return;
         }
 
+        const lobbyPage = document.getElementById("lobbyPage");
+        const isLobbyVisible = lobbyPage && !lobbyPage.classList.contains("hidden");
+        if (isLobbyVisible && typeof this.exitLobby === "function") {
+          this.exitLobby();
+        }
+
         this.battleRecordReplayActive = true;
         this.battleRecordReplayRecordId = record.id;
         this.isSettlementRevealMode = true;
@@ -502,48 +509,76 @@
           ? record.warehouse.items
           : [];
 
-        snapshotItems.forEach((saved, idx) => {
-          const qualityKey = saved.qualityKey && qualityConfig[saved.qualityKey] ? saved.qualityKey : "normal";
-          const quality = qualityConfig[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff };
-          const safeW = clamp(Math.max(1, Math.round(Number(saved.w) || 1)), 1, GRID_COLS);
-          const safeH = clamp(Math.max(1, Math.round(Number(saved.h) || 1)), 1, GRID_ROWS);
-          const maxX = Math.max(0, GRID_COLS - safeW);
-          const maxY = Math.max(0, GRID_ROWS - safeH);
-          const safeX = clamp(Math.max(0, Math.round(Number(saved.x) || 0)), 0, maxX);
-          const safeY = clamp(Math.max(0, Math.round(Number(saved.y) || 0)), 0, maxY);
-          const trueValue = Math.max(0, Math.round(Number(saved.trueValue) || 0));
-
-          const item = {
-            id: String(saved.id || `record-item-${idx}`),
-            key: "record-snapshot",
-            category: saved.category || "未知",
-            name: saved.name || `藏品${idx + 1}`,
-            basePrice: trueValue,
-            trueValue,
-            qualityKey,
-            quality,
-            w: safeW,
-            h: safeH,
-            x: safeX,
-            y: safeY,
-            revealed: {
-              outline: false,
-              qualityCell: null,
-              exact: true,
-              settlementPreRevealed: true
+        const imagesToLoad = [];
+        snapshotItems.forEach((saved) => {
+          if (saved.key) {
+            const textureKey = `artifact-${saved.key}`;
+            if (!this.textures.exists(textureKey)) {
+              imagesToLoad.push(saved.key);
             }
-          };
-
-          this.renderItem(item);
-          this.revealOutline(item, { settlementShowName: true });
-          item.revealed.qualityCell = { x: item.x, y: item.y };
-          item.revealed.exact = true;
-          this.renderQualityVisual(item, { showName: true });
-          this.items.push(item);
-          this.warehouseTrueValue += item.trueValue;
+          }
         });
 
-        this.rebuildWarehouseCellIndex();
+        const renderItems = () => {
+          snapshotItems.forEach((saved, idx) => {
+            const qualityKey = saved.qualityKey && qualityConfig[saved.qualityKey] ? saved.qualityKey : "normal";
+            const quality = qualityConfig[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff };
+            const safeW = clamp(Math.max(1, Math.round(Number(saved.w) || 1)), 1, GRID_COLS);
+            const safeH = clamp(Math.max(1, Math.round(Number(saved.h) || 1)), 1, GRID_ROWS);
+            const maxX = Math.max(0, GRID_COLS - safeW);
+            const maxY = Math.max(0, GRID_ROWS - safeH);
+            const safeX = clamp(Math.max(0, Math.round(Number(saved.x) || 0)), 0, maxX);
+            const safeY = clamp(Math.max(0, Math.round(Number(saved.y) || 0)), 0, maxY);
+            const trueValue = Math.max(0, Math.round(Number(saved.trueValue) || 0));
+
+            const item = {
+              id: String(saved.id || `record-item-${idx}`),
+              key: saved.key || "record-snapshot",
+              category: saved.category || "未知",
+              name: saved.name || `藏品${idx + 1}`,
+              basePrice: trueValue,
+              trueValue,
+              qualityKey,
+              quality,
+              w: safeW,
+              h: safeH,
+              x: safeX,
+              y: safeY,
+              revealed: {
+                outline: false,
+                qualityCell: null,
+                exact: true,
+                settlementPreRevealed: true
+              }
+            };
+
+            this.renderItem(item);
+            this.revealOutline(item, { settlementShowName: true });
+            item.revealed.qualityCell = { x: item.x, y: item.y };
+            item.revealed.exact = true;
+            this.renderQualityVisual(item, { showName: true });
+            this.items.push(item);
+            this.warehouseTrueValue += item.trueValue;
+          });
+
+          this.rebuildWarehouseCellIndex();
+          this.drawGridLines();
+        };
+
+        if (imagesToLoad.length > 0) {
+          console.log(`[战绩复现] 需要加载 ${imagesToLoad.length} 张图片:`, imagesToLoad);
+          imagesToLoad.forEach((key) => {
+            const textureKey = `artifact-${key}`;
+            this.load.image(textureKey, `assets/images/artifacts/thumbs/${key}.png`);
+          });
+          this.load.once("complete", () => {
+            console.log("[战绩复现] 图片加载完成");
+            renderItems();
+          });
+          this.load.start();
+        } else {
+          renderItems();
+        }
       }
     };
 

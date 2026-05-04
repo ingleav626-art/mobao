@@ -6,7 +6,9 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>摸宝仓库-trae</title>
+  <link rel="stylesheet" href="./styles/game/_variables.css" />
   <link rel="stylesheet" href="./styles/game/styles.css" />
+  <link rel="stylesheet" href="./styles/game/_backgrounds.css" />
   <link rel="stylesheet" href="./styles/game/mobile-landscape.css" />
   <link rel="stylesheet" href="./styles/lobby/lobby.css" />
   <link rel="stylesheet" href="./styles/lobby/mobile-lobby.css" />
@@ -33,10 +35,14 @@
         </button>
       </div>
       <div class="lobby-footer">
-        <button class="lobby-link-btn" id="lobbySettingsBtn" type="button">设置</button>
+        <button class="lobby-link-btn" id="lobbySettingsBtn" type="button"><img
+            src="./assets/images/icons/ui/settings.svg" alt="" class="btn-icon">设置</button>
+        <button class="lobby-link-btn" id="lobbyCollectionBtn" type="button">图鉴</button>
         <button class="lobby-link-btn" id="lobbyBattleRecordBtn" type="button">战绩</button>
-        <button class="lobby-link-btn" id="lobbyShopBtn" type="button">商店</button>
-        <span class="lobby-money-badge" id="lobbyMainMoney">资金：0</span>
+        <button class="lobby-link-btn" id="lobbyShopBtn" type="button"><img src="./assets/images/icons/ui/shopping.svg"
+            alt="" class="btn-icon">商店</button>
+        <span class="lobby-money-badge" id="lobbyMainMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+            class="hud-icon"> 0</span>
       </div>
     </div>
     <div class="lobby-container lobby-sub-page hidden" id="lobbySoloSetup">
@@ -44,8 +50,10 @@
         <button class="lobby-back-btn" id="lobbySoloBackBtn" type="button">← 返回</button>
         <h2 class="lobby-sub-title">选择仓库</h2>
         <div class="lobby-sub-actions">
-          <span class="lobby-money-badge" id="lobbySoloMoney">资金：0</span>
-          <button class="lobby-link-btn" id="lobbySoloShopBtn" type="button">商店</button>
+          <span class="lobby-money-badge" id="lobbySoloMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+              class="hud-icon"> 0</span>
+          <button class="lobby-link-btn" id="lobbySoloShopBtn" type="button"><img
+              src="./assets/images/icons/ui/shopping.svg" alt="" class="btn-icon">商店</button>
         </div>
       </div>
       <div class="lobby-map-carousel" id="lobbyMapCarousel">
@@ -65,7 +73,8 @@
         <button class="lobby-back-btn" id="lobbyOnlineBackBtn" type="button">← 返回</button>
         <h2 class="lobby-sub-title">联机模式</h2>
         <div class="lobby-sub-actions">
-          <span class="lobby-money-badge" id="lobbyOnlineMoney">资金：0</span>
+          <span class="lobby-money-badge" id="lobbyOnlineMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+              class="hud-icon"> 0</span>
         </div>
       </div>
       <div class="lobby-online-connect" id="lobbyOnlineConnect">
@@ -146,20 +155,23 @@
   <div class="game-area hidden" id="gameArea">
     <div class="hud">
       <div class="hud-left">
-        <button id="openSettingsBtn" type="button">设置</button>
-        <button id="battleRecordBtn" type="button">战绩</button>
+        <button id="openSettingsBtn" type="button"><img src="./assets/images/icons/ui/settings.svg" alt=""
+            class="btn-icon">设置</button>
         <button id="aiLogicBtn" type="button">查看AI决策</button>
-        <button id="pauseRoundBtn" type="button">暂停回合</button>
+        <button id="pauseRoundBtn" type="button"><img src="./assets/images/icons/ui/pause-button.svg" alt=""
+            class="btn-icon">暂停回合</button>
       </div>
       <div class="hud-center">
-        <span class="hud-round" id="hudRound"></span>
-        <span class="hud-timer" id="hudTimer"></span>
+        <span class="hud-round" id="hudRound"><img src="./assets/images/icons/ui/timer.svg" alt="" class="hud-icon">
+          <span class="hud-text"></span></span>
+        <span class="hud-timer" id="hudTimer"><span class="hud-text"></span></span>
       </div>
       <div class="hud-right">
         <button id="nextRoundBtn" type="button">结束本轮</button>
         <button id="settleBtn" type="button">结算本局</button>
         <button id="rerollBtn" type="button">重新随机</button>
-        <span class="hud-money" id="hudMoney"></span>
+        <span class="hud-money" id="hudMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon">
+          <span class="hud-text"></span></span>
       </div>
     </div>
     <div class="table-wrap">
@@ -182,14 +194,16 @@
       </aside>
 
       <aside class="settlement-page hidden" id="settlementPage">
-        <h2>本局结算</h2>
-        <p class="settle-meta"><span>拍下者</span><strong id="settleWinnerName">-</strong></p>
-        <p class="settle-meta"><span>本局出价</span><strong id="settleWinnerBid">0</strong></p>
-        <p class="settle-meta"><span>已揭示仓值</span><strong id="settleRevealedValue">0</strong></p>
-        <p class="settle-meta"><span>拍下者利润</span><strong id="settleWinnerProfit" class="profit-neutral">0</strong></p>
-        <p class="settle-meta hidden" id="settleSelfProfitRow"><span>自身利润</span><strong id="settleSelfProfit"
-            class="profit-neutral">0</strong></p>
-        <p class="settle-progress" id="settleProgressText">等待揭示...</p>
+        <div class="settle-data-wrap">
+          <h2>本局结算</h2>
+          <p class="settle-meta"><span>拍下者</span><strong id="settleWinnerName">-</strong></p>
+          <p class="settle-meta"><span>本局出价</span><strong id="settleWinnerBid">0</strong></p>
+          <p class="settle-meta"><span>已揭示仓值</span><strong id="settleRevealedValue">0</strong></p>
+          <p class="settle-meta"><span>拍下者利润</span><strong id="settleWinnerProfit" class="profit-neutral">0</strong></p>
+          <p class="settle-meta hidden" id="settleSelfProfitRow"><span>自身利润</span><strong id="settleSelfProfit"
+              class="profit-neutral">0</strong></p>
+          <p class="settle-progress" id="settleProgressText">等待揭示...</p>
+        </div>
         <div class="settle-actions">
           <button id="settleBackBtn" type="button">返回大厅</button>
           <span class="settle-reflection-status hidden" id="settleReflectionStatus"></span>
@@ -244,7 +258,8 @@
     <div class="item-drawer hidden" id="itemDrawer">
       <div class="item-drawer-head">
         <strong>道具栏</strong>
-        <button id="itemDrawerCloseBtn" type="button">×</button>
+        <button id="itemDrawerCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon-sm"></button>
       </div>
       <div class="item-drawer-list" id="itemDrawerList"></div>
     </div>
@@ -253,7 +268,8 @@
     <section class="ai-logic-panel" id="aiLogicPanel">
       <div class="ai-logic-head">
         <h2>AI决策回放</h2>
-        <button id="aiLogicCloseBtn" type="button">关闭</button>
+        <button id="aiLogicCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
       </div>
       <details class="ai-thought-section" id="aiThoughtSection">
         <summary>AI思考内容（默认折叠）</summary>
@@ -266,7 +282,8 @@
     <section class="battle-record-panel" id="battleRecordPanel">
       <div class="battle-record-head">
         <h2>战绩</h2>
-        <button id="battleRecordCloseBtn" type="button">关闭</button>
+        <button id="battleRecordCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
       </div>
       <div class="battle-record-summary" id="battleRecordSummary"></div>
       <div class="battle-record-content" id="battleRecordContent">暂无战绩</div>
@@ -276,7 +293,8 @@
     <section class="settings-panel" id="settingsPanel">
       <div class="settings-head">
         <h2>游戏设置</h2>
-        <button id="settingsCloseBtn" type="button">关闭</button>
+        <button id="settingsCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
       </div>
       <p class="settings-sub">同页设置，不中断对局；保存后立即生效。</p>
       <div class="settings-scroll" id="settingsScroll">
@@ -305,7 +323,8 @@
             </label>
             <div class="settings-inline-actions" style="margin-top: 4px;">
               <button id="addCustomProviderBtn" type="button">添加自定义模型</button>
-              <button id="deleteProviderBtn" type="button" style="display: none;">删除当前模型</button>
+              <button id="deleteProviderBtn" type="button" style="display: none;"><img
+                  src="./assets/images/icons/ui/delete-fill.svg" alt="" class="btn-icon">删除当前模型</button>
             </div>
             <p class="settings-group-sub" id="llmProviderDesc">DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型</p>
             <label>启用实验模式
@@ -373,10 +392,31 @@
       <p class="settings-note" id="settingsStatusText">设置保存在本地浏览器中。</p>
     </section>
   </div>
+  <div class="collection-overlay hidden" id="collectionOverlay">
+    <section class="collection-panel" id="collectionPanel">
+      <div class="collection-head">
+        <h2>藏品图鉴</h2>
+        <button id="collectionCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
+      </div>
+      <div class="collection-filters">
+        <select id="collectionCategoryFilter">
+          <option value="all">全部品类</option>
+        </select>
+        <select id="collectionQualityFilter">
+          <option value="all">全部品质</option>
+        </select>
+        <input type="text" id="collectionSearchInput" placeholder="搜索藏品名称..." />
+      </div>
+      <div class="collection-stats" id="collectionStats"></div>
+      <div class="collection-grid" id="collectionGrid"></div>
+    </section>
+  </div>
   <div class="bid-keypad hidden" id="bidKeypad">
     <div class="keypad-head">
       <strong>输入出价</strong>
-      <button type="button" id="keypadCloseBtn">关闭</button>
+      <button type="button" id="keypadCloseBtn"><img src="./assets/images/icons/ui/close.svg" alt=""
+          class="btn-icon-sm"></button>
     </div>
     <div class="keypad-screen" id="keypadScreen">0</div>
     <div class="keypad-grid">
@@ -412,7 +452,8 @@
     <div class="info-popup-box">
       <div class="info-popup-head">
         <h3 id="infoPopupTitle"></h3>
-        <button type="button" id="infoPopupCloseBtn">关闭</button>
+        <button type="button" id="infoPopupCloseBtn"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon-sm"></button>
       </div>
       <div class="info-popup-scroll" id="infoPopupContent"></div>
     </div>
@@ -421,7 +462,8 @@
     <section class="ai-memory-panel" id="aiMemoryPanel">
       <div class="ai-memory-head">
         <h2>AI跨局记忆</h2>
-        <button id="aiMemoryCloseBtn" type="button">关闭</button>
+        <button id="aiMemoryCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
       </div>
       <div class="ai-memory-content" id="aiMemoryContent">暂无记忆数据</div>
     </section>
@@ -430,7 +472,8 @@
     <div class="custom-provider-box">
       <div class="custom-provider-head">
         <h3>添加自定义模型</h3>
-        <button type="button" id="customProviderCancel">关闭</button>
+        <button type="button" id="customProviderCancel"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon-sm"></button>
       </div>
       <div class="custom-provider-content">
         <label>模型名称：
@@ -454,14 +497,18 @@
     <section class="shop-panel" id="shopPanel">
       <div class="shop-head">
         <h2>商店</h2>
-        <div class="shop-money" id="shopMoneyDisplay">资金：0</div>
-        <button id="shopCloseBtn" type="button">关闭</button>
+        <div class="shop-money" id="shopMoneyDisplay"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+            class="hud-icon"> 0</div>
+        <button id="shopCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
       </div>
       <p class="shop-sub">每日限量供应，零点刷新。购买后立即到账。</p>
       <div class="shop-list" id="shopList"></div>
       <div class="shop-inventory" id="shopInventory"></div>
     </section>
   </div>
+  <script src="./scripts/audio/audio-manager.js"></script>
+  <script src="./scripts/audio/audio-ui.js"></script>
   <script src="./scripts/game/data/artifacts.js"></script>
   <script src="./scripts/game/ai/bidding.js"></script>
   <script src="./scripts/game/data/skills.js"></script>

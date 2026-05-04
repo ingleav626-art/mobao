@@ -23,7 +23,6 @@
         this.hideRevealScrollHints();
 
         this.items.forEach((item) => {
-          // 仅“完全揭露”藏品跳过结算揭示；已知品质仍需在结算环节继续揭示。
           item.revealed.settlementPreRevealed = Boolean(item.revealed.exact);
         });
 
@@ -38,7 +37,7 @@
 
         this.items.forEach((item) => {
           if (!item.revealed.outline) {
-            this.revealOutline(item, { settlementShowName: false });
+            this.revealOutline(item, { settlementShowName: false, settlementSkipImage: true });
           }
         });
 
@@ -76,16 +75,25 @@
             break;
           }
 
+          if (window.AudioUI) {
+            AudioUI.startSearch();
+          }
+
           await this.playSettlementSearchEffect(item, runToken);
 
           if (runToken !== this.settlementRunToken) {
+            if (window.AudioUI) { AudioUI.stopSearch(); }
             return;
           }
 
           if (!item.revealed.qualityCell) {
             this.revealQualityCell(item, { showName: true });
           } else {
-            this.renderQualityVisual(item, { showName: true });
+            this.renderQualityVisual(item, { showName: true, settlementSkipImage: true });
+          }
+
+          if (window.AudioUI) {
+            AudioUI.stopSearch();
           }
 
           revealedValue += item.trueValue;
@@ -97,6 +105,10 @@
 
         if (runToken !== this.settlementRunToken) {
           return;
+        }
+
+        if (window.AudioUI) {
+          AudioUI.play('coinsReveal');
         }
 
         this.settlementRevealRunning = false;
@@ -111,7 +123,39 @@
           return;
         }
 
-        await tweenToPromise(this, [item.view.silhouette, item.view.border], {
+        const targets = [item.view.silhouette, item.view.border];
+
+        const isFullyRevealed = item.revealed.exact === true;
+        const shouldShowArtifactImage = (isFullyRevealed || this.isSettlementRevealMode) && item.key;
+        const textureKey = `artifact-${item.key}`;
+        if (shouldShowArtifactImage && !item.view.artifactImage && this.textures.exists(textureKey)) {
+          let markerX;
+          let markerY;
+          let markerW;
+          let markerH;
+          if (item.revealed.outline && item.w * item.h > 1) {
+            markerX = MARGIN + item.x * CELL_SIZE;
+            markerY = MARGIN + item.y * CELL_SIZE;
+            markerW = item.w * CELL_SIZE;
+            markerH = item.h * CELL_SIZE;
+          } else if (item.revealed.qualityCell) {
+            markerX = MARGIN + item.revealed.qualityCell.x * CELL_SIZE;
+            markerY = MARGIN + item.revealed.qualityCell.y * CELL_SIZE;
+            markerW = CELL_SIZE;
+            markerH = CELL_SIZE;
+          }
+          if (markerW != null) {
+            const artifactImage = this.add.image(markerX, markerY, textureKey);
+            artifactImage.setOrigin(0, 0);
+            artifactImage.setDisplaySize(markerW, markerH);
+            artifactImage.setAlpha(0);
+            item.view.qualityMarkers.add(artifactImage);
+            item.view.artifactImage = artifactImage;
+            targets.push(artifactImage);
+          }
+        }
+
+        await tweenToPromise(this, targets, {
           alpha: { from: 0.35, to: 1 },
           duration,
           ease: "Sine.easeInOut"
@@ -171,6 +215,13 @@
         }
         if (this.dom.settleSelfProfitRow) {
           this.dom.settleSelfProfitRow.classList.add("hidden");
+        }
+        if (this.dom.settleReplayBtn) {
+          if (this.battleRecordReplayActive) {
+            this.dom.settleReplayBtn.classList.add("hidden");
+          } else {
+            this.dom.settleReplayBtn.classList.remove("hidden");
+          }
         }
         this.updateSettlementPanelMetrics(0, -winnerBid);
         this.setSettlementProgress("准备揭示藏品...");
