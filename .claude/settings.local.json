@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git diff *)",
+      "Bash(node -c scripts/game/main.js)"
+    ]
+  }
+}

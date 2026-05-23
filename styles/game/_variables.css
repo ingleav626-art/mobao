@@ -1,0 +1,30 @@
+:root {
+  --bg-personal-panel: url('../../assets/images/backgrounds/panels/personal-panel.png');
+  --bg-public-panel: url('../../assets/images/backgrounds/panels/public-panel.png');
+  --bg-player-card: url('../../assets/images/backgrounds/panels/player-card.png');
+  --bg-settlement: none;
+  --bg-lobby: url('../../assets/images/backgrounds/scenes/lobby.png');
+  --bg-game-area: url('../../assets/images/backgrounds/scenes/game-warehouse.png');
+
+  --panel-bg-size: 100% 100%;
+  --panel-bg-position: center;
+
+  --personal-panel-padding: 30px 20px 20px 20px;
+  --public-panel-padding: 8px;
+  --player-card-padding: 8px;
+
+  --side-line-padding: 6px 8px;
+
+  --panel-title-gap: 30px;
+
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 400ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-btn: all var(--transition-fast) var(--ease-out);
+  --transition-card: all var(--transition-normal) var(--ease-out);
+  --transition-panel: all var(--transition-slow) var(--ease-in-out);
+}

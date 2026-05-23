@@ -1,0 +1,543 @@
+/* ============================================================
+   _animations.css – 前端动效集合
+   使用方式：在 styles.css 之后引入，所有动画类均可复用
+   ============================================================ */
+
+/* ---- 1. 按钮点击涟漪效果 ---- */
+/* 涟漪容器：按钮需设置 position: relative 和 overflow: hidden */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+  /* 确保按钮的 transform 不影响涟漪定位 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ripple-btn .ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  transform: scale(0);
+  animation: ripple-anim 0.6s ease-out forwards;
+}
+
+@keyframes ripple-anim {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* 深色背景按钮用白色涟漪 */
+.ripple-btn-light .ripple-effect {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+/* 浅色背景按钮用深色涟漪 */
+.ripple-btn-dark .ripple-effect {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+
+/* ---- 2. 数字滚动动画 ---- */
+/* 基础样式：保证数字部分可独立动画 */
+.num-scroll {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 滚动状态标记（预留：若 .num-scroll 添加了 CSS transition，此标记可防止冲突） */
+.num-scroll.is-scrolling {
+  transition: none;
+}
+
+
+/* ---- 3. 卡片渐次入场 ---- */
+/* 初始隐藏态 */
+.card-enter {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+/* 入场态 */
+.card-enter.enter-visible {
+  animation: card-slide-in 0.5s ease-out forwards;
+}
+
+/* 每个卡片的延迟由 JS 动态设置 animation-delay */
+@keyframes card-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 从左侧滑入 */
+.card-enter-left {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.card-enter-left.enter-visible {
+  animation: card-slide-in-left 0.5s ease-out forwards;
+}
+
+@keyframes card-slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 从右侧滑入 */
+.card-enter-right {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.card-enter-right.enter-visible {
+  animation: card-slide-in-right 0.5s ease-out forwards;
+}
+
+@keyframes card-slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+
+/* ---- 4. 脉冲提示动画（心跳效果） ---- */
+.pulse-heart {
+  animation: pulse-heart 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-heart {
+  0% {
+    transform: scale(1);
+  }
+
+  14% {
+    transform: scale(1.15);
+  }
+
+  21% {
+    transform: scale(1);
+  }
+
+  28% {
+    transform: scale(1.08);
+  }
+
+  35% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 简洁脉冲（不间断呼吸） */
+.pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
+}
+
+/* 警示脉冲（结合发光） */
+.pulse-alert {
+  animation: pulse-alert 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-alert {
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(212, 168, 67, 0.4);
+  }
+
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px 4px rgba(212, 168, 67, 0.3);
+  }
+}
+
+/* 通知徽章脉冲 */
+.pulse-badge {
+  animation: pulse-badge 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  20% {
+    transform: scale(1.2);
+  }
+
+  40% {
+    transform: scale(0.9);
+  }
+
+  60% {
+    transform: scale(1.1);
+  }
+
+  80% {
+    transform: scale(0.95);
+  }
+}
+
+
+/* ---- 工具类 ---- */
+/* 动画暂停 */
+.anim-paused {
+  animation-play-state: paused !important;
+}
+
+/* ---- 5. 出价提交反馈（预留） ----
+   当前 JS 实现使用 .pulse-soft 作为出价反馈，
+   如需更显著的脉冲+辉光效果，可将以下类名加入 JS。 */
+.bid-submit-pulse {
+  animation: bid-submit-pulse 0.5s ease-out;
+}
+
+@keyframes bid-submit-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
+  }
+
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 20px 6px rgba(76, 175, 80, 0.3);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+.bid-submit-check {
+  animation: bid-check-appear 0.4s ease-out forwards;
+}
+
+@keyframes bid-check-appear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ---- 6. 统一按钮过渡（引用 CSS 变量） ---- */
+.btn-hover-lift {
+  transition: var(--transition-btn);
+}
+
+.btn-hover-lift:hover {
+  transform: translateY(-1px);
+}
+
+.btn-hover-lift:active {
+  transform: translateY(0);
+}
+
+/* 按钮按下缩放反馈 */
+.btn-press-scale {
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.btn-press-scale:active {
+  transform: scale(0.96) !important;
+}
+
+
+/* ---- 7. 回合过渡动画 ---- */
+/* 过渡遮罩层 */
+.round-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.round-transition-overlay.round-transition-active {
+  animation: transitionFadeIn 0.35s ease-out forwards;
+}
+
+.round-transition-overlay.round-transition-exit {
+  animation: transitionFadeOut 0.3s ease-in forwards;
+}
+
+@keyframes transitionFadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes transitionFadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 过渡文字 */
+.round-transition-label {
+  color: #f1c40f;
+  font-size: 28px;
+  font-weight: 700;
+  text-shadow: 0 0 20px rgba(241, 196, 15, 0.6);
+  letter-spacing: 4px;
+  text-align: center;
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+.round-transition-label.transition-text-enter {
+  animation: transitionTextSlideUp 0.4s 0.1s ease-out forwards;
+}
+
+@keyframes transitionTextSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ---- 8. 暂停/恢复视觉反馈 ---- */
+/* HUD 暂停态：半透明暗化 */
+.hud-paused .hud-timer,
+.hud-paused .hud-round,
+.hud-paused .hud-money {
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.hud-resuming .hud-timer,
+.hud-resuming .hud-round,
+.hud-resuming .hud-money {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* 计时器冻结态 */
+.round-timer-hot.is-frozen {
+  color: #7f8c8d;
+  text-shadow: 0 0 6px rgba(127, 140, 141, 0.3);
+  animation: timerFrozenPulse 2s ease-in-out infinite;
+}
+
+@keyframes timerFrozenPulse {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 暂停覆盖层外观 */
+.pause-overlay-inner {
+  animation: pauseOverlaySlide 0.3s ease-out forwards;
+}
+
+@keyframes pauseOverlaySlide {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(-10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+
+/* ---- 9. 结算页入场过渡 ---- */
+/* 游戏区淡出 */
+.game-area-fade-out {
+  animation: gameAreaFadeOut 0.25s ease-out forwards;
+}
+
+@keyframes gameAreaFadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 结算页淡入 */
+.settlement-page.settle-fade-in {
+  animation: settleFadeIn 0.35s ease-out forwards;
+}
+
+@keyframes settleFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- 10. 揭示动效 ---- */
+/* 揭示时游戏区边缘闪光 */
+#game-root.reveal-flash {
+  animation: revealScreenFlash 0.5s ease-out;
+}
+
+@keyframes revealScreenFlash {
+  0% {
+    box-shadow: inset 0 0 0 0 rgba(200, 176, 138, 0);
+  }
+
+  20% {
+    box-shadow: inset 0 0 60px 8px rgba(200, 176, 138, 0.25);
+  }
+
+  100% {
+    box-shadow: inset 0 0 0 0 rgba(200, 176, 138, 0);
+  }
+}
+
+/* 品质揭示时游戏区边缘彩色闪光 */
+#game-root.quality-reveal-flash {
+  animation: qualityScreenFlash 0.6s ease-out;
+}
+
+@keyframes qualityScreenFlash {
+  0% {
+    box-shadow: inset 0 0 0 0 rgba(200, 176, 138, 0);
+  }
+
+  15% {
+    box-shadow: inset 0 0 70px 12px rgba(200, 176, 138, 0.3);
+  }
+
+  100% {
+    box-shadow: inset 0 0 0 0 rgba(200, 176, 138, 0);
+  }
+}
+
+/* 揭示提示文字动效 */
+.reveal-hint-badge {
+  animation: revealHintBounce 0.5s ease-out;
+}
+
+@keyframes revealHintBounce {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 减少动画（用于 prefers-reduced-motion） */
+@media (prefers-reduced-motion: reduce) {
+
+  .ripple-btn .ripple-effect,
+  .card-enter,
+  .card-enter-left,
+  .card-enter-right,
+  .pulse-heart,
+  .pulse-soft,
+  .pulse-alert,
+  .pulse-badge,
+  .bid-submit-pulse,
+  .bid-submit-check,
+  .round-transition-overlay,
+  .round-transition-label,
+  .hud-paused *,
+  .round-timer-hot.is-frozen,
+  .pause-overlay-inner,
+  .game-area-fade-out,
+  .settle-fade-in {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

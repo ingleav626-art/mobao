@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>摸宝仓库-trae</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles/game/_variables.css" />
+  <link rel="stylesheet" href="./styles/game/styles.css" />
+  <link rel="stylesheet" href="./styles/game/_backgrounds.css" />
+  <link rel="stylesheet" href="./styles/game/_animations.css" />
+  <link rel="stylesheet" href="./styles/game/mobile-landscape.css" />
+  <link rel="stylesheet" href="./styles/lobby/lobby.css" />
+  <link rel="stylesheet" href="./styles/lobby/mobile-lobby.css" />
+  <script src="./lib/phaser.min.js"></script>
+  <style>
+    .portrait-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      color: #fff;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    .portrait-overlay.show {
+      display: flex;
+    }
+
+    .portrait-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: rotate-phone 2s ease-in-out infinite;
+    }
+
+    @keyframes rotate-phone {
+
+      0%,
+      100% {
+        transform: rotate(0deg);
+      }
+
+      50% {
+        transform: rotate(90deg);
+      }
+    }
+
+    .portrait-text {
+      font-size: 18px;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .portrait-hint {
+      font-size: 14px;
+      color: #888;
+      margin-top: 10px;
+    }
+
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="portrait-overlay" id="portraitOverlay">
+    <div class="portrait-icon">📱</div>
+    <div class="portrait-text">请旋转设备至横屏模式</div>
+    <div class="portrait-hint">游戏最佳体验为横屏模式</div>
+  </div>
+  <div class="lobby-page" id="lobbyPage">
+    <div class="lobby-container" id="lobbyMain">
+      <div class="lobby-header">
+        <h1 class="lobby-title">摸宝仓库</h1>
+        <p class="lobby-subtitle">古董竞拍 · 暗仓探秘</p>
+      </div>
+      <div class="lobby-nav">
+        <button class="lobby-nav-btn lobby-nav-solo" id="lobbySoloBtn" type="button">
+          <span class="lobby-nav-icon">🏚️</span>
+          <span class="lobby-nav-label">单机模式</span>
+          <span class="lobby-nav-desc">独自与AI竞拍者博弈</span>
+        </button>
+        <button class="lobby-nav-btn lobby-nav-online" id="lobbyOnlineBtn" type="button">
+          <span class="lobby-nav-icon">🌐</span>
+          <span class="lobby-nav-label">联机模式</span>
+          <span class="lobby-nav-desc">与其他玩家同场竞价</span>
+        </button>
+      </div>
+      <div class="lobby-footer">
+        <button class="lobby-link-btn" id="lobbySettingsBtn" type="button"><img
+            src="./assets/images/icons/ui/settings.svg" alt="" class="btn-icon">设置</button>
+        <button class="lobby-link-btn" id="lobbyCollectionBtn" type="button">图鉴</button>
+        <button class="lobby-link-btn" id="lobbyBattleRecordBtn" type="button">战绩</button>
+        <button class="lobby-link-btn" id="lobbyShopBtn" type="button"><img src="./assets/images/icons/ui/shopping.svg"
+            alt="" class="btn-icon">商店</button>
+        <span class="lobby-money-badge" id="lobbyMainMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+            class="hud-icon"> 0</span>
+      </div>
+    </div>
+    <div class="lobby-container lobby-sub-page hidden" id="lobbySoloSetup">
+      <div class="lobby-sub-header">
+        <button class="lobby-back-btn" id="lobbySoloBackBtn" type="button">← 返回</button>
+        <h2 class="lobby-sub-title">选择仓库</h2>
+        <div class="lobby-sub-actions">
+          <span class="lobby-money-badge" id="lobbySoloMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+              class="hud-icon"> 0</span>
+          <button class="lobby-link-btn" id="lobbySoloShopBtn" type="button"><img
+              src="./assets/images/icons/ui/shopping.svg" alt="" class="btn-icon">商店</button>
+        </div>
+      </div>
+      <div class="lobby-map-carousel" id="lobbyMapCarousel">
+        <button class="carousel-arrow carousel-arrow-left" id="carouselLeftBtn" type="button">‹</button>
+        <div class="carousel-track-wrap">
+          <div class="carousel-track" id="carouselTrack"></div>
+        </div>
+        <button class="carousel-arrow carousel-arrow-right" id="carouselRightBtn" type="button">›</button>
+      </div>
+      <div class="lobby-map-detail" id="lobbyMapDetail"></div>
+      <div class="lobby-sub-footer">
+        <button class="lobby-start-btn" id="lobbyStartGameBtn" type="button">开始对局</button>
+      </div>
+    </div>
+    <div class="lobby-container lobby-sub-page hidden" id="lobbyCharacterSelect">
+      <div class="char-live2d-overlay" id="characterSelectLive2dOverlay">
+        <div class="live2d-loading-placeholder" id="live2dLoadingPlaceholder">
+          <div class="loading-spinner"></div>
+        </div>
+        <video class="overlay-live2d-video" id="overlayLive2dVideoA" muted playsinline preload="auto"></video>
+        <video class="overlay-live2d-video" id="overlayLive2dVideoB" muted playsinline preload="auto"></video>
+      </div>
+      <div class="lobby-sub-header">
+        <button class="lobby-back-btn" id="characterSelectBackBtn" type="button">← 返回</button>
+        <div class="character-header-center">
+          <h2 class="lobby-sub-title">选择角色</h2>
+          <span class="char-map-tag" id="characterSelectMapName">废弃仓库</span>
+        </div>
+        <span class="lobby-money-badge" id="characterSelectMoney"><img src="./assets/images/icons/ui/money-rmb.svg"
+            alt="" class="hud-icon"> 0</span>
+      </div>
+      <div class="character-select-body">
+        <div class="char-col-abilities" id="characterSelectAbilities">
+          <div class="ability-block preview-skill empty">
+            <span class="ability-icon">⚔</span>
+            <div class="ability-content">
+              <span class="ability-label">主动技能</span>
+              <p class="ability-value">—</p>
+            </div>
+          </div>
+          <div class="ability-block preview-passive empty">
+            <span class="ability-icon">✦</span>
+            <div class="ability-content">
+              <span class="ability-label">被动能力</span>
+              <p class="ability-value">—</p>
+            </div>
+          </div>
+        </div>
+        <div class="char-col-list">
+          <div class="character-list" id="characterSelectList"></div>
+        </div>
+      </div>
+      <div class="lobby-sub-footer">
+        <button class="lobby-start-btn" id="characterSelectConfirmBtn" type="button">确认选择</button>
+      </div>
+    </div>
+    <div class="lobby-container lobby-sub-page hidden" id="lobbyOnlinePlaceholder">
+      <div class="lobby-sub-header">
+        <button class="lobby-back-btn" id="lobbyOnlineBackBtn" type="button">← 返回</button>
+        <h2 class="lobby-sub-title">联机模式</h2>
+        <div class="lobby-sub-actions">
+          <span class="lobby-money-badge" id="lobbyOnlineMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+              class="hud-icon"> 0</span>
+        </div>
+      </div>
+      <div class="lobby-online-connect" id="lobbyOnlineConnect">
+        <div class="lobby-online-field">
+          <label>你的名字</label>
+          <input type="text" id="lobbyOnlinePlayerName" placeholder="输入名字" maxlength="12" />
+        </div>
+        <div class="lobby-online-status" id="lobbyOnlineStatus">未连接</div>
+        <div class="lobby-online-btn-row">
+          <button class="lobby-start-btn" id="lobbyOnlineCreateBtn" type="button">🏠 创建房间</button>
+          <button class="lobby-start-btn lobby-start-btn-secondary" id="lobbyOnlineJoinBtn" type="button">🚪
+            加入房间</button>
+        </div>
+        <div class="lobby-online-field hidden" id="lobbyOnlineServerField">
+          <label>服务器地址</label>
+          <input type="text" id="lobbyOnlineServerUrl" placeholder="ws://IP:9720" />
+          <button class="lobby-start-btn" id="lobbyOnlineConnectBtn" type="button">连接</button>
+        </div>
+        <div class="lobby-online-server-toggle" id="lobbyServerToggle">
+          <button type="button" id="lobbyToggleServerBtn">手动输入服务器地址</button>
+        </div>
+      </div>
+      <div class="lobby-online-create hidden" id="lobbyOnlineCreatePanel">
+        <div class="lobby-online-create-header">
+          <button class="lobby-back-btn" id="lobbyCreateBackBtn" type="button">← 返回</button>
+          <span>创建房间</span>
+        </div>
+        <div class="lobby-online-field">
+          <label>房间名称</label>
+          <input type="text" id="lobbyCreateRoomName" placeholder="不填则使用默认名" maxlength="20" />
+        </div>
+        <div class="lobby-online-field">
+          <label>房间性质</label>
+          <div class="lobby-visibility-toggle" id="lobbyVisibilityToggle">
+            <button class="lobby-visibility-btn active" data-vis="public" type="button">🔓 公开</button>
+            <button class="lobby-visibility-btn" data-vis="private" type="button">🔒 私密</button>
+          </div>
+        </div>
+        <div class="lobby-online-field hidden" id="lobbyCreatePasswordField">
+          <label>房间密钥</label>
+          <input type="text" id="lobbyCreatePassword" placeholder="不填则系统随机生成" maxlength="10" />
+        </div>
+        <button class="lobby-start-btn lobby-start-btn-create" id="lobbyCreateConfirmBtn" type="button">确认创建</button>
+      </div>
+      <div class="lobby-online-join hidden" id="lobbyOnlineJoinPanel">
+        <div class="lobby-online-join-header">
+          <button class="lobby-back-btn" id="lobbyJoinBackBtn" type="button">← 返回</button>
+          <span>加入房间</span>
+          <button class="lobby-refresh-btn" id="lobbyJoinRefreshBtn" type="button">🔄 刷新</button>
+        </div>
+        <div class="lobby-online-join-list" id="lobbyOnlineJoinList">
+          <div class="lobby-room-scanning">正在扫描局域网房间...</div>
+        </div>
+        <div class="lobby-online-field hidden" id="lobbyJoinPasswordField">
+          <label>房间密钥</label>
+          <input type="text" id="lobbyJoinPassword" placeholder="输入房间密钥" maxlength="10" />
+        </div>
+      </div>
+      <div class="lobby-online-room hidden" id="lobbyOnlineRoom">
+        <div class="lobby-online-room-header">
+          <span class="lobby-online-room-code" id="lobbyOnlineRoomCode"></span>
+          <button class="lobby-copy-room-btn" id="lobbyCopyRoomBtn" type="button" title="复制房间号">📋</button>
+          <span class="lobby-online-host-badge hidden" id="lobbyOnlineHostBadge">你是主机</span>
+        </div>
+        <div class="lobby-online-slots" id="lobbyOnlineSlots">
+          <div class="lobby-online-slot" data-slot="0"></div>
+          <div class="lobby-online-slot" data-slot="1"></div>
+          <div class="lobby-online-slot" data-slot="2"></div>
+          <div class="lobby-online-slot" data-slot="3"></div>
+        </div>
+        <div class="lobby-online-btn-row">
+          <button class="lobby-start-btn hidden" id="lobbyOnlineStartBtn" type="button">开始游戏</button>
+          <button class="lobby-start-btn lobby-start-btn-secondary" id="lobbyOnlineLeaveBtn" type="button">离开房间</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="game-area hidden" id="gameArea">
+    <div class="hud">
+      <div class="hud-left">
+        <button id="openSettingsBtn" type="button"><img src="./assets/images/icons/ui/settings.svg" alt=""
+            class="btn-icon">设置</button>
+        <button id="aiLogicBtn" type="button">查看AI决策</button>
+        <button id="pauseRoundBtn" type="button"><img src="./assets/images/icons/ui/pause-button.svg" alt=""
+            class="btn-icon">暂停回合</button>
+        <span id="aiThinkingIndicator" class="ai-thinking-indicator hidden">AI思考中...</span>
+      </div>
+      <div class="hud-center">
+        <span class="hud-round" id="hudRound"><img src="./assets/images/icons/ui/timer.svg" alt="" class="hud-icon">
+          <span class="hud-text"></span></span>
+        <span class="hud-timer" id="hudTimer"><span class="hud-text"></span></span>
+      </div>
+      <div class="hud-right">
+        <button id="nextRoundBtn" type="button">结束本轮</button>
+        <button id="settleBtn" type="button">结算本局</button>
+        <button id="rerollBtn" type="button">重新随机</button>
+        <span class="hud-money" id="hudMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon">
+          <span class="hud-text"></span></span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <aside class="player-side side-left" id="leftPlayerSide">
+        <article class="player-card" id="playerCard-p1">
+          <div class="avatar" id="avatar-p1">A1</div>
+          <div class="meta"><strong id="name-p1">左上玩家</strong></div>
+          <span class="player-card-bid" id="bid-p1">待公布</span>
+        </article>
+        <article class="player-card player-card-human" id="playerCard-p2">
+          <div class="avatar" id="avatar-p2">你</div>
+          <div class="meta"><strong id="name-p2">玩家</strong></div>
+          <span class="player-card-bid" id="bid-p2">待公布</span>
+        </article>
+        <section class="side-panel personal-panel" id="personalPanel">
+          <h3>个人情报区 <small class="panel-tap-hint">点击查看详情</small></h3>
+          <div class="side-panel-scroll" id="personalPanelScroll">
+          </div>
+        </section>
+      </aside>
+
+      <aside class="settlement-page hidden" id="settlementPage">
+        <div class="settle-data-wrap">
+          <h2>本局结算</h2>
+          <p class="settle-meta settle-meta-row"><span>拍下者</span><strong id="settleWinnerName">-</strong></p>
+          <p class="settle-meta settle-meta-row"><span>本局出价</span><strong id="settleWinnerBid">0</strong></p>
+          <p class="settle-meta settle-meta-row"><span>已揭示仓值</span><strong id="settleRevealedValue">0</strong></p>
+          <p class="settle-meta settle-meta-row"><span>拍下者利润</span><strong id="settleWinnerProfit"
+              class="profit-neutral">0</strong></p>
+          <p class="settle-meta settle-meta-row hidden" id="settleSelfProfitRow"><span>自身利润</span><strong
+              id="settleSelfProfit" class="profit-neutral">0</strong></p>
+          <p class="settle-progress" id="settleProgressText">等待揭示...</p>
+          <div class="settle-progress-bar-track" id="settleProgressTrack">
+            <div class="settle-progress-bar-fill" id="settleProgressFill"></div>
+          </div>
+        </div>
+        <div class="settle-actions">
+          <button id="settleBackBtn" type="button">返回大厅</button>
+          <span class="settle-reflection-status hidden" id="settleReflectionStatus"></span>
+          <button id="settleReplayBtn" type="button">再来一局</button>
+        </div>
+      </aside>
+
+      <div class="middle-wrapper">
+        <div id="game-root">
+          <div class="reveal-scroll-hint reveal-scroll-hint-up hidden" id="revealHintUp">上方有新揭示，向上滚动查看</div>
+          <div class="reveal-scroll-hint reveal-scroll-hint-down hidden" id="revealHintDown">下方有新揭示，向下滚动查看</div>
+          <div class="preview-popover hidden" id="previewPopover">
+            <div class="preview-handle"></div>
+            <div class="preview-head">
+              <strong id="previewTitle">可能藏品预览</strong>
+            </div>
+            <label class="preview-filter" id="previewFilterRow" for="previewCategorySelect">
+              品类筛选：
+              <select id="previewCategorySelect"></select>
+            </label>
+            <div class="preview-hint" id="previewHint">默认按估算价从高到低排序</div>
+            <div class="preview-list" id="previewList"></div>
+          </div>
+          <div class="settle-overlay hidden" id="settleOverlay">
+            <div class="settle-card" id="settleCard"></div>
+          </div>
+        </div>
+        <div class="bottom-bid-bar" id="bottomBidBar">
+          <button id="itemDrawerToggleBtn" type="button">道具</button>
+          <input id="bidInput" type="text" inputmode="numeric" min="0" step="1" data-no-fixed-input />
+          <button id="skillBtn" type="button">拓影侦测</button>
+        </div>
+      </div>
+
+      <aside class="player-side side-right" id="rightPlayerSide">
+        <article class="player-card" id="playerCard-p3">
+          <div class="avatar" id="avatar-p3">A2</div>
+          <div class="meta"><strong id="name-p3">右上玩家</strong></div>
+          <span class="player-card-bid" id="bid-p3">待公布</span>
+        </article>
+        <article class="player-card" id="playerCard-p4">
+          <div class="avatar" id="avatar-p4">A3</div>
+          <div class="meta"><strong id="name-p4">右下玩家</strong></div>
+          <span class="player-card-bid" id="bid-p4">待公布</span>
+        </article>
+        <section class="side-panel public-panel" id="publicPanel">
+          <h3>公共信息区 <small class="panel-tap-hint">点击查看详情</small></h3>
+          <div class="side-panel-scroll" id="publicInfoScroll">
+          </div>
+        </section>
+      </aside>
+    </div>
+    <div class="item-drawer hidden" id="itemDrawer">
+      <div class="item-drawer-head">
+        <strong>道具栏</strong>
+        <button id="itemDrawerCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon-sm"></button>
+      </div>
+      <div class="item-drawer-list" id="itemDrawerList"></div>
+    </div>
+  </div>
+  <div class="ai-logic-overlay hidden" id="aiLogicOverlay">
+    <section class="ai-logic-panel" id="aiLogicPanel">
+      <div class="ai-logic-head">
+        <h2>AI决策回放</h2>
+        <button id="aiLogicCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
+      </div>
+      <details class="ai-thought-section" id="aiThoughtSection">
+        <summary>AI思考内容（默认折叠）</summary>
+        <div class="ai-thought-content" id="aiThoughtContent">暂无AI思考记录。</div>
+      </details>
+      <button id="aiViewMessagesBtn" type="button" class="ai-view-messages-btn hidden">查看完整Messages</button>
+      <pre class="ai-logic-content" id="aiLogicContent">等待AI出价...</pre>
+    </section>
+  </div>
+  <div class="battle-record-overlay hidden" id="battleRecordOverlay">
+    <section class="battle-record-panel" id="battleRecordPanel">
+      <div class="battle-record-head">
+        <h2>战绩</h2>
+        <button id="battleRecordCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
+      </div>
+      <div class="battle-record-summary" id="battleRecordSummary"></div>
+      <div class="battle-record-content" id="battleRecordContent">暂无战绩</div>
+    </section>
+  </div>
+  <div class="settings-overlay hidden" id="settingsOverlay">
+    <section class="settings-panel" id="settingsPanel">
+      <div class="settings-head">
+        <h2>游戏设置</h2>
+        <button id="settingsCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
+      </div>
+      <p class="settings-sub">同页设置，不中断对局；保存后立即生效。</p>
+      <div class="settings-scroll" id="settingsScroll">
+        <div class="settings-grid" id="settingsFormInline">
+          <label>回合时间（秒）：
+            <input type="number" id="setting-roundSeconds" min="10" max="180" step="5" />
+          </label>
+          <label>揭示速度倍率：
+            <input type="number" id="setting-revealSpeedMultiplier" min="0.5" max="2.2" step="0.05" />
+          </label>
+          <label>搜索速度倍率：
+            <input type="number" id="setting-searchSpeedMultiplier" min="0.5" max="2.5" step="0.05" />
+          </label>
+          <div class="settings-volume-row">
+            <button type="button" class="volume-icon-btn" id="musicVolumeIcon" title="点击切换静音">
+              <img src="./assets/images/icons/ui/sound-on.svg" alt="音乐" class="volume-icon" id="musicVolumeIconImg">
+            </button>
+            <span class="volume-label">音乐</span>
+            <input type="range" id="setting-musicVolume" min="0" max="100" value="70" class="volume-slider" />
+            <span class="volume-value" id="musicVolumeValue">70%</span>
+          </div>
+          <div class="settings-volume-row">
+            <button type="button" class="volume-icon-btn" id="sfxVolumeIcon" title="点击切换静音">
+              <img src="./assets/images/icons/ui/sound-on.svg" alt="音效" class="volume-icon" id="sfxVolumeIconImg">
+            </button>
+            <span class="volume-label">音效</span>
+            <input type="range" id="setting-sfxVolume" min="0" max="100" value="80" class="volume-slider" />
+            <span class="volume-value" id="sfxVolumeValue">80%</span>
+          </div>
+          <label>显示品质文字
+            <input type="checkbox" id="setting-showQualityText" checked />
+          </label>
+          <div class="settings-group settings-span-2" id="llmSettingsGroup">
+            <h3>AI实验接入</h3>
+            <p class="settings-group-sub">支持多种大模型 API。密钥仅保存在本地浏览器。</p>
+            <label>模型提供商：
+              <select id="setting-llmProvider">
+              </select>
+            </label>
+            <div class="settings-inline-actions" style="margin-top: 4px;">
+              <button id="addCustomProviderBtn" type="button">添加自定义模型</button>
+              <button id="deleteProviderBtn" type="button" style="display: none;"><img
+                  src="./assets/images/icons/ui/delete-fill.svg" alt="" class="btn-icon">删除当前模型</button>
+            </div>
+            <p class="settings-group-sub" id="llmProviderDesc">DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型</p>
+            <label>启用实验模式
+              <input type="checkbox" id="setting-llmEnabled" />
+            </label>
+            <p class="settings-group-sub">开启后AI玩家使用大模型决策，否则使用规则AI。</p>
+            <label>启用多局AI上下文
+              <input type="checkbox" id="setting-llmMultiGameMemoryEnabled" />
+            </label>
+            <p class="settings-group-sub">开启后AI保留跨局记忆（历史结果与反思），越玩越聪明。关闭仅停止发送，不删除记忆。</p>
+            <label>启用局后AI反思
+              <input type="checkbox" id="setting-llmReflectionEnabled" />
+            </label>
+            <p class="settings-group-sub">每局结算后AI自动反思决策优劣（需多局上下文开启），反思结果写入跨局记忆。</p>
+            <label>启用思考模式
+              <input type="checkbox" id="setting-llmThinkingEnabled" />
+            </label>
+            <p class="settings-group-sub">开启后模型会进行深度推理，适合复杂决策。注意：思考模式需要更长的响应时间（建议超时60秒以上）和更大的Token限制（建议4000以上）。</p>
+            <div id="thinkingModeParams" class="hidden">
+              <label>思考模式请求参数（JSON，可选）：
+                <input type="text" id="setting-thinkingParams" autocomplete="off"
+                  placeholder='{"reasoning_effort":"max"}' />
+              </label>
+              <p class="settings-group-sub">
+                DeepSeek: <code>{"reasoning_effort":"high"}</code> 或 <code>{"reasoning_effort":"max"}</code>（复杂任务）<br />
+                OpenAI o1/o3: <code>{"reasoning_effort":"medium"}</code><br />
+                留空使用默认参数。思考模式下 temperature 等参数不生效。
+              </p>
+            </div>
+            <label>独立配置每个AI的模型
+              <input type="checkbox" id="setting-llmIndependentModelEnabled" />
+            </label>
+            <p class="settings-group-sub">开启后可为每个AI单独配置不同的模型。</p>
+            <div id="independentModelConfig" class="hidden">
+              <label>对反思生效
+                <input type="checkbox" id="setting-llmIndependentReflectionEnabled" checked />
+              </label>
+              <p class="settings-group-sub">勾选时，AI反思也使用各自配置的模型；不勾选时，统一使用默认模型进行反思。</p>
+              <div class="settings-inline-actions">
+                <button id="configIndependentModelBtn" type="button">配置AI模型</button>
+              </div>
+              <p class="settings-group-sub">为每个AI选择使用哪个已配置的模型提供商，选择"使用默认配置"则使用上方当前选中的提供商。</p>
+            </div>
+            <div class="settings-inline-actions">
+              <button id="clearAiMemoryBtn" type="button">清空AI记忆</button>
+              <button id="viewAiMemoryBtn" type="button">查看AI记忆</button>
+              <button id="exportAiMemoryBtn" type="button">导出记忆</button>
+              <button id="importAiMemoryBtn" type="button">导入记忆</button>
+              <span class="settings-inline-hint" id="aiMemoryStatusText"></span>
+            </div>
+            <p class="settings-group-sub">清空：删除所有AI的持久化记忆，不可恢复。查看：浏览AI的跨局记忆内容。导出/导入：备份或恢复AI记忆。</p>
+            <div id="llmProviderSettings">
+              <label id="llmApiKeyLabel">API Key：
+                <input type="text" id="setting-llmApiKey" autocomplete="off" placeholder="sk-..." inputmode="url" />
+              </label>
+              <label id="llmEndpointLabel">API Endpoint：
+                <input type="text" id="setting-llmEndpoint" autocomplete="off"
+                  placeholder="https://api.example.com/v1/chat/completions" />
+              </label>
+              <label>模型名称：
+                <input type="text" id="setting-llmModel" autocomplete="off" placeholder="model-name" />
+              </label>
+              <label>最大输出 Token（含思考链）：
+                <input type="number" id="setting-maxTokens" min="100" max="100000" step="50" />
+              </label>
+              <label>请求超时时间（毫秒）：
+                <input type="number" id="setting-timeoutMs" min="5000" max="120000" step="1000" />
+              </label>
+            </div>
+            <div class="settings-inline-actions">
+              <button id="settingsTestLlmBtn" type="button">测试连接</button>
+              <span class="settings-inline-hint" id="settingsLlmStatusText">尚未测试连接。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settingsResetBtn" type="button">恢复默认</button>
+        <button id="settingsSaveBtn" type="button">保存</button>
+        <button id="settingsReturnLobbyBtn" type="button" class="hidden">返回大厅</button>
+      </div>
+      <p class="settings-note" id="settingsStatusText">设置保存在本地浏览器中。</p>
+    </section>
+  </div>
+  <div class="collection-overlay hidden" id="collectionOverlay">
+    <section class="collection-panel" id="collectionPanel">
+      <div class="collection-head">
+        <h2>藏品图鉴</h2>
+        <button id="collectionCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
+      </div>
+      <div class="collection-filters">
+        <select id="collectionCategoryFilter">
+          <option value="all">全部品类</option>
+        </select>
+        <select id="collectionQualityFilter">
+          <option value="all">全部品质</option>
+        </select>
+        <input type="text" id="collectionSearchInput" placeholder="搜索藏品名称..." />
+      </div>
+      <div class="collection-stats" id="collectionStats"></div>
+      <div class="collection-grid" id="collectionGrid"></div>
+    </section>
+  </div>
+  <div class="bid-keypad hidden" id="bidKeypad">
+    <div class="keypad-head">
+      <strong>输入出价</strong>
+      <button type="button" id="keypadCloseBtn"><img src="./assets/images/icons/ui/close.svg" alt=""
+          class="btn-icon-sm"></button>
+    </div>
+    <div class="keypad-screen" id="keypadScreen">0</div>
+    <div class="keypad-grid">
+      <button type="button" data-key="1">1</button>
+      <button type="button" data-key="2">2</button>
+      <button type="button" data-key="3">3</button>
+      <button type="button" data-key="4">4</button>
+      <button type="button" data-key="5">5</button>
+      <button type="button" data-key="6">6</button>
+      <button type="button" data-key="7">7</button>
+      <button type="button" data-key="8">8</button>
+      <button type="button" data-key="9">9</button>
+      <button type="button" data-key="000">000</button>
+      <button type="button" data-key="0">0</button>
+      <button type="button" data-key="del">退格</button>
+    </div>
+    <div class="keypad-actions">
+      <button type="button" data-key="clear">清空</button>
+      <button type="button" data-key="ok">出价</button>
+      <span class="keypad-direct-hint hidden" id="keypadDirectHint"></span>
+    </div>
+  </div>
+  <div class="game-confirm-overlay hidden" id="gameConfirmOverlay">
+    <div class="game-confirm-box">
+      <p class="game-confirm-msg" id="gameConfirmMsg"></p>
+      <div class="game-confirm-actions">
+        <button type="button" id="gameConfirmCancelBtn">取消</button>
+        <button type="button" id="gameConfirmOkBtn">确认</button>
+      </div>
+    </div>
+  </div>
+  <div class="info-popup-overlay hidden" id="infoPopupOverlay">
+    <div class="info-popup-box">
+      <div class="info-popup-head">
+        <h3 id="infoPopupTitle"></h3>
+        <button type="button" id="infoPopupCloseBtn"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon-sm"></button>
+      </div>
+      <div class="info-popup-scroll" id="infoPopupContent"></div>
+    </div>
+  </div>
+  <div class="player-info-popover hidden" id="playerInfoPopover">
+    <div class="player-info-popover-head">
+      <h3 id="playerInfoPopoverTitle">详情</h3>
+      <button type="button" id="playerInfoPopoverCloseBtn"><img src="./assets/images/icons/ui/close.svg" alt=""
+          class="btn-icon-sm"></button>
+    </div>
+    <div class="player-info-popover-content" id="playerInfoPopoverContent"></div>
+  </div>
+  <div class="ai-memory-overlay hidden" id="aiMemoryOverlay">
+    <section class="ai-memory-panel" id="aiMemoryPanel">
+      <div class="ai-memory-head">
+        <h2>AI跨局记忆</h2>
+        <button id="aiMemoryCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
+      </div>
+      <div class="ai-memory-content" id="aiMemoryContent">暂无记忆数据</div>
+    </section>
+  </div>
+  <div class="ai-model-config-overlay hidden" id="aiModelConfigOverlay">
+    <section class="ai-model-config-panel" id="aiModelConfigPanel">
+      <div class="ai-model-config-head">
+        <h2>配置AI模型</h2>
+        <button id="aiModelConfigCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
+      </div>
+      <div class="ai-model-config-content" id="aiModelConfigContent">
+        <p class="settings-group-sub">为每个AI配置独立的API信息。</p>
+      </div>
+      <div class="ai-model-config-actions">
+        <button id="aiModelConfigSaveBtn" type="button">保存</button>
+      </div>
+    </section>
+  </div>
+  <div class="custom-provider-overlay hidden" id="customProviderModal">
+    <div class="custom-provider-box">
+      <div class="custom-provider-head">
+        <h3>添加自定义模型</h3>
+        <button type="button" id="customProviderCancel"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon-sm"></button>
+      </div>
+      <div class="custom-provider-content">
+        <label>模型名称：
+          <input type="text" id="customProviderName" placeholder="例如：本地Ollama" />
+        </label>
+        <label>API Endpoint：
+          <input type="text" id="customProviderEndpoint" placeholder="例如：http://localhost:11434/v1/chat/completions" />
+        </label>
+        <label>默认模型：
+          <input type="text" id="customProviderModel" placeholder="例如：llama3" />
+        </label>
+        <p class="settings-group-sub">支持所有 OpenAI 兼容 API，如 Ollama、vLLM、LocalAI 等。</p>
+        <div class="custom-provider-actions">
+          <button type="button" id="customProviderConfirm">确认添加</button>
+          <button type="button" id="customProviderCancel2">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="shop-overlay hidden" id="shopOverlay">
+    <section class="shop-panel" id="shopPanel">
+      <div class="shop-head">
+        <h2>商店</h2>
+        <div class="shop-money" id="shopMoneyDisplay"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+            class="hud-icon"> 0</div>
+        <button id="shopCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+            class="btn-icon"></button>
+      </div>
+      <p class="shop-sub">每日限量供应，零点刷新。购买后立即到账。</p>
+      <div class="shop-list" id="shopList"></div>
+      <div class="shop-inventory" id="shopInventory"></div>
+    </section>
+  </div>
+  <script src="./scripts/audio/audio-manager.js"></script>
+  <script src="./scripts/audio/audio-ui.js"></script>
+  <script src="./scripts/game/data/artifacts.js"></script>
+  <script src="./scripts/game/ai/bidding.js"></script>
+  <script src="./scripts/game/data/skills.js"></script>
+  <script src="./scripts/game/data/items.js"></script>
+  <script src="./scripts/game/data/public-events.js"></script>
+  <script src="./scripts/game/core/app-state.js"></script>
+  <script src="./scripts/game/data/map-profiles.js"></script>
+  <script src="./scripts/game/data/characters.js"></script>
+  <script src="./scripts/game/data/character-system.js"></script>
+  <script src="./scripts/game/bridge/shop.js"></script>
+  <script src="./scripts/game/bridge/battle-record.js"></script>
+  <script src="./scripts/game/bridge/settlement.js"></script>
+  <script src="./scripts/llm/llm-manager.js"></script>
+  <script src="./scripts/llm/deepseek-provider.js"></script>
+  <script src="./scripts/llm/openai-provider.js"></script>
+  <script src="./scripts/llm/qwen-provider.js"></script>
+  <script src="./scripts/llm/glm-provider.js"></script>
+  <script src="./scripts/llm/kimi-provider.js"></script>
+  <script src="./scripts/llm/deepseek-llm.js"></script>
+  <script src="./scripts/llm/scene-llm.js"></script>
+  <script src="./scripts/llm/llm-ui-bridge.js"></script>
+  <script src="./lan/client/lan-bridge.js"></script>
+  <script src="./scripts/game/core/constants.js"></script>
+  <script src="./scripts/game/core/utils.js"></script>
+  <script src="./scripts/game/animations.js"></script>
+  <script src="./scripts/game/core/settings.js"></script>
+  <script src="./scripts/game/warehouse/index.js"></script>
+  <script src="./scripts/game/ai/wallet.js"></script>
+  <script src="./scripts/game/ai/intel.js"></script>
+  <script src="./scripts/game/ai/memory.js"></script>
+  <script src="./scripts/game/ai/reflection.js"></script>
+  <script src="./scripts/game/ai/decision.js"></script>
+  <script src="./scripts/game/bidding/index.js"></script>
+  <script src="./scripts/game/ui/overlay.js"></script>
+  <script src="./scripts/game/ui/panels.js"></script>
+  <script src="./scripts/game/ui/history.js"></script>
+  <script src="./scripts/game/lobby/carousel.js"></script>
+  <script src="./scripts/game/lobby/character-select.js"></script>
+  <script src="./scripts/game/lobby/index.js"></script>
+  <script src="./scripts/game/lan/index.js"></script>
+  <script src="./scripts/game/main.js"></script>
+  <script src="./scripts/mobile/mobile-handler.js"></script>
+</body>
+
+</html>

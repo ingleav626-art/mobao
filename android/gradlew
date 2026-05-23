@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+APP_BASE_NAME=`basename "$0"`
+APP_HOME=`pwd -P`
+GRADLE_HOME="D:/web/tool/gradle-8.14.3"
+exec "$GRADLE_HOME/bin/gradle" "$@"
