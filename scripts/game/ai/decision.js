@@ -211,6 +211,9 @@
           error: entry.error || "",
           correctionAttempt: correctionAttempt,
           originalError: originalError,
+          cacheHitTokens: entry.cacheHitTokens || 0,
+          cacheMissTokens: entry.cacheMissTokens || 0,
+          cacheHitRate: entry.cacheHitRate || 0,
           at: Date.now()
         });
       });

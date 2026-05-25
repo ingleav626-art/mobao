@@ -339,6 +339,12 @@
             roundThoughts.forEach((entry) => {
               const isLlm = entry.controlMode === "llm";
               lines.push(`【${entry.playerName || "AI"}】| ${isLlm ? "大模型" : "规则AI"} | 出价: ${formatBidRevealNumber(entry.finalBid)} | 来源: ${entry.decisionSource || "?"}`);
+              if (isLlm) {
+                const cacheHit = entry.cacheHitTokens || 0;
+                const cacheMiss = entry.cacheMissTokens || 0;
+                const cacheRate = entry.cacheHitRate || 0;
+                lines.push(`  缓存命中: ${cacheHit} tokens | 未命中: ${cacheMiss} tokens | 命中率: ${cacheRate}%`);
+              }
               if (entry.llmActionName) {
                 lines.push(`  动作: ${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}${entry.ruleActionName ? ` | 规则动作: ${entry.ruleActionName}` : ""}`);
               }

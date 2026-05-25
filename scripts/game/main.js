@@ -357,6 +357,7 @@ class WarehouseScene extends Phaser.Scene {
       viewAiMemoryBtn: null,
       exportAiMemoryBtn: null,
       importAiMemoryBtn: null,
+      resetAiWalletBtn: null,
       importAiMemoryInput: null,
       aiMemoryOverlay: null,
       aiMemoryPanel: null,
@@ -493,6 +494,7 @@ class WarehouseScene extends Phaser.Scene {
     this.dom.viewAiMemoryBtn = document.getElementById("viewAiMemoryBtn");
     this.dom.exportAiMemoryBtn = document.getElementById("exportAiMemoryBtn");
     this.dom.importAiMemoryBtn = document.getElementById("importAiMemoryBtn");
+    this.dom.resetAiWalletBtn = document.getElementById("resetAiWalletBtn");
     this.dom.aiMemoryOverlay = document.getElementById("aiMemoryOverlay");
     this.dom.aiMemoryPanel = document.getElementById("aiMemoryPanel");
     this.dom.aiMemoryCloseBtn = document.getElementById("aiMemoryCloseBtn");
@@ -888,6 +890,17 @@ class WarehouseScene extends Phaser.Scene {
           reader.readAsText(file);
         };
         input.click();
+      });
+    }
+    if (this.dom.resetAiWalletBtn) {
+      this.dom.resetAiWalletBtn.addEventListener("click", () => {
+        if (confirm("确定要重置所有AI钱包到初始100万吗？此操作不可撤销。")) {
+          this.resetAiWallets();
+          if (this.dom.aiMemoryStatusText) {
+            this.dom.aiMemoryStatusText.textContent = "已重置AI钱包";
+          }
+          this.writeLog("AI钱包已重置为100万。");
+        }
       });
     }
     if (this.dom.aiMemoryCloseBtn) {
@@ -1938,6 +1951,10 @@ class WarehouseScene extends Phaser.Scene {
     return LLM_BRIDGE.methods.normalizeAiLlmPlan.call(this, playerId, decision, rawContent, options);
   }
 
+  buildAiDecisionMessages(payload, options = {}) {
+    return LLM_BRIDGE.methods.buildAiDecisionMessages.call(this, payload, options);
+  }
+
   async requestAiLlmPlan(player, options = {}) {
     return LLM_BRIDGE.methods.requestAiLlmPlan.call(this, player, options);
   }
@@ -2248,7 +2265,6 @@ class WarehouseScene extends Phaser.Scene {
       dividendTicketInfo
     };
     const crossGameRecord = this.createCrossGameRecord(settlementResult);
-    this.saveCrossGameRecord(crossGameRecord);
     this.triggerAiReflection(crossGameRecord).catch(() => { });
 
     try {
@@ -2356,6 +2372,8 @@ class WarehouseScene extends Phaser.Scene {
       dividendTicketInfo: (dividendPerPlayer > 0 || ticketPerPlayer > 0) ? dividendTicketInfo : null,
       reasonText: reasonTextMap[mode] || "结算"
     });
+
+    this.saveAiWalletsToStorage();
 
     this.pushRunSettlementContextToAi({
       winnerId: winnerPlayer.id,

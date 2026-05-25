@@ -22,7 +22,7 @@
     "- roundPublicStateTable（后续轮）：多轮趋势表，列名已标注语义，请优先读取。",
     "- Previousbid：上一轮全场最高成交出价，用于判断本轮报价区间和提前获胜可能。首轮为 null。",
     "- currentLeader：上轮领先者，帮助判断本轮报价区间。",
-    "- wallet：你的本局资金上限。",
+    "- wallet：你的本局资金上限。钱包余额跨局继承，初始100万，每局结算后根据分红/门票机制更新。请合理规划资金，避免破产。",
     "- directWinRatio：提前获胜系数（固定常量，如1.2表示需要比第二名高出20%）。公式：你的出价 > 预估第二名出价 × directWinRatio。判定发生在本轮出价公开后，你需要预估本轮其他玩家的出价来判断是否可能触发。",
     "- catalogSummary：【图鉴 = 藏品库定义】列出所有【可能】出现在本局的藏品类型及其基础价格。这是【全局配置】，不是本局仓库的实际布局！本局仓库实际有哪些藏品、各有多少件，是未知的，需要通过探查来推断。",
     "- totalArtifacts：图鉴收录的藏品总种类数（全部可能出现的藏品有多少种），并非本局仓库实际拥有的藏品数量，实际数量每局未知可通过bottomCell来大致估计。",
@@ -46,7 +46,7 @@
     "- 建议在每次出价后，根据对手出价和行动以及自身信息和公有信息加上历史结果综合判断，动态调整出价策略。",
     "- 无论如何，你要做一个有主见的玩家，永远有自己的底线和预期（当然你可以根据场上的信息变化调整自己的底线和预期）。",
     "- 有时并不是拍下来才是赢，也不是不拍就赢不了钱，目光长远，合理利用分红和注意门票",
-    "- 欺诈是一种策略，但是一种风险，建议在必要时使用。",
+    "- 欺诈是一种策略",
     "- 尝试提前获胜时，必须预估本轮第二名的出价，然后计算你需要出多少才能满足：你的出价 > 预估第二名出价 × directWinRatio。",
     "",
     "【输出格式】",
@@ -203,6 +203,10 @@
             }
           }
           if (isLlm) {
+            const cacheHit = entry.cacheHitTokens || 0;
+            const cacheMiss = entry.cacheMissTokens || 0;
+            const cacheRate = entry.cacheHitRate || 0;
+            lines.push(`  缓存命中: ${cacheHit} tokens | 未命中: ${cacheMiss} tokens | 命中率: ${cacheRate}%`);
             if (entry.correctionAttempt > 0) {
               lines.push(`  纠错次数: ${entry.correctionAttempt}/2`);
               if (entry.originalError) {
@@ -569,13 +573,6 @@
             availableSkills: actionConstraint.availableSkills,
             availableItems: actionConstraint.availableItems,
             notes: actionConstraint.notes
-          },
-          responseContract: {
-            requiredFields: ["bid", "skill", "item", "thought"],
-            bidRule: "正整数",
-            skillRule: "无 或 技能名称[:目标]",
-            itemRule: "无 或 道具名称[:目标]",
-            thoughtRule: "简短说明，不超过200字"
           }
         };
       },
@@ -797,6 +794,164 @@
         return base.join("\n");
       },
 
+      buildAiDecisionMessages(payload, options = {}) {
+        const requestStage = options.requestStage || "initial";
+        const isFollowup = requestStage === "followup-after-tool";
+        const isFirstRound = options.isFirstRound === true;
+        const systemPrompt = options.systemPrompt || "";
+        const historyMessages = options.historyMessages || [];
+        const extraBlocks = options.extraBlocks || [];
+
+        const messages = [{ role: "system", content: systemPrompt }];
+
+        if (payload && payload.catalogSummary) {
+          messages.push({
+            role: "user",
+            content: "【图鉴摘要】\n" + JSON.stringify(payload.catalogSummary, null, 2)
+          });
+        }
+
+        if (payload && payload.selfRoleAndTools) {
+          messages.push({
+            role: "user",
+            content: "【角色与工具】\n" + JSON.stringify(payload.selfRoleAndTools, null, 2)
+          });
+        }
+
+        if (payload && payload.otherPlayersPublic) {
+          messages.push({
+            role: "user",
+            content: "【其他玩家公开信息】\n" + JSON.stringify(payload.otherPlayersPublic, null, 2)
+          });
+        }
+
+        if (Array.isArray(historyMessages) && historyMessages.length > 0) {
+          historyMessages.forEach((m) => {
+            messages.push({ role: m.role || "user", content: m.content || "" });
+          });
+        }
+
+        if (payload && payload.gameState) {
+          messages.push({
+            role: "user",
+            content: "【游戏状态】\n" + JSON.stringify(payload.gameState, null, 2)
+          });
+        }
+
+        if (payload && payload.privateIntel) {
+          messages.push({
+            role: "user",
+            content: "【私人情报】\n" + JSON.stringify(payload.privateIntel, null, 2)
+          });
+        }
+
+        if (payload && payload.actionConstraints) {
+          messages.push({
+            role: "user",
+            content: "【行动约束】\n" + JSON.stringify(payload.actionConstraints, null, 2)
+          });
+        }
+
+        if (payload && payload.bidHistory) {
+          messages.push({
+            role: "user",
+            content: "【出价历史】\n" + JSON.stringify(payload.bidHistory, null, 2)
+          });
+        }
+
+        if (payload && payload.publicEvents && payload.publicEvents.length > 0) {
+          const compactEvents = payload.publicEvents.map((evt) => {
+            if (evt.actionType === "public-event") {
+              return `${evt.stage}: ${evt.publicResult || evt.effectText || ""}`;
+            }
+            return `${evt.stage}: ${evt.playerName}使用${evt.actionName}`;
+          });
+          messages.push({
+            role: "user",
+            content: "【公共事件】\n" + compactEvents.join("")
+          });
+        }
+
+        if (payload && payload.roundPublicStateTable) {
+          messages.push({
+            role: "user",
+            content: "【轮次公开状态】\n" + JSON.stringify(payload.roundPublicStateTable, null, 2)
+          });
+        }
+
+        if (payload && payload.lastRoundResult) {
+          messages.push({
+            role: "user",
+            content: "【上一轮结算】\n" + JSON.stringify(payload.lastRoundResult, null, 2)
+          });
+        }
+
+        if (payload && payload.round) {
+          messages.push({
+            role: "user",
+            content: "【轮次信息】\n" + JSON.stringify(payload.round, null, 2)
+          });
+        }
+
+        if (payload && payload.selfAvailableTools) {
+          messages.push({
+            role: "user",
+            content: "【可用工具】\n" + JSON.stringify(payload.selfAvailableTools, null, 2)
+          });
+        }
+
+        const roundNoRaw = payload && payload.gameState && payload.gameState.round && payload.gameState.round.current
+          ? payload.gameState.round.current
+          : payload && payload.round && payload.round.current
+            ? payload.round.current
+            : this.round;
+        const totalRoundRaw = payload && payload.gameState && payload.gameState.round && payload.gameState.round.total
+          ? payload.gameState.round.total
+          : GAME_SETTINGS.maxRounds;
+        const roundNo = Number.isFinite(Number(roundNoRaw)) ? Math.max(1, Math.round(Number(roundNoRaw))) : Math.max(1, this.round);
+        const totalRounds = Number.isFinite(Number(totalRoundRaw))
+          ? Math.max(roundNo, Math.round(Number(totalRoundRaw)))
+          : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo);
+        const isFinalRound = roundNo >= totalRounds;
+        const roundStateText = isFinalRound ? "最终轮" : "后续轮";
+        const finalRoundHint = isFinalRound
+          ? "【最终轮提醒】本轮直接按最高出价者获胜，不再看相对第二名高出比例。"
+          : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。";
+
+        let taskContent;
+        if (isFollowup) {
+          taskContent = [
+            "【任务】第 " + roundNo + "/" + totalRounds + " 轮 follow-up。根据工具结果修正最终出价。",
+            finalRoundHint,
+            "【硬约束】skill=无, item=无，只允许更新 bid/thought。"
+          ].join("\n");
+        } else {
+          taskContent = [
+            "【任务】第 " + roundNo + "/" + totalRounds + " 轮（" + roundStateText + "）。给出合法竞拍决策（bid/skill/item/thought）。",
+            finalRoundHint
+          ].join("\n");
+        }
+        messages.push({ role: "user", content: taskContent });
+
+        if (payload && payload.followupContext) {
+          messages.push({
+            role: "user",
+            content: "【工具调用上下文】\n" + JSON.stringify(payload.followupContext, null, 2)
+          });
+        }
+
+        if (Array.isArray(extraBlocks) && extraBlocks.length > 0) {
+          extraBlocks.forEach((block) => {
+            messages.push({
+              role: "user",
+              content: String(block || "")
+            });
+          });
+        }
+
+        return messages;
+      },
+
       extractAiDecisionObject(content) {
         const jsonObj = tryExtractDecisionJson(content);
         if (jsonObj) {
@@ -980,13 +1135,89 @@
         const playerCache = this.aiConversationCache[player.id];
         let messages;
         if (playerCache) {
-          messages = [...playerCache, { role: "user", content: userPrompt }];
+          const incrementalMessages = [];
+          if (payload && payload.lastRoundResult) {
+            incrementalMessages.push({
+              role: "user",
+              content: "【上一轮结算】\n" + JSON.stringify(payload.lastRoundResult, null, 2)
+            });
+          }
+          if (payload && payload.round) {
+            incrementalMessages.push({
+              role: "user",
+              content: "【轮次信息】\n" + JSON.stringify(payload.round, null, 2)
+            });
+          }
+          const gameState = payload && payload.gameState
+            ? payload.gameState
+            : {
+              currentWallet: payload && payload.currentWallet,
+              currentLeader: payload && payload.currentLeader,
+              currentBid: payload && payload.currentBid
+            };
+          if (gameState && (gameState.currentWallet !== undefined || gameState.currentLeader !== undefined || gameState.currentBid !== undefined)) {
+            incrementalMessages.push({
+              role: "user",
+              content: "【游戏状态】\n" + JSON.stringify(gameState, null, 2)
+            });
+          }
+          if (payload && payload.selfAvailableTools) {
+            incrementalMessages.push({
+              role: "user",
+              content: "【可用工具】\n" + JSON.stringify(payload.selfAvailableTools, null, 2)
+            });
+          }
+          if (payload && payload.privateIntel) {
+            incrementalMessages.push({
+              role: "user",
+              content: "【私人情报】\n" + JSON.stringify(payload.privateIntel, null, 2)
+            });
+          }
+          if (payload && payload.actionConstraints) {
+            incrementalMessages.push({
+              role: "user",
+              content: "【行动约束】\n" + JSON.stringify(payload.actionConstraints, null, 2)
+            });
+          }
+          const roundNoRaw = payload && payload.gameState && payload.gameState.round && payload.gameState.round.current
+            ? payload.gameState.round.current
+            : payload && payload.round && payload.round.current
+              ? payload.round.current
+              : this.round;
+          const totalRoundRaw = payload && payload.gameState && payload.gameState.round && payload.gameState.round.total
+            ? payload.gameState.round.total
+            : GAME_SETTINGS.maxRounds;
+          const roundNo = Number.isFinite(Number(roundNoRaw)) ? Math.max(1, Math.round(Number(roundNoRaw))) : Math.max(1, this.round);
+          const totalRounds = Number.isFinite(Number(totalRoundRaw))
+            ? Math.max(roundNo, Math.round(Number(totalRoundRaw)))
+            : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo);
+          const isFinalRound = roundNo >= totalRounds;
+          const roundStateText = isFinalRound ? "最终轮" : "后续轮";
+          const finalRoundHint = isFinalRound
+            ? "【最终轮提醒】本轮直接按最高出价者获胜，不再看相对第二名高出比例。"
+            : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。";
+          const taskContent = [
+            "【任务】第 " + roundNo + "/" + totalRounds + " 轮（" + roundStateText + "）。给出合法竞拍决策（bid/skill/item/thought）。",
+            finalRoundHint
+          ].join("\n");
+          incrementalMessages.push({ role: "user", content: taskContent });
+          if (Array.isArray(options.extraBlocks) && options.extraBlocks.length > 0) {
+            options.extraBlocks.forEach((block) => {
+              incrementalMessages.push({
+                role: "user",
+                content: String(block || "")
+              });
+            });
+          }
+          messages = [...playerCache, ...incrementalMessages];
         } else {
-          messages = [
-            { role: "system", content: systemPrompt },
-            ...(Array.isArray(historyMessages) ? historyMessages : []),
-            { role: "user", content: userPrompt }
-          ];
+          messages = this.buildAiDecisionMessages(payload, {
+            requestStage,
+            isFirstRound,
+            systemPrompt,
+            historyMessages,
+            extraBlocks: options.extraBlocks || []
+          });
         }
 
         try {
@@ -1047,6 +1278,15 @@
           const chatElapsed = chatEndTime - chatStartTime;
           console.log(`[requestAiLlmPlan] ${requestId} requestChat DONE, ok: ${result.ok}, elapsed: ${chatElapsed}ms, total: ${chatEndTime - requestStartTime}ms`);
 
+          const usage = result && result.usage ? result.usage : null;
+          const cacheHitTokens = usage && usage.prompt_cache_hit_tokens ? usage.prompt_cache_hit_tokens : 0;
+          const cacheMissTokens = usage && usage.prompt_cache_miss_tokens ? usage.prompt_cache_miss_tokens : 0;
+          const totalPromptTokens = cacheHitTokens + cacheMissTokens;
+          const cacheHitRate = totalPromptTokens > 0 ? Math.round(cacheHitTokens / totalPromptTokens * 100) : 0;
+          if (cacheHitTokens > 0 || cacheMissTokens > 0) {
+            console.log(`[requestAiLlmPlan] ${requestId} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`);
+          }
+
           if (!result.ok) {
             const detail = result && result.meta ? result.meta : {};
             const errorPieces = [
@@ -1061,12 +1301,7 @@
             ].filter(Boolean);
             const errorMessage = errorPieces.join(" | ");
             if (requestStage === "initial") {
-              this.aiConversationCache[player.id] = playerCache
-                ? [...messages, { role: "assistant", content: `[LLM请求失败] ${errorMessage}` }]
-                : [
-                  { role: "user", content: userPrompt },
-                  { role: "assistant", content: `[LLM请求失败] ${errorMessage}` }
-                ];
+              this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: `[LLM请求失败] ${errorMessage}` }];
             }
             return {
               source: "llm",
@@ -1076,7 +1311,11 @@
               actionId: "none",
               systemPrompt,
               userPrompt,
-              modelResponse: String(result.error || "")
+              modelResponse: String(result.error || ""),
+              cacheHitTokens: 0,
+              cacheMissTokens: 0,
+              cacheHitRate: 0,
+              usage: null
             };
           }
 
@@ -1115,26 +1354,20 @@
           plan.crossGameMemoryText = !playerCache && useMultiGameMemory && crossGameMemoryCount > 0
             ? String(historyMessages[0]?.content || "")
             : "";
+          plan.cacheHitTokens = cacheHitTokens;
+          plan.cacheMissTokens = cacheMissTokens;
+          plan.cacheHitRate = cacheHitRate;
+          plan.usage = usage;
 
           // 缓存本轮对话（仅 initial 阶段），跨局记忆仅首轮注入，不进入缓存
           if (requestStage === "initial") {
-            this.aiConversationCache[player.id] = playerCache
-              ? [...messages, { role: "assistant", content: responseText }]
-              : [
-                { role: "user", content: userPrompt },
-                { role: "assistant", content: responseText }
-              ];
+            this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: responseText }];
           }
           return plan;
         } catch (error) {
           const message = error && error.message ? error.message : "LLM请求异常";
           if (requestStage === "initial") {
-            this.aiConversationCache[player.id] = playerCache
-              ? [...messages, { role: "assistant", content: `[LLM请求异常] ${message}` }]
-              : [
-                { role: "user", content: userPrompt },
-                { role: "assistant", content: `[LLM请求异常] ${message}` }
-              ];
+            this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: `[LLM请求异常] ${message}` }];
           }
           return {
             source: "llm",
@@ -1144,7 +1377,11 @@
             actionId: "none",
             systemPrompt,
             userPrompt,
-            modelResponse: ""
+            modelResponse: "",
+            cacheHitTokens: 0,
+            cacheMissTokens: 0,
+            cacheHitRate: 0,
+            usage: null
           };
         }
       },
@@ -1321,14 +1558,7 @@
               return { name: def ? def.name : id, description: def ? def.description : "", remaining: Number(remain) || 0 };
             }) : []
           },
-          actionConstraints: this.buildAiActionConstraintBlock(player.id),
-          responseContract: {
-            requiredFields: ["bid", "skill", "item", "thought"],
-            bidRule: "正整数",
-            skillRule: "无 或 技能名称",
-            itemRule: "无 或 道具名称",
-            thoughtRule: "简短说明，不超过200字"
-          }
+          actionConstraints: this.buildAiActionConstraintBlock(player.id)
         };
 
         const userPrompt = this.buildAiDecisionUserPrompt(payload, errorCorrectionBlock);
@@ -1776,7 +2006,11 @@
             crossGameMemoryCount: plan && plan.crossGameMemoryCount ? plan.crossGameMemoryCount : 0,
             inGameHistoryCount: plan && plan.inGameHistoryCount ? plan.inGameHistoryCount : 0,
             historyMessagesPreview: plan && plan.historyMessagesPreview ? plan.historyMessagesPreview : "",
-            crossGameMemoryText: plan && plan.crossGameMemoryText ? plan.crossGameMemoryText : ""
+            crossGameMemoryText: plan && plan.crossGameMemoryText ? plan.crossGameMemoryText : "",
+            cacheHitTokens: plan && plan.cacheHitTokens ? plan.cacheHitTokens : 0,
+            cacheMissTokens: plan && plan.cacheMissTokens ? plan.cacheMissTokens : 0,
+            cacheHitRate: plan && plan.cacheHitRate ? plan.cacheHitRate : 0,
+            usage: plan && plan.usage ? plan.usage : null
           };
         });
 

@@ -50,9 +50,59 @@
       if (stored.crossGameMemory && typeof stored.crossGameMemory === "object") {
         this.aiCrossGameMemory = {};
         Object.keys(stored.crossGameMemory).forEach((playerId) => {
-          const arr = stored.crossGameMemory[playerId];
-          if (Array.isArray(arr)) {
-            this.aiCrossGameMemory[playerId] = arr.slice(-20);
+          const data = stored.crossGameMemory[playerId];
+          if (data && typeof data === "object" && (data.stats || data.lessons || data.strategies || data.praises)) {
+            this.aiCrossGameMemory[playerId] = {
+              stats: data.stats || {
+                totalGames: 0,
+                warehouseValueMax: 0,
+                warehouseValueMin: 0,
+                warehouseValueAvg: 0,
+                winRate: 0,
+                avgProfit: 0,
+                totalCellsMax: 0,
+                totalCellsMin: 0,
+                totalCellsAvg: 0,
+                totalItemsMax: 0,
+                totalItemsMin: 0,
+                totalItemsAvg: 0,
+                legendaryMax: 0,
+                legendaryMin: 0,
+                legendaryAvg: 0,
+                rareMax: 0,
+                rareMin: 0,
+                rareAvg: 0
+              },
+              lessons: Array.isArray(data.lessons) ? data.lessons.slice(-10) : [],
+              strategies: Array.isArray(data.strategies) ? data.strategies.slice(-10) : [],
+              praises: Array.isArray(data.praises) ? data.praises.slice(-10) : []
+            };
+          } else if (Array.isArray(data)) {
+            this.aiCrossGameMemory[playerId] = {
+              stats: {
+                totalGames: 0,
+                warehouseValueMax: 0,
+                warehouseValueMin: 0,
+                warehouseValueAvg: 0,
+                winRate: 0,
+                avgProfit: 0,
+                totalCellsMax: 0,
+                totalCellsMin: 0,
+                totalCellsAvg: 0,
+                totalItemsMax: 0,
+                totalItemsMin: 0,
+                totalItemsAvg: 0,
+                legendaryMax: 0,
+                legendaryMin: 0,
+                legendaryAvg: 0,
+                rareMax: 0,
+                rareMin: 0,
+                rareAvg: 0
+              },
+              lessons: [],
+              strategies: [],
+              praises: []
+            };
           }
         });
       }
@@ -73,7 +123,37 @@
 
     ensureAiCrossGameMemory(playerId) {
       if (!this.aiCrossGameMemory[playerId]) {
-        this.aiCrossGameMemory[playerId] = [];
+        this.aiCrossGameMemory[playerId] = {
+          stats: {
+            totalGames: 0,
+            warehouseValueMax: 679100,
+            warehouseValueMin: 170400,
+            warehouseValueAvg: 412000,
+            winRate: 0,
+            avgProfit: 0,
+            totalCellsMax: 0,
+            totalCellsMin: 0,
+            totalCellsAvg: 0,
+            totalItemsMax: 0,
+            totalItemsMin: 0,
+            totalItemsAvg: 0,
+            legendaryMax: 0,
+            legendaryMin: 0,
+            legendaryAvg: 0,
+            rareMax: 0,
+            rareMin: 0,
+            rareAvg: 0
+          },
+          lessons: [
+
+          ],
+          strategies: [
+
+          ],
+          praises: [
+
+          ]
+        };
       }
       return this.aiCrossGameMemory[playerId];
     },
@@ -105,38 +185,46 @@
     getAiConversationMessages(playerId) {
       const messages = [];
       const crossMemory = this.ensureAiCrossGameMemory(playerId);
-      if (crossMemory.length > 0) {
-        const total = crossMemory.length;
-        const lines = [`【跨局记忆：最近${total}局结果与反思】`];
-        crossMemory.forEach((entry, i) => {
-          const parts = [`最近第${total - i}局(局号${entry.run || "?"})`];
-          if (entry.result) parts.push(entry.result);
-          const isWinner = entry.winnerId === playerId;
-          if (entry.dividendTicket && !isWinner) {
-            const dt = entry.dividendTicket;
-            if (dt.mechanism === "dividend") {
-              parts.push(`分红+${dt.dividendPerPlayer || 0}`);
-            } else if (dt.mechanism === "ticket") {
-              parts.push(`门票-${dt.ticketPerPlayer || 0}`);
-            }
+      const stats = crossMemory.stats || {};
+      const lessons = crossMemory.lessons || [];
+      const strategies = crossMemory.strategies || [];
+      const praises = crossMemory.praises || [];
+
+      if (stats.totalGames > 0 || lessons.length > 0 || strategies.length > 0 || praises.length > 0) {
+        const lines = ["【跨局经验总结】"];
+        if (stats.totalGames > 0) {
+          lines.push(`历史统计: 共${stats.totalGames}局, 胜率${Math.round((stats.winRate || 0) * 100)}%, 平均盈亏${Math.round(stats.avgProfit || 0)}`);
+          if (stats.warehouseValueMax > 0) {
+            lines.push(`仓库价值范围: ${stats.warehouseValueMin}~${stats.warehouseValueMax}, 平均${Math.round(stats.warehouseValueAvg || 0)}`);
           }
-          if (entry.qualityCounts) {
-            const qc = entry.qualityCounts;
-            parts.push(`品质分布:粗${qc.poor || 0}良${qc.normal || 0}精${qc.fine || 0}珍${qc.rare || 0}绝${qc.legendary || 0}`);
+          if (stats.totalCellsMax > 0) {
+            lines.push(`格数范围: ${stats.totalCellsMin}~${stats.totalCellsMax}, 平均${Math.round(stats.totalCellsAvg || 0)}`);
           }
-          if (entry.totalItems) parts.push(`总藏品${entry.totalItems}`);
-          if (entry.totalCells) parts.push(`仓库占格${entry.totalCells}`);
-          if (entry.reflection) {
-            parts.push(`反思:${entry.reflection}`);
-          } else if (entry.reflectionEnabled === false) {
-            parts.push("反思:该局未开启局后反思");
-          } else {
-            parts.push("反思:(待生成)");
+          if (stats.totalItemsMax > 0) {
+            lines.push(`藏品件数范围: ${stats.totalItemsMin}~${stats.totalItemsMax}, 平均${Math.round(stats.totalItemsAvg || 0)}`);
           }
-          lines.push(parts.join(" | "));
-        });
+          if (stats.legendaryMax > 0) {
+            lines.push(`绝品件数范围: ${stats.legendaryMin}~${stats.legendaryMax}, 平均${(stats.legendaryAvg || 0).toFixed(1)}`);
+          }
+          if (stats.rareMax > 0) {
+            lines.push(`珍品件数范围: ${stats.rareMin}~${stats.rareMax}, 平均${(stats.rareAvg || 0).toFixed(1)}`);
+          }
+        }
+        if (praises.length > 0) {
+          lines.push(`成功经验:`);
+          praises.forEach((p, i) => lines.push(`  ${i + 1}. ${p}`));
+        }
+        if (strategies.length > 0) {
+          lines.push(`策略建议:`);
+          strategies.forEach((s, i) => lines.push(`  ${i + 1}. ${s}`));
+        }
+        if (lessons.length > 0) {
+          lines.push(`经验教训:`);
+          lessons.forEach((l, i) => lines.push(`  ${i + 1}. ${l}`));
+        }
         messages.push({ role: "user", content: lines.join("\n") });
       }
+
       const inGameBucket = this.aiConversationByPlayer[playerId];
       if (Array.isArray(inGameBucket) && inGameBucket.length > 0) {
         const inGameLines = ["【本局内历史决策记录】"];
@@ -331,6 +419,8 @@
         run: this.runSerial || 0,
         winnerId,
         result: resultStr,
+        warehouseValue: totalValue,
+        winnerProfit,
         dividendTicket: mechanism !== "none" ? { mechanism, dividendPerPlayer: dividendAmt, ticketPerPlayer: ticketAmt } : null,
         qualityCounts,
         totalItems,
@@ -340,39 +430,6 @@
         reflectionEnabled: this.isAiReflectionEnabled()
       };
       return record;
-    },
-
-    saveCrossGameRecord(record) {
-      if (!this.isAiMultiGameMemoryEnabled()) return;
-      this.players.filter((p) => !p.isHuman).forEach((p) => {
-        const memory = this.ensureAiCrossGameMemory(p.id);
-        const playerRecord = { ...record };
-        const isWinner = p.id === record.winnerId;
-        if (!isWinner && record.dividendTicket) {
-          const dt = record.dividendTicket;
-          if (dt.mechanism === "dividend") {
-            playerRecord.result = `${record.result},分红+${dt.dividendPerPlayer}`;
-          } else if (dt.mechanism === "ticket") {
-            playerRecord.result = `${record.result},门票-${dt.ticketPerPlayer}`;
-          }
-        }
-        const bucket = this.ensureAiConversationBucket(p.id);
-        playerRecord.decisionSummary = bucket
-          .filter((e) => e.run === record.run)
-          .map((e) => {
-            const parts = [`轮${e.round || "?"}`];
-            if (e.bid != null) parts.push(`出价${e.bid}`);
-            if (e.skill && e.skill !== "无") parts.push(`技能:${e.skill}`);
-            if (e.item && e.item !== "无") parts.push(`道具:${e.item}`);
-            if (e.thought) parts.push(`想法:${e.thought.slice(0, 60)}`);
-            return parts.join(" ");
-          });
-        memory.push(playerRecord);
-        if (memory.length > 20) {
-          this.aiCrossGameMemory[p.id] = memory.slice(-20);
-        }
-      });
-      this.saveAiMemoryToStorage();
     },
 
     getAiFirstRoundExtraBlocks() {
@@ -406,51 +463,73 @@
         return;
       }
       const sections = aiPlayers.map((player, idx) => {
-        const memory = this.aiCrossGameMemory[player.id];
+        const memory = this.ensureAiCrossGameMemory(player.id);
         const colors = ["#c49a3c", "#5a9e5a", "#5a7ebd", "#bd5a7e"];
         const color = colors[idx % colors.length];
         let inner = "";
-        if (!memory || memory.length === 0) {
+
+        const stats = memory.stats || {};
+        const praises = memory.praises || [];
+        const strategies = memory.strategies || [];
+        const lessons = memory.lessons || [];
+
+        if (stats.totalGames === 0 && praises.length === 0 && strategies.length === 0 && lessons.length === 0) {
           inner = '<div class="ai-memory-empty">暂无跨局记忆</div>';
         } else {
-          const total = memory.length;
-          const entries = memory.map((entry, i) => {
-            const recentIdx = total - i;
-            let details = `<div class="ai-memory-entry">`;
-            details += `<div class="ai-memory-entry-title">最近第${recentIdx}局 <span class="ai-memory-entry-sub">(局号${entry.run || "?"})</span></div>`;
-            if (entry.result) details += `<div class="ai-memory-field"><span class="ai-memory-label">结果</span>${entry.result}</div>`;
-            const isWinner = entry.winnerId === player.id;
-            if (entry.dividendTicket && !isWinner) {
-              const dt = entry.dividendTicket;
-              if (dt.mechanism === "dividend") {
-                details += `<div class="ai-memory-field"><span class="ai-memory-label">分红/门票</span>分红+${dt.dividendPerPlayer || 0}</div>`;
-              } else if (dt.mechanism === "ticket") {
-                details += `<div class="ai-memory-field"><span class="ai-memory-label">分红/门票</span>门票-${dt.ticketPerPlayer || 0}</div>`;
-              }
+          inner = '<div class="ai-memory-entry">';
+
+          if (stats.totalGames > 0) {
+            inner += `<div class="ai-memory-entry-title">历史统计</div>`;
+            inner += `<div class="ai-memory-field"><span class="ai-memory-label">总局数</span>${stats.totalGames}局</div>`;
+            inner += `<div class="ai-memory-field"><span class="ai-memory-label">胜率</span>${Math.round((stats.winRate || 0) * 100)}%</div>`;
+            inner += `<div class="ai-memory-field"><span class="ai-memory-label">平均盈亏</span>${Math.round(stats.avgProfit || 0)}</div>`;
+            if (stats.warehouseValueMax > 0) {
+              inner += `<div class="ai-memory-field"><span class="ai-memory-label">仓库价值</span>${stats.warehouseValueMin}~${stats.warehouseValueMax}，平均${Math.round(stats.warehouseValueAvg || 0)}</div>`;
             }
-            if (entry.qualityCounts) {
-              const qc = entry.qualityCounts;
-              details += `<div class="ai-memory-field"><span class="ai-memory-label">品质</span>粗${qc.poor || 0} 良${qc.normal || 0} 精${qc.fine || 0} 珍${qc.rare || 0} 绝${qc.legendary || 0}</div>`;
+            if (stats.totalCellsMax > 0) {
+              inner += `<div class="ai-memory-field"><span class="ai-memory-label">格数范围</span>${stats.totalCellsMin}~${stats.totalCellsMax}，平均${Math.round(stats.totalCellsAvg || 0)}</div>`;
             }
-            if (entry.totalItems) details += `<div class="ai-memory-field"><span class="ai-memory-label">总藏品</span>${entry.totalItems}</div>`;
-            if (entry.totalCells) details += `<div class="ai-memory-field"><span class="ai-memory-label">仓库占格</span>${entry.totalCells}</div>`;
-            if (entry.reflection) {
-              details += `<div class="ai-memory-field"><span class="ai-memory-label">反思</span>${entry.reflection}</div>`;
-            } else if (entry.reflectionEnabled === false) {
-              details += `<div class="ai-memory-field"><span class="ai-memory-label">反思</span><span class="ai-memory-disabled">该局未开启局后反思</span></div>`;
-            } else {
-              details += `<div class="ai-memory-field"><span class="ai-memory-label">反思</span><span class="ai-memory-pending">待生成</span></div>`;
+            if (stats.totalItemsMax > 0) {
+              inner += `<div class="ai-memory-field"><span class="ai-memory-label">藏品件数</span>${stats.totalItemsMin}~${stats.totalItemsMax}，平均${Math.round(stats.totalItemsAvg || 0)}</div>`;
             }
-            details += "</div>";
-            return details;
-          }).join("");
-          inner = entries;
+            if (stats.legendaryMax > 0) {
+              inner += `<div class="ai-memory-field"><span class="ai-memory-label">绝品件数</span>${stats.legendaryMin}~${stats.legendaryMax}，平均${(stats.legendaryAvg || 0).toFixed(1)}</div>`;
+            }
+            if (stats.rareMax > 0) {
+              inner += `<div class="ai-memory-field"><span class="ai-memory-label">珍品件数</span>${stats.rareMin}~${stats.rareMax}，平均${(stats.rareAvg || 0).toFixed(1)}</div>`;
+            }
+          }
+
+          if (praises.length > 0) {
+            inner += `<div class="ai-memory-entry-title">成功经验 (${praises.length}/10)</div>`;
+            praises.forEach((p, i) => {
+              inner += `<div class="ai-memory-field"><span class="ai-memory-label">${i}</span>${p}</div>`;
+            });
+          }
+
+          if (strategies.length > 0) {
+            inner += `<div class="ai-memory-entry-title">策略建议 (${strategies.length}/10)</div>`;
+            strategies.forEach((s, i) => {
+              inner += `<div class="ai-memory-field"><span class="ai-memory-label">${i}</span>${s}</div>`;
+            });
+          }
+
+          if (lessons.length > 0) {
+            inner += `<div class="ai-memory-entry-title">经验教训 (${lessons.length}/10)</div>`;
+            lessons.forEach((l, i) => {
+              inner += `<div class="ai-memory-field"><span class="ai-memory-label">${i}</span>${l}</div>`;
+            });
+          }
+
+          inner += "</div>";
         }
+
         return `<div class="ai-memory-section" style="--section-color:${color}">` +
-          `<div class="ai-memory-section-header">${player.name}${memory && memory.length > 0 ? ` <span class="ai-memory-header-count">(最近${memory.length}局)</span>` : ""}</div>` +
+          `<div class="ai-memory-section-header">${player.name}</div>` +
           `<div class="ai-memory-section-body">${inner}</div>` +
           `</div>`;
       }).join("");
+
       if (this.dom.aiMemoryContent) {
         this.dom.aiMemoryContent.innerHTML = sections || '<div class="ai-memory-empty">暂无记忆数据</div>';
       }
