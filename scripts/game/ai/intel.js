@@ -82,6 +82,10 @@
           this.aiResourceState[player.id] = resourceState;
         }
 
+        if (!this.aiCharacterAssignments) {
+          this.aiCharacterAssignments = {};
+        }
+
         const charAssign = this.aiCharacterAssignments[player.id];
         if (charAssign && charAssign.skillId) {
           const skillDef = SKILL_DEFS.find((s) => s.id === charAssign.skillId);
