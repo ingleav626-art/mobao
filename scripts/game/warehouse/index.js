@@ -298,7 +298,6 @@
         qualityMarkers,
         clickZone,
         borderPulseStarted: false,
-        qualityTextObjects: [],
         qualitySynced: false,
         qualityGlowTween: null
       };
@@ -966,7 +965,6 @@
         item.view.qualityMarkers.removeAll(true);
         item.view.artifactImage = null;
       }
-      item.view.qualityTextObjects = [];
     },
 
     renderQualityVisual(item, options = {}) {
@@ -1078,17 +1076,6 @@
       this.renderQualityVisual(item, {
         showName,
         settlementSkipImage: options.settlementSkipImage
-      });
-    },
-
-    syncAllQualityTextVisibility() {
-      this.items.forEach((item) => {
-        if (!item.view || !item.view.qualityTextObjects) {
-          return;
-        }
-        item.view.qualityTextObjects.forEach((textObj) => {
-          textObj.setVisible(this.useQualityText);
-        });
       });
     },
 

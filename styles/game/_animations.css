@@ -534,10 +534,157 @@
   .round-timer-hot.is-frozen,
   .pause-overlay-inner,
   .game-area-fade-out,
-  .settle-fade-in {
+  .settle-fade-in,
+  .page-transition-enter,
+  .page-transition-exit,
+  .lobby-page-entering,
+  .lobby-page-exiting,
+  .lobby-subpage-entering {
     animation: none !important;
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+}
+
+
+/* ---- 11. 页面过渡动画 ---- */
+/* 大厅子页面过渡 */
+.lobby-subpage-entering {
+  animation: lobbySubpageFadeIn 280ms var(--ease-out) forwards;
+}
+
+@keyframes lobbySubpageFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 大厅页面进入 */
+.lobby-page-entering {
+  animation: lobbyPageFadeIn 350ms var(--ease-out) forwards;
+}
+
+@keyframes lobbyPageFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 大厅页面退出 */
+.lobby-page-exiting {
+  animation: lobbyPageFadeOut 250ms var(--ease-in) forwards;
+}
+
+@keyframes lobbyPageFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+}
+
+/* 游戏区淡入（补充完整keyframes） */
+@keyframes game-area-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.game-area-entering {
+  animation: game-area-fade-in 300ms var(--ease-out) forwards;
+}
+
+/* 游戏区淡出 */
+.game-area-exiting {
+  animation: gameAreaFadeOut 250ms var(--ease-in) forwards;
+}
+
+/* 通用页面过渡 */
+.page-transition-enter {
+  animation: pageSlideIn 300ms var(--ease-out) forwards;
+}
+
+.page-transition-exit {
+  animation: pageSlideOut 200ms var(--ease-in) forwards;
+}
+
+@keyframes pageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pageSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+/* overlay内容面板滑入增强 */
+.overlay-panel-enter {
+  animation: overlayPanelSlideIn 280ms var(--ease-out) forwards;
+}
+
+@keyframes overlayPanelSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(25px) scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 弹窗内容淡入 */
+.popup-content-enter {
+  animation: popupContentFadeIn 200ms var(--ease-out) forwards;
+}
+
+@keyframes popupContentFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }

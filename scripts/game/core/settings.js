@@ -12,11 +12,9 @@
       postRevealWaitMs: 3000,
       bidStep: 100,
       bidDefaultRaise: 500,
-      revealSpeedMultiplier: 1,
-      searchSpeedMultiplier: 1,
+      settlementSpeedMultiplier: 1,
       musicVolume: 70,
-      sfxVolume: 80,
-      showQualityText: true
+      sfxVolume: 80
     };
   }
 
@@ -40,11 +38,9 @@
       postRevealWaitMs: clamp(Math.round(input.postRevealWaitMs || defaults.postRevealWaitMs), 800, 6000),
       bidStep: clamp(Math.round(input.bidStep || defaults.bidStep), 10, 10000),
       bidDefaultRaise: clamp(Math.round(input.bidDefaultRaise || defaults.bidDefaultRaise), 0, 50000),
-      revealSpeedMultiplier: clamp(Number(input.revealSpeedMultiplier || defaults.revealSpeedMultiplier), 0.5, 2.2),
-      searchSpeedMultiplier: clamp(Number(input.searchSpeedMultiplier || defaults.searchSpeedMultiplier), 0.5, 2.5),
+      settlementSpeedMultiplier: clamp(Number(input.settlementSpeedMultiplier || defaults.settlementSpeedMultiplier), 0.5, 3),
       musicVolume: clamp(Math.round(input.musicVolume || defaults.musicVolume), 0, 100),
-      sfxVolume: clamp(Math.round(input.sfxVolume || defaults.sfxVolume), 0, 100),
-      showQualityText: input.showQualityText !== undefined ? Boolean(input.showQualityText) : defaults.showQualityText
+      sfxVolume: clamp(Math.round(input.sfxVolume || defaults.sfxVolume), 0, 100)
     };
   }
 

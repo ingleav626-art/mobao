@@ -339,8 +339,52 @@
     }
   }
 
-  function hideAddProviderModal() {
+  function hasCustomProviderInput() {
     const els = getElements();
+    const name = els.customProviderName ? els.customProviderName.value.trim() : "";
+    const endpoint = els.customProviderEndpoint ? els.customProviderEndpoint.value.trim() : "";
+    const model = els.customProviderModel ? els.customProviderModel.value.trim() : "";
+    return name !== "" || endpoint !== "" || model !== "";
+  }
+
+  function hideAddProviderModal(forceClose = false) {
+    const els = getElements();
+
+    // 检查是否有未保存的内容
+    if (!forceClose && hasCustomProviderInput()) {
+      // 临时修改确认按钮文本
+      const okBtn = document.getElementById("gameConfirmOkBtn");
+      const cancelBtn = document.getElementById("gameConfirmCancelBtn");
+      const originalOkText = okBtn ? okBtn.textContent : "";
+      const originalCancelText = cancelBtn ? cancelBtn.textContent : "";
+      if (okBtn) okBtn.textContent = "确认离开";
+      if (cancelBtn) cancelBtn.textContent = "继续填写";
+
+      if (window.WarehouseScene && window.WarehouseScene.instance) {
+        window.WarehouseScene.instance.showGameConfirm(
+          "离开后不会保存已填写的内容，是否离开？",
+          () => {
+            // 恢复按钮文本
+            if (okBtn) okBtn.textContent = originalOkText;
+            if (cancelBtn) cancelBtn.textContent = originalCancelText;
+
+            hideAddProviderModal(true);
+          },
+          () => {
+            // 恢复按钮文本
+            if (okBtn) okBtn.textContent = originalOkText;
+            if (cancelBtn) cancelBtn.textContent = originalCancelText;
+          }
+        );
+      } else {
+        // 如果没有游戏场景，使用原生confirm
+        if (confirm("离开后不会保存已填写的内容，是否离开？")) {
+          hideAddProviderModal(true);
+        }
+      }
+      return;
+    }
+
     if (els.customProviderModal) {
       els.customProviderModal.classList.add("hidden");
       els.customProviderModal.setAttribute("hidden", "");
@@ -398,7 +442,15 @@
         loadProviderSettings(newProviderId);
         window.LlmManager.setActiveProvider(newProviderId);
 
-        hideAddProviderModal();
+        hideAddProviderModal(true);
+
+        // 更新AI模型配置面板的下拉框（如果面板是打开的）
+        const aiModelConfigOverlay = document.getElementById("aiModelConfigOverlay");
+        if (aiModelConfigOverlay && !aiModelConfigOverlay.classList.contains("hidden")) {
+          if (window.WarehouseScene && window.WarehouseScene.instance && typeof window.WarehouseScene.instance.renderAiModelConfigContent === "function") {
+            window.WarehouseScene.instance.renderAiModelConfigContent();
+          }
+        }
       } catch (error) {
         console.error("[LlmUiBridge] addCustomProvider error", error);
         alert(`添加模型失败：${error.message || error}`);
@@ -412,21 +464,70 @@
     const els = getElements();
 
     if (config.builtin) {
-      alert("预定义模型不能删除");
+      if (window.WarehouseScene && window.WarehouseScene.instance) {
+        window.WarehouseScene.instance.showGameConfirm(
+          "预定义模型不能删除",
+          null,
+          null
+        );
+        // 只显示确认按钮，隐藏取消按钮
+        const cancelBtn = document.getElementById("gameConfirmCancelBtn");
+        if (cancelBtn) cancelBtn.classList.add("hidden");
+        // 修改确认按钮文本
+        const okBtn = document.getElementById("gameConfirmOkBtn");
+        if (okBtn) okBtn.textContent = "知道了";
+      } else {
+        alert("预定义模型不能删除");
+      }
       return;
     }
 
-    if (!confirm(`确定要删除模型 "${config.name}" 吗？此操作不可恢复。`)) {
-      return;
-    }
+    // 使用游戏内弹窗
+    if (window.WarehouseScene && window.WarehouseScene.instance) {
+      window.WarehouseScene.instance.showGameConfirm(
+        `确定要删除模型 "${config.name}" 吗？此操作不可恢复。`,
+        () => {
+          if (window.LlmManager) {
+            window.LlmManager.deleteDynamicProvider(providerId);
+            refreshProviderSelect("deepseek");
 
-    if (window.LlmManager) {
-      window.LlmManager.deleteDynamicProvider(providerId);
-      refreshProviderSelect("deepseek");
+            if (els.providerSelect) {
+              els.providerSelect.value = "deepseek";
+              loadProviderSettings("deepseek");
+            }
 
-      if (els.providerSelect) {
-        els.providerSelect.value = "deepseek";
-        loadProviderSettings("deepseek");
+            // 更新AI模型配置面板的下拉框（如果面板是打开的）
+            const aiModelConfigOverlay = document.getElementById("aiModelConfigOverlay");
+            if (aiModelConfigOverlay && !aiModelConfigOverlay.classList.contains("hidden")) {
+              if (window.WarehouseScene && window.WarehouseScene.instance && typeof window.WarehouseScene.instance.renderAiModelConfigContent === "function") {
+                window.WarehouseScene.instance.renderAiModelConfigContent();
+              }
+            }
+          }
+        },
+        null
+      );
+      // 恢复按钮文本和显示状态
+      const okBtn = document.getElementById("gameConfirmOkBtn");
+      const cancelBtn = document.getElementById("gameConfirmCancelBtn");
+      if (okBtn) okBtn.textContent = "确认";
+      if (cancelBtn) {
+        cancelBtn.textContent = "取消";
+        cancelBtn.classList.remove("hidden");
+      }
+    } else {
+      // 如果没有游戏场景，使用原生confirm
+      if (!confirm(`确定要删除模型 "${config.name}" 吗？此操作不可恢复。`)) {
+        return;
+      }
+      if (window.LlmManager) {
+        window.LlmManager.deleteDynamicProvider(providerId);
+        refreshProviderSelect("deepseek");
+
+        if (els.providerSelect) {
+          els.providerSelect.value = "deepseek";
+          loadProviderSettings("deepseek");
+        }
       }
     }
   }
@@ -519,16 +620,25 @@
     }
 
     if (els.customProviderConfirm) {
-      els.customProviderConfirm.addEventListener("click", addCustomProvider);
+      els.customProviderConfirm.addEventListener("click", function (e) {
+        e.stopPropagation();
+        addCustomProvider();
+      });
     }
 
     if (els.customProviderCancel) {
-      els.customProviderCancel.addEventListener("click", hideAddProviderModal);
+      els.customProviderCancel.addEventListener("click", function (e) {
+        e.stopPropagation();
+        hideAddProviderModal();
+      });
     }
 
     var customProviderCancel2 = document.getElementById("customProviderCancel2");
     if (customProviderCancel2) {
-      customProviderCancel2.addEventListener("click", hideAddProviderModal);
+      customProviderCancel2.addEventListener("click", function (e) {
+        e.stopPropagation();
+        hideAddProviderModal();
+      });
     }
 
     if (els.customProviderModal) {

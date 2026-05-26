@@ -143,7 +143,8 @@
             maxTokens,
             timeoutMs,
             isThinking: thinkingEnabled,
-            messages
+            messages,
+            settings
           });
           console.log("[triggerAiReflection] result for player:", player.id, "ok:", result.ok, "code:", result.code, "error:", result.error, "contentLength:", result.content ? result.content.length : 0, "reasoningContentLength:", result.reasoningContent ? result.reasoningContent.length : 0);
           if (result.ok && (result.content || result.reasoningContent)) {
@@ -446,6 +447,50 @@
         this.removeReflectionPendingDialog();
         this.proceedToNewRun();
       });
+    },
+
+    showReflectionPendingDialogForBack() {
+      this.removeReflectionPendingDialog();
+      const overlay = document.createElement("div");
+      overlay.id = "reflectionPendingDialog";
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;";
+      const box = document.createElement("div");
+      box.style.cssText = "background:#2a2218;border:2px solid #d4a843;border-radius:12px;padding:24px 32px;text-align:center;color:#e0d0b0;font-size:16px;max-width:380px;";
+      box.innerHTML =
+        '<div style="margin-bottom:12px;font-size:18px;font-weight:bold;">AI反思尚未完成</div>' +
+        '<div style="color:#a09070;margin-bottom:16px;">AI正在对本局表现进行反思，离开可能导致反思结果丢失。</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center;">' +
+        '<button id="reflectionDialogWait" style="padding:8px 20px;border-radius:6px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;">等待完成</button>' +
+        '<button id="reflectionDialogSkip" style="padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">直接离开</button>' +
+        '</div>';
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      document.getElementById("reflectionDialogWait").addEventListener("click", () => {
+        this.removeReflectionPendingDialog();
+      });
+      document.getElementById("reflectionDialogSkip").addEventListener("click", () => {
+        this.removeReflectionPendingDialog();
+        this.proceedToBack();
+      });
+    },
+
+    proceedToBack() {
+      this.exitSettlementPage();
+      if (this.battleRecordReplayActive) {
+        this.battleRecordReplayActive = false;
+        this.battleRecordReplayRecordId = null;
+        this.enterLobby();
+        setTimeout(() => {
+          this.openBattleRecordPanel();
+          this.writeLog("已返回战绩列表，可继续选择其他战绩回放。");
+        }, 100);
+        return;
+      }
+      if (this.isLanMode) {
+        this.enterLanRoom();
+      } else {
+        this.enterLobby();
+      }
     },
 
     removeReflectionPendingDialog() {

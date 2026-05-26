@@ -518,6 +518,7 @@
           elapsedMs,
           content,
           reasoningContent,
+          model: (payload && payload.model) || "",
           usage: payload && payload.usage ? payload.usage : null,
           raw: payload
         };

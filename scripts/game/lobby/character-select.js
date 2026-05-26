@@ -5,6 +5,10 @@
   const CharacterSelectMixin = {
     selectedCharacter: null,
     characterPageEl: null,
+    _carryItems: [],
+    _carryPickerEl: null,
+    _autoReplenish: false,
+    _MAX_CARRY_ITEMS: 3,
 
     initCharacterSelect() {
       this.characterPageEl = document.getElementById("lobbyCharacterSelect");
@@ -57,6 +61,13 @@
 
       this.hideAllLobbySubPages();
       this.characterPageEl.classList.remove("hidden");
+      this.characterPageEl.classList.add("lobby-subpage-entering");
+      this.characterPageEl.addEventListener("animationend", function onEnter() {
+        this.characterPageEl.classList.remove("lobby-subpage-entering");
+        this.characterPageEl.removeEventListener("animationend", onEnter);
+      }.bind(this), { once: true });
+      this._loadCarryItems();
+      this._loadAutoReplenish();
       this.renderCharacterList();
       this.renderSelectedCharacterPreview();
       this.updateCharacterMoneyDisplay();
@@ -171,8 +182,24 @@
                 <span class="ability-label">被动能力</span>
                 <p class="ability-value">—</p>
               </div>
+            </div>
+            <div class="ability-block preview-items">
+              <span class="ability-icon">🎒</span>
+              <div class="ability-content">
+                <div class="carry-label-row">
+                  <span class="ability-label">携带道具</span>
+                  <label class="carry-auto-toggle">
+                    <input type="checkbox" id="carryAutoReplenish" ${this._autoReplenish ? "checked" : ""}>
+                    <span class="carry-auto-slider"></span>
+                    <span class="carry-auto-label">道具耗尽时自动用金币补充</span>
+                  </label>
+                </div>
+                <div class="carry-items-row" id="carryItemsRow"></div>
+              </div>
             </div>`;
         }
+        this._bindAutoReplenishToggle();
+        this.renderCarryItems();
         return;
       }
 
@@ -226,8 +253,298 @@
             </div>
           </div>
           `}
+          <div class="ability-block preview-items">
+            <span class="ability-icon">🎒</span>
+            <div class="ability-content">
+              <div class="carry-label-row">
+                <span class="ability-label">携带道具</span>
+                <label class="carry-auto-toggle">
+                  <input type="checkbox" id="carryAutoReplenish" ${this._autoReplenish ? "checked" : ""}>
+                  <span class="carry-auto-slider"></span>
+                  <span class="carry-auto-label">道具耗尽时自动用金币补充</span>
+                </label>
+              </div>
+              <div class="carry-items-row" id="carryItemsRow"></div>
+            </div>
+          </div>
         `;
       }
+
+      this._bindAutoReplenishToggle();
+      this.renderCarryItems();
+    },
+
+    renderCarryItems() {
+      const row = document.getElementById("carryItemsRow");
+      if (!row) return;
+
+      row.innerHTML = "";
+
+      const bridge = window.MobaoShopBridge;
+      const inventory = bridge ? bridge.getFullInventory() : {};
+
+      this._carryItems.forEach((item) => {
+        const slot = document.createElement("div");
+        slot.className = "carry-item-slot";
+        slot.textContent = item.icon;
+
+        // 检查库存是否耗尽
+        if (bridge) {
+          const storageKey = bridge.getItemStorageKey(item.id);
+          const count = inventory[storageKey] || 0;
+          if (count <= 0) {
+            slot.classList.add("depleted");
+            const badge = document.createElement("span");
+            badge.className = "carry-item-depleted-badge";
+            badge.textContent = "0";
+            slot.appendChild(badge);
+          }
+        }
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "carry-item-remove";
+        removeBtn.textContent = "×";
+        removeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.removeCarryItem(item.id);
+        });
+        slot.appendChild(removeBtn);
+        row.appendChild(slot);
+      });
+
+      if (this._carryItems.length < this._MAX_CARRY_ITEMS) {
+        const addBtn = document.createElement("div");
+        addBtn.className = "carry-item-add";
+        addBtn.textContent = "+";
+        addBtn.addEventListener("click", () => this.openCarryItemPicker());
+        row.appendChild(addBtn);
+      }
+    },
+
+    openCarryItemPicker() {
+      if (this._carryPickerEl) {
+        this._carryPickerEl.remove();
+        this._carryPickerEl = null;
+      }
+
+      const existingIds = new Set(this._carryItems.map((i) => i.id));
+      const bridge = window.MobaoShopBridge;
+      const inventory = bridge ? bridge.getFullInventory() : {};
+      const shopItems = bridge ? bridge.SHOP_ITEMS : [];
+      const available = shopItems
+        .map((def) => {
+          const storageKey = bridge.getItemStorageKey(def.id);
+          return { id: def.id, name: def.name, icon: def.icon, count: inventory[storageKey] || 0 };
+        })
+        .filter((item) => item.count > 0);
+
+      const overlay = document.createElement("div");
+      overlay.className = "carry-picker-overlay";
+      this._carryPickerEl = overlay;
+
+      const panel = document.createElement("div");
+      panel.className = "carry-picker-panel";
+      overlay.appendChild(panel);
+
+      // 已携带的道具在面板中锁定勾选，新勾选的可以自由选择
+      const pickerSelected = new Set(existingIds);
+
+      const renderPicker = () => {
+        const totalSelected = pickerSelected.size;
+        const headCount = `${totalSelected} / ${this._MAX_CARRY_ITEMS}`;
+
+        panel.innerHTML = `
+          <div class="carry-picker-head">
+            <h3>选择携带道具<span class="carry-picker-count">${headCount}</span></h3>
+            <button class="carry-picker-close" type="button">✕</button>
+          </div>
+          <p class="carry-picker-sub">最多可携带 ${this._MAX_CARRY_ITEMS} 个道具进入游戏</p>
+          <div class="carry-picker-body">
+            <div class="carry-picker-grid">
+              ${available.map((item) => {
+          const isLocked = existingIds.has(item.id);
+          const isChecked = pickerSelected.has(item.id);
+          const isFull = !isChecked && totalSelected >= this._MAX_CARRY_ITEMS;
+          let cls = "carry-picker-item";
+          if (isChecked) cls += isLocked ? " locked" : " checked";
+          else if (isFull) cls += " full";
+          return `<div class="${cls}" data-item-id="${item.id}">
+                  <span class="carry-picker-item-icon">${item.icon}</span>
+                  <div class="carry-picker-item-info">
+                    <div class="carry-picker-item-name">${item.name}</div>
+                    <div class="carry-picker-item-count">库存: ${item.count}</div>
+                  </div>
+                </div>`;
+        }).join("")}
+            </div>
+          </div>
+          <div class="carry-picker-foot">
+            <button class="carry-picker-confirm" type="button">确认携带</button>
+          </div>
+        `;
+
+        // 关闭按钮
+        panel.querySelector(".carry-picker-close").addEventListener("click", () => this.closeCarryItemPicker());
+
+        // 确认按钮
+        const confirmBtn = panel.querySelector(".carry-picker-confirm");
+        confirmBtn.addEventListener("click", () => {
+          this._carryItems = available
+            .filter((item) => pickerSelected.has(item.id))
+            .map((item) => ({ id: item.id, name: item.name, icon: item.icon }));
+          this._saveCarryItems();
+          this.closeCarryItemPicker();
+          this.renderCarryItems();
+        });
+
+        // 道具点击
+        panel.querySelectorAll(".carry-picker-item").forEach((el) => {
+          el.addEventListener("click", () => {
+            const itemId = el.dataset.itemId;
+            if (existingIds.has(itemId)) return; // 锁定项不可取消
+            if (pickerSelected.has(itemId)) {
+              pickerSelected.delete(itemId);
+            } else {
+              if (pickerSelected.size >= this._MAX_CARRY_ITEMS) return;
+              pickerSelected.add(itemId);
+            }
+            renderPicker();
+          });
+        });
+      };
+
+      renderPicker();
+      document.body.appendChild(overlay);
+
+      // 点击遮罩关闭
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+          this.closeCarryItemPicker();
+        }
+      });
+
+      requestAnimationFrame(() => overlay.classList.add("open"));
+    },
+
+    closeCarryItemPicker() {
+      if (this._carryPickerEl) {
+        this._carryPickerEl.classList.remove("open");
+        const el = this._carryPickerEl;
+        setTimeout(() => el.remove(), 300);
+        this._carryPickerEl = null;
+      }
+    },
+
+    removeCarryItem(itemId) {
+      this._carryItems = this._carryItems.filter((i) => i.id !== itemId);
+      this._saveCarryItems();
+      this.renderCarryItems();
+    },
+
+    _saveCarryItems() {
+      try {
+        window.localStorage.setItem("mobao_carry_items_v1", JSON.stringify(this._carryItems));
+      } catch (_e) { }
+    },
+
+    _loadCarryItems() {
+      try {
+        const raw = window.localStorage.getItem("mobao_carry_items_v1");
+        if (!raw) { this._carryItems = []; return; }
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) { this._carryItems = []; return; }
+        this._carryItems = parsed
+          .filter((i) => i && typeof i.id === "string")
+          .slice(0, this._MAX_CARRY_ITEMS);
+      } catch (_e) {
+        this._carryItems = [];
+      }
+    },
+
+    _bindAutoReplenishToggle() {
+      const checkbox = document.getElementById("carryAutoReplenish");
+      if (!checkbox) return;
+      checkbox.checked = this._autoReplenish;
+      checkbox.addEventListener("change", () => {
+        this._autoReplenish = checkbox.checked;
+        this._saveAutoReplenish();
+      });
+    },
+
+    _saveAutoReplenish() {
+      try {
+        window.localStorage.setItem("mobao_carry_auto_replenish_v1", this._autoReplenish ? "1" : "0");
+      } catch (_e) { }
+    },
+
+    _loadAutoReplenish() {
+      try {
+        this._autoReplenish = window.localStorage.getItem("mobao_carry_auto_replenish_v1") === "1";
+      } catch (_e) {
+        this._autoReplenish = false;
+      }
+    },
+
+    /**
+     * 计算自动补充携带道具所需的费用
+     * 返回 { totalCost, items: [{id, name, icon, price, shortage}] }
+     */
+    calcReplenishCost() {
+      const bridge = window.MobaoShopBridge;
+      if (!bridge) return { totalCost: 0, items: [] };
+      const inv = bridge.getFullInventory();
+      const result = [];
+      let totalCost = 0;
+
+      this._carryItems.forEach((item) => {
+        const shopDef = bridge.SHOP_ITEMS.find((s) => s.id === item.id);
+        if (!shopDef) return;
+        const storageKey = bridge.getItemStorageKey(item.id);
+        const count = inv[storageKey] || 0;
+        if (count <= 0) {
+          const price = shopDef.price || 0;
+          result.push({ id: item.id, name: item.name, icon: item.icon, price, shortage: 1 });
+          totalCost += price;
+        }
+      });
+
+      return { totalCost, items: result };
+    },
+
+    /**
+     * 执行自动补充（扣费 + 补库存）
+     * 返回 { ok, message, newMoney? }
+     */
+    executeReplenish() {
+      const bridge = window.MobaoShopBridge;
+      if (!bridge) return { ok: false, message: "商店系统不可用" };
+
+      const { totalCost, items } = this.calcReplenishCost();
+      if (items.length === 0) return { ok: true, message: "无需补充", newMoney: bridge.getPlayerMoney() };
+
+      const money = bridge.getPlayerMoney();
+      if (money < totalCost) {
+        return { ok: false, message: `资金不足，需要 ${totalCost}，当前 ${money}`, need: totalCost, have: money };
+      }
+
+      // 扣费
+      try {
+        const raw = window.localStorage.getItem("mobao_player_money_v1");
+        const current = Math.max(0, Math.round(Number(raw) || 0));
+        window.localStorage.setItem("mobao_player_money_v1", String(current - totalCost));
+      } catch (_e) { }
+
+      // 补库存
+      const inv = bridge.getFullInventory();
+      items.forEach((item) => {
+        const key = bridge.getItemStorageKey(item.id);
+        inv[key] = (inv[key] || 0) + 1;
+      });
+      try {
+        window.localStorage.setItem(bridge.SHOP_STORAGE_KEY, JSON.stringify(inv));
+      } catch (_e) { }
+
+      return { ok: true, message: `已补充 ${items.length} 个道具，花费 ${totalCost}`, newMoney: bridge.getPlayerMoney() };
     },
 
     _startLive2dLoop(src, videoA, videoB) {
@@ -827,9 +1144,105 @@
     confirmCharacterSelection() {
       if (!this.selectedCharacter) return;
 
+      if (this._carryItems.length > 0) {
+        if (this._autoReplenish) {
+          // 自动补充模式：扣费补充后进入游戏
+          const result = this.executeReplenish();
+          if (!result.ok) {
+            this._showCarryConfirm(
+              `资金不足！\n补充道具需要 ${result.need}，当前仅有 ${result.have}。\n\n请取消部分道具或关闭自动补充后再试。`,
+              null,
+              "知道了"
+            );
+            return;
+          }
+          // 补充成功，刷新携带栏显示
+          this.renderCarryItems();
+          this.updateCharacterMoneyDisplay();
+        } else {
+          // 手动模式：检查是否有耗尽的道具
+          const bridge = window.MobaoShopBridge;
+          if (bridge) {
+            const inventory = bridge.getFullInventory();
+            const depleted = this._carryItems.filter((item) => {
+              const storageKey = bridge.getItemStorageKey(item.id);
+              return (inventory[storageKey] || 0) <= 0;
+            });
+            if (depleted.length > 0) {
+              const names = depleted.map((i) => i.name).join("、");
+              this._showCarryConfirm(
+                `以下携带道具库存已耗尽：${names}\n\n进入游戏后将无法使用这些道具，是否继续？`,
+                () => this._doStartSoloGame()
+              );
+              return;
+            }
+          }
+        }
+      }
+
+      this._doStartSoloGame();
+    },
+
+    _doStartSoloGame() {
       if (typeof this.startSoloGame === "function") {
         this.startSoloGame();
       }
+    },
+
+    /**
+     * 游戏内风格的确认弹窗
+     * @param {string} message - 提示文字
+     * @param {function|null} onConfirm - 点击确认回调，null 时仅显示"知道了"按钮
+     * @param {string} [confirmText="确认"] - 确认按钮文字
+     */
+    _showCarryConfirm(message, onConfirm, confirmText) {
+      const overlay = document.getElementById("gameConfirmOverlay");
+      const msgEl = document.getElementById("gameConfirmMsg");
+      const okBtn = document.getElementById("gameConfirmOkBtn");
+      const cancelBtn = document.getElementById("gameConfirmCancelBtn");
+      if (!overlay || !msgEl || !okBtn || !cancelBtn) {
+        // fallback
+        if (onConfirm) {
+          if (window.confirm(message)) onConfirm();
+        } else {
+          window.alert(message);
+        }
+        return;
+      }
+
+      // 如果上一次弹窗还没关闭，先清理
+      if (this._carryConfirmCleanup) {
+        this._carryConfirmCleanup();
+      }
+
+      const hasConfirm = typeof onConfirm === "function";
+      msgEl.textContent = message;
+      okBtn.textContent = confirmText || "确认";
+      cancelBtn.style.display = hasConfirm ? "" : "none";
+      overlay.classList.remove("hidden");
+
+      const handleOk = (e) => {
+        e.stopPropagation();
+        cleanup();
+        if (hasConfirm) onConfirm();
+      };
+      const handleCancel = (e) => {
+        e.stopPropagation();
+        cleanup();
+      };
+      const cleanup = () => {
+        overlay.classList.add("hidden");
+        okBtn.removeEventListener("click", handleOk);
+        cancelBtn.removeEventListener("click", handleCancel);
+        this._carryConfirmCleanup = null;
+        // 恢复按钮文字
+        okBtn.textContent = "确认";
+        cancelBtn.style.display = "";
+      };
+
+      this._carryConfirmCleanup = cleanup;
+      okBtn.addEventListener("click", handleOk);
+      cancelBtn.addEventListener("click", handleCancel);
     },
 
     updateCharacterMoneyDisplay() {

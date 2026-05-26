@@ -18,8 +18,7 @@
 
   const SETTINGS_FIELDS = [
     "roundSeconds",
-    "revealSpeedMultiplier",
-    "searchSpeedMultiplier",
+    "settlementSpeedMultiplier",
     "musicVolume",
     "sfxVolume"
   ];

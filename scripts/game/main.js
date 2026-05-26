@@ -224,7 +224,6 @@ class WarehouseScene extends Phaser.Scene {
     this.roundResolving = false;
     this.playerBidSubmitted = false;
     this.playerRoundBid = 0;
-    this.useQualityText = GAME_SETTINGS.showQualityText !== false;
     this.isSettlementRevealMode = false;
     this.settlementRevealRunning = false;
     this.settlementRevealSkipRequested = false;
@@ -306,7 +305,6 @@ class WarehouseScene extends Phaser.Scene {
       skillBtn: null,
       bidInput: null,
       settleBtn: null,
-      qualityTextToggle: null,
       gameRoot: null,
       gameConfirmOverlay: null,
       gameConfirmMsg: null,
@@ -436,7 +434,6 @@ class WarehouseScene extends Phaser.Scene {
     this.dom.skillBtn = document.getElementById("skillBtn");
     this.dom.bidInput = document.getElementById("bidInput");
     this.dom.settleBtn = document.getElementById("settleBtn");
-    this.dom.qualityTextToggle = document.getElementById("setting-showQualityText");
     this.dom.gameRoot = document.getElementById("game-root");
     this.dom.gameConfirmOverlay = document.getElementById("gameConfirmOverlay");
     this.dom.gameConfirmMsg = document.getElementById("gameConfirmMsg");
@@ -565,6 +562,62 @@ class WarehouseScene extends Phaser.Scene {
     this.dom.openSettingsBtn.addEventListener("click", () => {
       this.openSettingsOverlay();
     });
+    const roundSecondsInput = document.getElementById("setting-roundSeconds");
+    const roundSecondsDecrease = document.getElementById("roundSecondsDecrease");
+    const roundSecondsIncrease = document.getElementById("roundSecondsIncrease");
+    function updateRoundSecondsUI(value) {
+      if (roundSecondsInput) {
+        roundSecondsInput.value = value;
+      }
+      if (roundSecondsDecrease) {
+        roundSecondsDecrease.disabled = value <= 10;
+      }
+      if (roundSecondsIncrease) {
+        roundSecondsIncrease.disabled = value >= 180;
+      }
+    }
+    if (roundSecondsDecrease && roundSecondsInput) {
+      roundSecondsDecrease.addEventListener("click", () => {
+        let value = Number(roundSecondsInput.value) || 60;
+        value = Math.max(10, value - 5);
+        updateRoundSecondsUI(value);
+      });
+    }
+    if (roundSecondsIncrease && roundSecondsInput) {
+      roundSecondsIncrease.addEventListener("click", () => {
+        let value = Number(roundSecondsInput.value) || 60;
+        value = Math.min(180, value + 5);
+        updateRoundSecondsUI(value);
+      });
+    }
+    const settlementSpeedInput = document.getElementById("setting-settlementSpeedMultiplier");
+    const settlementSpeedDecrease = document.getElementById("settlementSpeedDecrease");
+    const settlementSpeedIncrease = document.getElementById("settlementSpeedIncrease");
+    function updateSettlementSpeedUI(value) {
+      if (settlementSpeedInput) {
+        settlementSpeedInput.value = value;
+      }
+      if (settlementSpeedDecrease) {
+        settlementSpeedDecrease.disabled = value <= 0.5;
+      }
+      if (settlementSpeedIncrease) {
+        settlementSpeedIncrease.disabled = value >= 3;
+      }
+    }
+    if (settlementSpeedDecrease && settlementSpeedInput) {
+      settlementSpeedDecrease.addEventListener("click", () => {
+        let value = Number(settlementSpeedInput.value) || 1;
+        value = Math.max(0.5, value - 0.5);
+        updateSettlementSpeedUI(value);
+      });
+    }
+    if (settlementSpeedIncrease && settlementSpeedInput) {
+      settlementSpeedIncrease.addEventListener("click", () => {
+        let value = Number(settlementSpeedInput.value) || 1;
+        value = Math.min(3, value + 0.5);
+        updateSettlementSpeedUI(value);
+      });
+    }
     const musicVolumeSlider = document.getElementById("setting-musicVolume");
     const musicVolumeValue = document.getElementById("musicVolumeValue");
     const musicVolumeIcon = document.getElementById("musicVolumeIcon");
@@ -753,6 +806,10 @@ class WarehouseScene extends Phaser.Scene {
     this.bindCharacterSkillButton();
     this.dom.settleBtn.addEventListener("click", () => this.settleCurrentRun());
     this.dom.settleBackBtn.addEventListener("click", () => {
+      if (this.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
+        this.showReflectionPendingDialogForBack();
+        return;
+      }
       this.exitSettlementPage();
       if (this.battleRecordReplayActive) {
         this.battleRecordReplayActive = false;
@@ -848,24 +905,152 @@ class WarehouseScene extends Phaser.Scene {
     }
     if (this.dom.exportAiMemoryBtn) {
       this.dom.exportAiMemoryBtn.addEventListener("click", () => {
-        const jsonData = this.exportAiMemoryToJson();
-        const blob = new Blob([jsonData], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `mobao-ai-memory-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        if (this.dom.aiMemoryStatusText) {
-          this.dom.aiMemoryStatusText.textContent = "已导出";
-        }
-        this.writeLog("AI记忆已导出到文件。");
+        this.showAiMemoryExportDialog();
       });
     }
+    this.showAiMemoryExportDialog = () => {
+      this.removeAiMemoryExportDialog();
+      const jsonData = this.exportAiMemoryToJson();
+      const overlay = document.createElement("div");
+      overlay.id = "aiMemoryExportDialog";
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;";
+      const box = document.createElement("div");
+      box.style.cssText = "background:#2a2218;border:2px solid #d4a843;border-radius:12px;padding:20px;text-align:center;color:#e0d0b0;font-size:16px;max-width:400px;width:90%;";
+      box.innerHTML =
+        '<div style="margin-bottom:16px;font-size:18px;font-weight:bold;">导出AI记忆</div>' +
+        '<div style="color:#a09070;margin-bottom:12px;font-size:14px;">选择导出方式：</div>' +
+        '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;">' +
+        '<button id="exportShareBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;">分享文件</button>' +
+        '<button id="exportDownloadBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">下载文件</button>' +
+        '<button id="exportCopyBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #5a7ebd;background:rgba(90,126,189,0.15);color:#5a7ebd;cursor:pointer;font-size:14px;">复制JSON</button>' +
+        '</div>' +
+        '<button id="exportDialogCloseBtn" style="padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">关闭</button>';
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      const fileName = `mobao-ai-memory-${new Date().toISOString().slice(0, 10)}.json`;
+      document.getElementById("exportDialogCloseBtn").addEventListener("click", () => {
+        this.removeAiMemoryExportDialog();
+      });
+      document.getElementById("exportShareBtn").addEventListener("click", () => {
+        const blob = new Blob([jsonData], { type: "application/json" });
+        const file = new File([blob], fileName, { type: "application/json" });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({
+            files: [file],
+            title: "AI记忆导出",
+            text: "导出AI跨局记忆数据"
+          }).then(() => {
+            if (this.dom.aiMemoryStatusText) {
+              this.dom.aiMemoryStatusText.textContent = "已导出";
+            }
+            this.writeLog("AI记忆已通过分享导出。");
+            this.removeAiMemoryExportDialog();
+          }).catch((err) => {
+            this.writeLog("分享导出失败，尝试下载方式。");
+            this.downloadAiMemoryFallback(jsonData, fileName);
+            this.removeAiMemoryExportDialog();
+          });
+        } else {
+          this.writeLog("不支持分享功能，尝试下载方式。");
+          this.downloadAiMemoryFallback(jsonData, fileName);
+          this.removeAiMemoryExportDialog();
+        }
+      });
+      document.getElementById("exportDownloadBtn").addEventListener("click", () => {
+        this.downloadAiMemoryFallback(jsonData, fileName);
+        this.removeAiMemoryExportDialog();
+      });
+      document.getElementById("exportCopyBtn").addEventListener("click", () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(jsonData).then(() => {
+            if (this.dom.aiMemoryStatusText) {
+              this.dom.aiMemoryStatusText.textContent = "已复制";
+            }
+            this.writeLog("AI记忆JSON已复制到剪贴板。");
+            this.removeAiMemoryExportDialog();
+          }).catch((err) => {
+            this.writeLog("复制失败，尝试手动复制。");
+            this.showAiMemoryCopyFallback(jsonData);
+          });
+        } else {
+          this.showAiMemoryCopyFallback(jsonData);
+        }
+      });
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+          this.removeAiMemoryExportDialog();
+        }
+      });
+    };
+    this.removeAiMemoryExportDialog = () => {
+      const el = document.getElementById("aiMemoryExportDialog");
+      if (el) el.remove();
+    };
+    this.showAiMemoryCopyFallback = (jsonData) => {
+      this.removeAiMemoryCopyFallback();
+      const overlay = document.createElement("div");
+      overlay.id = "aiMemoryCopyFallback";
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;";
+      const box = document.createElement("div");
+      box.style.cssText = "background:#2a2218;border:2px solid #d4a843;border-radius:12px;padding:20px;text-align:center;color:#e0d0b0;font-size:16px;max-width:400px;width:90%;";
+      box.innerHTML =
+        '<div style="margin-bottom:12px;font-size:18px;font-weight:bold;">复制JSON数据</div>' +
+        '<div style="color:#a09070;margin-bottom:12px;font-size:14px;">请手动复制下方内容：</div>' +
+        '<textarea id="copyFallbackTextarea" style="width:100%;height:150px;border:1px solid #d7bf97;border-radius:8px;background:#fff;color:#3a2a1a;font-size:12px;padding:10px;resize:none;box-sizing:border-box;"></textarea>' +
+        '<button id="copyFallbackCloseBtn" style="margin-top:12px;padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">关闭</button>';
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      const textarea = document.getElementById("copyFallbackTextarea");
+      if (textarea) {
+        textarea.value = jsonData;
+        textarea.select();
+        textarea.focus();
+      }
+      document.getElementById("copyFallbackCloseBtn").addEventListener("click", () => {
+        this.removeAiMemoryCopyFallback();
+      });
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+          this.removeAiMemoryCopyFallback();
+        }
+      });
+    };
+    this.removeAiMemoryCopyFallback = () => {
+      const el = document.getElementById("aiMemoryCopyFallback");
+      if (el) el.remove();
+    };
     if (this.dom.importAiMemoryBtn) {
       this.dom.importAiMemoryBtn.addEventListener("click", () => {
+        this.showAiMemoryImportDialog();
+      });
+    }
+    this.showAiMemoryImportDialog = () => {
+      this.removeAiMemoryImportDialog();
+      const overlay = document.createElement("div");
+      overlay.id = "aiMemoryImportDialog";
+      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;";
+      const box = document.createElement("div");
+      box.style.cssText = "background:#2a2218;border:2px solid #d4a843;border-radius:12px;padding:20px;text-align:center;color:#e0d0b0;font-size:16px;max-width:400px;width:90%;";
+      box.innerHTML =
+        '<div style="margin-bottom:16px;font-size:18px;font-weight:bold;">导入AI记忆</div>' +
+        '<div style="color:#a09070;margin-bottom:12px;font-size:14px;">选择导入方式：</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;">' +
+        '<button id="importFromFileBtn" style="padding:10px 20px;border-radius:8px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;">从文件导入</button>' +
+        '<button id="importFromPasteBtn" style="padding:10px 20px;border-radius:8px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">粘贴JSON</button>' +
+        '</div>' +
+        '<textarea id="importJsonTextarea" style="display:none;width:100%;height:120px;border:1px solid #d7bf97;border-radius:8px;background:#fff;color:#3a2a1a;font-size:13px;padding:10px;resize:none;box-sizing:border-box;" placeholder="粘贴JSON数据..."></textarea>' +
+        '<div id="importPasteActions" style="display:none;margin-top:12px;">' +
+        '<button id="importPasteConfirmBtn" style="padding:8px 20px;border-radius:6px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;margin-right:8px;">确认导入</button>' +
+        '<button id="importPasteCancelBtn" style="padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">取消</button>' +
+        '</div>' +
+        '<button id="importDialogCloseBtn" style="margin-top:12px;padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">关闭</button>';
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      document.getElementById("importDialogCloseBtn").addEventListener("click", () => {
+        this.removeAiMemoryImportDialog();
+      });
+      document.getElementById("importFromFileBtn").addEventListener("click", () => {
+        this.removeAiMemoryImportDialog();
         const input = document.createElement("input");
         input.type = "file";
         input.accept = ".json";
@@ -891,20 +1076,112 @@ class WarehouseScene extends Phaser.Scene {
         };
         input.click();
       });
-    }
+      document.getElementById("importFromPasteBtn").addEventListener("click", () => {
+        const textarea = document.getElementById("importJsonTextarea");
+        const pasteActions = document.getElementById("importPasteActions");
+        const fileBtn = document.getElementById("importFromFileBtn");
+        const pasteBtn = document.getElementById("importFromPasteBtn");
+        if (textarea && pasteActions) {
+          textarea.style.display = "block";
+          pasteActions.style.display = "block";
+          fileBtn.style.display = "none";
+          pasteBtn.style.display = "none";
+          textarea.focus();
+        }
+      });
+      document.getElementById("importPasteConfirmBtn").addEventListener("click", () => {
+        const textarea = document.getElementById("importJsonTextarea");
+        if (!textarea) return;
+        const jsonText = textarea.value.trim();
+        if (!jsonText) {
+          this.writeLog("请粘贴JSON数据。");
+          return;
+        }
+        const result = this.importAiMemoryFromJson(jsonText);
+        if (result.ok) {
+          if (this.dom.aiMemoryStatusText) {
+            this.dom.aiMemoryStatusText.textContent = "已导入";
+          }
+          this.writeLog("AI记忆已从粘贴内容导入。");
+          this.removeAiMemoryImportDialog();
+        } else {
+          if (this.dom.aiMemoryStatusText) {
+            this.dom.aiMemoryStatusText.textContent = "导入失败";
+          }
+          this.writeLog("AI记忆导入失败: " + result.error);
+        }
+      });
+      document.getElementById("importPasteCancelBtn").addEventListener("click", () => {
+        const textarea = document.getElementById("importJsonTextarea");
+        const pasteActions = document.getElementById("importPasteActions");
+        const fileBtn = document.getElementById("importFromFileBtn");
+        const pasteBtn = document.getElementById("importFromPasteBtn");
+        if (textarea && pasteActions) {
+          textarea.style.display = "none";
+          pasteActions.style.display = "none";
+          textarea.value = "";
+          fileBtn.style.display = "inline-block";
+          pasteBtn.style.display = "inline-block";
+        }
+      });
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+          this.removeAiMemoryImportDialog();
+        }
+      });
+    };
+    this.removeAiMemoryImportDialog = () => {
+      const el = document.getElementById("aiMemoryImportDialog");
+      if (el) el.remove();
+    };
+    this.downloadAiMemoryFallback = (jsonData, fileName) => {
+      const url = URL.createObjectURL(new Blob([jsonData], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (this.dom.aiMemoryStatusText) {
+        this.dom.aiMemoryStatusText.textContent = "已导出";
+      }
+      this.writeLog("AI记忆已导出到文件。");
+    };
     if (this.dom.resetAiWalletBtn) {
       this.dom.resetAiWalletBtn.addEventListener("click", () => {
-        if (confirm("确定要重置所有AI钱包到初始100万吗？此操作不可撤销。")) {
-          this.resetAiWallets();
-          if (this.dom.aiMemoryStatusText) {
-            this.dom.aiMemoryStatusText.textContent = "已重置AI钱包";
+        // 临时修改确认按钮文本
+        const okBtn = document.getElementById("gameConfirmOkBtn");
+        const cancelBtn = document.getElementById("gameConfirmCancelBtn");
+        const originalOkText = okBtn ? okBtn.textContent : "";
+        const originalCancelText = cancelBtn ? cancelBtn.textContent : "";
+        if (okBtn) okBtn.textContent = "确认重置";
+        if (cancelBtn) cancelBtn.textContent = "取消";
+
+        this.showGameConfirm(
+          "确定要重置所有AI钱包到初始100万吗？此操作不可撤销。",
+          () => {
+            // 恢复按钮文本
+            if (okBtn) okBtn.textContent = originalOkText;
+            if (cancelBtn) cancelBtn.textContent = originalCancelText;
+
+            this.resetAiWallets();
+            if (this.dom.aiMemoryStatusText) {
+              this.dom.aiMemoryStatusText.textContent = "已重置AI钱包";
+            }
+            this.writeLog("AI钱包已重置为100万。");
+          },
+          () => {
+            // 恢复按钮文本
+            if (okBtn) okBtn.textContent = originalOkText;
+            if (cancelBtn) cancelBtn.textContent = originalCancelText;
           }
-          this.writeLog("AI钱包已重置为100万。");
-        }
+        );
       });
     }
     if (this.dom.aiMemoryCloseBtn) {
-      this.dom.aiMemoryCloseBtn.addEventListener("click", () => {
+      this.dom.aiMemoryCloseBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
         this.closeAiMemoryPanel();
       });
     }
@@ -922,12 +1199,14 @@ class WarehouseScene extends Phaser.Scene {
       });
     }
     if (this.dom.aiModelConfigCloseBtn) {
-      this.dom.aiModelConfigCloseBtn.addEventListener("click", () => {
+      this.dom.aiModelConfigCloseBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
         this.closeAiModelConfigOverlay();
       });
     }
     if (this.dom.aiModelConfigSaveBtn) {
-      this.dom.aiModelConfigSaveBtn.addEventListener("click", () => {
+      this.dom.aiModelConfigSaveBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
         this.saveAiModelConfigFromForm();
       });
     }
@@ -973,6 +1252,10 @@ class WarehouseScene extends Phaser.Scene {
       }
       const customProviderModal = document.getElementById("customProviderModal");
       if (customProviderModal && !customProviderModal.classList.contains("hidden")) {
+        return;
+      }
+      const gameConfirmOverlay = document.getElementById("gameConfirmOverlay");
+      if (gameConfirmOverlay && !gameConfirmOverlay.classList.contains("hidden")) {
         return;
       }
       if (event.target === this.dom.settingsOverlay) {
@@ -1106,19 +1389,33 @@ class WarehouseScene extends Phaser.Scene {
       this.toggleRoundPause();
     });
 
-    this.dom.qualityTextToggle.addEventListener("change", () => {
-      this.useQualityText = this.dom.qualityTextToggle.checked;
-      this.syncAllQualityTextVisibility();
+    this.dom.gameConfirmCancelBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const cb = this._gameCancelCallback;
+      this.hideGameConfirm();
+      if (cb) {
+        cb();
+      }
     });
-
-    this.dom.gameConfirmCancelBtn.addEventListener("click", () => this.hideGameConfirm());
-    this.dom.gameConfirmOkBtn.addEventListener("click", () => {
+    this.dom.gameConfirmOkBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
       const cb = this._gameConfirmCallback;
       this.hideGameConfirm();
       if (cb) {
         cb();
       }
     });
+
+    // 游戏确认弹窗点击事件处理，阻止事件冒泡
+    this.dom.gameConfirmOverlay.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
+    const gameConfirmBox = document.querySelector(".game-confirm-box");
+    if (gameConfirmBox) {
+      gameConfirmBox.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+    }
 
     this.dom.infoPopupCloseBtn.addEventListener("click", () => this.hideInfoPopup());
     this.dom.infoPopupOverlay.addEventListener("click", (event) => {
@@ -1143,7 +1440,7 @@ class WarehouseScene extends Phaser.Scene {
         return;
       }
 
-      if (target.closest(".llm-player-switch") || target.closest("input") || target.closest("button")) {
+      if (target.closest(".llm-player-switch") || target.closest(".llm-error-badge") || target.closest("input") || target.closest("button")) {
         return;
       }
 
@@ -1216,9 +1513,17 @@ class WarehouseScene extends Phaser.Scene {
         const isAiModelConfigOpen = this.dom.aiModelConfigOverlay && !this.dom.aiModelConfigOverlay.classList.contains("hidden");
         const customProviderModal = document.getElementById("customProviderModal");
         const isCustomProviderOpen = customProviderModal && !customProviderModal.classList.contains("hidden");
+        const gameConfirmOverlay = document.getElementById("gameConfirmOverlay");
+        const isGameConfirmOpen = gameConfirmOverlay && !gameConfirmOverlay.classList.contains("hidden");
         const fixedInputOverlay = document.getElementById("fixedInputOverlay");
         const isFixedInputOpen = fixedInputOverlay && fixedInputOverlay.classList.contains("show");
-        if (!isAiMemoryOpen && !isAiModelConfigOpen && !isCustomProviderOpen && !isFixedInputOpen) {
+        const aiMemoryImportDialog = document.getElementById("aiMemoryImportDialog");
+        const isAiMemoryImportOpen = aiMemoryImportDialog && !aiMemoryImportDialog.classList.contains("hidden");
+        const aiMemoryExportDialog = document.getElementById("aiMemoryExportDialog");
+        const isAiMemoryExportOpen = aiMemoryExportDialog && !aiMemoryExportDialog.classList.contains("hidden");
+        const aiMemoryCopyFallback = document.getElementById("aiMemoryCopyFallback");
+        const isAiMemoryCopyOpen = aiMemoryCopyFallback && !aiMemoryCopyFallback.classList.contains("hidden");
+        if (!isAiMemoryOpen && !isAiModelConfigOpen && !isCustomProviderOpen && !isGameConfirmOpen && !isFixedInputOpen && !isAiMemoryImportOpen && !isAiMemoryExportOpen && !isAiMemoryCopyOpen) {
           this.closeSettingsOverlay(false);
         }
       }

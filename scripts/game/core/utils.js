@@ -236,7 +236,7 @@
   }
 
   function settlementRevealDelayByQuality(qualityKey) {
-    const multiplier = global.MobaoSettings ? global.MobaoSettings.GAME_SETTINGS.revealSpeedMultiplier : 1;
+    const multiplier = global.MobaoSettings ? global.MobaoSettings.GAME_SETTINGS.settlementSpeedMultiplier : 1;
     switch (qualityKey) {
       case "legendary":
         return Math.round(360 * multiplier);
@@ -254,7 +254,7 @@
   }
 
   function settlementSearchDurationByQuality(qualityKey) {
-    const multiplier = global.MobaoSettings ? global.MobaoSettings.GAME_SETTINGS.searchSpeedMultiplier : 1;
+    const multiplier = global.MobaoSettings ? global.MobaoSettings.GAME_SETTINGS.settlementSpeedMultiplier : 1;
     switch (qualityKey) {
       case "legendary":
         return Math.round(1250 * multiplier);

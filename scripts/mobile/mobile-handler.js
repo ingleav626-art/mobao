@@ -445,7 +445,7 @@
         var elapsed = Date.now() - touchStartTime;
 
         if (isScrolling || elapsed > 500) {
-          e.preventDefault();
+          if (e.cancelable) e.preventDefault();
           e.stopPropagation();
           return;
         }

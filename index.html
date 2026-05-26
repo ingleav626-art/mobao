@@ -9,6 +9,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./styles/game/_variables.css" />
   <link rel="stylesheet" href="./styles/game/styles.css" />
+  <link rel="stylesheet" href="./styles/game/shop.css" />
   <link rel="stylesheet" href="./styles/game/_backgrounds.css" />
   <link rel="stylesheet" href="./styles/game/_animations.css" />
   <link rel="stylesheet" href="./styles/game/mobile-landscape.css" />
@@ -163,6 +164,13 @@
             <div class="ability-content">
               <span class="ability-label">被动能力</span>
               <p class="ability-value">—</p>
+            </div>
+          </div>
+          <div class="ability-block preview-items">
+            <span class="ability-icon">🎒</span>
+            <div class="ability-content">
+              <span class="ability-label">携带道具</span>
+              <div class="carry-items-row" id="carryItemsRow"></div>
             </div>
           </div>
         </div>
@@ -412,15 +420,6 @@
       <p class="settings-sub">同页设置，不中断对局；保存后立即生效。</p>
       <div class="settings-scroll" id="settingsScroll">
         <div class="settings-grid" id="settingsFormInline">
-          <label>回合时间（秒）：
-            <input type="number" id="setting-roundSeconds" min="10" max="180" step="5" />
-          </label>
-          <label>揭示速度倍率：
-            <input type="number" id="setting-revealSpeedMultiplier" min="0.5" max="2.2" step="0.05" />
-          </label>
-          <label>搜索速度倍率：
-            <input type="number" id="setting-searchSpeedMultiplier" min="0.5" max="2.5" step="0.05" />
-          </label>
           <div class="settings-volume-row">
             <button type="button" class="volume-icon-btn" id="musicVolumeIcon" title="点击切换静音">
               <img src="./assets/images/icons/ui/sound-on.svg" alt="音乐" class="volume-icon" id="musicVolumeIconImg">
@@ -428,6 +427,13 @@
             <span class="volume-label">音乐</span>
             <input type="range" id="setting-musicVolume" min="0" max="100" value="70" class="volume-slider" />
             <span class="volume-value" id="musicVolumeValue">70%</span>
+          </div>
+          <div class="settings-stepper-row">
+            <span class="stepper-label">回合时间（秒）：</span>
+            <button type="button" class="stepper-btn" id="roundSecondsDecrease">-</button>
+            <input type="number" id="setting-roundSeconds" min="10" max="180" step="5" value="60" class="stepper-input"
+              readonly />
+            <button type="button" class="stepper-btn" id="roundSecondsIncrease">+</button>
           </div>
           <div class="settings-volume-row">
             <button type="button" class="volume-icon-btn" id="sfxVolumeIcon" title="点击切换静音">
@@ -437,9 +443,13 @@
             <input type="range" id="setting-sfxVolume" min="0" max="100" value="80" class="volume-slider" />
             <span class="volume-value" id="sfxVolumeValue">80%</span>
           </div>
-          <label>显示品质文字
-            <input type="checkbox" id="setting-showQualityText" checked />
-          </label>
+          <div class="settings-stepper-row">
+            <span class="stepper-label">结算速度倍率：</span>
+            <button type="button" class="stepper-btn" id="settlementSpeedDecrease">-</button>
+            <input type="number" id="setting-settlementSpeedMultiplier" min="0.5" max="3" step="0.5" value="1"
+              class="stepper-input" readonly />
+            <button type="button" class="stepper-btn" id="settlementSpeedIncrease">+</button>
+          </div>
           <div class="settings-group settings-span-2" id="llmSettingsGroup">
             <h3>AI实验接入</h3>
             <p class="settings-group-sub">支持多种大模型 API。密钥仅保存在本地浏览器。</p>
@@ -502,7 +512,8 @@
               <button id="resetAiWalletBtn" type="button">重置AI钱包</button>
               <span class="settings-inline-hint" id="aiMemoryStatusText"></span>
             </div>
-            <p class="settings-group-sub">清空：删除所有AI的持久化记忆，不可恢复。查看：浏览AI的跨局记忆内容。导出/导入：备份或恢复AI记忆。重置AI钱包：将所有AI钱包恢复到初始100万。</p>
+            <p class="settings-group-sub">清空：删除所有AI的持久化记忆，不可恢复。查看：浏览AI的跨局记忆内容。导出/导入：备份或恢复AI记忆。重置AI钱包：将所有AI钱包恢复到初始100万。
+            </p>
             <div id="llmProviderSettings">
               <label id="llmApiKeyLabel">API Key：
                 <input type="text" id="setting-llmApiKey" autocomplete="off" placeholder="sk-..." inputmode="url" />
@@ -549,6 +560,14 @@
         </select>
         <select id="collectionQualityFilter">
           <option value="all">全部品质</option>
+        </select>
+        <select id="collectionSortFilter">
+          <option value="default">默认排序</option>
+          <option value="price-asc">价格 ↑</option>
+          <option value="price-desc">价格 ↓</option>
+          <option value="name-asc">名称 A-Z</option>
+          <option value="size-asc">尺寸 ↑</option>
+          <option value="size-desc">尺寸 ↓</option>
         </select>
         <input type="text" id="collectionSearchInput" placeholder="搜索藏品名称..." />
       </div>
@@ -661,17 +680,50 @@
     </div>
   </div>
   <div class="shop-overlay hidden" id="shopOverlay">
-    <section class="shop-panel" id="shopPanel">
-      <div class="shop-head">
-        <h2>商店</h2>
-        <div class="shop-money" id="shopMoneyDisplay"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
-            class="hud-icon"> 0</div>
-        <button id="shopCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
-            class="btn-icon"></button>
+    <section class="shop-page" id="shopPage">
+      <header class="shop-header">
+        <h2 class="shop-title">商店</h2>
+        <div class="shop-header-right">
+          <div class="shop-money" id="shopMoneyDisplay"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
+              class="hud-icon"> 0</div>
+          <button class="shop-close-btn" id="shopCloseBtn" type="button">返回</button>
+        </div>
+      </header>
+      <div class="shop-body">
+        <nav class="shop-sidebar" id="shopSidebar">
+          <button class="shop-nav-item active" data-shop-tab="all" type="button">全部道具</button>
+          <button class="shop-nav-item" data-shop-tab="limited" type="button">限时特惠</button>
+          <button class="shop-nav-item" data-shop-tab="inventory" type="button">库存</button>
+        </nav>
+        <main class="shop-content" id="shopContent">
+          <div class="shop-tab-panel active" id="shopTabAll">
+            <div class="shop-toolbar">
+              <input type="text" class="shop-search-input" id="shopSearchInput" placeholder="搜索道具名称...">
+              <select class="shop-category-filter" id="shopCategoryFilter">
+                <option value="all">全部分类</option>
+                <option value="outline">轮廓</option>
+                <option value="quality">品质</option>
+                <option value="reveal">揭示</option>
+                <option value="avg">均价</option>
+                <option value="bonus">加成</option>
+                <option value="online">联机</option>
+                <option value="special">特殊</option>
+              </select>
+              <select class="shop-sort-filter" id="shopSortFilter">
+                <option value="default">默认排序</option>
+                <option value="price-high">价格从高到低</option>
+                <option value="price-low">价格从低到高</option>
+              </select>
+            </div>
+            <div class="shop-grid" id="shopGrid"></div>
+          </div>
+          <div class="shop-tab-panel" id="shopTabLimited">
+          </div>
+          <div class="shop-tab-panel" id="shopTabInventory">
+            <div class="shop-inventory-grid" id="shopInventoryGrid"></div>
+          </div>
+        </main>
       </div>
-      <p class="shop-sub">每日限量供应，零点刷新。购买后立即到账。</p>
-      <div class="shop-list" id="shopList"></div>
-      <div class="shop-inventory" id="shopInventory"></div>
     </section>
   </div>
   <script src="./scripts/audio/audio-manager.js"></script>
@@ -686,6 +738,7 @@
   <script src="./scripts/game/data/characters.js"></script>
   <script src="./scripts/game/data/character-system.js"></script>
   <script src="./scripts/game/bridge/shop.js"></script>
+  <script src="./scripts/game/shop/index.js"></script>
   <script src="./scripts/game/bridge/battle-record.js"></script>
   <script src="./scripts/game/bridge/settlement.js"></script>
   <script src="./scripts/llm/llm-manager.js"></script>

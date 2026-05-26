@@ -143,7 +143,18 @@
       this._drawerVersion = version;
 
       if (!itemState.length) {
-        this.dom.itemDrawerList.innerHTML = '<div class="item-drawer-empty">暂无可用道具</div>';
+        // 检查是否是因为没有携带道具
+        let hasCarryItems = false;
+        try {
+          const raw = window.localStorage.getItem("mobao_carry_items_v1");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            hasCarryItems = Array.isArray(parsed) && parsed.length > 0;
+          }
+        } catch (_e) { }
+
+        const msg = hasCarryItems ? "道具已全部使用" : "未携带道具";
+        this.dom.itemDrawerList.innerHTML = `<div class="item-drawer-empty">${msg}</div>`;
         return;
       }
 

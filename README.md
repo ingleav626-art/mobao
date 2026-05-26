@@ -584,11 +584,9 @@ APK 输出：`android/app/build/outputs/apk/debug/app-debug.apk`
 | postRevealWaitMs | 3000 | 800~6000 | 揭示后等待时间（毫秒） |
 | bidStep | 100 | 10~10000 | 最小出价步长 |
 | bidDefaultRaise | 500 | 0~50000 | 默认加价幅度 |
-| revealSpeedMultiplier | 1.0 | 0.5~2.2 | 揭示速度倍率 |
-| searchSpeedMultiplier | 1.0 | 0.5~2.5 | 搜索速度倍率 |
+| settlementSpeedMultiplier | 1.0 | 0.5~3.0 | 结算速度倍率（揭示和搜索动画） |
 | musicVolume | 70 | 0~100 | 音乐音量 |
 | sfxVolume | 80 | 0~100 | 音效音量 |
-| showQualityText | true | — | 是否显示品质文字 |
 
 ---
 

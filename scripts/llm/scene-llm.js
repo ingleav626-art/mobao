@@ -164,6 +164,96 @@
       window.localStorage.setItem(AI_LLM_SWITCH_STORAGE_KEY, JSON.stringify(value));
     }
 
+    function showAiErrorToast(playerName, errorSummary) {
+      const toast = document.createElement("div");
+      toast.className = "ai-error-toast";
+      toast.textContent = `${playerName} AI请求失败：${errorSummary}`;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add("toast-out");
+        setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 450);
+      }, 3600);
+    }
+
+    function parseLlmError(raw, code) {
+      const s = String(raw || "");
+      const firstPart = s.split("|")[0].trim();
+      if (code === "EMPTY_RESPONSE" || /模型.*为空|输出.*截断|未生成/i.test(s)) {
+        const isTrunc = /截断|length/i.test(s);
+        return { brief: isTrunc ? "输出被截断" : "模型返回为空", detail: s || "模型未生成有效内容，请增大最大输出Token数。" };
+      }
+      if (code === "TIMEOUT" || code === "NETWORK_ERROR") {
+        return code === "TIMEOUT"
+          ? { brief: "请求超时", detail: "AI响应超时，可能是模型推理耗时过长或网络延迟。可尝试增大超时时间或切换更快的模型。" }
+          : { brief: "网络连接失败", detail: "无法连接到API服务器，请检查网络状态或API地址是否正确。" };
+      }
+      if (code === "MISSING_API_KEY" || /api[_-]?key.*(空|缺|missing|填写)/i.test(s)) return { brief: "API密钥缺失", detail: "未填写API Key，请在设置中填入有效的密钥。" };
+      if (/invalid.*key|incorrect.*api|api.*key.*invalid|authentication.*(fail|错误)|unauthorized|鉴权|认证失败/i.test(s)) return { brief: "API密钥错误", detail: "API Key无效或已过期，请在设置中检查并更新密钥。" };
+      if (/401|403/i.test(firstPart)) return { brief: "API密钥错误", detail: "API Key无效或权限不足，请在设置中检查并更新密钥。" };
+      if (/model.*not.*found|model.*not.*exist|invalid.*model|不存在.*模型/i.test(s)) return { brief: "模型不存在", detail: "所选模型ID不存在或已下线，请在设置中更换模型。" };
+      if (/rate.?limit|429|too many|限流|频率/i.test(s)) return { brief: "请求过于频繁", detail: "API调用频率超限，请稍后再试或降低并发。" };
+      if (/500|502|503|server.*error/i.test(s)) return { brief: "服务器错误", detail: "API服务端返回错误，请稍后再试。" };
+      if (/quota|balance|insufficient|余额|额度不足/i.test(s)) return { brief: "额度不足", detail: "API账户余额或配额不足，请充值或更换账户。" };
+      if (/json|parse|格式|syntax/i.test(s)) return { brief: "响应解析失败", detail: "AI返回的内容格式异常，无法解析为有效决策。" };
+      if (code === "HTTP_ERROR" || /HTTP\s*\d/i.test(s)) return { brief: "请求被拒绝", detail: `服务端返回错误${firstPart ? "：" + firstPart : ""}。请检查API地址、密钥和模型配置。` };
+      if (code === "EXCEPTION") return { brief: "请求异常", detail: firstPart || "请求过程中发生异常，请检查网络和设置。" };
+      if (code === "PROXY_ERROR") return { brief: "代理错误", detail: firstPart || "代理服务返回异常，请检查代理配置。" };
+      if (code === "MODEL_MISMATCH") return { brief: "模型不一致", detail: firstPart || "服务端返回的模型与配置不一致。" };
+      return { brief: "请求失败", detail: firstPart || "未知错误，请查看控制台日志了解详情。" };
+    }
+
+    function setPlayerLlmError(scene, playerId, errorMessage, code, level) {
+      if (!scene._aiLlmErrors) scene._aiLlmErrors = {};
+      const parsed = parseLlmError(errorMessage, code);
+      scene._aiLlmErrors[playerId] = { message: errorMessage, brief: parsed.brief, detail: parsed.detail, level: level || "error", timestamp: Date.now() };
+
+      const metaEl = document.querySelector(`#playerCard-${playerId} .meta`);
+      if (!metaEl) return;
+
+      let row = metaEl.querySelector(".llm-row");
+      if (!row) {
+        row = document.createElement("div");
+        row.className = "llm-row";
+        const llmSwitch = metaEl.querySelector(".llm-player-switch");
+        if (llmSwitch) {
+          metaEl.insertBefore(row, llmSwitch);
+          row.appendChild(llmSwitch);
+        } else {
+          metaEl.appendChild(row);
+        }
+      }
+
+      let badge = row.querySelector(".llm-error-badge");
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "llm-error-badge";
+        row.appendChild(badge);
+      }
+      badge.textContent = parsed.brief;
+      badge.classList.toggle("warning", level === "warning");
+
+      badge.onclick = (e) => {
+        e.stopPropagation();
+        const player = scene.players.find(p => p.id === playerId);
+        const pName = player ? player.name : playerId;
+        const errData = scene._aiLlmErrors[playerId];
+        const time = errData ? new Date(errData.timestamp).toLocaleTimeString() : "";
+        const content = `<p><strong>玩家：</strong>${pName}</p><p><strong>时间：</strong>${time}</p><p><strong>错误类型：</strong>${errData.brief}</p><p><strong>说明：</strong>${errData.detail}</p>`;
+        if (typeof scene.showPlayerInfoPopover === "function") {
+          scene.showPlayerInfoPopover("AI报错信息", content, e.clientX, e.clientY);
+        }
+      };
+    }
+
+    function clearPlayerLlmErrors(scene) {
+      if (!scene._aiLlmErrors) { scene._aiLlmErrors = {}; return; }
+      Object.keys(scene._aiLlmErrors).forEach((pid) => {
+        const badge = document.querySelector(`#playerCard-${pid} .llm-error-badge`);
+        if (badge) badge.remove();
+      });
+      scene._aiLlmErrors = {};
+    }
+
     const methods = {
       renderAiLogicPanelForLlm(telemetry) {
         const lines = [];
@@ -1303,6 +1393,8 @@
             if (requestStage === "initial") {
               this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: `[LLM请求失败] ${errorMessage}` }];
             }
+            setPlayerLlmError(this, player.id, errorMessage, result.code);
+            showAiErrorToast(player.name, parseLlmError(errorMessage, result.code).brief);
             return {
               source: "llm",
               failed: true,
@@ -1321,6 +1413,24 @@
 
           const responseText = String(result.content || "");
           const reasoningContent = String(result.reasoningContent || "");
+          const rawFinish = result.raw && result.raw.choices && result.raw.choices[0] ? result.raw.choices[0].finish_reason : "";
+          if (!responseText.trim() && !reasoningContent.trim()) {
+            const isEmpty = rawFinish === "length"
+              ? "模型输出被截断，未生成有效内容。请增大最大输出Token数。"
+              : "模型返回为空，未生成有效内容。请检查模型配置和Token限制。";
+            setPlayerLlmError(this, player.id, isEmpty, "EMPTY_RESPONSE");
+            showAiErrorToast(player.name, parseLlmError(isEmpty, "EMPTY_RESPONSE").brief);
+            return {
+              source: "llm", failed: true, error: isEmpty,
+              actionType: "none", actionId: "none",
+              systemPrompt, userPrompt, modelResponse: "",
+              cacheHitTokens: 0, cacheMissTokens: 0, cacheHitRate: 0, usage: null
+            };
+          }
+          if (!responseText.trim() && reasoningContent.trim()) {
+            setPlayerLlmError(this, player.id, "输出Token不足，请在设置中提高最大输出Token限制。", "EMPTY_RESPONSE", "warning");
+            this.writeLog(`${player.name}：输出Token不足，已尝试从思维链提取决策。`);
+          }
           let decision = this.extractAiDecisionObject(responseText);
           const hasValidBid = decision && Number.isFinite(Number(decision.bid)) && Number(decision.bid) > 0;
           const hasValidAction = (decision && decision.skill && String(decision.skill).trim() !== "无"
@@ -1338,10 +1448,16 @@
           const plan = this.normalizeAiLlmPlan(player.id, decision, responseText, {
             allowAction: options.allowAction !== false
           });
+          if (rawFinish === "length" && responseText.trim()) {
+            setPlayerLlmError(this, player.id, "输出被截断，请在设置中提高最大输出Token限制。", "EMPTY_RESPONSE", "warning");
+            this.writeLog(`${player.name}：输出被截断，决策可能不完整。`);
+          }
           if (useMultiGameMemory && requestStage === "initial" && typeof this.pushAiRoundSummary === "function") {
             this.pushAiRoundSummary(player.id, plan);
           }
           plan.elapsedMs = result.elapsedMs;
+          plan.model = result.model || "";
+          plan.configuredModel = settings.model || "";
           plan.systemPrompt = playerCache ? "" : systemPrompt;
           plan.userPrompt = userPrompt;
           plan.modelResponse = responseText;
@@ -1359,6 +1475,12 @@
           plan.cacheHitRate = cacheHitRate;
           plan.usage = usage;
 
+          // 模型名不一致警告
+          if (plan.model && plan.configuredModel && plan.configuredModel.toLowerCase() !== "auto" && plan.model !== plan.configuredModel) {
+            setPlayerLlmError(this, player.id, `模型不一致：请求"${plan.configuredModel}"，实际"${plan.model}"。服务端可能已替换模型。`, "MODEL_MISMATCH", "warning");
+            this.writeLog(`${player.name}：模型不一致，请求=${plan.configuredModel} 实际=${plan.model}`);
+          }
+
           // 缓存本轮对话（仅 initial 阶段），跨局记忆仅首轮注入，不进入缓存
           if (requestStage === "initial") {
             this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: responseText }];
@@ -1369,6 +1491,8 @@
           if (requestStage === "initial") {
             this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: `[LLM请求异常] ${message}` }];
           }
+          setPlayerLlmError(this, player.id, message, "EXCEPTION");
+          showAiErrorToast(player.name, parseLlmError(message, "EXCEPTION").brief);
           return {
             source: "llm",
             failed: true,
@@ -1641,6 +1765,23 @@
 
           const responseText = String(result.content || "");
           const reasoningContent = String(result.reasoningContent || "");
+          const rawFinish2 = result.raw && result.raw.choices && result.raw.choices[0] ? result.raw.choices[0].finish_reason : "";
+          if (!responseText.trim() && !reasoningContent.trim()) {
+            const isEmpty = rawFinish2 === "length"
+              ? "模型输出被截断（纠错），未生成有效内容。请增大最大输出Token数。"
+              : "模型返回为空（纠错），未生成有效内容。请检查模型配置和Token限制。";
+            setPlayerLlmError(this, player.id, isEmpty, "EMPTY_RESPONSE");
+            showAiErrorToast(player.name, parseLlmError(isEmpty, "EMPTY_RESPONSE").brief);
+            return {
+              source: "llm", failed: true, error: isEmpty,
+              actionType: "none", actionId: "none",
+              correctionSkipped: true, correctionAttempt: correctionCount + 1
+            };
+          }
+          if (!responseText.trim() && reasoningContent.trim()) {
+            setPlayerLlmError(this, player.id, "输出Token不足（纠错），请在设置中提高最大输出Token限制。", "EMPTY_RESPONSE", "warning");
+            this.writeLog(`${player.name}：输出Token不足（纠错），已尝试从思维链提取。`);
+          }
           let decision = this.extractAiDecisionObject(responseText);
           const hasValidBid = decision && Number.isFinite(Number(decision.bid)) && Number(decision.bid) > 0;
 
@@ -1657,6 +1798,10 @@
           const plan = this.normalizeAiLlmPlan(player.id, decision, responseText, {
             allowAction: true
           });
+          if (rawFinish2 === "length" && responseText.trim()) {
+            setPlayerLlmError(this, player.id, "输出被截断（纠错），请在设置中提高最大输出Token限制。", "EMPTY_RESPONSE", "warning");
+            this.writeLog(`${player.name}：输出被截断（纠错），决策可能不完整。`);
+          }
 
           plan.elapsedMs = result.elapsedMs;
           plan.systemPrompt = systemPrompt;
@@ -1738,8 +1883,13 @@
         });
 
         if (summary.length > 0) {
+          let actualModel = "";
+          activePlayers.forEach((player) => {
+            const p = this.aiLlmRoundPlans[player.id];
+            if (p && p.model && !actualModel) actualModel = p.model;
+          });
           const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
-          const modelName = (settings && settings.model) || "大模型";
+          const modelName = actualModel || (settings && settings.model) || "大模型";
           this.writeLog(`${modelName}决策：${summary.join("；")}`);
         }
       },
@@ -1749,6 +1899,7 @@
         this.aiLlmRoundPlans = {};
         this.aiRoundEffects = {};
         this.lastAiIntelActions = [];
+        clearPlayerLlmErrors(this);
 
         if (!this.aiErrorCorrectionHistory) {
           this.aiErrorCorrectionHistory = {};
@@ -1817,6 +1968,9 @@
               console.log(`[processAiDecision] ${player.id}-${startTime} END, elapsed: ${endTime - startTime}ms`);
             } catch (error) {
               console.error(`[processAiDecision] ${player.id}-${startTime} error:`, error);
+              const errorMsg = error && error.message ? error.message : "未知异常";
+              setPlayerLlmError(this, player.id, errorMsg, "EXCEPTION");
+              showAiErrorToast(player.name, parseLlmError(errorMsg, "EXCEPTION").brief);
             } finally {
               this.setPlayerBidReady(player.id, true);
               this.updateHud();
@@ -1862,12 +2016,14 @@
           }
 
           const summary = [];
+          let actualModel2 = "";
           activePlayers.forEach((player) => {
             const plan = this.aiLlmRoundPlans[player.id];
             if (!plan) {
               summary.push(`${player.name}:失败(无计划)`);
               return;
             }
+            if (plan.model && !actualModel2) actualModel2 = plan.model;
             if (plan.failed) {
               summary.push(`${player.name}:失败(${plan.error || "未知"})`);
               return;
@@ -1888,7 +2044,7 @@
 
           if (summary.length > 0) {
             const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
-            const modelName = (settings && settings.model) || "大模型";
+            const modelName = actualModel2 || (settings && settings.model) || "大模型";
             this.writeLog(`${modelName}决策：${summary.join("；")}`);
           }
         });
@@ -1931,8 +2087,16 @@
         });
 
         if (summary.length > 0) {
-          const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
-          const modelName = (settings && settings.model) || "大模型";
+          const actualModels = new Set();
+          activePlayers.forEach((player) => {
+            const plan = this.aiLlmRoundPlans[player.id];
+            if (plan && !plan.failed && plan.model) {
+              actualModels.add(plan.model);
+            }
+          });
+          const modelName = actualModels.size > 0
+            ? [...actualModels].join("/")
+            : "大模型";
           this.writeLog(`${modelName}决策：${summary.join("；")}`);
         }
       },
@@ -1968,11 +2132,10 @@
           const ruleActionName = ruleActionIds.length > 0
             ? ruleActionIds.map((actionId) => this.getActionDefById(actionId).name).join("、")
             : "";
-          const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS;
-          const modelName = (settings && settings.model) || "大模型";
+          const actualModel = plan && plan.model ? plan.model : "";
           const decisionSource = !plan || !llmSeatEnabled
             ? "规则AI"
-            : (plan.failed ? "规则AI回退" : modelName);
+            : (plan.failed ? "规则AI回退" : (actualModel || "大模型"));
 
           return {
             playerId: player.id,

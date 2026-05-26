@@ -39,6 +39,11 @@
       titleEl.textContent = title;
       contentEl.innerHTML = content;
       popover.classList.remove("hidden");
+      popover.classList.add("popup-content-enter");
+      popover.addEventListener("animationend", function onEnter() {
+        popover.classList.remove("popup-content-enter");
+        popover.removeEventListener("animationend", onEnter);
+      }, { once: true });
       this.positionPlayerInfoPopover(x, y);
     },
 
@@ -68,6 +73,7 @@
       const popover = document.getElementById("playerInfoPopover");
       if (popover) {
         popover.classList.add("hidden");
+        popover.classList.remove("popup-content-enter");
       }
     },
 
@@ -161,6 +167,13 @@
       this.fillSettingsForm(GAME_SETTINGS);
       this.fillLlmSettingsForm(this.getLlmSettings());
       this.setSettingsStatus("设置保存在本地浏览器中。", false);
+
+      // 保存初始设置值，用于离开保护（使用表单读取的值，确保一致性）
+      this._settingsInitialValues = JSON.stringify({
+        game: this.readSettingsForm(),
+        llm: this.readLlmSettingsForm()
+      });
+
       const llmGroup = document.getElementById("llmSettingsGroup");
       if (llmGroup) {
         if (this.isLanMode) {
@@ -203,7 +216,49 @@
       }
     },
 
-    closeSettingsOverlay(keepStatus = false) {
+    closeSettingsOverlay(keepStatus = false, forceClose = false) {
+      // 检查是否有未保存的设置
+      if (!forceClose && this._settingsInitialValues) {
+        const currentValues = JSON.stringify({
+          game: this.readSettingsForm(),
+          llm: this.readLlmSettingsForm()
+        });
+
+        if (currentValues !== this._settingsInitialValues) {
+          // 临时修改确认按钮文本
+          const okBtn = document.getElementById("gameConfirmOkBtn");
+          const cancelBtn = document.getElementById("gameConfirmCancelBtn");
+          const originalOkText = okBtn ? okBtn.textContent : "";
+          const originalCancelText = cancelBtn ? cancelBtn.textContent : "";
+          if (okBtn) okBtn.textContent = "保存";
+          if (cancelBtn) cancelBtn.textContent = "不保存";
+
+          this.showGameConfirm(
+            "设置已修改，是否保存？",
+            () => {
+              // 恢复按钮文本
+              if (okBtn) okBtn.textContent = originalOkText;
+              if (cancelBtn) cancelBtn.textContent = originalCancelText;
+
+              this.saveSettingsFromOverlay();
+              this._settingsInitialValues = null;
+              this.closeSettingsOverlay(keepStatus, true);
+            },
+            () => {
+              // 恢复按钮文本
+              if (okBtn) okBtn.textContent = originalOkText;
+              if (cancelBtn) cancelBtn.textContent = originalCancelText;
+
+              this._settingsInitialValues = null;
+              this.closeSettingsOverlay(keepStatus, true);
+            }
+          );
+          return;
+        }
+      }
+
+      this._settingsInitialValues = null;
+
       if (window.MobaoAnimations) {
         window.MobaoAnimations.animateOverlayClose(this.dom.settingsOverlay, this.dom.settingsPanel, function () {
           if (!keepStatus) {
@@ -234,6 +289,30 @@
         }
         input.value = String(values[field]);
       });
+      const roundSecondsInput = document.getElementById("setting-roundSeconds");
+      const roundSecondsDecrease = document.getElementById("roundSecondsDecrease");
+      const roundSecondsIncrease = document.getElementById("roundSecondsIncrease");
+      if (roundSecondsInput) {
+        const value = Number(roundSecondsInput.value) || 60;
+        if (roundSecondsDecrease) {
+          roundSecondsDecrease.disabled = value <= 10;
+        }
+        if (roundSecondsIncrease) {
+          roundSecondsIncrease.disabled = value >= 180;
+        }
+      }
+      const settlementSpeedInput = document.getElementById("setting-settlementSpeedMultiplier");
+      const settlementSpeedDecrease = document.getElementById("settlementSpeedDecrease");
+      const settlementSpeedIncrease = document.getElementById("settlementSpeedIncrease");
+      if (settlementSpeedInput) {
+        const value = Number(settlementSpeedInput.value) || 1;
+        if (settlementSpeedDecrease) {
+          settlementSpeedDecrease.disabled = value <= 0.5;
+        }
+        if (settlementSpeedIncrease) {
+          settlementSpeedIncrease.disabled = value >= 3;
+        }
+      }
       const musicVolumeInput = document.getElementById("setting-musicVolume");
       const musicVolumeValue = document.getElementById("musicVolumeValue");
       const musicVolumeIconImg = document.getElementById("musicVolumeIconImg");
@@ -260,10 +339,6 @@
           sfxVolumeIconImg.classList.toggle("muted", isMuted);
         }
       }
-      if (this.dom.qualityTextToggle) {
-        this.dom.qualityTextToggle.checked = GAME_SETTINGS.showQualityText !== false;
-        this.useQualityText = GAME_SETTINGS.showQualityText !== false;
-      }
     },
 
     readSettingsForm() {
@@ -272,11 +347,6 @@
         const input = document.getElementById(this.settingsInputId(field));
         draft[field] = input ? Number(input.value) : GAME_SETTINGS[field];
       });
-      if (this.dom.qualityTextToggle) {
-        draft.showQualityText = this.dom.qualityTextToggle.checked;
-        this.useQualityText = this.dom.qualityTextToggle.checked;
-        this.syncAllQualityTextVisibility();
-      }
       return normalizeGameSettings(draft, GAME_SETTINGS);
     },
 
@@ -315,6 +385,9 @@
           this.writeLog("已启用多局AI上下文：后续会在同一会话中连续学习。");
         }
       }
+
+      // 清除初始值记录，避免关闭时再次弹窗
+      this._settingsInitialValues = null;
 
       this.dom.bidInput.step = "1";
       this.dom.bidInput.min = "0";
@@ -487,38 +560,22 @@
     },
 
     openShopOverlay() {
-      const overlay = document.getElementById("shopOverlay");
-      if (!overlay) return;
-      if (typeof MobaoAnimations !== "undefined") {
-        MobaoAnimations.animateOverlayOpen(overlay);
-      } else {
-        overlay.classList.remove("hidden");
+      if (typeof window.MobaoShopPage !== "undefined") {
+        window.MobaoShopPage.init({
+          onPurchase: () => {
+            this.updateLobbyMoneyDisplay();
+            if (!document.getElementById("gameArea").classList.contains("hidden")) {
+              this.updateHud();
+            }
+          }
+        });
+        window.MobaoShopPage.open();
       }
-      this.renderShopContent();
-      this.updateLobbyMoneyDisplay();
-
-      const closeBtn = document.getElementById("shopCloseBtn");
-      if (closeBtn && !closeBtn._shopBound) {
-        closeBtn._shopBound = true;
-        closeBtn.addEventListener("click", () => this.closeShopOverlay());
-      }
-
-      overlay.onclick = (e) => {
-        if (e.target === overlay) this.closeShopOverlay();
-      };
     },
 
     closeShopOverlay() {
-      const overlay = document.getElementById("shopOverlay");
-      if (!overlay) return;
-      if (typeof MobaoAnimations !== "undefined") {
-        MobaoAnimations.animateOverlayClose(overlay, null, function () {
-          overlay.classList.add("hidden");
-          overlay.style.animation = "";
-          overlay.style.opacity = "";
-        });
-      } else {
-        overlay.classList.add("hidden");
+      if (typeof window.MobaoShopPage !== "undefined") {
+        window.MobaoShopPage.close();
       }
       this.updateLobbyMoneyDisplay();
       if (!document.getElementById("gameArea").classList.contains("hidden")) {
@@ -767,7 +824,10 @@
           return {
             apiKey: settings.apiKey || "",
             endpoint: settings.endpoint || "",
-            model: settings.model || ""
+            model: settings.model || "",
+            maxTokens: settings.maxTokens,
+            timeoutMs: settings.timeoutMs,
+            thinkingEnabled: settings.thinkingEnabled
           };
         }
       }

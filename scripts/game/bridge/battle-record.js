@@ -57,7 +57,11 @@
         }
         this.battleRecordLogView = null;
         this.renderBattleRecordPanel();
-        this.dom.battleRecordOverlay.classList.remove("hidden");
+        if (typeof MobaoAnimations !== "undefined") {
+          MobaoAnimations.animateOverlayOpen(this.dom.battleRecordOverlay);
+        } else {
+          this.dom.battleRecordOverlay.classList.remove("hidden");
+        }
       },
 
       closeBattleRecordPanel() {
@@ -65,7 +69,11 @@
           return;
         }
         this.battleRecordLogView = null;
-        this.dom.battleRecordOverlay.classList.add("hidden");
+        if (typeof MobaoAnimations !== "undefined") {
+          MobaoAnimations.animateOverlayClose(this.dom.battleRecordOverlay);
+        } else {
+          this.dom.battleRecordOverlay.classList.add("hidden");
+        }
       },
 
       buildWarehouseSnapshotForRecord() {

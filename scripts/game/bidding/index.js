@@ -125,15 +125,17 @@
       this.syncBidKeypadScreen();
     },
 
-    showGameConfirm(message, onConfirm) {
+    showGameConfirm(message, onConfirm, onCancel) {
       this.dom.gameConfirmMsg.textContent = message;
       this._gameConfirmCallback = onConfirm || null;
+      this._gameCancelCallback = onCancel || null;
       this.dom.gameConfirmOverlay.classList.remove("hidden");
     },
 
     hideGameConfirm() {
       this.dom.gameConfirmOverlay.classList.add("hidden");
       this._gameConfirmCallback = null;
+      this._gameCancelCallback = null;
     },
 
     async resolveRoundBids(reason = "manual", forceSettle = false) {

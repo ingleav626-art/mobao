@@ -1,6 +1,14 @@
 window.MobaoShopBridge = (function () {
   const SHOP_STORAGE_KEY = "mobao_shop_inventory_v1";
   const SHOP_REFRESH_DATE_KEY = "mobao_shop_refresh_date_v1";
+  const LIMITED_OFFER_KEY = "mobao_shop_limited_offer_v1";
+
+  const DISCOUNT_BADGES = [
+    { type: "fire", label: "爆款", color: "#ff4444", minDiscount: 0.1, maxDiscount: 0.3 },
+    { type: "super", label: "超值", color: "#ff6b00", minDiscount: 0.3, maxDiscount: 0.5 },
+    { type: "hot", label: "热卖", color: "#ff9500", minDiscount: 0.5, maxDiscount: 0.6 },
+    { type: "sale", label: "特惠", color: "#ffc107", minDiscount: 0.6, maxDiscount: 0.7 }
+  ];
 
   const SHOP_ITEMS = [
     { id: "item-outline-lamp", name: "探照灯", description: "揭示4件藏品轮廓", price: 0, icon: "🔦", maxDaily: 999 },
@@ -160,8 +168,101 @@ window.MobaoShopBridge = (function () {
     return Math.max(0, Math.round(Number(raw) || 0));
   }
 
+  function getDiscountBadge(discount) {
+    for (let i = 0; i < DISCOUNT_BADGES.length; i++) {
+      const badge = DISCOUNT_BADGES[i];
+      if (discount >= badge.minDiscount && discount <= badge.maxDiscount) {
+        return badge;
+      }
+    }
+    return DISCOUNT_BADGES[DISCOUNT_BADGES.length - 1];
+  }
+
+  function generateLimitedOffers() {
+    const availableItems = SHOP_ITEMS.filter(function (item) {
+      return item.maxDaily > 0;
+    });
+    const shuffled = availableItems.slice().sort(function () {
+      return Math.random() - 0.5;
+    });
+    const selected = shuffled.slice(0, 4);
+    return selected.map(function (item) {
+      const discount = Math.round((Math.random() * 6 + 1) * 10) / 100;
+      const badge = getDiscountBadge(discount);
+      return {
+        itemId: item.id,
+        discount: discount,
+        badge: badge,
+        discountedPrice: Math.round(item.price * discount),
+        originalPrice: item.price,
+        purchased: false
+      };
+    });
+  }
+
+  function loadLimitedOffers() {
+    try {
+      const raw = window.localStorage.getItem(LIMITED_OFFER_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      if (parsed.date !== getTodayDateStr()) return null;
+      if (!parsed.offers || !Array.isArray(parsed.offers)) return null;
+      return parsed.offers;
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  function saveLimitedOffers(offers) {
+    window.localStorage.setItem(LIMITED_OFFER_KEY, JSON.stringify({
+      date: getTodayDateStr(),
+      offers: offers
+    }));
+  }
+
+  function getLimitedOffers() {
+    const cached = loadLimitedOffers();
+    if (cached) return cached;
+    const newOffers = generateLimitedOffers();
+    saveLimitedOffers(newOffers);
+    return newOffers;
+  }
+
+  function purchaseLimitedOffer(offerIndex) {
+    const offers = getLimitedOffers();
+    if (offerIndex < 0 || offerIndex >= offers.length) {
+      return { ok: false, message: "特惠商品不存在" };
+    }
+    const offer = offers[offerIndex];
+    if (offer.purchased) {
+      return { ok: false, message: "今日已购买该特惠商品" };
+    }
+    const shopItem = SHOP_ITEMS.find(function (s) {
+      return s.id === offer.itemId;
+    });
+    if (!shopItem) {
+      return { ok: false, message: "商品不存在" };
+    }
+    const raw = window.localStorage.getItem("mobao_player_money_v1");
+    const money = Math.max(0, Math.round(Number(raw) || 0));
+    if (money < offer.discountedPrice) {
+      return { ok: false, message: "资金不足" };
+    }
+    const inv = loadInventory();
+    const invKey = getItemStorageKey(offer.itemId);
+    inv[invKey] = (inv[invKey] || 0) + 1;
+    saveInventory(inv);
+    const newMoney = money - offer.discountedPrice;
+    window.localStorage.setItem("mobao_player_money_v1", String(newMoney));
+    offer.purchased = true;
+    saveLimitedOffers(offers);
+    return { ok: true, message: "购买成功", newMoney: newMoney, newInventory: inv, offer: offer };
+  }
+
   return {
     SHOP_ITEMS,
+    DISCOUNT_BADGES,
     loadInventory,
     saveInventory,
     loadDailyPurchases,
@@ -172,7 +273,15 @@ window.MobaoShopBridge = (function () {
     getItemCount,
     getFullInventory,
     getPlayerMoney,
+    getItemStorageKey,
+    getDiscountBadge,
+    generateLimitedOffers,
+    loadLimitedOffers,
+    saveLimitedOffers,
+    getLimitedOffers,
+    purchaseLimitedOffer,
     SHOP_STORAGE_KEY,
-    SHOP_REFRESH_DATE_KEY
+    SHOP_REFRESH_DATE_KEY,
+    LIMITED_OFFER_KEY
   };
 })();

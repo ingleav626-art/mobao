@@ -77,10 +77,17 @@
       const soloSetup = document.getElementById("lobbySoloSetup");
       const onlinePlaceholder = document.getElementById("lobbyOnlinePlaceholder");
       const characterSelect = document.getElementById("lobbyCharacterSelect");
-      if (main) main.classList.remove("hidden");
       if (soloSetup) soloSetup.classList.add("hidden");
       if (onlinePlaceholder) onlinePlaceholder.classList.add("hidden");
       if (characterSelect) characterSelect.classList.add("hidden");
+      if (main) {
+        main.classList.remove("hidden");
+        main.classList.add("lobby-subpage-entering");
+        main.addEventListener("animationend", function onEnter() {
+          main.classList.remove("lobby-subpage-entering");
+          main.removeEventListener("animationend", onEnter);
+        }, { once: true });
+      }
       this.isLanMode = false;
       this.lanIsHost = false;
     },
@@ -95,13 +102,23 @@
       if (onlinePlaceholder) onlinePlaceholder.classList.add("hidden");
       if (characterSelect) characterSelect.classList.add("hidden");
 
+      function animatePageIn(el) {
+        if (!el) return;
+        el.classList.remove("hidden");
+        el.classList.add("lobby-subpage-entering");
+        el.addEventListener("animationend", function onEnter() {
+          el.classList.remove("lobby-subpage-entering");
+          el.removeEventListener("animationend", onEnter);
+        }, { once: true });
+      }
+
       if (page === "soloSetup") {
-        if (soloSetup) soloSetup.classList.remove("hidden");
+        animatePageIn(soloSetup);
         this.renderCarousel();
         this.renderMapDetail();
         this.updateLobbyMoneyDisplay();
       } else if (page === "onlinePlaceholder") {
-        if (onlinePlaceholder) onlinePlaceholder.classList.remove("hidden");
+        animatePageIn(onlinePlaceholder);
 
         const roomPanel = document.getElementById("lobbyOnlineRoom");
         const connectPanel = document.getElementById("lobbyOnlineConnect");
@@ -186,11 +203,16 @@
       this.cleanupGameScene();
       const lobbyPage = document.getElementById("lobbyPage");
       const gameArea = document.getElementById("gameArea");
-      if (lobbyPage) {
-        lobbyPage.classList.remove("hidden");
-      }
       if (gameArea) {
         gameArea.classList.add("hidden");
+      }
+      if (lobbyPage) {
+        lobbyPage.classList.remove("hidden");
+        lobbyPage.classList.add("lobby-page-entering");
+        lobbyPage.addEventListener("animationend", function onLobbyEnter() {
+          lobbyPage.classList.remove("lobby-page-entering");
+          lobbyPage.removeEventListener("animationend", onLobbyEnter);
+        }, { once: true });
       }
       if (this.game && this.game.loop) {
         this.game.loop.sleep();
@@ -275,7 +297,6 @@
       }
       if (gameArea) {
         gameArea.classList.remove("hidden");
-        // 淡入过渡
         gameArea.classList.add("game-area-entering");
         gameArea.addEventListener("animationend", function onFadeIn() {
           gameArea.classList.remove("game-area-entering");
@@ -283,7 +304,6 @@
         }, { once: true });
       }
 
-      // 玩家卡片渐次入场（避免与过渡同时触发）
       if (window.MobaoAnimations) {
         setTimeout(function () {
           const allCards = ['p1', 'p2', 'p3', 'p4']
@@ -443,6 +463,7 @@
       });
 
       this.refreshPlayerHistoryUI();
+      this.updatePlayerCharNames();
     },
 
     updatePlayerAvatar(playerId, avatarEl) {
@@ -490,93 +511,106 @@
     },
 
     renderShopContent() {
-      const listEl = document.getElementById("shopList");
-      const invEl = document.getElementById("shopInventory");
-      const moneyEl = document.getElementById("shopMoneyDisplay");
-      if (!listEl || !window.MobaoShopBridge) return;
-
-      const money = window.MobaoShopBridge.getPlayerMoney();
-      if (moneyEl) {
-        const textEl = moneyEl.querySelector('.hud-icon') ? moneyEl.lastChild : moneyEl;
-        if (textEl && textEl.nodeType === 3) textEl.textContent = ' ' + money.toLocaleString();
-        else moneyEl.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${money.toLocaleString()}`;
-      }
-
-      const items = window.MobaoShopBridge.SHOP_ITEMS;
-      listEl.innerHTML = items.map((si) => {
-        const remaining = window.MobaoShopBridge.getRemainingDaily(si.id);
-        const owned = window.MobaoShopBridge.getItemCount(si.id);
-        const canBuy = remaining > 0 && money >= si.price;
-        return [
-          '<div class="shop-item">',
-          '<span class="shop-item-icon">' + si.icon + '</span>',
-          '<div class="shop-item-info">',
-          '<span class="shop-item-name">' + si.name + '</span>',
-          '<span class="shop-item-desc">' + si.description + '</span>',
-          '<span class="shop-item-daily">今日剩余 ' + remaining + '/' + si.maxDaily + ' | 持有 ' + owned + '</span>',
-          '</div>',
-          '<button class="shop-item-buy" data-shop-item-id="' + si.id + '"' + (canBuy ? '' : ' disabled') + ' type="button">' + si.price.toLocaleString() + '</button>',
-          '</div>'
-        ].join("");
-      }).join("");
-
-      listEl.querySelectorAll(".shop-item-buy").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const itemId = btn.getAttribute("data-shop-item-id");
-          const result = window.MobaoShopBridge.purchaseItem(itemId);
-          if (result.ok) {
-            this.playerMoney = result.newMoney;
-            this.syncItemManagerFromShop();
-            this.renderShopContent();
-            this.updateLobbyMoneyDisplay();
-          } else {
-            alert(result.message);
+      if (typeof window.MobaoShopPage !== "undefined") {
+        window.MobaoShopPage.init({
+          onPurchase: (result) => {
+            if (result && result.ok) {
+              this.playerMoney = result.newMoney;
+              this.syncItemManagerFromShop();
+              this.updateLobbyMoneyDisplay();
+            }
           }
         });
-      });
-
-      if (invEl) {
-        const inv = window.MobaoShopBridge.getFullInventory();
-        invEl.innerHTML = [
-          '<div class="shop-inventory-title">当前库存</div>',
-          '<div class="shop-inventory-row"><span>探照灯</span><span>x' + inv.outlineLamp + '</span></div>',
-          '<div class="shop-inventory-row"><span>鉴定针</span><span>x' + inv.qualityNeedle + '</span></div>'
-        ].join("");
+        window.MobaoShopPage.updateMoneyDisplay();
+        window.MobaoShopPage.renderAllItems();
+        window.MobaoShopPage.renderInventory();
       }
     },
 
     syncItemManagerFromShop() {
       if (!window.MobaoShopBridge) return;
-      const inv = window.MobaoShopBridge.getFullInventory();
+      const bridge = window.MobaoShopBridge;
+      const inv = bridge.getFullInventory();
+
+      // 从 localStorage 读取携带道具列表
+      // undefined = 从未选择过（兼容旧流程，显示全部）
+      // Set = 已选择过（可能为空，表示不携带任何道具）
+      let carryIds;
+      try {
+        const raw = window.localStorage.getItem("mobao_carry_items_v1");
+        if (raw !== null) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            carryIds = new Set(parsed.filter((i) => i && i.id).map((i) => i.id));
+          }
+        }
+      } catch (_e) { }
+
       this.itemManager.items.forEach((item) => {
-        if (item.id === "item-outline-lamp") {
-          item.count = inv.outlineLamp;
-        } else if (item.id === "item-quality-needle") {
-          item.count = inv.qualityNeedle;
+        const storageKey = bridge.getItemStorageKey(item.id);
+        const shopCount = inv[storageKey] || 0;
+
+        if (carryIds instanceof Set) {
+          // 已选择过携带道具：未携带的设为0，携带的用库存数
+          item.count = carryIds.has(item.id) ? shopCount : 0;
+        } else {
+          // 从未选择过（兼容旧流程）：同步库存数
+          item.count = shopCount;
         }
       });
     },
 
     openCollectionOverlay() {
       const overlay = document.getElementById("collectionOverlay");
+      const panel = document.getElementById("collectionPanel");
       if (!overlay) return;
-      overlay.classList.remove("hidden");
+
       this.initCollectionPanel();
 
-      const closeBtn = document.getElementById("collectionCloseBtn");
-      if (closeBtn && !closeBtn._collectionBound) {
-        closeBtn._collectionBound = true;
-        closeBtn.addEventListener("click", () => this.closeCollectionOverlay());
+      if (window.MobaoAnimations) {
+        window.MobaoAnimations.animateOverlayOpen(overlay, panel);
+      } else {
+        overlay.classList.remove("hidden");
       }
 
-      overlay.onclick = (e) => {
-        if (e.target === overlay) this.closeCollectionOverlay();
-      };
+      if (!overlay._collectionBound) {
+        overlay._collectionBound = true;
+        const closeBtn = document.getElementById("collectionCloseBtn");
+        if (closeBtn) {
+          closeBtn.addEventListener("click", () => this.closeCollectionOverlay());
+        }
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) this.closeCollectionOverlay();
+        });
+      }
     },
 
     closeCollectionOverlay() {
       const overlay = document.getElementById("collectionOverlay");
-      if (overlay) overlay.classList.add("hidden");
+      const panel = document.getElementById("collectionPanel");
+      if (!overlay) return;
+
+      if (window.MobaoAnimations) {
+        window.MobaoAnimations.animateOverlayClose(overlay, panel);
+      } else {
+        overlay.classList.add("hidden");
+      }
+    },
+
+    _destroyCustomSelect(originalSelect) {
+      const container = originalSelect.nextElementSibling;
+      if (container && container.classList.contains('custom-select-container')) {
+        container.remove();
+      }
+      originalSelect.removeAttribute('data-custom-select');
+      originalSelect.style.display = '';
+    },
+
+    _rebuildCustomSelect(originalSelect) {
+      this._destroyCustomSelect(originalSelect);
+      if (window.MobileHandler && (window.MobileHandler.isMobile || window.MobileHandler.isTouch)) {
+        window.MobileHandler.convertToCustomSelect(originalSelect);
+      }
     },
 
     initCollectionPanel() {
@@ -584,25 +618,40 @@
       const qualitySelect = document.getElementById("collectionQualityFilter");
       const searchInput = document.getElementById("collectionSearchInput");
 
-      if (categorySelect && !categorySelect._initialized) {
-        categorySelect._initialized = true;
+      if (categorySelect) {
         const categories = this.getCollectionCategories();
         categorySelect.innerHTML = '<option value="all">全部品类</option>' +
           categories.map(c => `<option value="${c}">${c}</option>`).join('');
-        categorySelect.addEventListener('change', () => this.renderCollectionGrid());
+        if (!categorySelect._initialized) {
+          categorySelect._initialized = true;
+          categorySelect.addEventListener('change', () => this.renderCollectionGrid());
+        }
+        this._rebuildCustomSelect(categorySelect);
       }
 
-      if (qualitySelect && !qualitySelect._initialized) {
-        qualitySelect._initialized = true;
+      if (qualitySelect) {
         const qualities = Object.entries(window.ArtifactData.QUALITY_CONFIG);
         qualitySelect.innerHTML = '<option value="all">全部品质</option>' +
           qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join('');
-        qualitySelect.addEventListener('change', () => this.renderCollectionGrid());
+        if (!qualitySelect._initialized) {
+          qualitySelect._initialized = true;
+          qualitySelect.addEventListener('change', () => this.renderCollectionGrid());
+        }
+        this._rebuildCustomSelect(qualitySelect);
       }
 
       if (searchInput && !searchInput._initialized) {
         searchInput._initialized = true;
         searchInput.addEventListener('input', () => this.renderCollectionGrid());
+      }
+
+      const sortSelect = document.getElementById("collectionSortFilter");
+      if (sortSelect) {
+        if (!sortSelect._initialized) {
+          sortSelect._initialized = true;
+          sortSelect.addEventListener('change', () => this.renderCollectionGrid());
+        }
+        this._rebuildCustomSelect(sortSelect);
       }
 
       this.renderCollectionGrid();
@@ -625,6 +674,7 @@
       const categoryFilter = document.getElementById('collectionCategoryFilter')?.value || 'all';
       const qualityFilter = document.getElementById('collectionQualityFilter')?.value || 'all';
       const searchText = document.getElementById('collectionSearchInput')?.value?.toLowerCase() || '';
+      const sortValue = document.getElementById('collectionSortFilter')?.value || 'default';
 
       let artifacts = window.ArtifactData.ARTIFACT_LIBRARY || [];
 
@@ -639,6 +689,19 @@
           a.name.toLowerCase().includes(searchText) ||
           a.key.toLowerCase().includes(searchText)
         );
+      }
+
+      if (sortValue !== 'default') {
+        artifacts = [...artifacts].sort((a, b) => {
+          switch (sortValue) {
+            case 'price-asc': return (a.basePrice || 0) - (b.basePrice || 0);
+            case 'price-desc': return (b.basePrice || 0) - (a.basePrice || 0);
+            case 'name-asc': return (a.name || '').localeCompare(b.name || '', 'zh');
+            case 'size-asc': return ((a.w || 0) * (a.h || 0)) - ((b.w || 0) * (b.h || 0));
+            case 'size-desc': return ((b.w || 0) * (b.h || 0)) - ((a.w || 0) * (a.h || 0));
+            default: return 0;
+          }
+        });
       }
 
       const total = (window.ArtifactData.ARTIFACT_LIBRARY || []).length;
@@ -673,6 +736,37 @@
           </article>
         `;
       }).join('');
+    },
+
+    updatePlayerCharNames() {
+      this.players.forEach((player) => {
+        const avatarEl = document.getElementById(`avatar-${player.id}`);
+        if (!avatarEl) return;
+        let charName = "";
+        if (player.isHuman) {
+          const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter();
+          if (char && char.name) charName = char.name;
+        } else {
+          const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[player.id];
+          if (charAssign && charAssign.characterName) charName = charAssign.characterName;
+        }
+        // 确保 avatar 被包在 .avatar-wrap 里
+        let wrap = avatarEl.parentElement;
+        if (!wrap || !wrap.classList.contains("avatar-wrap")) {
+          wrap = document.createElement("div");
+          wrap.className = "avatar-wrap";
+          avatarEl.parentElement.insertBefore(wrap, avatarEl);
+          wrap.appendChild(avatarEl);
+        }
+        let nameTag = wrap.querySelector(".avatar-char-name");
+        if (!nameTag) {
+          nameTag = document.createElement("div");
+          nameTag.className = "avatar-char-name";
+          wrap.appendChild(nameTag);
+        }
+        nameTag.textContent = charName;
+        nameTag.style.display = charName ? "" : "none";
+      });
     }
   };
 
