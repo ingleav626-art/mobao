@@ -183,12 +183,12 @@
       </div>
     </div>
     <div class="lobby-container lobby-sub-page hidden" id="lobbyOnlinePlaceholder">
-      <div class="lobby-sub-header">
+      <div class="lobby-sub-header" id="lobbyOnlineSubHeader">
         <button class="lobby-back-btn" id="lobbyOnlineBackBtn" type="button">← 返回</button>
         <h2 class="lobby-sub-title">联机模式</h2>
         <div class="lobby-sub-actions">
-          <span class="lobby-money-badge" id="lobbyOnlineMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt=""
-              class="hud-icon"> 0</span>
+          <span class="lobby-money-badge" id="lobbyOnlineMoneyOuter"><img src="./assets/images/icons/ui/money-rmb.svg"
+              alt="" class="hud-icon"> 0</span>
         </div>
       </div>
       <div class="lobby-online-connect" id="lobbyOnlineConnect">
@@ -248,20 +248,107 @@
         </div>
       </div>
       <div class="lobby-online-room hidden" id="lobbyOnlineRoom">
-        <div class="lobby-online-room-header">
-          <span class="lobby-online-room-code" id="lobbyOnlineRoomCode"></span>
-          <button class="lobby-copy-room-btn" id="lobbyCopyRoomBtn" type="button" title="复制房间号">📋</button>
-          <span class="lobby-online-host-badge hidden" id="lobbyOnlineHostBadge">你是主机</span>
+        <div class="lan-room-header">
+          <button class="lobby-back-btn" id="lobbyOnlineLeaveBtn" type="button">← 返回</button>
+          <div class="lan-room-header-center">
+            <span class="lan-room-title">联机房间</span>
+            <span class="lan-room-code" id="lobbyOnlineRoomCode"></span>
+            <button class="lobby-copy-room-btn" id="lobbyCopyRoomBtn" type="button" title="复制房间号">📋</button>
+          </div>
+          <div class="lan-room-header-actions">
+            <button class="lan-header-btn" id="lanRoomManageBtn" type="button">⚙ 房间管理</button>
+            <button class="lan-header-btn" id="lanRoomShopBtn" type="button">🛒 商店</button>
+            <span class="lobby-money-badge" id="lobbyOnlineMoney"><img src="./assets/images/icons/ui/money-rmb.svg"
+                alt="" class="hud-icon"> 0</span>
+          </div>
         </div>
-        <div class="lobby-online-slots" id="lobbyOnlineSlots">
-          <div class="lobby-online-slot" data-slot="0"></div>
-          <div class="lobby-online-slot" data-slot="1"></div>
-          <div class="lobby-online-slot" data-slot="2"></div>
-          <div class="lobby-online-slot" data-slot="3"></div>
+        <div class="lan-room-body">
+          <div class="lan-room-left">
+            <div class="lan-portrait-area" id="lanPortraitArea">
+              <div class="lan-portrait-placeholder" id="lanPortraitPlaceholder">
+                <span class="lan-portrait-plus">+</span>
+                <span class="lan-portrait-hint">点击选择角色</span>
+              </div>
+              <div class="lan-portrait-live2d" id="lanPortraitLive2d">
+                <div class="live2d-loading-placeholder" id="lanLive2dLoadingPlaceholder">
+                  <div class="loading-spinner"></div>
+                </div>
+                <video class="lan-live2d-video" id="lanLive2dVideoA" muted playsinline preload="auto"></video>
+                <video class="lan-live2d-video" id="lanLive2dVideoB" muted playsinline preload="auto"></video>
+              </div>
+            </div>
+            <div class="lan-portrait-name hidden" id="lanPortraitName"></div>
+          </div>
+          <div class="lan-room-center">
+            <div class="lan-mode-map-row">
+              <div class="lan-mode-card" id="lanModeCard">
+                <div class="lan-mode-card-img">
+                  <span class="lan-mode-placeholder-icon">⚔</span>
+                </div>
+                <span class="lan-mode-card-label">经典模式</span>
+              </div>
+              <div class="lan-map-card" id="lanMapCard">
+                <div class="lan-map-card-img">
+                  <span class="lan-map-placeholder-icon">🗺</span>
+                </div>
+                <span class="lan-map-card-label" id="lanMapCardLabel">默认仓库</span>
+              </div>
+            </div>
+            <div class="lan-carry-section" id="lanCarrySection">
+              <div class="lan-carry-header">
+                <span class="lan-carry-title">🎒 携带道具</span>
+                <label class="carry-auto-toggle">
+                  <input type="checkbox" id="lanCarryAutoReplenish">
+                  <span class="carry-auto-slider"></span>
+                  <span class="carry-auto-label">自动补充</span>
+                </label>
+              </div>
+              <div class="carry-items-row" id="lanCarryItemsRow"></div>
+            </div>
+            <div class="lan-start-row">
+              <span class="lobby-online-host-badge hidden" id="lobbyOnlineHostBadge">你是主机</span>
+              <button class="lobby-start-btn hidden" id="lobbyOnlineStartBtn" type="button">开始游戏</button>
+            </div>
+          </div>
+          <div class="lan-room-right">
+            <div class="lan-player-grid" id="lanPlayerGrid">
+              <div class="lan-player-slot" data-slot="0"></div>
+              <div class="lan-player-slot" data-slot="1"></div>
+              <div class="lan-player-slot" data-slot="2"></div>
+              <div class="lan-player-slot" data-slot="3"></div>
+            </div>
+          </div>
         </div>
-        <div class="lobby-online-btn-row">
-          <button class="lobby-start-btn hidden" id="lobbyOnlineStartBtn" type="button">开始游戏</button>
-          <button class="lobby-start-btn lobby-start-btn-secondary" id="lobbyOnlineLeaveBtn" type="button">离开房间</button>
+      </div>
+      <div class="lan-overlay hidden" id="lanCharacterOverlay">
+        <div class="lan-overlay-panel lan-character-panel">
+          <div class="lan-overlay-head">
+            <h3>选择角色</h3>
+            <button class="lan-overlay-close" id="lanCharacterCloseBtn" type="button">✕</button>
+          </div>
+          <div class="lan-character-list" id="lanCharacterList"></div>
+        </div>
+      </div>
+      <div class="lan-overlay hidden" id="lanRoomManageOverlay">
+        <div class="lan-overlay-panel lan-manage-panel">
+          <div class="lan-overlay-head">
+            <h3>房间管理</h3>
+            <button class="lan-overlay-close" id="lanManageCloseBtn" type="button">✕</button>
+          </div>
+          <div class="lan-manage-body" id="lanManageBody">
+            <div class="lan-manage-placeholder">房间管理功能开发中...</div>
+          </div>
+        </div>
+      </div>
+      <div class="lan-overlay hidden" id="lanMapSelectOverlay">
+        <div class="lan-overlay-panel lan-map-panel">
+          <div class="lan-overlay-head">
+            <h3>选择地图</h3>
+            <button class="lan-overlay-close" id="lanMapSelectCloseBtn" type="button">✕</button>
+          </div>
+          <div class="lan-map-select-body" id="lanMapSelectBody">
+            <div class="lan-map-placeholder">地图选择功能开发中...</div>
+          </div>
         </div>
       </div>
     </div>

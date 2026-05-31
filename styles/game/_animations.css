@@ -568,7 +568,9 @@
 
 /* 大厅页面进入 */
 .lobby-page-entering {
+  opacity: 0;
   animation: lobbyPageFadeIn 350ms var(--ease-out) forwards;
+  will-change: opacity, transform;
 }
 
 @keyframes lobbyPageFadeIn {

@@ -919,12 +919,11 @@ class WarehouseScene extends Phaser.Scene {
       box.innerHTML =
         '<div style="margin-bottom:16px;font-size:18px;font-weight:bold;">导出AI记忆</div>' +
         '<div style="color:#a09070;margin-bottom:12px;font-size:14px;">选择导出方式：</div>' +
-        '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;">' +
-        '<button id="exportShareBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;">分享文件</button>' +
-        '<button id="exportDownloadBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">下载文件</button>' +
-        '<button id="exportCopyBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #5a7ebd;background:rgba(90,126,189,0.15);color:#5a7ebd;cursor:pointer;font-size:14px;">复制JSON</button>' +
+        '<div style="display:flex;gap:12px;justify-content:center;margin-bottom:16px;">' +
+        '<button id="exportShareBtn" style="padding:12px 24px;border-radius:8px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:15px;">分享</button>' +
+        '<button id="exportCopyBtn" style="padding:12px 24px;border-radius:8px;border:1px solid #5a7ebd;background:rgba(90,126,189,0.15);color:#5a7ebd;cursor:pointer;font-size:15px;">复制JSON</button>' +
         '</div>' +
-        '<button id="exportDialogCloseBtn" style="padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">关闭</button>';
+        '<button id="exportDialogCloseBtn" style="padding:10px 24px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">关闭</button>';
       overlay.appendChild(box);
       document.body.appendChild(overlay);
       const fileName = `mobao-ai-memory-${new Date().toISOString().slice(0, 10)}.json`;
@@ -932,33 +931,39 @@ class WarehouseScene extends Phaser.Scene {
         this.removeAiMemoryExportDialog();
       });
       document.getElementById("exportShareBtn").addEventListener("click", () => {
-        const blob = new Blob([jsonData], { type: "application/json" });
-        const file = new File([blob], fileName, { type: "application/json" });
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          navigator.share({
-            files: [file],
-            title: "AI记忆导出",
-            text: "导出AI跨局记忆数据"
-          }).then(() => {
+        if (window.NativeBridge && window.NativeBridge.shareFile) {
+          const base64Data = btoa(unescape(encodeURIComponent(jsonData)));
+          const success = window.NativeBridge.shareFile(base64Data, fileName, "AI记忆导出");
+          if (success) {
             if (this.dom.aiMemoryStatusText) {
               this.dom.aiMemoryStatusText.textContent = "已导出";
             }
             this.writeLog("AI记忆已通过分享导出。");
             this.removeAiMemoryExportDialog();
-          }).catch((err) => {
-            this.writeLog("分享导出失败，尝试下载方式。");
-            this.downloadAiMemoryFallback(jsonData, fileName);
-            this.removeAiMemoryExportDialog();
-          });
+          } else {
+            this.writeLog("分享导出失败。");
+          }
         } else {
-          this.writeLog("不支持分享功能，尝试下载方式。");
-          this.downloadAiMemoryFallback(jsonData, fileName);
-          this.removeAiMemoryExportDialog();
+          const blob = new Blob([jsonData], { type: "application/json" });
+          const file = new File([blob], fileName, { type: "application/json" });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({
+              files: [file],
+              title: "AI记忆导出",
+              text: "导出AI跨局记忆数据"
+            }).then(() => {
+              if (this.dom.aiMemoryStatusText) {
+                this.dom.aiMemoryStatusText.textContent = "已导出";
+              }
+              this.writeLog("AI记忆已通过分享导出。");
+              this.removeAiMemoryExportDialog();
+            }).catch((err) => {
+              this.writeLog("分享导出失败: " + (err.message || "未知错误"));
+            });
+          } else {
+            this.writeLog("当前环境不支持分享文件功能。");
+          }
         }
-      });
-      document.getElementById("exportDownloadBtn").addEventListener("click", () => {
-        this.downloadAiMemoryFallback(jsonData, fileName);
-        this.removeAiMemoryExportDialog();
       });
       document.getElementById("exportCopyBtn").addEventListener("click", () => {
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -969,11 +974,10 @@ class WarehouseScene extends Phaser.Scene {
             this.writeLog("AI记忆JSON已复制到剪贴板。");
             this.removeAiMemoryExportDialog();
           }).catch((err) => {
-            this.writeLog("复制失败，尝试手动复制。");
-            this.showAiMemoryCopyFallback(jsonData);
+            this.writeLog("复制失败: " + (err.message || "未知错误"));
           });
         } else {
-          this.showAiMemoryCopyFallback(jsonData);
+          this.writeLog("当前环境不支持剪贴板功能。");
         }
       });
       overlay.addEventListener("click", (e) => {
@@ -986,142 +990,143 @@ class WarehouseScene extends Phaser.Scene {
       const el = document.getElementById("aiMemoryExportDialog");
       if (el) el.remove();
     };
-    this.showAiMemoryCopyFallback = (jsonData) => {
-      this.removeAiMemoryCopyFallback();
-      const overlay = document.createElement("div");
-      overlay.id = "aiMemoryCopyFallback";
-      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;";
-      const box = document.createElement("div");
-      box.style.cssText = "background:#2a2218;border:2px solid #d4a843;border-radius:12px;padding:20px;text-align:center;color:#e0d0b0;font-size:16px;max-width:400px;width:90%;";
-      box.innerHTML =
-        '<div style="margin-bottom:12px;font-size:18px;font-weight:bold;">复制JSON数据</div>' +
-        '<div style="color:#a09070;margin-bottom:12px;font-size:14px;">请手动复制下方内容：</div>' +
-        '<textarea id="copyFallbackTextarea" style="width:100%;height:150px;border:1px solid #d7bf97;border-radius:8px;background:#fff;color:#3a2a1a;font-size:12px;padding:10px;resize:none;box-sizing:border-box;"></textarea>' +
-        '<button id="copyFallbackCloseBtn" style="margin-top:12px;padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">关闭</button>';
-      overlay.appendChild(box);
-      document.body.appendChild(overlay);
-      const textarea = document.getElementById("copyFallbackTextarea");
-      if (textarea) {
-        textarea.value = jsonData;
-        textarea.select();
-        textarea.focus();
-      }
-      document.getElementById("copyFallbackCloseBtn").addEventListener("click", () => {
-        this.removeAiMemoryCopyFallback();
-      });
-      overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) {
-          this.removeAiMemoryCopyFallback();
-        }
-      });
-    };
-    this.removeAiMemoryCopyFallback = () => {
-      const el = document.getElementById("aiMemoryCopyFallback");
-      if (el) el.remove();
-    };
     if (this.dom.importAiMemoryBtn) {
       this.dom.importAiMemoryBtn.addEventListener("click", () => {
         this.showAiMemoryImportDialog();
       });
     }
+    window.__onFileImportResult = (base64Data) => {
+      const statusEl = document.getElementById("importStatus");
+      try {
+        const jsonText = decodeURIComponent(escape(atob(base64Data)));
+        const result = this.importAiMemoryFromJson(jsonText);
+        if (result.ok) {
+          if (statusEl) { statusEl.textContent = "导入成功！"; statusEl.className = "ai-import-status success"; }
+          if (this.dom.aiMemoryStatusText) this.dom.aiMemoryStatusText.textContent = "已导入";
+          this.writeLog("AI记忆已从文件导入。");
+          setTimeout(() => this.removeAiMemoryImportDialog(), 800);
+        } else {
+          if (statusEl) { statusEl.textContent = "导入失败: " + result.error; statusEl.className = "ai-import-status error"; }
+          this.writeLog("导入失败: " + result.error);
+        }
+      } catch (e) {
+        if (statusEl) { statusEl.textContent = "文件解析失败: " + e.message; statusEl.className = "ai-import-status error"; }
+        this.writeLog("文件解析失败: " + e.message);
+      }
+    };
+    window.__onFileImportError = (errorMsg) => {
+      const statusEl = document.getElementById("importStatus");
+      if (statusEl) { statusEl.textContent = "导入错误: " + errorMsg; statusEl.className = "ai-import-status error"; }
+      this.writeLog("文件导入错误: " + errorMsg);
+    };
     this.showAiMemoryImportDialog = () => {
       this.removeAiMemoryImportDialog();
       const overlay = document.createElement("div");
       overlay.id = "aiMemoryImportDialog";
-      overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;";
+      overlay.className = "ai-import-overlay";
+      const hasNativeImport = !!(window.NativeBridge && window.NativeBridge.openFileImport);
       const box = document.createElement("div");
-      box.style.cssText = "background:#2a2218;border:2px solid #d4a843;border-radius:12px;padding:20px;text-align:center;color:#e0d0b0;font-size:16px;max-width:400px;width:90%;";
+      box.className = "ai-import-box";
       box.innerHTML =
-        '<div style="margin-bottom:16px;font-size:18px;font-weight:bold;">导入AI记忆</div>' +
-        '<div style="color:#a09070;margin-bottom:12px;font-size:14px;">选择导入方式：</div>' +
-        '<div style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;">' +
-        '<button id="importFromFileBtn" style="padding:10px 20px;border-radius:8px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;">从文件导入</button>' +
-        '<button id="importFromPasteBtn" style="padding:10px 20px;border-radius:8px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">粘贴JSON</button>' +
+        '<div class="ai-import-title">导入AI记忆</div>' +
+        '<div class="ai-import-actions">' +
+          (hasNativeImport
+            ? '<button id="importFileBtn" class="ai-import-btn">从文件导入</button>'
+            : '<label id="importFileBtn" class="ai-import-btn" style="cursor:pointer;display:inline-block;">从文件导入<input type="file" id="importFileInput" accept=".json,application/json" style="display:none;"></label>'
+          ) +
+          '<button id="importPasteBtn" class="ai-import-btn secondary">粘贴JSON</button>' +
         '</div>' +
-        '<textarea id="importJsonTextarea" style="display:none;width:100%;height:120px;border:1px solid #d7bf97;border-radius:8px;background:#fff;color:#3a2a1a;font-size:13px;padding:10px;resize:none;box-sizing:border-box;" placeholder="粘贴JSON数据..."></textarea>' +
-        '<div id="importPasteActions" style="display:none;margin-top:12px;">' +
-        '<button id="importPasteConfirmBtn" style="padding:8px 20px;border-radius:6px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;margin-right:8px;">确认导入</button>' +
-        '<button id="importPasteCancelBtn" style="padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">取消</button>' +
+        '<div id="importPasteArea" style="display:none;">' +
+          '<textarea id="importJsonTextarea" class="ai-import-textarea" placeholder="在此粘贴JSON数据..."></textarea>' +
         '</div>' +
-        '<button id="importDialogCloseBtn" style="margin-top:12px;padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">关闭</button>';
+        '<div id="importStatus" class="ai-import-status"></div>' +
+        '<div class="ai-import-footer">' +
+          '<button id="importPasteConfirmBtn" class="ai-import-btn" style="display:none;">确认导入</button>' +
+          '<button id="importDialogCloseBtn" class="ai-import-close">关闭</button>' +
+        '</div>';
       overlay.appendChild(box);
       document.body.appendChild(overlay);
+
+      const textarea = document.getElementById("importJsonTextarea");
+      const pasteArea = document.getElementById("importPasteArea");
+      const confirmBtn = document.getElementById("importPasteConfirmBtn");
+      const fileBtn = document.getElementById("importFileBtn");
+      const pasteBtn = document.getElementById("importPasteBtn");
+      const statusEl = document.getElementById("importStatus");
+      const fileInput = document.getElementById("importFileInput");
+
+      const showStatus = (msg, type) => {
+        if (!statusEl) return;
+        statusEl.textContent = msg;
+        statusEl.className = "ai-import-status " + (type || "");
+      };
+
+      // 原生文件导入
+      if (hasNativeImport && fileBtn) {
+        fileBtn.addEventListener("click", () => {
+          showStatus("正在打开文件选择器...", "loading");
+          window.NativeBridge.openFileImport();
+        });
+      }
+
+      // HTML file input 导入
+      if (fileInput) {
+        fileInput.addEventListener("change", (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          showStatus("正在读取文件...", "loading");
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              const jsonText = ev.target.result;
+              const result = this.importAiMemoryFromJson(jsonText);
+              if (result.ok) {
+                showStatus("导入成功！", "success");
+                if (this.dom.aiMemoryStatusText) this.dom.aiMemoryStatusText.textContent = "已导入";
+                this.writeLog("AI记忆已从文件导入。");
+                setTimeout(() => this.removeAiMemoryImportDialog(), 800);
+              } else {
+                showStatus("导入失败: " + result.error, "error");
+              }
+            } catch (err) {
+              showStatus("文件解析失败: " + err.message, "error");
+            }
+          };
+          reader.onerror = () => showStatus("文件读取失败", "error");
+          reader.readAsText(file);
+        });
+      }
+
+      // 粘贴模式
+      if (pasteBtn) {
+        pasteBtn.addEventListener("click", () => {
+          if (pasteArea) pasteArea.style.display = "block";
+          if (textarea) textarea.focus();
+          if (confirmBtn) confirmBtn.style.display = "inline-block";
+          if (fileBtn) fileBtn.style.display = "none";
+          if (pasteBtn) pasteBtn.style.display = "none";
+        });
+      }
+
       document.getElementById("importDialogCloseBtn").addEventListener("click", () => {
         this.removeAiMemoryImportDialog();
       });
-      document.getElementById("importFromFileBtn").addEventListener("click", () => {
-        this.removeAiMemoryImportDialog();
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".json";
-        input.onchange = (event) => {
-          const file = event.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const result = this.importAiMemoryFromJson(e.target.result);
-            if (result.ok) {
-              if (this.dom.aiMemoryStatusText) {
-                this.dom.aiMemoryStatusText.textContent = "已导入";
-              }
-              this.writeLog("AI记忆已从文件导入。");
-            } else {
-              if (this.dom.aiMemoryStatusText) {
-                this.dom.aiMemoryStatusText.textContent = "导入失败";
-              }
-              this.writeLog("AI记忆导入失败: " + result.error);
-            }
-          };
-          reader.readAsText(file);
-        };
-        input.click();
-      });
-      document.getElementById("importFromPasteBtn").addEventListener("click", () => {
-        const textarea = document.getElementById("importJsonTextarea");
-        const pasteActions = document.getElementById("importPasteActions");
-        const fileBtn = document.getElementById("importFromFileBtn");
-        const pasteBtn = document.getElementById("importFromPasteBtn");
-        if (textarea && pasteActions) {
-          textarea.style.display = "block";
-          pasteActions.style.display = "block";
-          fileBtn.style.display = "none";
-          pasteBtn.style.display = "none";
-          textarea.focus();
-        }
-      });
       document.getElementById("importPasteConfirmBtn").addEventListener("click", () => {
-        const textarea = document.getElementById("importJsonTextarea");
         if (!textarea) return;
         const jsonText = textarea.value.trim();
         if (!jsonText) {
-          this.writeLog("请粘贴JSON数据。");
+          showStatus("请粘贴JSON数据。", "error");
           return;
         }
+        showStatus("正在导入...", "loading");
         const result = this.importAiMemoryFromJson(jsonText);
         if (result.ok) {
-          if (this.dom.aiMemoryStatusText) {
-            this.dom.aiMemoryStatusText.textContent = "已导入";
-          }
-          this.writeLog("AI记忆已从粘贴内容导入。");
-          this.removeAiMemoryImportDialog();
+          showStatus("导入成功！", "success");
+          if (this.dom.aiMemoryStatusText) this.dom.aiMemoryStatusText.textContent = "已导入";
+          this.writeLog("AI记忆已成功导入。");
+          setTimeout(() => this.removeAiMemoryImportDialog(), 800);
         } else {
-          if (this.dom.aiMemoryStatusText) {
-            this.dom.aiMemoryStatusText.textContent = "导入失败";
-          }
-          this.writeLog("AI记忆导入失败: " + result.error);
-        }
-      });
-      document.getElementById("importPasteCancelBtn").addEventListener("click", () => {
-        const textarea = document.getElementById("importJsonTextarea");
-        const pasteActions = document.getElementById("importPasteActions");
-        const fileBtn = document.getElementById("importFromFileBtn");
-        const pasteBtn = document.getElementById("importFromPasteBtn");
-        if (textarea && pasteActions) {
-          textarea.style.display = "none";
-          pasteActions.style.display = "none";
-          textarea.value = "";
-          fileBtn.style.display = "inline-block";
-          pasteBtn.style.display = "inline-block";
+          showStatus("导入失败: " + result.error, "error");
         }
       });
       overlay.addEventListener("click", (e) => {

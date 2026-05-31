@@ -398,7 +398,8 @@ public class NativeBridge {
                 Log.i(TAG, "[llmProxyAsync] " + requestId + " CONNECT+WRITE done, elapsed: " + connectElapsed + "ms");
 
                 int status = conn.getResponseCode();
-                Log.i(TAG, "[llmProxyAsync] " + requestId + " authHeader length: " + (authHeader != null ? authHeader.length() : 0) + ", targetUrl: " + targetUrl);
+                Log.i(TAG, "[llmProxyAsync] " + requestId + " authHeader length: "
+                        + (authHeader != null ? authHeader.length() : 0) + ", targetUrl: " + targetUrl);
                 java.io.InputStream is = (status >= 400) ? conn.getErrorStream() : conn.getInputStream();
                 byte[] respBytes;
                 if (is != null) {
@@ -413,7 +414,8 @@ public class NativeBridge {
                     respBytes = "{}".getBytes("UTF-8");
                 }
                 if (status >= 400) {
-                    Log.e(TAG, "[llmProxyAsync] " + requestId + " ERROR " + status + ", body: " + new String(respBytes, "UTF-8"));
+                    Log.e(TAG, "[llmProxyAsync] " + requestId + " ERROR " + status + ", body: "
+                            + new String(respBytes, "UTF-8"));
                 }
                 conn.disconnect();
                 pendingLlmConnections.remove(requestId);
@@ -462,5 +464,38 @@ public class NativeBridge {
                 Log.e(TAG, "callbackLlmProxy error: " + e.getMessage());
             }
         });
+    }
+
+    @JavascriptInterface
+    public boolean shareFile(String base64Data, String fileName, String title) {
+        try {
+            byte[] data = android.util.Base64.decode(base64Data, android.util.Base64.NO_WRAP);
+            java.io.File cacheDir = activity.getCacheDir();
+            java.io.File file = new java.io.File(cacheDir, fileName);
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
+            fos.write(data);
+            fos.close();
+
+            android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            shareIntent.setType("application/json");
+            android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(
+                    activity, "com.mobao.game.fileprovider", file);
+            shareIntent.putExtra(android.content.Intent.EXTRA_STREAM, uri);
+            shareIntent.putExtra(android.content.Intent.EXTRA_TITLE, title != null ? title : fileName);
+            shareIntent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            android.content.Intent chooser = android.content.Intent.createChooser(shareIntent,
+                    title != null ? title : "分享文件");
+            activity.startActivity(chooser);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "shareFile error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @JavascriptInterface
+    public void openFileImport() {
+        activity.openFileImport();
     }
 }

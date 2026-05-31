@@ -46,7 +46,28 @@
       const hostBadge = $("lobbyOnlineHostBadge");
       const startBtn = $("lobbyOnlineStartBtn");
       const leaveBtn = $("lobbyOnlineLeaveBtn");
-      const slotsContainer = $("lobbyOnlineSlots");
+      const playerGrid = $("lanPlayerGrid");
+      const portraitArea = $("lanPortraitArea");
+      const portraitPlaceholder = $("lanPortraitPlaceholder");
+      const portraitLive2d = $("lanPortraitLive2d");
+      const portraitName = $("lanPortraitName");
+      const roomManageBtn = $("lanRoomManageBtn");
+      const roomShopBtn = $("lanRoomShopBtn");
+      const modeCard = $("lanModeCard");
+      const mapCard = $("lanMapCard");
+      const mapCardLabel = $("lanMapCardLabel");
+      const characterOverlay = $("lanCharacterOverlay");
+      const characterList = $("lanCharacterList");
+      const characterCloseBtn = $("lanCharacterCloseBtn");
+      const manageOverlay = $("lanRoomManageOverlay");
+      const manageCloseBtn = $("lanManageCloseBtn");
+      const mapSelectOverlay = $("lanMapSelectOverlay");
+      const mapSelectCloseBtn = $("lanMapSelectCloseBtn");
+      const carryItemsRow = $("lanCarryItemsRow");
+      const carryAutoReplenish = $("lanCarryAutoReplenish");
+
+      var lanSelectedCharacterId = null;
+      var lanCarryItems = [];
 
       console.log('[LAN] DOM elements: createBtn=' + !!createBtn + ', joinBtn=' + !!joinBtn + ', createConfirmBtn=' + !!createConfirmBtn + ', createPanel=' + !!createPanel);
 
@@ -94,6 +115,22 @@
         if (createPanel) createPanel.classList.add("hidden");
         if (joinPanel) joinPanel.classList.add("hidden");
         if (roomPanel) roomPanel.classList.add("hidden");
+        var subHeader = document.getElementById("lobbyOnlineSubHeader");
+        var placeholder = document.getElementById("lobbyOnlinePlaceholder");
+        if (subHeader) {
+          if (panel === roomPanel) {
+            subHeader.classList.add("hidden");
+          } else {
+            subHeader.classList.remove("hidden");
+          }
+        }
+        if (placeholder) {
+          if (panel === roomPanel) {
+            placeholder.classList.add("lan-room-active");
+          } else {
+            placeholder.classList.remove("lan-room-active");
+          }
+        }
         if (panel) panel.classList.remove("hidden");
       };
 
@@ -505,57 +542,74 @@
       ];
 
       const renderSlots = () => {
-        if (!slotsContainer) return;
-        const slotEls = slotsContainer.querySelectorAll(".lobby-online-slot");
+        if (!playerGrid) return;
+        const slotEls = playerGrid.querySelectorAll(".lan-player-slot");
         slotEls.forEach((el, i) => {
           const cfg = lanSlotConfig[i];
-          el.className = "lobby-online-slot";
-          if (cfg.type === "host") {
-            el.classList.add("slot-host");
-            el.innerHTML =
-              '<span class="slot-icon">👑</span>' +
-              '<span class="slot-name">' + cfg.name + '</span>' +
-              '<span class="slot-tag tag-host">主机</span>';
-          } else if (cfg.type === "client") {
-            el.classList.add("slot-client");
-            let actions = '<span class="slot-tag tag-client">客机</span>';
-            if (lanSlotConfig[0].type === "host" && lanSlotConfig[0].id === bridge.playerId) {
-              actions += ' <button class="slot-kick-btn" data-kick="' + cfg.id + '">踢出</button>';
-            }
-            el.innerHTML =
-              '<span class="slot-icon">👤</span>' +
-              '<span class="slot-name">' + cfg.name + '</span>' +
-              actions;
-          } else if (cfg.type === "ai") {
-            el.classList.add("slot-ai");
-            let actions = '<span class="slot-tag tag-ai">AI</span>';
-            if (lanSlotConfig[0].type === "host" && lanSlotConfig[0].id === bridge.playerId) {
-              actions +=
-                ' <label class="slot-llm-label"><input type="checkbox" class="slot-llm-check" data-ai-slot="' + i + '"' + (cfg.llm ? " checked" : "") + '/>大模型</label>' +
-                ' <button class="slot-remove-btn" data-remove-ai="' + i + '">删除</button>';
-            }
-            el.innerHTML =
-              '<span class="slot-icon">🤖</span>' +
-              '<span class="slot-name">' + cfg.name + '</span>' +
-              actions;
-          } else {
-            el.classList.add("slot-empty");
-            let inner = '<span class="slot-icon">⬜</span><span class="slot-name">待加入</span>';
-            if (lanSlotConfig[0].type === "host" && lanSlotConfig[0].id === bridge.playerId) {
-              inner += ' <button class="slot-ai-add-btn" data-add-ai="' + i + '">AI替补</button>';
-            }
-            el.innerHTML = inner;
-          }
+          renderLanPlayerSlot(el, i, cfg);
         });
+        bindSlotActions(playerGrid);
+      };
 
-        slotsContainer.querySelectorAll(".slot-kick-btn").forEach((btn) => {
-          btn.addEventListener("click", () => {
+      const renderLanPlayerSlot = (el, i, cfg) => {
+        el.className = "lan-player-slot";
+        if (cfg.type === "host") {
+          el.classList.add("slot-host");
+          const charAvatar = cfg.characterId && CharacterData ? getCharAvatarHtml(cfg.characterId) : '<span class="lan-avatar-emoji">👑</span>';
+          const kickHtml = (lanSlotConfig[0].type === "host" && lanSlotConfig[0].id === bridge.playerId && cfg.id !== bridge.playerId) ? '<span class="lan-slot-kick" data-kick="' + cfg.id + '">✕</span>' : '';
+          el.innerHTML = kickHtml +
+            '<div class="lan-slot-avatar">' + charAvatar + '</div>' +
+            '<span class="lan-slot-name">' + cfg.name + '</span>' +
+            '<span class="lan-slot-tag tag-host">主机</span>';
+        } else if (cfg.type === "client") {
+          el.classList.add("slot-client");
+          const charAvatar = cfg.characterId && CharacterData ? getCharAvatarHtml(cfg.characterId) : '<span class="lan-avatar-emoji">👤</span>';
+          const kickHtml = (lanSlotConfig[0].type === "host" && lanSlotConfig[0].id === bridge.playerId) ? '<span class="lan-slot-kick" data-kick="' + cfg.id + '">✕</span>' : '';
+          el.innerHTML = kickHtml +
+            '<div class="lan-slot-avatar">' + charAvatar + '</div>' +
+            '<span class="lan-slot-name">' + cfg.name + '</span>' +
+            '<span class="lan-slot-tag tag-client">客机</span>';
+        } else if (cfg.type === "ai") {
+          el.classList.add("slot-ai");
+          const llmCheck = (lanSlotConfig[0].type === "host" && lanSlotConfig[0].id === bridge.playerId)
+            ? '<div class="lan-slot-llm"><input type="checkbox" class="slot-llm-check" data-ai-slot="' + i + '"' + (cfg.llm ? " checked" : '') + '/><span class="lan-slot-llm-label">LLM</span></div>' +
+            '<span class="lan-slot-kick" data-remove-ai="' + i + '">✕</span>'
+            : (cfg.llm ? '<div class="lan-slot-llm"><span class="lan-slot-llm-label">LLM</span></div>' : '');
+          el.innerHTML =
+            '<div class="lan-slot-avatar"><span class="lan-avatar-emoji">🤖</span></div>' +
+            '<span class="lan-slot-name">' + cfg.name + '</span>' +
+            '<span class="lan-slot-tag tag-ai">AI</span>' +
+            llmCheck;
+        } else {
+          el.classList.add("slot-empty");
+          const addBtn = (lanSlotConfig[0].type === "host" && lanSlotConfig[0].id === bridge.playerId) ? ' data-add-ai="' + i + '"' : '';
+          el.innerHTML =
+            '<div class="lan-slot-avatar"><span class="lan-avatar-plus">+</span></div>' +
+            '<span class="lan-slot-name">待加入</span>' +
+            (addBtn ? '<span class="lan-slot-tag" style="cursor:pointer;background:rgba(212,168,67,0.15);color:#d4a843"' + addBtn + '>+AI</span>' : '');
+        }
+      };
+
+      const getCharAvatarHtml = (characterId) => {
+        if (!window.CharacterData) return '<span class="lan-avatar-emoji">👤</span>';
+        const char = CharacterData.getCharacterById(characterId);
+        if (char && char.avatar) {
+          return '<img src="' + char.avatar + '" alt="' + char.name + '">';
+        }
+        return '<span class="lan-avatar-emoji">👤</span>';
+      };
+
+      const bindSlotActions = (container) => {
+        container.querySelectorAll("[data-kick]").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
             const kickId = btn.getAttribute("data-kick");
             if (kickId) bridge.send({ type: "room:kick", playerId: kickId });
           });
         });
-        slotsContainer.querySelectorAll(".slot-ai-add-btn").forEach((btn) => {
-          btn.addEventListener("click", () => {
+        container.querySelectorAll("[data-add-ai]").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
             const slotIdx = parseInt(btn.getAttribute("data-add-ai"), 10);
             if (isNaN(slotIdx)) return;
             const aiIdx = lanSlotConfig.filter((s) => s.type === "ai").length;
@@ -564,8 +618,9 @@
             broadcastSlotState();
           });
         });
-        slotsContainer.querySelectorAll(".slot-remove-btn").forEach((btn) => {
-          btn.addEventListener("click", () => {
+        container.querySelectorAll("[data-remove-ai]").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
             const slotIdx = parseInt(btn.getAttribute("data-remove-ai"), 10);
             if (isNaN(slotIdx)) return;
             lanSlotConfig[slotIdx] = { type: "empty" };
@@ -573,7 +628,7 @@
             broadcastSlotState();
           });
         });
-        slotsContainer.querySelectorAll(".slot-llm-check").forEach((chk) => {
+        container.querySelectorAll(".slot-llm-check").forEach((chk) => {
           chk.addEventListener("change", () => {
             const slotIdx = parseInt(chk.getAttribute("data-ai-slot"), 10);
             if (!isNaN(slotIdx) && lanSlotConfig[slotIdx].type === "ai") {
@@ -582,6 +637,462 @@
             broadcastSlotState();
           });
         });
+      };
+
+      const renderLanCharacterList = () => {
+        if (!characterList) return;
+        const characters = (window.CharacterData && CharacterData.getUnlockedCharacters()) || [];
+        characterList.innerHTML = characters.map((char) => {
+          const avatarHtml = char.avatar
+            ? '<img src="' + char.avatar + '" alt="' + char.name + '">'
+            : '<span class="lan-char-avatar-emoji">👤</span>';
+          return '<div class="lan-char-card' + (char.id === lanSelectedCharacterId ? ' selected' : '') + '" data-char-id="' + char.id + '">' +
+            '<div class="lan-char-avatar">' + avatarHtml + '</div>' +
+            '<div class="lan-char-info">' +
+            '<div class="lan-char-name">' + char.name + '</div>' +
+            '<div class="lan-char-skill">' + (char.skillName || '') + ' — ' + (char.skillDesc || '') + '</div>' +
+            '<div class="lan-char-passive">' + (char.passive ? char.passive.label : '无被动') + '</div>' +
+            '</div></div>';
+        }).join("");
+
+        characterList.querySelectorAll(".lan-char-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            lanSelectedCharacterId = card.dataset.charId;
+            renderLanCharacterList();
+            updateLanPortrait();
+            if (bridge && bridge.connected) {
+              bridge.send({ type: "lan:character-select", characterId: lanSelectedCharacterId });
+            }
+          });
+        });
+      };
+
+      const updateLanPortrait = () => {
+        if (!portraitArea || !portraitPlaceholder || !portraitName) return;
+        if (!lanSelectedCharacterId || !window.CharacterData) {
+          portraitArea.classList.remove("has-character");
+          portraitName.classList.add("hidden");
+          stopLanLive2dLoop();
+          return;
+        }
+        var char = CharacterData.getCharacterById(lanSelectedCharacterId);
+        if (!char) {
+          portraitArea.classList.remove("has-character");
+          portraitName.classList.add("hidden");
+          stopLanLive2dLoop();
+          return;
+        }
+        portraitArea.classList.add("has-character");
+        portraitName.classList.remove("hidden");
+        portraitName.textContent = char.name;
+        if (char.live2d) {
+          var videoA = document.getElementById("lanLive2dVideoA");
+          var videoB = document.getElementById("lanLive2dVideoB");
+          if (videoA && videoB) {
+            startLanLive2dLoop(char.live2d, videoA, videoB);
+          }
+        } else {
+          stopLanLive2dLoop();
+        }
+      };
+
+      var _lanLive2dState = null;
+
+      const startLanLive2dLoop = (src, videoA, videoB) => {
+        stopLanLive2dLoop();
+
+        var loadingPlaceholder = document.getElementById("lanLive2dLoadingPlaceholder");
+        if (loadingPlaceholder) loadingPlaceholder.classList.add("visible");
+
+        var hasRVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        var PREWARM_TIME = isMobile ? 5.0 : 2.0;
+        var SWITCH_TIME = isMobile ? 4.0 : 0.033;
+
+        var state = {
+          current: "A",
+          src: src,
+          running: true,
+          duration: 0,
+          prewarmed: false,
+          nextFrameReady: false,
+          switchPending: false,
+          rafId: null,
+          loadRetries: 0,
+          maxRetries: 3,
+          loadTimeout: null
+        };
+        _lanLive2dState = state;
+
+        var getCurrent = function () { return state.current === "A" ? videoA : videoB; };
+        var getNext = function () { return state.current === "A" ? videoB : videoA; };
+
+        var clearLoadTimeout = function () {
+          if (state.loadTimeout) { clearTimeout(state.loadTimeout); state.loadTimeout = null; }
+        };
+
+        var retryLoad = function () {
+          if (state.loadRetries >= state.maxRetries) return;
+          state.loadRetries++;
+          videoA.removeAttribute("src");
+          videoB.removeAttribute("src");
+          videoA.load();
+          videoB.load();
+          setTimeout(function () {
+            if (!state.running) return;
+            videoA.src = src;
+            videoB.src = src;
+            videoA.load();
+            videoB.load();
+            setupLoadTimeout();
+          }, 100);
+        };
+
+        var setupLoadTimeout = function () {
+          clearLoadTimeout();
+          state.loadTimeout = setTimeout(function () {
+            if (!state.duration && state.running) retryLoad();
+          }, 5000);
+        };
+
+        videoA.classList.remove("active");
+        videoB.classList.remove("active");
+        videoA.style.opacity = "0";
+        videoB.style.opacity = "0";
+
+        videoA.classList.add("active");
+        videoA.src = src;
+        videoB.src = src;
+        videoA.load();
+        videoB.load();
+        setupLoadTimeout();
+
+        var stopPolling = function () {
+          if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+        };
+
+        var startPolling = function () {
+          stopPolling();
+          state.rafId = requestAnimationFrame(pollProgress);
+        };
+
+        var prewarmNext = function () {
+          if (state.prewarmed) return;
+          state.prewarmed = true;
+          var next = getNext();
+          next.style.opacity = "0";
+
+          var markFrameReady = function () {
+            if (!state.running || state.nextFrameReady) return;
+            state.nextFrameReady = true;
+            if (state.switchPending) performSwitch();
+          };
+
+          if (next.readyState >= 3) {
+            next.currentTime = 0;
+            var waitSeek = function () {
+              if (!state.running) return;
+              if (next.readyState >= 3) {
+                next.play().catch(function () { });
+                if (hasRVFC) {
+                  next.requestVideoFrameCallback(function () {
+                    next.pause();
+                    markFrameReady();
+                  });
+                } else {
+                  requestAnimationFrame(function () {
+                    next.pause();
+                    markFrameReady();
+                  });
+                }
+              } else {
+                requestAnimationFrame(waitSeek);
+              }
+            };
+            requestAnimationFrame(waitSeek);
+            return;
+          }
+
+          next.play().catch(function () { });
+          if (hasRVFC) {
+            next.requestVideoFrameCallback(function () {
+              next.pause();
+              markFrameReady();
+            });
+          } else {
+            var checkFrame = function () {
+              if (!state.running) return;
+              if (next.readyState >= 3 || next.currentTime > 0) {
+                next.pause();
+                markFrameReady();
+              } else {
+                requestAnimationFrame(checkFrame);
+              }
+            };
+            requestAnimationFrame(checkFrame);
+          }
+        };
+
+        var performSwitch = function () {
+          if (!state.running) return;
+          state.switchPending = false;
+          var current = getCurrent();
+          var next = getNext();
+          var oldKey = state.current;
+          var nextKey = state.current === "A" ? "B" : "A";
+
+          next.style.opacity = "1";
+          next.classList.add("active");
+          next.play().catch(function () { });
+
+          setTimeout(function () {
+            current.pause();
+            current.style.opacity = "0";
+            current.classList.remove("active");
+          }, 0);
+
+          state.current = nextKey;
+          state.prewarmed = false;
+          state.nextFrameReady = false;
+
+          setTimeout(function () {
+            current.pause();
+            current.removeAttribute("src");
+            current.load();
+            setTimeout(function () {
+              current.src = state.src;
+              current.load();
+            }, 50);
+          }, 200);
+
+          startPolling();
+        };
+
+        var requestSwitch = function () {
+          if (state.switchPending) return;
+          if (state.nextFrameReady) {
+            performSwitch();
+          } else {
+            state.switchPending = true;
+            if (!state.prewarmed) prewarmNext();
+          }
+        };
+
+        var pollProgress = function () {
+          if (!state.running) return;
+          var current = getCurrent();
+          if (state.duration > 0 && !current.paused) {
+            var remaining = state.duration - current.currentTime;
+            if (remaining <= PREWARM_TIME && !state.prewarmed) prewarmNext();
+            if (remaining <= SWITCH_TIME && !state.switchPending) {
+              requestSwitch();
+              return;
+            }
+          }
+          if (state.running) state.rafId = requestAnimationFrame(pollProgress);
+        };
+
+        videoA.onloadeddata = function () {
+          if (!state.running) return;
+          if (!videoA.classList.contains("active")) return;
+          clearLoadTimeout();
+          state.duration = videoA.duration;
+          if (loadingPlaceholder) loadingPlaceholder.classList.remove("visible");
+          videoA.style.opacity = "1";
+          videoA.play().catch(function () { });
+          startPolling();
+          setTimeout(function () {
+            if (!state.running) return;
+            videoB.play().catch(function () { });
+            if (hasRVFC) {
+              videoB.requestVideoFrameCallback(function () { videoB.pause(); });
+            }
+          }, 100);
+        };
+
+        videoB.onloadeddata = function () {
+          if (!state.running) return;
+          if (!videoB.classList.contains("active")) return;
+          videoB.currentTime = 0;
+          videoB.pause();
+        };
+
+        videoA.onended = function () {
+          if (!state.running || state.current !== "A") return;
+          requestSwitch();
+        };
+
+        videoB.onended = function () {
+          if (!state.running || state.current !== "B") return;
+          requestSwitch();
+        };
+
+        videoA.onerror = function () {
+          if (state.running && state.loadRetries < state.maxRetries) retryLoad();
+        };
+
+        videoB.onerror = function () {
+          if (state.running && state.loadRetries < state.maxRetries) retryLoad();
+        };
+      };
+
+      const stopLanLive2dLoop = () => {
+        if (_lanLive2dState) {
+          _lanLive2dState.running = false;
+          if (_lanLive2dState.rafId) cancelAnimationFrame(_lanLive2dState.rafId);
+          if (_lanLive2dState.loadTimeout) clearTimeout(_lanLive2dState.loadTimeout);
+          _lanLive2dState = null;
+        }
+        var videoA = document.getElementById("lanLive2dVideoA");
+        var videoB = document.getElementById("lanLive2dVideoB");
+        if (videoA) {
+          videoA.pause();
+          videoA.onloadeddata = null;
+          videoA.onended = null;
+          videoA.onerror = null;
+          videoA.removeAttribute("src");
+          videoA.classList.remove("active");
+          videoA.style.opacity = "0";
+        }
+        if (videoB) {
+          videoB.pause();
+          videoB.onloadeddata = null;
+          videoB.onended = null;
+          videoB.onerror = null;
+          videoB.removeAttribute("src");
+          videoB.classList.remove("active");
+          videoB.style.opacity = "0";
+        }
+        var loadingPlaceholder = document.getElementById("lanLive2dLoadingPlaceholder");
+        if (loadingPlaceholder) loadingPlaceholder.classList.remove("visible");
+      };
+
+      const openOverlay = (overlay) => {
+        if (!overlay) return;
+        overlay.classList.remove("hidden");
+        requestAnimationFrame(() => overlay.classList.add("visible"));
+      };
+
+      const closeOverlay = (overlay) => {
+        if (!overlay) return;
+        overlay.classList.remove("visible");
+        setTimeout(() => overlay.classList.add("hidden"), 260);
+      };
+
+      if (portraitArea) {
+        portraitArea.addEventListener("click", () => {
+          renderLanCharacterList();
+          openOverlay(characterOverlay);
+        });
+      }
+
+      if (characterCloseBtn) {
+        characterCloseBtn.addEventListener("click", () => closeOverlay(characterOverlay));
+      }
+
+      if (characterOverlay) {
+        characterOverlay.addEventListener("click", (e) => {
+          if (e.target === characterOverlay) closeOverlay(characterOverlay);
+        });
+      }
+
+      if (roomManageBtn) {
+        roomManageBtn.addEventListener("click", () => openOverlay(manageOverlay));
+      }
+
+      if (manageCloseBtn) {
+        manageCloseBtn.addEventListener("click", () => closeOverlay(manageOverlay));
+      }
+
+      if (manageOverlay) {
+        manageOverlay.addEventListener("click", (e) => {
+          if (e.target === manageOverlay) closeOverlay(manageOverlay);
+        });
+      }
+
+      if (mapCard) {
+        mapCard.addEventListener("click", () => {
+          if (!bridge || !bridge.isHost) return;
+          openOverlay(mapSelectOverlay);
+        });
+      }
+
+      if (modeCard) {
+        modeCard.addEventListener("click", () => {
+          if (!bridge || !bridge.isHost) return;
+        });
+      }
+
+      if (mapSelectCloseBtn) {
+        mapSelectCloseBtn.addEventListener("click", () => closeOverlay(mapSelectOverlay));
+      }
+
+      if (mapSelectOverlay) {
+        mapSelectOverlay.addEventListener("click", (e) => {
+          if (e.target === mapSelectOverlay) closeOverlay(mapSelectOverlay);
+        });
+      }
+
+      if (roomShopBtn) {
+        roomShopBtn.addEventListener("click", () => {
+          if (window.MobaoShopBridge && typeof window.MobaoShopBridge.openShop === "function") {
+            window.MobaoShopBridge.openShop();
+          }
+        });
+      }
+
+      const renderLanCarryItems = () => {
+        if (!carryItemsRow) return;
+        carryItemsRow.innerHTML = "";
+        lanCarryItems.forEach((item, idx) => {
+          var slot = document.createElement("div");
+          slot.className = "carry-item-slot";
+          slot.textContent = item.emoji || "📦";
+          var removeBtn = document.createElement("span");
+          removeBtn.className = "carry-item-remove";
+          removeBtn.textContent = "✕";
+          removeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            lanCarryItems.splice(idx, 1);
+            renderLanCarryItems();
+          });
+          slot.appendChild(removeBtn);
+          carryItemsRow.appendChild(slot);
+        });
+        if (lanCarryItems.length < 3) {
+          var addSlot = document.createElement("div");
+          addSlot.className = "carry-item-add";
+          addSlot.textContent = "+";
+          addSlot.addEventListener("click", () => {
+            if (window.MobaoShopBridge && typeof window.MobaoShopBridge.openShop === "function") {
+              window.MobaoShopBridge.openShop();
+            }
+          });
+          carryItemsRow.appendChild(addSlot);
+        }
+      };
+
+      const initLanCharacterFromStorage = () => {
+        if (window.CharacterData && window.CharacterData.getSelectedCharacter) {
+          var saved = CharacterData.getSelectedCharacter();
+          if (saved && saved.id) {
+            lanSelectedCharacterId = saved.id;
+          } else if (typeof saved === "string") {
+            lanSelectedCharacterId = saved;
+          }
+        }
+        updateLanPortrait();
+      };
+
+      const updateModeMapCardState = (isHost) => {
+        if (modeCard) {
+          if (isHost) modeCard.classList.remove("disabled");
+          else modeCard.classList.add("disabled");
+        }
+        if (mapCard) {
+          if (isHost) mapCard.classList.remove("disabled");
+          else mapCard.classList.add("disabled");
+        }
       };
 
       const syncSlotsFromPlayers = (players) => {
@@ -644,6 +1155,9 @@
         if (hostBadge) hostBadge.classList.remove("hidden");
         if (startBtn) startBtn.classList.remove("hidden");
         syncSlotsFromPlayers([{ id: msg.playerId, name: msg.playerName, isHost: true }]);
+        initLanCharacterFromStorage();
+        renderLanCarryItems();
+        updateModeMapCardState(true);
         var statusText = "房间 " + msg.roomCode + " 等待玩家加入";
         if (msg.visibility === "private" && msg.password) {
           statusText += " | 密钥: " + msg.password;
@@ -657,6 +1171,9 @@
         if (hostBadge) hostBadge.classList.add("hidden");
         if (startBtn) startBtn.classList.add("hidden");
         syncSlotsFromPlayers(msg.players || []);
+        initLanCharacterFromStorage();
+        renderLanCarryItems();
+        updateModeMapCardState(false);
         setOnlineStatus("房间 " + msg.roomCode + " 等待主机开始", "connected");
       });
 
@@ -1032,10 +1549,19 @@
 
       if (leaveBtn) {
         leaveBtn.addEventListener("click", () => {
-          bridge.leaveRoom();
-          bridge.disconnect();
-          showPanel(connectPanel);
-          setOnlineStatus("已离开房间", "");
+          if (typeof this.showGameConfirm === "function") {
+            this.showGameConfirm("确定要离开房间吗？", () => {
+              bridge.leaveRoom();
+              bridge.disconnect();
+              showPanel(connectPanel);
+              setOnlineStatus("已离开房间", "");
+            });
+          } else {
+            bridge.leaveRoom();
+            bridge.disconnect();
+            showPanel(connectPanel);
+            setOnlineStatus("已离开房间", "");
+          }
         });
 
         if (copyRoomBtn) {
@@ -1066,8 +1592,9 @@
           const aiSlots = lanSlotConfig.filter((s) => s.type === "ai");
           const aiCount = aiSlots.length;
           const aiLlmEnabled = aiSlots.some((s) => s.llm);
+          const fixedAiIds = ["p1", "p3", "p4"];
           const aiPlayers = aiSlots.map((s, i) => ({
-            id: "ai_" + i + "_" + Date.now(),
+            id: fixedAiIds[i] || ("ai_" + i),
             name: s.name || ("AI-" + (i + 1)),
             isAI: true,
             isHost: false,
@@ -1435,7 +1962,7 @@
 
         const item = {
           id: String(saved.id || `sync-item-${idx}`),
-          key: "synced",
+          key: saved.key || "synced",
           category: saved.category || "未知",
           name: saved.name || `藏品${idx + 1}`,
           basePrice: trueValue,

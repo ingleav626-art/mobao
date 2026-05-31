@@ -139,6 +139,7 @@
             : null,
           logsRound: this.round || 0
         };
+        console.log(`[saveBattleRecord] hasLlm=${hasLlm}, aiDecisionPanelText=${aiDecisionPanelText?.length || 0}, roundPanelTexts keys=${runLog?.roundPanelTexts ? Object.keys(runLog.roundPanelTexts) : 'none'}, roundLogsByRound keys=${runLog?.roundLogsByRound ? Object.keys(runLog.roundLogsByRound) : 'none'}`);
 
         this.battleRecords = [record, ...(this.battleRecords || [])].slice(0, 20);
         saveBattleRecords(this.battleRecords);
@@ -315,6 +316,7 @@
         Object.keys(roundPanelTexts).forEach((k) => { const n = Number(k); if (Number.isFinite(n) && n > 0) roundSet.add(n); });
         const allRounds = Array.from(roundSet).sort((a, b) => a - b);
         const maxRound = allRounds.length > 0 ? allRounds[allRounds.length - 1] : 0;
+        console.log(`[renderBattleRecordLogView] roundPanelTexts keys=${Object.keys(roundPanelTexts)}, roundLogsByRound keys=${Object.keys(roundLogsByRound)}, allRounds=${allRounds}, maxRound=${maxRound}`);
 
         const currentPage = Math.max(1, Math.min(
           Math.round(Number(this.battleRecordLogView.page) || 1),

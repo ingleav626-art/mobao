@@ -595,6 +595,125 @@ body {
   font-style: italic;
 }
 
+/* AI记忆导入弹窗 */
+.ai-import-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+.ai-import-box {
+  background: #2a2218;
+  border: 2px solid #d4a843;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  color: #e0d0b0;
+  font-size: 16px;
+  max-width: 400px;
+  width: 90%;
+}
+
+.ai-import-title {
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.ai-import-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.ai-import-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 1px solid #d4a843;
+  background: rgba(212, 168, 67, 0.15);
+  color: #d4a843;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.ai-import-btn:hover {
+  background: rgba(212, 168, 67, 0.25);
+}
+
+.ai-import-btn.secondary {
+  border-color: #5a7ebd;
+  background: rgba(90, 126, 189, 0.15);
+  color: #5a7ebd;
+}
+
+.ai-import-btn.secondary:hover {
+  background: rgba(90, 126, 189, 0.25);
+}
+
+.ai-import-hint {
+  color: #a09070;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.ai-import-textarea {
+  width: 100%;
+  height: 120px;
+  border: 1px solid #d7bf97;
+  border-radius: 8px;
+  background: #fff;
+  color: #3a2a1a;
+  font-size: 13px;
+  padding: 10px;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.ai-import-footer {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.ai-import-close {
+  padding: 10px 24px;
+  border-radius: 6px;
+  border: 1px solid #8a6a4a;
+  background: rgba(138, 106, 74, 0.15);
+  color: #a09070;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.ai-import-close:hover {
+  background: rgba(138, 106, 74, 0.25);
+}
+
+.ai-import-status {
+  margin-top: 10px;
+  font-size: 14px;
+  min-height: 20px;
+}
+
+.ai-import-status.loading {
+  color: #c49a3c;
+  animation: pulse-soft 1.5s ease-in-out infinite;
+}
+
+.ai-import-status.success {
+  color: #5a9a5a;
+}
+
+.ai-import-status.error {
+  color: #c45a5a;
+}
+
 .battle-record-overlay {
   position: fixed;
   inset: 0;
@@ -3213,7 +3332,8 @@ body.settlement-mode #game-root {
   max-height: 85vh;
   background: linear-gradient(135deg, #fff8e9, #f5e6d0);
   border: 2px solid #d4a843;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   flex-direction: column;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
@@ -3268,37 +3388,44 @@ body.settlement-mode #game-root {
 
 .collection-filters {
   display: flex;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 6px;
+  padding: 10px 16px;
   border-bottom: 1px solid #d4a843;
   flex-wrap: nowrap;
   align-items: center;
-  max-width: 100%;
+  width: 100%;
   box-sizing: border-box;
-  width: 247px;
 }
 
 .collection-filters select,
 .collection-filters input {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid #b99966;
   border-radius: 6px;
   background: #fffdf5;
   color: #3d2d1a;
-  font-size: 14px;
-  height: 36px;
+  font-size: 13px;
+  height: 32px;
   box-sizing: border-box;
+  flex: 1 1 0;
+  min-width: 60px;
 }
 
 .collection-filters select {
-  flex-shrink: 0;
+  flex: 1 1 0;
+  min-width: 70px;
+  max-width: 120px;
+}
+
+.collection-filters input {
+  flex: 2 1 0;
   min-width: 100px;
-  width: auto;
 }
 
 .collection-filters .custom-select-container {
-  flex-shrink: 0;
-  min-width: 100px;
+  flex: 1 1 0;
+  min-width: 70px;
+  max-width: 120px;
 }
 
 .collection-filters .custom-select-trigger {

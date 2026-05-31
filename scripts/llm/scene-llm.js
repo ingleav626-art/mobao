@@ -1362,7 +1362,10 @@
             maxTokens: requestMaxTokens,
             timeoutMs: requestTimeoutMs,
             messages,
-            settings
+            settings,
+            isThinking: settings.thinkingEnabled || false,
+            _playerId: player.id,
+            _playerName: player.name
           });
           const chatEndTime = Date.now();
           const chatElapsed = chatEndTime - chatStartTime;
@@ -1735,7 +1738,8 @@
             maxTokens: requestMaxTokens,
             timeoutMs: requestTimeoutMs,
             messages,
-            settings
+            settings,
+            isThinking: settings.thinkingEnabled || false
           });
 
           if (!result.ok) {

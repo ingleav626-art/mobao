@@ -1,9 +1,9 @@
 package com.mobao.game;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,17 +17,21 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private WebView webView;
     private NativeBridge nativeBridge;
     private boolean isGameRunning = false;
     private int lastKeyboardHeight = 0;
+    private ActivityResultLauncher<String[]> fileImportLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +48,36 @@ public class MainActivity extends Activity {
 
         webView = new WebView(this);
         setContentView(webView);
+
+        fileImportLauncher = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(),
+                (Uri uri) -> {
+                    if (uri != null) {
+                        try {
+                            java.io.InputStream is = getContentResolver().openInputStream(uri);
+                            java.io.BufferedReader reader = new java.io.BufferedReader(
+                                    new java.io.InputStreamReader(is, "UTF-8"));
+                            StringBuilder sb = new StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line);
+                            }
+                            reader.close();
+                            is.close();
+                            String content = sb.toString();
+                            String b64 = android.util.Base64.encodeToString(
+                                    content.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                                    android.util.Base64.NO_WRAP);
+                            String js = "if(window.__onFileImportResult)window.__onFileImportResult('" + b64 + "')";
+                            evaluateJs(js);
+                        } catch (Exception e) {
+                            Log.e(TAG, "File import error: " + e.getMessage());
+                            String js = "if(window.__onFileImportError)window.__onFileImportError('" + e.getMessage()
+                                    + "')";
+                            evaluateJs(js);
+                        }
+                    }
+                });
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -166,6 +200,12 @@ public class MainActivity extends Activity {
     void evaluateJs(String js) {
         if (webView != null) {
             webView.evaluateJavascript(js, null);
+        }
+    }
+
+    void openFileImport() {
+        if (fileImportLauncher != null) {
+            fileImportLauncher.launch(new String[] { "application/json", "*/*" });
         }
     }
 

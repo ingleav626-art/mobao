@@ -72,7 +72,7 @@
       this.initLanLobby();
     },
 
-    showLobbyMain() {
+    showLobbyMain(skipAnimation) {
       const main = document.getElementById("lobbyMain");
       const soloSetup = document.getElementById("lobbySoloSetup");
       const onlinePlaceholder = document.getElementById("lobbyOnlinePlaceholder");
@@ -82,11 +82,13 @@
       if (characterSelect) characterSelect.classList.add("hidden");
       if (main) {
         main.classList.remove("hidden");
-        main.classList.add("lobby-subpage-entering");
-        main.addEventListener("animationend", function onEnter() {
-          main.classList.remove("lobby-subpage-entering");
-          main.removeEventListener("animationend", onEnter);
-        }, { once: true });
+        if (!skipAnimation) {
+          main.classList.add("lobby-subpage-entering");
+          main.addEventListener("animationend", function onEnter() {
+            main.classList.remove("lobby-subpage-entering");
+            main.removeEventListener("animationend", onEnter);
+          }, { once: true });
+        }
       }
       this.isLanMode = false;
       this.lanIsHost = false;
@@ -131,11 +133,13 @@
 
         this.updateLobbyMoneyDisplay();
         const onlineMoney = document.getElementById("lobbyOnlineMoney");
-        if (onlineMoney) {
-          const textEl = onlineMoney.querySelector('.hud-icon') ? onlineMoney.lastChild : onlineMoney;
+        const onlineMoneyOuter = document.getElementById("lobbyOnlineMoneyOuter");
+        [onlineMoney, onlineMoneyOuter].forEach((el) => {
+          if (!el) return;
+          const textEl = el.querySelector('.hud-icon') ? el.lastChild : el;
           if (textEl && textEl.nodeType === 3) textEl.textContent = ' ' + this.playerMoney.toLocaleString();
-          else onlineMoney.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${this.playerMoney.toLocaleString()}`;
-        }
+          else el.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${this.playerMoney.toLocaleString()}`;
+        });
       } else if (page === "characterSelect") {
         this.showCharacterSelectPageWithMap();
       }
@@ -234,7 +238,7 @@
         { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
       ];
       this.initPlayersUI();
-      this.showLobbyMain();
+      this.showLobbyMain(true);
       this.updateLobbyMoneyDisplay();
       window.MobaoAppState.patch({ appMode: "lobby", gameSource: null });
       const connectPanel = document.getElementById("lobbyOnlineConnect");

@@ -223,13 +223,16 @@
       }
 
       const roundNo = Math.max(1, Math.round(Number(telemetry.round) || 1));
+      console.log(`[recordAiThoughtLogs] roundNo=${roundNo}, telemetry.round=${telemetry.round}, entries=${telemetry.entries?.length}`);
       if (!this.currentRunLog.roundPanelTexts) {
         this.currentRunLog.roundPanelTexts = {};
       }
       if (typeof this.buildAiDecisionPanelSnapshot === "function") {
         const panelText = this.buildAiDecisionPanelSnapshot(telemetry);
+        console.log(`[recordAiThoughtLogs] panelText length=${panelText?.length || 0}`);
         if (panelText) {
           this.currentRunLog.roundPanelTexts[String(roundNo)] = panelText;
+          console.log(`[recordAiThoughtLogs] saved roundPanelTexts[${roundNo}], keys=${Object.keys(this.currentRunLog.roundPanelTexts)}`);
         }
       }
 
@@ -282,12 +285,13 @@
         }
 
         const roundNo = Math.max(1, Math.round(Number(this.round) || 1));
-        if (!Array.isArray(this.currentRunLog.roundLogsByRound[roundNo])) {
-          this.currentRunLog.roundLogsByRound[roundNo] = [];
+        const roundKey = String(roundNo);
+        if (!Array.isArray(this.currentRunLog.roundLogsByRound[roundKey])) {
+          this.currentRunLog.roundLogsByRound[roundKey] = [];
         }
-        this.currentRunLog.roundLogsByRound[roundNo].push(line);
-        if (this.currentRunLog.roundLogsByRound[roundNo].length > 120) {
-          this.currentRunLog.roundLogsByRound[roundNo] = this.currentRunLog.roundLogsByRound[roundNo].slice(-120);
+        this.currentRunLog.roundLogsByRound[roundKey].push(line);
+        if (this.currentRunLog.roundLogsByRound[roundKey].length > 120) {
+          this.currentRunLog.roundLogsByRound[roundKey] = this.currentRunLog.roundLogsByRound[roundKey].slice(-120);
         }
       }
       this.renderAiThoughtLog();

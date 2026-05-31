@@ -3,6 +3,13 @@
   const { formatBidRevealNumber } = global.MobaoUtils;
 
   const AiMemoryMixin = {
+    getAiMemoryStorageKey() {
+      if (this.isLanMode) {
+        return AI_MEMORY_STORAGE_KEY + "_lan";
+      }
+      return AI_MEMORY_STORAGE_KEY;
+    },
+
     isAiMultiGameMemoryEnabled() {
       const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null;
       return Boolean(settings && settings.multiGameMemoryEnabled);
@@ -10,7 +17,8 @@
 
     loadAiMemoryFromStorage() {
       try {
-        const raw = window.localStorage.getItem(AI_MEMORY_STORAGE_KEY);
+        const storageKey = this.getAiMemoryStorageKey();
+        const raw = window.localStorage.getItem(storageKey);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return null;
@@ -22,6 +30,7 @@
 
     saveAiMemoryToStorage() {
       try {
+        const storageKey = this.getAiMemoryStorageKey();
         const data = {
           conversations: this.aiConversationByPlayer,
           crossGameMemory: this.aiCrossGameMemory,
@@ -29,7 +38,7 @@
           runSerial: this.runSerial || 0,
           savedAt: Date.now()
         };
-        window.localStorage.setItem(AI_MEMORY_STORAGE_KEY, JSON.stringify(data));
+        window.localStorage.setItem(storageKey, JSON.stringify(data));
       } catch (_error) {
       }
     },
@@ -330,9 +339,62 @@
         if (parsed.crossGameMemory && typeof parsed.crossGameMemory === "object") {
           this.aiCrossGameMemory = {};
           Object.keys(parsed.crossGameMemory).forEach((playerId) => {
-            const arr = parsed.crossGameMemory[playerId];
-            if (Array.isArray(arr)) {
-              this.aiCrossGameMemory[playerId] = arr.slice(-20);
+            const data = parsed.crossGameMemory[playerId];
+            if (Array.isArray(data)) {
+              this.aiCrossGameMemory[playerId] = {
+                stats: {
+                  totalGames: 0,
+                  warehouseValueMax: 0,
+                  warehouseValueMin: 0,
+                  warehouseValueAvg: 0,
+                  winRate: 0,
+                  avgProfit: 0,
+                  totalCellsMax: 0,
+                  totalCellsMin: 0,
+                  totalCellsAvg: 0,
+                  totalItemsMax: 0,
+                  totalItemsMin: 0,
+                  totalItemsAvg: 0,
+                  legendaryMax: 0,
+                  legendaryMin: 0,
+                  legendaryAvg: 0,
+                  rareMax: 0,
+                  rareMin: 0,
+                  rareAvg: 0
+                },
+                lessons: [],
+                strategies: [],
+                praises: []
+              };
+            } else if (data && typeof data === "object") {
+              const defaultStats = {
+                totalGames: 0,
+                warehouseValueMax: 0,
+                warehouseValueMin: 0,
+                warehouseValueAvg: 0,
+                winRate: 0,
+                avgProfit: 0,
+                totalCellsMax: 0,
+                totalCellsMin: 0,
+                totalCellsAvg: 0,
+                totalItemsMax: 0,
+                totalItemsMin: 0,
+                totalItemsAvg: 0,
+                legendaryMax: 0,
+                legendaryMin: 0,
+                legendaryAvg: 0,
+                rareMax: 0,
+                rareMin: 0,
+                rareAvg: 0
+              };
+              const storedStats = data.stats || {};
+              const mergedStats = { ...defaultStats, ...storedStats };
+              this.aiCrossGameMemory[playerId] = {
+                stats: mergedStats,
+                lessons: Array.isArray(data.lessons) ? data.lessons.slice(-10) : [],
+                strategies: Array.isArray(data.strategies) ? data.strategies.slice(-10) : [],
+                praises: Array.isArray(data.praises) ? data.praises.slice(-10) : []
+              };
             }
           });
         }

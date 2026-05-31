@@ -8,6 +8,74 @@
   const providers = new Map();
   let activeProviderId = null;
 
+  function normalizeUsage(usage) {
+    if (!usage || typeof usage !== 'object') return null;
+    const result = {
+      prompt_cache_hit_tokens: 0,
+      prompt_cache_miss_tokens: 0,
+      completion_tokens: 0,
+      total_tokens: 0,
+      reasoning_tokens: 0,
+      cached_tokens: 0
+    };
+    result.completion_tokens = usage.completion_tokens || 0;
+    result.total_tokens = usage.total_tokens || 0;
+    if (typeof usage.prompt_cache_hit_tokens === 'number') {
+      result.prompt_cache_hit_tokens = usage.prompt_cache_hit_tokens;
+    }
+    if (typeof usage.prompt_cache_miss_tokens === 'number') {
+      result.prompt_cache_miss_tokens = usage.prompt_cache_miss_tokens;
+    }
+    if (typeof usage.prompt_tokens === 'number') {
+      const cached = usage.prompt_tokens_details?.cached_tokens || usage.cached_tokens || 0;
+      result.prompt_cache_hit_tokens = cached;
+      result.prompt_cache_miss_tokens = usage.prompt_tokens - cached;
+    }
+    if (typeof usage.reasoning_tokens === 'number') {
+      result.reasoning_tokens = usage.reasoning_tokens;
+    }
+    if (typeof usage.cached_tokens === 'number' && result.prompt_cache_hit_tokens === 0) {
+      result.prompt_cache_hit_tokens = usage.cached_tokens;
+    }
+    return result;
+  }
+
+  function broadcastToTokenMonitor(result, options) {
+    const callSource = options?._playerId ? `player:${options._playerId}` : 'unknown';
+    console.log(`[TokenMonitor] broadcast called from ${callSource}, ok:${result.ok}, elapsed:${result.elapsedMs}ms`);
+    try {
+      const normalizedUsage = normalizeUsage(result.usage);
+      const payload = {
+        type: 'llm-request',
+        payload: {
+          ok: result.ok,
+          model: result.model || '',
+          elapsedMs: result.elapsedMs || 0,
+          usage: normalizedUsage,
+          rawUsage: result.usage,
+          code: result.code || null,
+          requestId: result.requestId || null,
+          promptTokens: normalizedUsage
+            ? normalizedUsage.prompt_cache_hit_tokens + normalizedUsage.prompt_cache_miss_tokens
+            : 0,
+          timestamp: Date.now(),
+          playerId: options?._playerId || null,
+          playerName: options?._playerName || null,
+          source: 'llm-manager'
+        }
+      };
+      if (window.BroadcastChannel) {
+        const channel = new BroadcastChannel('llm-token-monitor');
+        channel.postMessage(payload);
+        channel.close();
+      }
+      localStorage.setItem('llm-token-monitor-live', JSON.stringify(payload));
+      console.log(`[TokenMonitor] data sent, requestId:${result.requestId}`);
+    } catch (e) {
+      console.error('[TokenMonitor] broadcast error:', e);
+    }
+  }
+
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
   }
@@ -674,7 +742,7 @@
         });
 
         console.log(`[requestChat] ${callId} SUCCESS, elapsed: ${Date.now() - callStartTime}ms, http: ${elapsedMs}ms`);
-        return {
+        const successResult = {
           ok: true,
           requestId,
           status: response.status,
@@ -685,6 +753,8 @@
           usage: payload && payload.usage ? payload.usage : null,
           raw: payload
         };
+        broadcastToTokenMonitor(successResult, input);
+        return successResult;
       } catch (error) {
         const elapsedMs = Date.now() - startedAt;
         const timeoutError = error && error.name === "AbortError";
@@ -707,7 +777,7 @@
           errorMessage: error && error.message ? error.message : ""
         });
 
-        return {
+        const errorResult = {
           ok: false,
           requestId,
           elapsedMs,
@@ -725,6 +795,8 @@
             errorMessage: error && error.message ? error.message : ""
           }
         };
+        broadcastToTokenMonitor(errorResult, input);
+        return errorResult;
       } finally {
         window.clearTimeout(timeoutId);
         if (window.__llmProxyResolvers) {
