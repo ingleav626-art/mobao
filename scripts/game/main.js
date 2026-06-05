@@ -1,3 +1,80 @@
+/**
+ * @file main.js
+ * @module main
+ * @description 游戏入口与主场景。创建 Phaser.Game 实例，定义 WarehouseScene 主场景类，
+ *              并通过 Object.assign 将所有 Mixin 混入场景原型。是整个游戏的核心组装文件。
+ *
+ * 加载顺序与依赖检查（L1-L177）：
+ *   严格检查所有全局模块是否存在，缺失则抛出 Error 阻止启动：
+ *   MobaoConstants → MobaoUtils → MobaoSettings → MobaoWarehouse →
+ *   ArtifactData → SkillSystem → ItemSystem → AuctionAI →
+ *   DeepSeekLLM → MobaoSceneLlm → MobaoBattleRecordBridge →
+ *   MobaoSettlementBridge → MobaoUi → MobaoBidding
+ *
+ * 桥接层初始化（L136-L176）：
+ *   - LLM_BRIDGE: 场景LLM桥接（AI对话/工具调用/上下文管理）
+ *   - BATTLE_RECORD_BRIDGE: 战绩记录桥接（持久化/面板渲染/日志查看）
+ *   - SETTLEMENT_BRIDGE: 结算桥接（藏品揭示/特效/利润动画）
+ *   - MobaoLlm: 全局LLM设置对象
+ *
+ * WarehouseScene 类（L178-L2883）：
+ *   构造函数初始化 60+ 实例属性，按功能分组：
+ *   - Phaser 图层: gridLayer, revealCellLayer, itemLayer
+ *   - 管理器: artifactManager, skillManager, itemManager, aiEngine
+ *   - 回合状态: round, actionsLeft, roundTimeLeft, roundPaused, roundResolving
+ *   - 出价状态: currentBid, bidLeader, playerBidSubmitted, playerRoundBid
+ *   - 联机状态: isLanMode, lanBridge, lanIsHost, lanMySlotId, 重连相关
+ *   - 结算状态: settled, isSettlementRevealMode, settlementSession
+ *   - 玩家数组: players[{ id, name, avatar, isHuman, isAI, isSelf }]
+ *   - AI 状态: aiPrivateIntel, aiResourceState, aiLlmPlayerEnabled, aiFoldState
+ *   - AI 记忆: aiConversationByPlayer, aiCrossGameMemory, runLogHistory
+ *   - UI 状态: privateIntelEntries, publicInfoEntries, currentPublicEvent
+ *   - DOM 引用: dom{ hudRound, hudTimer, hudMoney, ... }
+ *
+ *   核心方法（直接定义在类中）：
+ *   - create(): 场景创建，初始化DOM引用、事件绑定、HUD、音效
+ *   - update(): 每帧更新（计时器、AI思考指示器）
+ *   - startNewRun() / startNewRound(): 新局/新回合
+ *   - resolveRound(): 回合结算
+ *   - handleBidSubmit(): 玩家出价提交
+ *   - syncItemManagerFromShop(): 从商店同步道具到游戏内管理器
+ *   - 音效: playSfx(), playMusic(), stopMusic()
+ *   - 联机: bindLanEvents(), lanStartGame(), lanBroadcastBid()
+ *   - AI记忆导入导出: exportAiMemoryToJson(), importAiMemoryFromJson()
+ *
+ * Mixin 混入（L2884-L2901）：
+ *   16个 Mixin 按顺序混入 WarehouseScene.prototype：
+ *   Warehouse: CoreMixin → RevealMixin → PreviewMixin
+ *   AI: WalletMixin → IntelMixin → MemoryMixin → ReflectionMixin → DecisionMixin
+ *   Bidding: BiddingMixin
+ *   UI: OverlayMixin → PanelsMixin → HistoryMixin
+ *   Lobby: IndexMixin → CarouselMixin → CharacterSelectMixin
+ *   Lan: IndexMixin
+ *
+ * Phaser 配置（L2903-L2922）：
+ *   画布尺寸: MARGIN*2 + GRID_COLS*CELL_SIZE × MARGIN*2 + GRID_ROWS*CELL_SIZE
+ *   透明背景, 分辨率上限 devicePixelRatio 2, 场景: [WarehouseScene]
+ *
+ * @requires Phaser                - 游戏引擎
+ * @requires MobaoConstants        - 全局常量
+ * @requires MobaoUtils            - 工具函数
+ * @requires MobaoSettings         - 游戏设置
+ * @requires MobaoWarehouse        - 仓库 Mixin 集合
+ * @requires ArtifactData          - 藏品数据
+ * @requires SkillSystem           - 技能系统
+ * @requires ItemSystem            - 道具系统
+ * @requires AuctionAI             - AI出价引擎
+ * @requires DeepSeekLLM           - LLM 客户端
+ * @requires MobaoSceneLlm         - 场景LLM桥接
+ * @requires MobaoBattleRecordBridge - 战绩记录桥接
+ * @requires MobaoSettlementBridge   - 结算桥接
+ * @requires MobaoUi               - UI Mixin 集合
+ * @requires MobaoBidding          - 出价 Mixin
+ * @requires MobaoLobby            - 大厅 Mixin 集合
+ * @requires MobaoLan              - 联机 Mixin
+ *
+ * @exports WarehouseScene  - Phaser 主场景类（通过 new Phaser.Game(config) 自动启动）
+ */
 if (!window.MobaoConstants) {
   throw new Error("MobaoConstants not found: 请先加载 scripts/game/constants.js");
 }
@@ -857,6 +934,19 @@ class WarehouseScene extends Phaser.Scene {
         this.renderPreviewCandidates(this.selectedItem);
       }
     });
+    // 修复：select 展开下拉时需要临时让 popover overflow visible，否则下拉被裁切
+    this.dom.previewCategorySelect.addEventListener("mousedown", () => {
+      const popover = this.dom.previewCategorySelect.closest(".preview-popover");
+      if (popover) popover.style.overflow = "visible";
+    });
+    this.dom.previewCategorySelect.addEventListener("change", () => {
+      const popover = this.dom.previewCategorySelect.closest(".preview-popover");
+      if (popover) popover.style.overflow = "";
+    });
+    this.dom.previewCategorySelect.addEventListener("blur", () => {
+      const popover = this.dom.previewCategorySelect.closest(".preview-popover");
+      if (popover) popover.style.overflow = "";
+    });
 
     this.dom.settingsCloseBtn.addEventListener("click", () => this.closeSettingsOverlay(false));
     this.dom.settingsResetBtn.addEventListener("click", () => {
@@ -1030,19 +1120,19 @@ class WarehouseScene extends Phaser.Scene {
       box.innerHTML =
         '<div class="ai-import-title">导入AI记忆</div>' +
         '<div class="ai-import-actions">' +
-          (hasNativeImport
-            ? '<button id="importFileBtn" class="ai-import-btn">从文件导入</button>'
-            : '<label id="importFileBtn" class="ai-import-btn" style="cursor:pointer;display:inline-block;">从文件导入<input type="file" id="importFileInput" accept=".json,application/json" style="display:none;"></label>'
-          ) +
-          '<button id="importPasteBtn" class="ai-import-btn secondary">粘贴JSON</button>' +
+        (hasNativeImport
+          ? '<button id="importFileBtn" class="ai-import-btn">从文件导入</button>'
+          : '<label id="importFileBtn" class="ai-import-btn" style="cursor:pointer;display:inline-block;">从文件导入<input type="file" id="importFileInput" accept=".json,application/json" style="display:none;"></label>'
+        ) +
+        '<button id="importPasteBtn" class="ai-import-btn secondary">粘贴JSON</button>' +
         '</div>' +
         '<div id="importPasteArea" style="display:none;">' +
-          '<textarea id="importJsonTextarea" class="ai-import-textarea" placeholder="在此粘贴JSON数据..."></textarea>' +
+        '<textarea id="importJsonTextarea" class="ai-import-textarea" placeholder="在此粘贴JSON数据..."></textarea>' +
         '</div>' +
         '<div id="importStatus" class="ai-import-status"></div>' +
         '<div class="ai-import-footer">' +
-          '<button id="importPasteConfirmBtn" class="ai-import-btn" style="display:none;">确认导入</button>' +
-          '<button id="importDialogCloseBtn" class="ai-import-close">关闭</button>' +
+        '<button id="importPasteConfirmBtn" class="ai-import-btn" style="display:none;">确认导入</button>' +
+        '<button id="importDialogCloseBtn" class="ai-import-close">关闭</button>' +
         '</div>';
       overlay.appendChild(box);
       document.body.appendChild(overlay);
@@ -1580,6 +1670,9 @@ class WarehouseScene extends Phaser.Scene {
     self.characterName = char.name;
     self.name = CharacterSystem.getDisplayName();
     self.avatar = CharacterSystem.getAvatarLabel();
+    // 同步更新 DOM 中的角色名字
+    const nameEl = document.getElementById(`name-${self.id}`);
+    if (nameEl) nameEl.textContent = char.name;
     this._activeSkillId = CharacterSystem.getActiveSkillId();
     this.refreshSkillButtonLabel();
   }

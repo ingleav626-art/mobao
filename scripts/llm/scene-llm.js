@@ -1,3 +1,50 @@
+/**
+ * @file llm/scene-llm.js
+ * @module llm/scene-llm
+ * @description 场景 LLM 桥接器。采用 IIFE 模式，挂载到 window.MobaoSceneLlm。
+ *              是 AI 决策系统与 LLM 后端之间的核心桥梁，负责构建 prompt、调用 LLM、
+ *              解析响应、执行工具、纠错重试、记录遥测数据等完整流程。
+ *
+ * 核心导出：
+ *   - createSceneLlmBridge(deps): 工厂函数，创建 LLM 桥接器实例
+ *     参数为依赖注入对象，包含常量、设置、工具函数等
+ *   返回对象的方法：
+ *     - loadAiLlmPlayerSwitches(players): 加载每个玩家的 LLM 开关
+ *     - requestLlmDecision(playerId, context): 请求 LLM 出价决策
+ *       完整流程：构建 prompt → 调用 LLM → 解析 JSON → 纠错 → 工具执行 → 追问
+ *     - requestLlmReflection(playerId, context): 请求 LLM 局后反思
+ *     - pushAiContext(playerId, context): 推送 AI 上下文（跨局记忆）
+ *     - stopAiContext(playerId): 停止推送
+ *     - saveAiLlmPlayerSwitches(switches): 保存 LLM 开关
+ *
+ * Prompt 系统（LLM_DECISION_SYSTEM_PROMPT）：
+ *   完整的 AI 竞拍决策指令，包含：
+ *   - 身份与目标：竞拍AI玩家，低于真实价值盈利
+ *   - 游戏机制：盲拍/提前获胜/分红/门票
+ *   - 字段参考：warehouseDefinition/qualityPriceGuide/privateIntel/等
+ *   - 硬约束：禁止弃标/两段式流程/禁止臆造
+ *   - 策略建议：大胆出价/跨局记忆/欺诈策略
+ *   - 输出格式：JSON{ bid, skill, item, thought }
+ *
+ * 决策流程：
+ *   1. initial 阶段：构建 prompt → 调用 LLM → 解析响应
+ *   2. 若使用了工具（skill/item），进入 follow-up-after-tool 阶段
+ *   3. 追问 LLM 根据工具结果更新出价
+ *   4. 纠错机制：JSON 解析失败时尝试提取/修复
+ *   5. 遥测记录：prompt/response/纠错过程/工具结果
+ *
+ * 工具系统：
+ *   - LLM 可调用技能和道具（通过 skill/item 字段）
+ *   - 工具结果作为 follow-up 上下文反馈给 LLM
+ *
+ * @requires LlmManager       - LLM 多 Provider 管理器
+ * @requires MobaoConstants   - 常量（AI_LLM_SWITCH_STORAGE_KEY）
+ * @requires MobaoSettings    - 游戏设置（GAME_SETTINGS）
+ * @requires MobaoUtils       - 工具函数（多个）
+ *
+ * @exports window.MobaoSceneLlm
+ *   { createSceneLlmBridge }
+ */
 (function setupMobaoSceneLlm(global) {
   const LLM_DECISION_SYSTEM_PROMPT = [
     "【身份与目标】",
@@ -513,7 +560,10 @@
           thinkingEnabled: this.dom.settingLlmThinkingEnabled
             ? this.dom.settingLlmThinkingEnabled.checked
             : (currentSettings.thinkingEnabled || false),
-          thinkingParams: currentSettings.thinkingParams || "",
+          thinkingParams: (function() {
+            const el = document.getElementById("setting-thinkingParams");
+            return el ? el.value.trim() : (currentSettings.thinkingParams || "");
+          })(),
           apiKey: apiKeyInput ? apiKeyInput.value : currentSettings.apiKey,
           model: modelInput ? modelInput.value : currentSettings.model,
           endpoint: endpointInput ? endpointInput.value || currentSettings.endpoint : currentSettings.endpoint,

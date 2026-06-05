@@ -1,3 +1,43 @@
+/**
+ * @file intel.js
+ * @module ai/intel
+ * @description AI情报系统 Mixin。管理AI玩家的私有情报池，包括线索揭示、品质鉴定、
+ *              信号统计、高价值追踪和资源管理。是AI"看到什么"的核心模块。
+ *
+ * 核心职责：
+ *   - initAiIntelSystems: 初始化AI私有情报池、角色分配、资源状态
+ *   - getAiIntelSummary: 计算AI的情报摘要（线索率、质量率、不确定性、价格边缘等）
+ *   - revealPrivateIntelBatch / revealPrivateIntelFully: 为AI揭示藏品信息（轮廓/品质/完全揭示）
+ *   - buildAiPrivateRevealContext: 构建LLM可调用的揭示上下文（revealOutline/revealQuality/revealAll）
+ *   - buildSkillContext: 构建规则AI可调用的揭示上下文
+ *   - planIntelAction: 委托给 AuctionAiEngine.planIntelAction 选择最优情报动作
+ *   - 高价值追踪：自动追踪绝品/高价藏品，维护 trackId 映射
+ *   - 资源管理：AI角色技能和道具的初始化、每轮重置、消耗扣减
+ *
+ * 数据结构：
+ *   aiPrivateIntel[playerId] = {
+ *     outlineSignals, qualitySignals, signalHistory,
+ *     knownOutlineIds, knownQualityIds,
+ *     knownCellStates, itemKnowledge,
+ *     highValueTracks, highValueTrackByItemId,
+ *     aggregateStats, latestSignalStats
+ *   }
+ *   aiResourceState[playerId] = { skills: {skillId: count}, items: {itemId: count} }
+ *   aiCharacterAssignments[playerId] = { characterId, skillId, skillName, passive }
+ *
+ * @requires MobaoUtils     - 工具函数（createEmptyAiPrivateIntelPool, clamp, formatTrackIndex, shuffle 等）
+ * @requires SkillSystem    - 技能定义（SKILL_DEFS）
+ * @requires ItemSystem     - 道具定义（ITEM_DEFS）
+ * @requires MobaoSettings  - 全局设置（GAME_SETTINGS）
+ * @requires ArtifactData   - 藏品数据（QUALITY_CONFIG, toSizeTag）
+ *
+ * @exports MobaoAi.IntelMixin - 情报系统 Mixin，混入 Phaser Scene
+ *
+ * 混入方式：Object.assign(scene, MobaoAi.IntelMixin)
+ * 混入后 scene 将获得：aiPrivateIntel, aiResourceState, aiRoundEffects,
+ *   lastAiIntelActions, aiLlmRoundPlans, aiFoldState, aiCharacterAssignments,
+ *   initAiIntelSystems, getAiIntelSummary, buildAiIntelSnapshot, 等一系列方法
+ */
 (function setupMobaoAiIntel(global) {
   const { createEmptyAiPrivateIntelPool, clamp, formatTrackIndex, shuffle, formatCompactNumber, compactOneLine, toCellKey, fromCellKey, sizeTagToCellCount } = global.MobaoUtils;
   const { SKILL_DEFS } = global.SkillSystem;
@@ -69,6 +109,17 @@
         const avatarEl = document.getElementById(`avatar-${player.id}`);
         if (avatarEl) {
           this.updatePlayerAvatar(player.id, avatarEl);
+        }
+        // 同步更新角色名字
+        const nameEl = document.getElementById(`name-${player.id}`);
+        if (nameEl) {
+          if (player.isHuman) {
+            const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter();
+            if (char && char.name) nameEl.textContent = char.name;
+          } else {
+            const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[player.id];
+            if (charAssign && charAssign.characterName) nameEl.textContent = charAssign.characterName;
+          }
         }
       });
     },
