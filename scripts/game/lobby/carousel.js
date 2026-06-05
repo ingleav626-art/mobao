@@ -1,3 +1,27 @@
+/**
+ * @file lobby/carousel.js
+ * @module lobby/carousel
+ * @description 大厅地图选择轮播组件 Mixin。提供地图卡片的横向滚动浏览、
+ *              触摸滑动、左右箭头导航，以及选中地图的参数详情展示。
+ *
+ * 核心职责：
+ *   - renderCarousel(): 渲染地图卡片列表，绑定点击选中事件
+ *   - bindCarouselTouch(): 绑定触摸滑动手势（水平滑动>30px触发翻页）
+ *   - carouselScroll(direction): 左右翻页（-1/1），限制在有效范围内
+ *   - updateCarouselPosition(): 更新轮播位置（translateX），控制箭头禁用状态
+ *   - renderMapDetail(): 渲染选中地图的参数详情面板
+ *     将数值参数转换为语义化等级（低/较低/中/较高/高），包括：
+ *     回合数、直接拿下比例、高品质/低品质占比、各品质权重
+ *
+ * 地图详情展示：
+ *   使用 toLevel() 工具函数将数值映射为5级语义标签，
+ *   如 highQ<0.2→"低", <0.35→"较低", <0.5→"中", <0.65→"较高", else→"高"
+ *   底部有"向下滑动查看更多"提示，滚动到底部自动隐藏
+ *
+ * @requires MobaoMapProfiles - 地图配置数据（getAllProfiles, getSelectedProfileId, setSelectedProfileId）
+ *
+ * @exports MobaoLobby.CarouselMixin - 轮播组件 Mixin，混入 Phaser Scene
+ */
 (function setupMobaoLobbyCarousel(global) {
   const LobbyCarouselMixin = {
     renderCarousel() {

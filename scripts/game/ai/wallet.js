@@ -1,3 +1,26 @@
+/**
+ * @file wallet.js
+ * @module ai/wallet
+ * @description AI玩家钱包管理 Mixin。负责AI玩家的虚拟资金初始化、持久化存储、
+ *              余额查询和出价规范化。每个AI玩家拥有独立钱包，资金跨局累积（localStorage），
+ *              联机模式下可从主机同步钱包数据。
+ *
+ * 核心职责：
+ *   - 初始化/重置AI钱包（默认 1,000,000）
+ *   - 从 localStorage 加载/保存钱包数据
+ *   - 查询AI余额（支持联机回退到主机数据）
+ *   - 规范化出价值：clamp 到 [最低出价, 钱包余额] 并对齐到出价步长
+ *
+ * @requires MobaoSettings  - 全局设置（GAME_SETTINGS.bidStep）
+ * @requires MobaoUtils     - 工具函数（clamp, roundToStep）
+ *
+ * @exports MobaoAi.WalletMixin   - 钱包管理 Mixin，混入 Phaser Scene
+ * @exports MobaoAi.AI_WALLET_INITIAL - AI初始资金常量
+ *
+ * 混入方式：Object.assign(scene, MobaoAi.WalletMixin)
+ * 混入后 scene 将获得：aiWallets, loadAiWalletsFromStorage, saveAiWalletsToStorage,
+ *   resetAiWallets, initAiWallets, getAiWallet, getAiMinimumBid, normalizeAiBidValue
+ */
 (function setupMobaoAiWallet(global) {
   const { GAME_SETTINGS } = global.MobaoSettings;
   const { clamp, roundToStep } = global.MobaoUtils;

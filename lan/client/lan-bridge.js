@@ -1,3 +1,52 @@
+/**
+ * @file lan/client/lan-bridge.js
+ * @module lan/bridge
+ * @description 联机通信桥客户端。采用 IIFE + 构造函数模式，挂载到 window.LanBridge。
+ *              封装 WebSocket 连接管理、消息收发、事件系统和原生桥接，
+ *              是前端 UI 与联机服务器之间的唯一通信通道。
+ *
+ * 核心功能：
+ *   - connect(url, playerName): 建立 WebSocket 连接
+ *   - disconnect(): 断开连接
+ *   - send(msg): 发送 JSON 消息
+ *   - on(event, fn) / _emit(event, data): 事件订阅/发布系统
+ *
+ * 房间操作：
+ *   - createRoom(options): 创建房间（roomName/visibility/password）
+ *   - joinRoom(code, password): 加入房间
+ *   - leaveRoom(): 离开房间
+ *   - listRooms(): 获取房间列表
+ *   - reconnect(url, roomCode, playerId): 断线重连
+ *
+ * 游戏操作：
+ *   - startGame(options): 开始游戏（仅房主）
+ *   - submitBid(bid): 提交出价
+ *   - broadcastRoundStart/Result/Settle/SettleFinal: 房主广播
+ *   - togglePause(paused, roundTimeLeft): 暂停/恢复
+ *   - sendChat(text): 聊天消息
+ *   - ping(): 心跳检测
+ *
+ * 消息路由（_handleMessage）：
+ *   - room:* 房间事件（created/joined/player-joined/player-left/host-left/kicked/list/slot-state/reconnect*）
+ *   - lan:game:* 游戏事件（init/restart-vote/restart-go/restart-cancelled/settle/settle-final）
+ *   - lan:round:* 回合事件（start/bid-ack/timeout/result）
+ *   - lan:bid:* 出价事件（received/all-bids-in）
+ *   - lan:* 其他（warehouse-sync/ai-bids-ready/ai-item-use/player-action/pause:state/pong/full-sync/public-info）
+ *   - chat/error/unknown
+ *
+ * 原生桥接（NativeBridge）：
+ *   - isNative(): 检测是否在 Android WebView 中
+ *   - getNativeServerUrl/getLocalServerUrl: 获取服务器地址
+ *   - startNativeServer/stopNativeServer: 启停本地服务器
+ *   - getNativeWiFiIP: 获取 WiFi IP
+ *   - discoverRoomsNative/discoverRoomsHTTP: 房间发现
+ *   - _getLocalSubnetIPs(): 获取本机子网 IP 列表
+ *
+ * @requires WebSocket - 浏览器原生 WebSocket API
+ * @requires NativeBridge - Android 原生桥接（可选，仅 WebView 环境）
+ *
+ * @exports window.LanBridge - 联机通信桥构造函数
+ */
 (function setupLanBridge(global) {
   var TAG = "[LanBridge]";
 

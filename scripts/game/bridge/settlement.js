@@ -1,3 +1,43 @@
+/**
+ * @file bridge/settlement.js
+ * @module bridge/settlement
+ * @description 结算系统 Bridge。采用工厂函数模式（createSettlementBridge），
+ *              通过依赖注入获取布局常量和动画工具，返回 Mixin 对象。
+ *              负责拍卖结束后的结算页面管理，包括藏品逐个揭示动画、品质特效、
+ *              最终庆祝粒子效果、以及结算页面的进入/退出。
+ *
+ * 核心职责：
+ *   - 结算页面管理：enterSettlementPage / exitSettlementPage
+ *     切换到结算模式，显示成交信息、利润、操作按钮
+ *   - 藏品揭示动画：revealAllArtifactsForSettlement
+ *     逐个揭示藏品品质：搜索旋转动画 → 品质揭示 → 光晕特效 → 进度更新
+ *     支持点击跳过（settlementRevealSkipRequested），快速揭示剩余藏品
+ *   - 搜索特效：playSettlementSearchEffect
+ *     金色旋转弧线动画，时长按品质等级区分
+ *   - 揭示步骤：playSettlementRevealStep
+ *     品质光晕闪烁 + 藏品图片渐入 + 光环扩散动画
+ *   - 最终庆祝：playSettlementFinalEffect / triggerSettlementFinalAnimation
+ *     赢家利润 > 0 时触发：金币爆发粒子 + 星星粒子 + 上升粒子 + 闪烁粒子
+ *     绝品多的对局有更华丽的金色粒子效果
+ *   - 利润动画：正利润弹跳+光效，负利润抖动
+ *   - 结算面板指标：updateSettlementPanelMetrics（揭示价值、利润实时更新）
+ *
+ * 依赖注入参数（deps）：
+ *   - MARGIN, CELL_SIZE: 仓库网格布局常量
+ *   - delay, tweenToPromise: 动画工具函数
+ *   - settlementRevealDelayByQuality, settlementSearchDurationByQuality:
+ *     按品质等级返回动画时长的函数
+ *
+ * @requires Phaser       - 游戏引擎（this.tweens, this.add.rectangle/circle/star/image）
+ * @requires AudioUI      - 音频系统（startSearch, stopSearch, playSettlementReveal, play）
+ * @requires MobaoAnimations - 动画系统（staggerEnter 结算页元素渐次入场）
+ *
+ * @exports MobaoSettlement.createSettlementBridge - 工厂函数，返回结算 Mixin
+ *
+ * 使用方式：
+ *   const bridge = createSettlementBridge({ MARGIN, CELL_SIZE, delay, tweenToPromise, ... });
+ *   Object.assign(scene, bridge);
+ */
 (function setupMobaoSettlementBridge(global) {
   function createSettlementBridge(deps) {
     const {

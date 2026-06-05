@@ -1,3 +1,31 @@
+/**
+ * @file data/skills.js
+ * @module data/skills
+ * @description 技能数据定义与使用管理。采用 IIFE 模式，挂载到 window.SkillSystem。
+ *              定义角色主动技能的静态配置（名称、描述、效果、每回合可用次数），
+ *              以及 SkillManager 类负责技能的使用、扣减和状态查询。
+ *              与 characters.js 中的 skillId 对应，每个角色绑定一个技能。
+ *
+ * 技能列表（SKILL_DEFS），3个技能：
+ *   - skill-outline-scan（拓影侦测）：揭示3件轮廓，对应 scout 角色
+ *   - skill-quality-jade（玉脉鉴质）：玉器品质+2（不足补其他），对应 appraiser 角色
+ *   - skill-reveal-largest（鉴踪直取）：揭示最大1件全部信息，对应 seeker 角色
+ *
+ * SkillManager 类：
+ *   - constructor(): 初始化技能列表（每项含 remainingThisRound）
+ *   - resetForNewRun(): 重置所有技能的回合使用次数
+ *   - onNewRound(): 新回合开始时重置使用次数
+ *   - use(skillId, context): 使用技能（扣减次数 + 执行揭示）
+ *   - getSkillState(): 获取所有技能的当前状态
+ *
+ * 技能执行机制：
+ *   每个技能的 execute(context) 接受揭示上下文对象，调用 context.revealOutline、
+ *   context.revealQuality 或 context.revealAll，返回 { ok, revealed } 结果
+ *
+ * @exports window.SkillSystem - 技能系统单例
+ *   关键属性：SKILL_DEFS（技能定义数组）
+ *   关键类：SkillManager
+ */
 (function setupSkillSystem(global) {
   // 技能配置：控制每回合可用次数、揭露类型与数量。
   const SKILL_DEFS = [

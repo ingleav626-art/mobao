@@ -1,3 +1,42 @@
+/**
+ * @file bidding.js
+ * @module ai/bidding
+ * @description AI出价引擎（AuctionAiEngine）。基于人格参数、情报状态、市场参考价和工具效果，
+ *              为每个AI玩家计算出价决策。这是规则AI的核心，不依赖LLM。
+ *
+ * 核心类：AuctionAiEngine
+ *
+ * 出价算法流程（buildAIBids → computeSingleDecision）：
+ *   1. 计算市场参考价 marketRef（基于当前出价和上轮出价的加权均值）
+ *   2. 计算信心 confidence（线索率、质量率、不确定性、轮次进度、市场偏差、工具效果等加权）
+ *   3. 计算感知价值 perceivedValue = 锚点出价 × 系数 + 趋势调整 + 压力调整 + 噪声
+ *   4. 更新心理预期 psychExpectedBid（向目标预期逐步适应）
+ *   5. 过热评估：当前出价超过心理预期时触发回撤
+ *   6. 计算价格上限 hardCap（感知上限、锚点上限、心理上限、市场上限取最小）
+ *   7. 最终出价 = max(当前出价, 感知价值 × 调整) 并对齐到出价步长
+ *   8. 群体多样性调整 applyCrowdDiversity：确保AI出价不扎堆
+ *
+ * 人格系统（personalityMap）：
+ *   - p1 稳算师：高纪律、低激进，锚点保守
+ *   - p3 猛冲客：高激进、高跟风，锚点激进
+ *   - p4 机变派：高纪律、中激进，灵活适应
+ *
+ * 情报动作规划（planIntelAction）：
+ *   基于信息缺口、信心需求、资源存量，评分选择最优动作（技能/道具/不操作）
+ *
+ * 工具效果（buildToolEffect）：
+ *   将技能/道具使用效果转换为对出价算法的数值影响（信心提升、上限加成等）
+ *
+ * @requires MobaoUtils - 工具函数（clamp, roundToStep, formatBidRevealNumber）
+ *
+ * @exports AuctionAI.AuctionAiEngine - AI出价引擎类
+ *
+ * 使用方式：
+ *   const engine = new AuctionAiEngine();
+ *   engine.resetForNewRun(context);
+ *   const bidMap = engine.buildAIBids(context);
+ *   const plan = engine.planIntelAction(context);
+ */
 (function setupAuctionAI(global) {
   class AuctionAiEngine {
     constructor() {

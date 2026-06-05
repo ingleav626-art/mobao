@@ -1,3 +1,46 @@
+/**
+ * @file bridge/shop.js
+ * @module bridge/shop
+ * @description 商店系统 Bridge。采用 IIFE + 闭包模式，直接挂载到 window.MobaoShopBridge。
+ *              管理玩家道具的购买、消耗、库存持久化、每日限购、以及限时特惠系统。
+ *              独立于 Phaser Scene，纯数据层，通过 localStorage 持久化。
+ *
+ * 核心职责：
+ *   - 道具库存管理：loadInventory / saveInventory / getFullInventory / getItemCount
+ *     所有道具库存存储在 localStorage（mobao_shop_inventory_v1），默认每种99个
+ *   - 道具购买：purchaseItem
+ *     扣减玩家资金 → 增加道具库存 → 记录每日购买次数 → 持久化
+ *   - 道具消耗：consumeItem
+ *     使用道具时扣减库存，返回更新后的库存
+ *   - 每日限购：loadDailyPurchases / saveDailyPurchases / getRemainingDaily
+ *     按日期重置购买计数，每种道具每日最多购买 maxDaily 次
+ *   - 限时特惠：getLimitedOffers / purchaseLimitedOffer
+ *     每日随机生成4个折扣商品（1-7折），带折扣标签（爆款/超值/热卖/特惠）
+ *     特惠商品每日只能购买一次
+ *   - 玩家资金：getPlayerMoney
+ *     从 localStorage 读取玩家资金（mobao_player_money_v1）
+ *
+ * 道具列表（SHOP_ITEMS）：
+ *   - 基础揭示：探照灯(4轮廓)、蜡烛(2轮廓)、鉴定针(3品质)、放大镜(1品质)
+ *   - 高级揭示：火把(6轮廓，每日限3)
+ *   - 品类专用：瓷器图谱、玉器鉴书、铜器拓片、书画残卷、木器图录、金石拓本
+ *
+ * 折扣标签（DISCOUNT_BADGES）：
+ *   - 爆款(10-30%)、超值(30-50%)、热卖(50-60%)、特惠(60-70%)
+ *
+ * 存储键：
+ *   - mobao_shop_inventory_v1: 道具库存
+ *   - mobao_shop_refresh_date_v1: 每日购买记录
+ *   - mobao_shop_limited_offer_v1: 限时特惠数据
+ *   - mobao_player_money_v1: 玩家资金（由其他模块写入）
+ *
+ * @exports window.MobaoShopBridge - 商店系统单例对象
+ *
+ * 使用方式：
+ *   MobaoShopBridge.purchaseItem("item-outline-lamp");
+ *   MobaoShopBridge.consumeItem("item-quality-glass");
+ *   const count = MobaoShopBridge.getItemCount("item-outline-torch");
+ */
 window.MobaoShopBridge = (function () {
   const SHOP_STORAGE_KEY = "mobao_shop_inventory_v1";
   const SHOP_REFRESH_DATE_KEY = "mobao_shop_refresh_date_v1";

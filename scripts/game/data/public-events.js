@@ -1,3 +1,32 @@
+/**
+ * @file data/public-events.js
+ * @module data/public-events
+ * @description 公共事件系统。采用 IIFE 模式，挂载到 window.PublicEventSystem。
+ *              根据仓库藏品分布自动生成公共情报事件，为玩家提供对局背景信息。
+ *              事件基于仓库分析（品质分布、品类占比、价值区间等）按优先级排序生成。
+ *
+ * 核心职责：
+ *   - analyzeWarehouse(items): 分析仓库藏品分布
+ *     统计：总数、总值、均价、品类分布、品质分布、尺寸分布、高/低价值数量等
+ *   - generateEvents(items, gridCols, gridRows): 生成所有可能的公共事件
+ *     按分析结果触发不同事件（绝品存在、珍品数量、高价值、品类主导、品质高低等）
+ *     事件按 priority 降序排列
+ *   - pickRandomPublicEvent(items, gridCols, gridRows): 从前5个事件中随机选1个
+ *   - pickMultiplePublicEvents(items, gridCols, gridRows, count): 取前N个事件
+ *   - getWarehouseAnalysis(items, gridCols, gridRows): 返回原始分析数据
+ *
+ * 事件类型与优先级：
+ *   - 绝品存在（100）、珍品≥2（90）、高价值≥3（85）、品质较高（75）
+ *   - 品类主导（70）、超大件（65）、最高估值（60）、品质偏低（55）
+ *   - 大件≥3（55）、价值偏高/低（55）、品类≥5（50）
+ *   - 仓库密集/稀疏（45）、仓库统计（40）、捡漏提示（35）
+ *
+ * 事件数据结构：
+ *   { id, text, category, priority }
+ *
+ * @exports window.PublicEventSystem - 公共事件系统单例
+ *   关键方法：generateEvents, pickRandomPublicEvent, pickMultiplePublicEvents, getWarehouseAnalysis
+ */
 (function setupPublicEvents(global) {
   const QUALITY_LABELS = {
     poor: "粗品",

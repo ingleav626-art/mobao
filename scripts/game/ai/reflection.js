@@ -1,3 +1,37 @@
+/**
+ * @file reflection.js
+ * @module ai/reflection
+ * @description AI局后反思系统 Mixin。每局结算后，通过LLM让AI对自己的表现进行反思总结，
+ *              更新跨局经验本（成功经验、策略建议、经验教训）。
+ *
+ * 核心职责：
+ *   - triggerAiReflection: 局结算后触发所有AI玩家的反思
+ *     - 构建反思prompt（包含本局结果、当前经验本、历史统计）
+ *     - 调用LLM获取反思结果（JSON格式：add/delete/modify操作）
+ *     - 解析并应用反思结果到跨局经验本
+ *   - updateCrossGameMemory: 更新跨局统计（胜率、盈亏、仓库价值范围等）
+ *   - applyMemoryOperations: 对经验本数组执行增删改操作
+ *   - updateReflectionStatusUI: 更新反思状态UI（pending/done/timeout/error）
+ *
+ * 反思流程：
+ *   1. 检查条件：反思开关开启 + LLM可用 + 本局使用过LLM
+ *   2. 并行为每个AI玩家构建反思prompt
+ *   3. 支持独立模型配置（每个AI可用不同LLM）
+ *   4. LLM返回JSON格式的经验本操作指令
+ *   5. 解析并应用到跨局经验本，持久化存储
+ *
+ * 前置条件：
+ *   - 需要 LLM Provider（通过 getLlmProvider() 获取）
+ *   - 需要 memory.js 提供的跨局经验本数据结构
+ *   - 需要 scene-llm.js 提供的 LLM 调用能力
+ *
+ * @exports MobaoAi.ReflectionMixin - 反思系统 Mixin，混入 Phaser Scene
+ *
+ * 混入方式：Object.assign(scene, MobaoAi.ReflectionMixin)
+ * 混入后 scene 将获得：aiReflectionState, aiReflectionStateDetail,
+ *   triggerAiReflection, applyMemoryOperations, updateCrossGameMemory,
+ *   updateReflectionStatusUI, proceedToNewRun
+ */
 (function setupMobaoAiReflection(global) {
   const AiReflectionMixin = {
     isAiReflectionEnabled() {

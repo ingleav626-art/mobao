@@ -1,3 +1,44 @@
+/**
+ * @file ui/overlay.js
+ * @module ui/overlay
+ * @description 弹窗与覆盖层管理 Mixin。管理游戏内所有弹窗、覆盖层、设置面板、
+ *              确认对话框、信息弹窗等 UI 组件的显示/隐藏和交互逻辑。
+ *
+ * 核心职责：
+ *   - 信息弹窗：showInfoPopup / hideInfoPopup
+ *     显示藏品/玩家详细信息，支持动画开关
+ *   - 玩家信息气泡：showPlayerInfoPopover / hidePlayerInfoPopover
+ *     跟随鼠标位置显示，自动避免溢出视口
+ *   - 道具/技能详情：showItemDetailPopup / showCharacterInfoPopup
+ *     从 ItemSystem/SkillSystem/CharacterData 读取定义并格式化展示
+ *   - 设置覆盖层：openSettingsOverlay / closeSettingsOverlay
+ *     游戏参数设置 + LLM 设置，含未保存保护（修改后关闭需确认）
+ *     联机模式下 LLM 设置组禁用，返回按钮文本根据模式变化
+ *     fillSettingsForm / readSettingsForm / saveSettingsFromOverlay
+ *   - 联机重开投票：showLanRestartVoteDialog / showLanRestartWaitingDialog / showLanRestartDeclinedDialog
+ *     房主发起重开 → 等待确认 → 同意/拒绝流程
+ *   - 确认对话框：showGameConfirm / hideGameConfirm
+ *     通用确认/取消弹窗，支持自定义按钮文本
+ *
+ * 设置系统细节：
+ *   - SETTINGS_FIELDS 定义所有可配置字段
+ *   - normalizeGameSettings 确保所有值在合法范围内
+ *   - LLM 设置支持多 Provider（DeepSeek / 独立模型），通过 getLlmProvider() 路由
+ *   - 保存时同步更新 GAME_SETTINGS、LLM_SETTINGS、bidInput 等
+ *   - multiGameMemoryEnabled 切换时自动推送/停止 AI 上下文
+ *
+ * @requires MobaoUtils       - 工具函数（clamp）
+ * @requires MobaoSettings    - 设置（GAME_SETTINGS, saveGameSettings, normalizeGameSettings）
+ * @requires MobaoConstants   - 常量（DEFAULT_START_MONEY, SETTINGS_FIELDS）
+ * @requires MobaoAnimations  - 动画系统（animateOverlayOpen/Close）
+ * @requires MobaoLlm         - LLM 设置（LLM_SETTINGS, saveDeepSeekSettings, maskApiKey）
+ * @requires ItemSystem       - 道具定义
+ * @requires SkillSystem      - 技能定义
+ * @requires CharacterSystem  - 角色系统
+ * @requires CharacterData    - 角色数据
+ *
+ * @exports MobaoUi.UiOverlayMixin - 弹窗与覆盖层 Mixin，混入 Phaser Scene
+ */
 (function setupMobaoUiOverlay(global) {
   const { clamp } = global.MobaoUtils;
   const { GAME_SETTINGS, saveGameSettings, normalizeGameSettings, defaultGameSettings } = global.MobaoSettings;

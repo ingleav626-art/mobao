@@ -1,3 +1,27 @@
+/**
+ * @file data/map-profiles.js
+ * @module data/map-profiles
+ * @description 地图配置定义。采用 IIFE 模式，挂载到 window.MobaoMapProfiles。
+ *              定义不同地图/场景的参数配置，包括回合数、直接拿下比例、品质权重、
+ *              品类权重等。每个地图配置影响仓库藏品的生成分布和游戏难度。
+ *
+ * 地图列表（MAP_PROFILES），4个配置：
+ *   - default（废弃仓库）：均衡配置，5回合，directTake 0.2，品质正态分布
+ *   - treasure-vault（珍宝密室）：高品质多，6回合，directTake 0.25，rare+legendary 权重高
+ *   - junkyard（废品角落）：低品质多，4回合，directTake 0.15，poor 权重42
+ *   - scholar-study（书斋雅集）：书画金石为主，5回合，书画权重32
+ *
+ * 地图参数结构（params）：
+ *   - maxRounds: 最大回合数
+ *   - directTakeRatio: 直接拿下比例阈值
+ *   - qualityWeights: 品质权重 { poor, normal, fine, rare, legendary }
+ *   - categoryWeights: 品类权重 { 瓷器, 玉器, 书画, 铜器, 木器, 金石 }
+ *
+ * @requires MobaoAppState - 读写选中的地图配置ID（selectedMapProfile）
+ *
+ * @exports window.MobaoMapProfiles - 地图配置单例
+ *   关键方法：getProfile, getAllProfiles, getSelectedProfileId, setSelectedProfileId
+ */
 window.MobaoMapProfiles = (function () {
   const MAP_PROFILES = [
     {

@@ -1,3 +1,23 @@
+/**
+ * @file llm/openai-provider.js
+ * @module llm/openai-provider
+ * @description OpenAI Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
+ *              创建，注册到 LlmManager 的 provider 体系中。
+ *
+ * 默认配置：
+ *   - endpoint: https://api.openai.com/v1/chat/completions
+ *   - model: gpt-4o-mini
+ *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
+ *   - 支持 thinking 模式、独立模型、跨局记忆、反思
+ *
+ * 存储键：
+ *   - 设置: mobao_openai_settings_v1
+ *   - API Key: mobao_openai_api_key_v1
+ *
+ * @requires LlmManager - LLM 管理器（scripts/llm/llm-manager.js）
+ *
+ * @exports 通过 LlmManager.registerProvider("openai", provider) 注册，无独立导出
+ */
 (function attachOpenAIProvider(window) {
   "use strict";
 

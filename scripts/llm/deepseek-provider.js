@@ -1,3 +1,29 @@
+/**
+ * @file llm/deepseek-provider.js
+ * @module llm/deepseek-provider
+ * @description DeepSeek Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
+ *              创建，注册到 LlmManager 的 provider 体系中。
+ *
+ * 默认配置：
+ *   - endpoint: /api/deepseek/chat/completions（服务端代理）
+ *   - model: deepseek-v4-flash
+ *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
+ *   - 支持 thinking 模式、独立模型、跨局记忆、反思
+ *
+ * 特殊逻辑：
+ *   - normalizeEndpoint(): 智能端点规范化
+ *     - / 开头视为相对路径（服务端代理）
+ *     - 非 http 开头回退到默认值
+ *     - api.deepseek.com/chat/completions 自动修正为 /v1/chat/completions
+ *
+ * 存储键：
+ *   - 设置: mobao_deepseek_settings_v2
+ *   - API Key: mobao_deepseek_api_key_v1
+ *
+ * @requires LlmManager - LLM 管理器（scripts/llm/llm-manager.js）
+ *
+ * @exports 通过 LlmManager.registerProvider("deepseek", provider) 注册，无独立导出
+ */
 (function attachDeepSeekProvider(window) {
   "use strict";
 

@@ -1,3 +1,47 @@
+/**
+ * @file lobby/index.js
+ * @module lobby/index
+ * @description 大厅主页面 Mixin。管理大厅的页面导航、子页面切换、
+ *              单机/联机模式入口、玩家初始化、游戏启动、以及大厅与游戏场景的切换。
+ *              是大厅的核心入口文件，协调 CarouselMixin、CharacterSelectMixin、LanIndexMixin。
+ *
+ * 核心职责：
+ *   - bindLobbyEvents(): 绑定大厅所有按钮事件（单机/联机/设置/商店/战绩/收藏等）
+ *   - 页面导航：showLobbyMain / showLobbySubPage / goToCharacterSelect
+ *     支持子页面切换动画（lobby-subpage-entering）
+ *   - 大厅↔游戏切换：enterLobby / exitLobby / enterLanRoom
+ *     enterLobby: 清理游戏场景、重置玩家、显示大厅、暂停 Phaser 游戏循环
+ *     exitLobby: 隐藏大厅、显示游戏区、唤醒 Phaser 游戏循环、播放游戏BGM
+ *     enterLanRoom: 从结算页返回联机房间
+ *   - 单机游戏启动：startSoloGame → applyMapProfile → exitLobby → startNewRun
+ *   - 地图配置应用：applyMapProfile() 将选中地图参数写入 GAME_SETTINGS
+ *   - 玩家初始化：initPlayersUI() 设置4个玩家槽位（p1~p4）、LLM开关、头像
+ *   - 玩家头像：updatePlayerAvatar() 支持角色头像和文字回退
+ *   - 金额显示：updateLobbyMoneyDisplay() 同步所有页面的金额显示
+ *   - 场景清理：cleanupGameScene() 销毁 Phaser 图层和 tween
+ *
+ * 子页面结构：
+ *   lobbyMain → 大厅主页（单机/联机入口）
+ *   lobbySoloSetup → 单机设置（地图轮播+开始游戏）
+ *   lobbyOnlinePlaceholder → 联机页面（连接/房间）
+ *   lobbyCharacterSelect → 角色选择页
+ *
+ * 联机状态管理：
+ *   isLanMode, lanIsHost, lanPlayers, lanAiPlayers, lanHostWallets,
+ *   lanHostBids, lanAiLlmEnabled, lanIdToSlotId, slotIdToLanId, lanMySlotId
+ *
+ * @requires MobaoSettings    - 设置（loadPlayerMoney, GAME_SETTINGS）
+ * @requires MobaoAppState    - 全局状态（appMode, gameSource）
+ * @requires MobaoMapProfiles - 地图配置
+ * @requires MobaoShopBridge  - 商店系统
+ * @requires MobaoAnimations  - 动画系统（staggerEnter）
+ * @requires CharacterSystem  - 角色系统
+ * @requires CharacterData    - 角色数据
+ * @requires AudioManager     - 音频管理（BGM切换）
+ * @requires LanBridge        - 联机通信桥
+ *
+ * @exports MobaoLobby.LobbyIndexMixin - 大厅主页面 Mixin，混入 Phaser Scene
+ */
 (function setupMobaoLobbyIndex(global) {
   const { loadPlayerMoney } = global.MobaoSettings;
 

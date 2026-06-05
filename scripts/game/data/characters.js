@@ -1,3 +1,29 @@
+/**
+ * @file data/characters.js
+ * @module data/characters
+ * @description 角色数据定义。采用 IIFE 模式，挂载到 window.CharacterData。
+ *              定义所有可玩角色的静态数据（ID、名称、技能、被动、头像、立绘路径），
+ *              以及角色查询和选择持久化的便捷方法。
+ *              与 character-system.js（运行时逻辑）配合使用，本文件只负责数据。
+ *
+ * 角色列表（CHARACTERS）：
+ *   - appraiser（鉴定师）：技能-玉脉鉴质（玉器品质+2），被动-盈利加成+10%
+ *   - scout（探子）：技能-拓影侦测（轮廓+3），被动-轮廓揭示+1
+ *   - seeker（觅踪者）：技能-鉴踪直取（揭示最大1件全部信息），被动-轮廓探测优先最小
+ *
+ * 角色数据结构：
+ *   {
+ *     id, name, desc,              // 基础信息
+ *     avatar, live2d,              // 资源路径
+ *     skillId, skillName, skillDesc, // 主动技能
+ *     passive: { type, value, label }, // 被动技能
+ *     unlockCondition, unlocked     // 解锁状态
+ *   }
+ *
+ * @exports window.CharacterData - 角色数据单例
+ *   关键属性：CHARACTERS（角色数组）
+ *   关键方法：getCharacterById, getUnlockedCharacters, getSelectedCharacter, saveSelectedCharacter
+ */
 (function setupCharacterData(global) {
   const CHARACTERS = [
     {

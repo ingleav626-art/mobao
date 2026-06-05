@@ -1,3 +1,27 @@
+/**
+ * @file ui/panels.js
+ * @module ui/panels
+ * @description 侧边信息面板 Mixin。管理游戏界面左右两侧的私有情报面板和
+ *              公共信息面板的渲染和更新，以及联机模式下的公共信息同步。
+ *
+ * 核心职责：
+ *   - addPrivateIntelEntry(entry): 添加私有情报条目（来源+文本+轮次）
+ *   - addPublicInfoEntry(entry): 添加公共信息条目
+ *     联机模式下，房主自动通过 lanBridge 广播公共信息（lan:public-info）
+ *   - renderPrivateIntelPanel(): 渲染私有情报面板
+ *     带版本缓存避免重复渲染，自动滚动到底部（如果之前就在底部）
+ *   - renderPublicInfoPanel(): 渲染公共信息面板
+ *     同上，带版本缓存和自动滚动
+ *   - updateSidePanels(): 统一更新两侧面板
+ *
+ * 数据结构：
+ *   privateIntelEntries: [{ source, text, round }]
+ *   publicInfoEntries: [{ source, text, round }]
+ *
+ * @requires MobaoUtils - 工具函数（escapeHtml）
+ *
+ * @exports MobaoUi.PanelsMixin - 侧边信息面板 Mixin，混入 Phaser Scene
+ */
 (function setupMobaoUiPanels(global) {
   const { escapeHtml } = global.MobaoUtils;
 

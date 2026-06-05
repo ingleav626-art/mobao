@@ -1,3 +1,38 @@
+/**
+ * @file bidding/index.js
+ * @module bidding
+ * @description 出价流程控制 Mixin。管理玩家和AI的出价交互、回合结算、出价揭示动画、
+ *              直接拿下判定、以及联机出价提交。是游戏核心玩法的流程编排层。
+ *
+ * 核心职责：
+ *   - 出价交互：openBidKeypad / closeBidKeypad / handleBidKeyInput / playerBid
+ *     玩家通过数字键盘输入出价，确认后提交密封出价
+ *   - 回合结算：resolveRoundBids
+ *     收集所有玩家出价 → 逐个揭示 → 排名 → 判定直接拿下/进入下一轮
+ *   - AI决策调度：kickoffAiRoundDecisions → processAiDecisions
+ *     触发AI出价计算（规则引擎 + LLM覆盖），等待AI决策完成
+ *   - 出价构建：buildRoundBids
+ *     整合规则AI出价、LLM覆盖出价、玩家出价，构建完整出价列表
+ *   - 直接拿下：当最高出价 ≥ 第二高出价 × (1 + directTakeRatio) 时提前结束
+ *   - 联机出价：玩家出价通过 lanBridge.submitBid 提交，主机端统一结算
+ *   - 暂停/恢复：roundPaused 状态管理，waitUntilResumed 轮询等待
+ *   - 确认弹窗：showGameConfirm / hideGameConfirm 通用确认对话框
+ *
+ * 出价流程（单机）：
+ *   startRound → 玩家输入出价 → playerBid → areAllPlayersBidReady →
+ *   resolveRoundBids → buildRoundBids → revealRoundBidsSequential →
+ *   排名判定 → finishAuction 或进入下一轮
+ *
+ * 出价流程（联机）：
+ *   玩家出价 → lanBridge.submitBid → 服务端广播 → 主机 resolveRoundBids
+ *
+ * @requires MobaoUtils     - 工具函数（delay, formatBidRevealNumber）
+ * @requires MobaoSettings  - 全局设置（GAME_SETTINGS: bidStep, maxRounds, directTakeRatio, bidRevealIntervalMs 等）
+ * @requires MobaoAnimations - 动画系统（roundTransition 回合过渡动画）
+ * @requires AudioUI        - 音频系统（playReveal, stopCountdown）
+ *
+ * @exports MobaoBidding.BiddingMixin - 出价流程 Mixin，混入 Phaser Scene
+ */
 (function setupMobaoBidding(global) {
   const { delay } = global.MobaoUtils;
   const { GAME_SETTINGS } = global.MobaoSettings;

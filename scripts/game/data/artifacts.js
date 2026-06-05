@@ -1,3 +1,41 @@
+/**
+ * @file data/artifacts.js
+ * @module data/artifacts
+ * @description 藏品数据定义与生成管理。采用 IIFE 模式，挂载到 window.ArtifactData。
+ *              定义藏品品质配置、品类权重、藏品图鉴库，以及 ArtifactManager 类
+ *              负责藏品的随机生成、候选匹配、价格统计和信号分析。
+ *
+ * 核心数据：
+ *   - QUALITY_CONFIG: 品质配置（label/color/glow/weight），5个等级
+ *     poor(28) → normal(34) → fine(22) → rare(12) → legendary(4)
+ *   - SIZE_TAG_BY_DIMENSION: 尺寸标签映射（1x1 ~ 4x1）
+ *   - ARTIFACT_LIBRARY: 藏品图鉴库，70+件藏品定义
+ *     每件：{ key, majorCategory, category, name, basePrice, qualityKey, w, h }
+ *   - CATEGORY_WEIGHTS: 品类权重（10个品类，古董6+珠宝4）
+ *
+ * ArtifactManager 类：
+ *   - createRandomArtifact(): 按品类权重随机生成藏品
+ *   - createRandomArtifactForSlot(opts): 在指定槽位生成可放置的藏品
+ *   - buildArtifactFromDef(def): 从图鉴定义构建藏品实例（含自增ID）
+ *   - getCandidatesByRevealState(state): 按揭示状态筛选候选藏品
+ *   - getCandidateStatsByRevealState(state): 候选价格统计
+ *   - getSignalPriceStats(signals): 信号价格聚合分析
+ *
+ * 辅助函数：
+ *   - estimatePriceByQuality(basePrice, qualityKey): 品质价格估算（poor×0.72 ~ legendary×1.85）
+ *   - signalToRevealState(signal): 信号转揭示状态
+ *   - summarizeCandidatePrices(candidates): 候选价格统计（均值/分位数/离散度/边缘比）
+ *   - summarizeStatsCollection(statsList): 多组统计的加权聚合
+ *   - weightedPick(list): 按权重随机选择
+ *   - toSizeTag(w, h): 尺寸转标签
+ *   - canPlaceRect(col, row, w, h, gridCols, gridRows, occupancy): 矩形放置检测
+ *
+ * 藏品品类：
+ *   古董：瓷器(16)、玉器(12)、书画(11)、铜器(12)、木器(10)、金石(9)
+ *   珠宝首饰：宝石(8)、有机宝石(6)、贵金属(7)、镶嵌饰品(9)
+ *
+ * @exports window.ArtifactData - 藏品数据与管理（QUALITY_CONFIG, ARTIFACT_LIBRARY, ArtifactManager, 等）
+ */
 (function setupArtifactData(global) {
   const QUALITY_CONFIG = {
     poor: { label: "粗品", color: 0x9f9f9f, glow: 0xdcdcdc, weight: 28 },

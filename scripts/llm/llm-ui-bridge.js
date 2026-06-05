@@ -1,3 +1,44 @@
+/**
+ * @file llm/llm-ui-bridge.js
+ * @module llm/ui-bridge
+ * @description LLM 设置 UI 桥接层。采用 IIFE 模式，挂载到 window.LlmUiBridge。
+ *              连接 LlmManager 后端与设置面板 DOM，处理 Provider 切换、表单读写、
+ *              连接测试、自定义 Provider 增删等 UI 交互。
+ *
+ * 内置 Provider 定义（BUILTIN_PROVIDERS）：
+ *   - deepseek: DeepSeek V4/Reasoner，默认代理端点
+ *   - openai: GPT-4o/3.5，OpenAI 官方端点
+ *   - qwen: 通义千问，阿里云 DashScope 端点
+ *   - glm: 智谱 GLM-4/Flash，智谱 API 端点
+ *   - kimi: Moonshot，Moonshot API 端点
+ *   每个定义含 name/description/defaultEndpoint/defaultModel/placeholder
+ *
+ * 核心功能：
+ *   - initialize(): 初始化（DOM 就绪后自动调用），绑定事件、加载活跃 Provider
+ *   - updateUiForProvider(providerId): 切换 Provider 时更新 UI（描述/占位符/端点/模型）
+ *   - loadProviderSettings() / saveProviderSettings(): 从/向 DOM 表单读写设置
+ *   - testConnection(): 测试当前 Provider 连接（按钮禁用+状态反馈）
+ *   - getActiveProviderSettings(): 获取活跃 Provider 的完整设置
+ *   - refreshProviderSelect(): 刷新 Provider 下拉列表（含自定义 Provider）
+ *
+ * 自定义 Provider 管理：
+ *   - showAddProviderModal() / hideAddProviderModal(): 添加弹窗
+ *   - addCustomProvider(config): 添加自定义 Provider（通过 LlmManager.createDynamicProvider）
+ *   - deleteCurrentProvider(): 删除当前自定义 Provider（内置不可删）
+ *
+ * DOM 依赖（setting-llm* 系列 ID）：
+ *   setting-llmProvider, setting-llmApiKey, setting-llmEndpoint,
+ *   setting-llmModel, setting-llmTimeout, setting-llmTemperature, 等
+ *
+ * @requires LlmManager   - LLM 管理器（scripts/llm/llm-manager.js）
+ * @requires DOM           - 设置面板表单元素
+ *
+ * @exports window.LlmUiBridge
+ *   { initialize, getCurrentProviderId, updateUiForProvider, loadProviderSettings,
+ *     saveProviderSettings, testConnection, getActiveProviderSettings,
+ *     refreshProviderSelect, showAddProviderModal, hideAddProviderModal,
+ *     addCustomProvider, deleteCurrentProvider, BUILTIN_PROVIDERS }
+ */
 (function attachLlmUiBridge(window) {
   "use strict";
 

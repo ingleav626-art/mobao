@@ -1,3 +1,38 @@
+/**
+ * @file audio/audio-manager.js
+ * @module audio/manager
+ * @description 音频管理器。采用对象字面量单例模式，挂载到 window.AudioManager。
+ *              管理游戏所有音效（SFX）和背景音乐（BGM）的加载、播放、控制和持久化设置。
+ *
+ * 音频资源分类（sounds 对象）：
+ *   - ui: click, close
+ *   - game: coin, reveal, coinsReveal, search, win, lose, countdown, round,
+ *           revealNormal, revealRare, revealLegendary
+ *   - skill: scan, identify
+ *   - bgm: lobby, game
+ *
+ * 核心功能：
+ *   - init(): 初始化（创建 AudioContext、加载设置）
+ *   - preload(category, keys): 按分类预加载音频（5秒超时、cloneNode 播放）
+ *   - playSfx(key, options): 播放一次性音效（cloneNode 避免冲突，支持 volume/playbackRate）
+ *   - playLoopingSfx(key, options): 播放循环音效（自动停止同 key 旧实例）
+ *   - stopLoopingSfx(key) / stopAllLoopingSfx(): 停止循环音效
+ *   - playStopableSfx(key, options): 播放可中途停止的音效（onended 自动清理）
+ *   - stopStopableSfx(key): 停止可停止音效
+ *   - playBgm(key, options): 播放背景音乐（自动停止旧 BGM，支持 loop）
+ *   - stopBgm(fadeOut): 停止 BGM（支持淡出，fadeOut=秒数）
+ *   - pauseBgm() / resumeBgm(): 暂停/恢复 BGM
+ *
+ * 设置持久化：
+ *   - _loadSettings(): 从 localStorage 读取（mobao_audio_settings + mobao_settings 音量）
+ *   - _saveSettings(): 保存到 localStorage
+ *   - setEnabled / setBgmEnabled / setSfxEnabled / setBgmVolume / setSfxVolume
+ *   - getSettings(): 获取当前设置快照
+ *
+ * @requires localStorage - 设置持久化
+ *
+ * @exports window.AudioManager - 音频管理器单例
+ */
 const AudioManager = {
     _initialized: false,
     _enabled: true,

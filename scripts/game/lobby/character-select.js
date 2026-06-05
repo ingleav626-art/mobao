@@ -1,3 +1,42 @@
+/**
+ * @file lobby/character-select.js
+ * @module lobby/character-select
+ * @description 单机角色选择页面 Mixin。管理角色选择流程的完整生命周期，
+ *              包括角色列表渲染、Live2D 立绘无缝循环、携带道具选择、
+ *              自动补充机制、以及确认/返回操作。
+ *
+ * 核心职责：
+ *   - initCharacterSelect(): 初始化角色选择页面，绑定事件
+ *   - showCharacterSelectPage(mapProfile): 显示角色选择页面（含入场动画）
+ *   - renderCharacterList(): 渲染角色卡片列表（头像+名称+选中状态）
+ *   - renderSelectedCharacterPreview(): 渲染选中角色的预览区域
+ *     - Live2D 立绘无缝循环（双视频元素交替播放）
+ *     - 主动技能/被动能力展示
+ *     - 携带道具槽位（最多3个）
+ *   - confirmCharacterSelection(): 确认选择并进入游戏
+ *
+ * Live2D 无缝循环机制（_startLive2dLoop）：
+ *   使用双 video 元素（A/B）交替播放，当当前视频播放到末尾时，
+ *   预加载另一视频并在下一帧切换，实现无缝循环。
+ *   支持 requestVideoFrameCallback 精确帧回调，降级到 timeupdate。
+ *   _loadingLock 防止并发加载，_live2dVideoState 跟踪播放状态。
+ *
+ * 携带道具系统：
+ *   - _carryItems: 当前携带的道具数组（最多3个）
+ *   - openCarryItemPicker(): 打开道具选择弹窗（网格布局，库存>0可选）
+ *   - removeCarryItem(itemId): 移除已携带道具
+ *   - _saveCarryItems / _loadCarryItems: localStorage 持久化（mobao_carry_items_v1）
+ *   - _autoReplenish: 道具耗尽时自动用金币补充开关
+ *   - calcReplenishCost(): 计算补充费用
+ *   - executeReplenish(): 执行补充（扣费+补库存）
+ *
+ * @requires CharacterData   - 角色数据（getUnlockedCharacters）
+ * @requires CharacterSystem - 角色系统（getActiveCharacter, selectCharacter）
+ * @requires MobaoShopBridge - 商店系统（getFullInventory, SHOP_ITEMS, getPlayerMoney）
+ * @requires MobaoSettings   - 设置（savePlayerMoney）
+ *
+ * @exports MobaoLobby.CharacterSelectMixin - 角色选择 Mixin，混入 Phaser Scene
+ */
 (function setupCharacterSelect(global) {
   const { getUnlockedCharacters } = global.CharacterData;
   const CharacterSystem = global.CharacterSystem;

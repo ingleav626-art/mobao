@@ -1,3 +1,48 @@
+/**
+ * @file mobile/mobile-handler.js
+ * @module mobile/handler
+ * @description 移动端适配处理器。采用 IIFE + 对象字面量单例模式。
+ *              解决移动端（特别是 Android WebView）的键盘遮挡、输入框定位、
+ *              横竖屏切换、自定义下拉框、触觉反馈等兼容性问题。
+ *
+ * 核心功能：
+ *   - init(): 初始化，检测设备类型并设置所有子系统
+ *   - isMobile / isTouch: 设备检测（UserAgent + 触摸能力）
+ *
+ * 固定输入框系统（解决键盘遮挡问题）：
+ *   - createFixedInputOverlay(): 创建全局固定输入覆盖层
+ *     当原生 input 获焦时，拦截焦点并切换到固定输入框
+ *   - showFixedInput(input) / hideFixedInput(): 显示/隐藏固定输入
+ *   - setupKeyboardHandler(): 监听 focusin 事件，拦截文本输入
+ *   - setupNativeKeyboardListener(): 监听 Android 原生键盘高度变化
+ *     支持 AndroidKeyboard.getKeyboardHeight() 和 keyboardchange 事件
+ *   - handleKeyboardHeightChange(rawHeight): 处理键盘高度变化
+ *   - calculateSafeKeyboardHeight(rawHeight): 安全高度计算（防止超出屏幕）
+ *   - updateInputPosition(): 根据键盘高度调整输入框位置
+ *   - startPolling() / stopPolling(): 轮询键盘高度（Android 兼容）
+ *   - data-no-fixed-input 属性可跳过拦截
+ *
+ * 横竖屏检测：
+ *   - setupOrientationCheck(): 竖屏时显示 portraitOverlay 提示横屏
+ *
+ * 触觉反馈：
+ *   - setupVibrationFeedback(): 输入删除时触发 navigator.vibrate(10)
+ *
+ * 自定义下拉框：
+ *   - setupCustomSelects(): 将原生 select 转换为自定义下拉框
+ *     MutationObserver 监听动态添加的 select
+ *   - convertToCustomSelect(select): 转换单个 select
+ *     支持触摸滚动区分、键盘导航、点击选择
+ *   - closeAllCustomSelects(): 关闭所有打开的下拉框
+ *
+ * 内联样式：
+ *   - addStyles(): 注入 mobile-handler-styles 样式表
+ *     包含固定输入框、自定义下拉框等所有样式
+ *
+ * @requires AndroidKeyboard - Android 原生键盘桥接（可选，仅 Android WebView）
+ *
+ * @exports window.MobileHandler - 移动端适配处理器单例
+ */
 (function (global) {
   'use strict';
 

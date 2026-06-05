@@ -1,3 +1,23 @@
+/**
+ * @file llm/kimi-provider.js
+ * @module llm/kimi-provider
+ * @description Moonshot Kimi Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
+ *              创建，注册到 LlmManager 的 provider 体系中。
+ *
+ * 默认配置：
+ *   - endpoint: https://api.moonshot.cn/v1/chat/completions
+ *   - model: moonshot-v1-8k
+ *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
+ *   - 支持 thinking 模式、跨局记忆、反思
+ *
+ * 存储键：
+ *   - 设置: mobao_kimi_settings_v1
+ *   - API Key: mobao_kimi_api_key_v1
+ *
+ * @requires LlmManager - LLM 管理器（scripts/llm/llm-manager.js）
+ *
+ * @exports 通过 LlmManager.registerProvider("kimi", provider) 注册，无独立导出
+ */
 (function attachKimiProvider(window) {
   "use strict";
 

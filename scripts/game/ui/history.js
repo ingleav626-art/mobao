@@ -1,3 +1,28 @@
+/**
+ * @file ui/history.js
+ * @module ui/history
+ * @description 玩家历史记录与道具抽屉 Mixin。管理游戏过程中每个玩家的
+ *              出价历史和道具使用记录，以及道具抽屉的开关和渲染。
+ *
+ * 核心职责：
+ *   - resetPlayerHistoryState(): 重置所有玩家的回合历史和使用记录
+ *   - recordRoundHistory(roundBids): 记录一轮结束后各玩家的出价和道具使用
+ *     出价历史和道具使用均按 maxRounds 保留最近N轮
+ *   - recordPlayerUsage(playerId, itemId): 记录玩家使用道具
+ *   - refreshPlayerHistoryUI(): 刷新所有玩家的历史面板（表格形式）
+ *     表格结构：轮次行 / 行动行（道具标签）/ 报价行（紧凑数字）
+ *
+ * 道具抽屉：
+ *   - toggleItemDrawer / openItemDrawer / closeItemDrawer
+ *     抽屉在锁定状态（已结算/出价已提交/时间耗尽/设置打开/结算页激活）下不可打开
+ *   - renderItemDrawer(): 渲染可用道具列表（带版本缓存避免重复渲染）
+ *     空状态区分"未携带道具"和"道具已全部使用"
+ *
+ * @requires MobaoUtils     - 工具函数（escapeHtml, formatCompactNumber）
+ * @requires MobaoSettings  - 设置（GAME_SETTINGS.maxRounds）
+ *
+ * @exports MobaoUi.HistoryMixin - 历史记录与道具抽屉 Mixin，混入 Phaser Scene
+ */
 (function setupMobaoUiHistory(global) {
   const { escapeHtml, formatCompactNumber } = global.MobaoUtils;
   const { GAME_SETTINGS } = global.MobaoSettings;

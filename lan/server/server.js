@@ -1,3 +1,54 @@
+/**
+ * @file lan/server/server.js
+ * @module lan/server
+ * @description 联机游戏服务器（Node.js）。基于 HTTP + WebSocket 的局域网联机服务器，
+ *              提供房间管理、游戏状态同步、消息中继和设备发现功能。
+ *
+ * 服务器架构：
+ *   1. HTTP 静态文件服务（CLIENT_DIR → lan/client/）
+ *   2. WebSocket 游戏服务器（ws 库，端口 9720）
+ *   3. UDP 设备发现服务（dgram，端口 9721）
+ *
+ * 核心数据结构：
+ *   - rooms: Map<roomCode, Room> — 房间注册表
+ *   - clients: Map<playerId, WebSocket> — 客户端连接映射
+ *   - Room 对象: { code, hostId, roomName, visibility, password, seats[],
+ *     state, maxPlayers, roundTimer, roundStartTime, roundSeconds,
+ *     isPaused, pauseRemainingMs, humanBidsThisRound, restartVotes }
+ *   - Seat 对象: { id, name, isHost, connected, characterId, carryItems,
+ *     disconnectedAt }
+ *
+ * 消息路由（handleMessage → 三大处理器）：
+ *   - handleRoomMessage: room:* / game:* / ping / chat
+ *     房间生命周期：create / join / leave / list / reconnect / kick
+ *     游戏流程：start / warehouse-sync / full-sync-request / slot-state
+ *     重开投票：restart-request / restart-accept / restart-decline
+ *   - handleLanRelay: lan:* 消息中继
+ *     回合控制：round:start / round:timeout / round:pause / round:resume
+ *     出价流程：bid:submit / bid:ack / bid:received / bid:final
+ *     游戏事件：game:direct-take / game:use-skill / game:use-item
+ *     数据同步：full-sync / warehouse-sync / character-select / carry-items
+ *     结算：game:settle / game:over
+ *   - 未知类型 → error 响应
+ *
+ * 关键机制：
+ *   - 房间码：4位大写字母+数字（排除易混淆字符 I/O/0/1）
+ *   - 断线重连：30秒宽限期（RECONNECT_GRACE_MS）
+ *   - 房主离开：等待中立即解散，游戏中标记断线
+ *   - 回合计时：服务端 setTimeout + 暂停/恢复支持
+ *   - 重开投票：房主发起 → 全部客机同意才执行
+ *   - 私密房间：密码保护（visibility=private）
+ *
+ * @requires http       - Node.js HTTP 服务器
+ * @requires https      - HTTPS 服务器（可选）
+ * @requires fs         - 文件系统（静态文件服务）
+ * @requires path       - 路径处理
+ * @requires crypto     - 随机数生成（房间码/玩家ID）
+ * @requires dgram      - UDP 设备发现
+ * @requires ws         - WebSocket 服务器（WebSocketServer）
+ *
+ * @exports 无（独立服务器进程，直接运行）
+ */
 const http = require("http");
 const https = require("https");
 const fs = require("fs");
@@ -110,7 +161,7 @@ function removePlayer(ws, immediate) {
             isHost: isHostLeft,
             playerCount: room.seats.filter((s) => s.connected).length,
             players: room.seats.filter((s) => s.connected).map((s) => ({
-              id: s.id, name: s.name, isHost: s.isHost,
+              id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
             })),
             canReconnect: true,
             graceMs: RECONNECT_GRACE_MS,
@@ -132,7 +183,7 @@ function removePlayer(ws, immediate) {
             isHost: isHostLeft,
             playerCount: room.seats.filter((s) => s.connected).length,
             players: room.seats.filter((s) => s.connected).map((s) => ({
-              id: s.id, name: s.name, isHost: s.isHost,
+              id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
             })),
             canReconnect: false,
           });
@@ -169,8 +220,9 @@ function scheduleGraceCleanup(room, playerId) {
       playerName: seat.name,
       playerCount: room.seats.filter((s) => s.connected).length,
       players: room.seats.filter((s) => s.connected).map((s) => ({
-        id: s.id, name: s.name, isHost: s.isHost,
+        id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
       })),
+      canReconnect: false,
     });
     if (room.seats.every((s) => !s.connected)) {
       if (room.roundTimer) clearTimeout(room.roundTimer);
@@ -271,7 +323,7 @@ function handleRoomMessage(ws, msg) {
         playerName: name,
         isHost: false,
         players: room.seats.filter((s) => s.connected).map((s) => ({
-          id: s.id, name: s.name, isHost: s.isHost,
+          id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
         })),
       });
 
@@ -281,7 +333,7 @@ function handleRoomMessage(ws, msg) {
         playerName: name,
         playerCount: room.seats.filter((s) => s.connected).length,
         players: room.seats.filter((s) => s.connected).map((s) => ({
-          id: s.id, name: s.name, isHost: s.isHost,
+          id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
         })),
       }, pid);
       console.log(`[room] ${name}(${pid}) joined ${code}`);
@@ -346,7 +398,7 @@ function handleRoomMessage(ws, msg) {
         playerName: seat.name,
         isHost: seat.isHost,
         players: room.seats.filter((s) => s.connected).map((s) => ({
-          id: s.id, name: s.name, isHost: s.isHost,
+          id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
         })),
         roomState: room.state,
       });
@@ -357,7 +409,7 @@ function handleRoomMessage(ws, msg) {
         playerName: seat.name,
         playerCount: room.seats.filter((s) => s.connected).length,
         players: room.seats.filter((s) => s.connected).map((s) => ({
-          id: s.id, name: s.name, isHost: s.isHost,
+          id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
         })),
       }, oldPid);
       logRoom(code, "reconnect", `${seat.name}(${oldPid}) reconnected`);
@@ -414,7 +466,7 @@ function handleRoomMessage(ws, msg) {
       room.restartVotes = {};
 
       const playersInfo = room.seats.filter((s) => s.connected).map((s, i) => ({
-        id: s.id, name: s.name, seat: i, isHost: s.isHost,
+        id: s.id, name: s.name, seat: i, isHost: s.isHost, characterId: s.characterId || null, carryItems: s.carryItems || [],
       }));
 
       broadcastToRoom(room, {
@@ -460,7 +512,7 @@ function handleRoomMessage(ws, msg) {
         rRoom.state = "waiting";
         rRoom.humanBidsThisRound = {};
         const playersInfo = rRoom.seats.filter((s) => s.connected).map((s, i) => ({
-          id: s.id, name: s.name, seat: i, isHost: s.isHost,
+          id: s.id, name: s.name, seat: i, isHost: s.isHost, characterId: s.characterId || null, carryItems: s.carryItems || [],
         }));
         broadcastToRoom(rRoom, {
           type: "lan:game:restart-go",
@@ -494,7 +546,7 @@ function handleRoomMessage(ws, msg) {
         aRoom.state = "waiting";
         aRoom.humanBidsThisRound = {};
         const playersInfo = aRoom.seats.filter((s) => s.connected).map((s, i) => ({
-          id: s.id, name: s.name, seat: i, isHost: s.isHost,
+          id: s.id, name: s.name, seat: i, isHost: s.isHost, characterId: s.characterId || null, carryItems: s.carryItems || [],
         }));
         broadcastToRoom(aRoom, {
           type: "lan:game:restart-go",
@@ -743,6 +795,29 @@ function handleLanRelay(ws, msg) {
         roundTimeLeft: serverTimeLeft,
         ts: Date.now(),
       });
+      break;
+    }
+
+    case "lan:character-select": {
+      var seat = room.seats.find((s) => s.id === ws.playerId);
+      if (!seat) return;
+      seat.characterId = msg.characterId || null;
+      broadcastToRoom(room, {
+        type: "lan:character-selected",
+        playerId: ws.playerId,
+        playerName: seat.name,
+        characterId: seat.characterId,
+        ts: Date.now(),
+      }, ws.playerId);
+      logRoom(room.code, "character-select", `${seat.name} => ${seat.characterId}`);
+      break;
+    }
+
+    case "lan:carry-items": {
+      var seat = room.seats.find((s) => s.id === ws.playerId);
+      if (!seat) return;
+      seat.carryItems = msg.carryItems || [];
+      logRoom(room.code, "carry-items", `${seat.name} => ${JSON.stringify(seat.carryItems)}`);
       break;
     }
 

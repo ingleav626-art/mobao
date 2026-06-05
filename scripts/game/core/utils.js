@@ -1,3 +1,55 @@
+/**
+ * @file core/utils.js
+ * @module core/utils
+ * @description 全局工具函数库。采用 IIFE 模式，挂载到 window.MobaoUtils。
+ *              提供项目各模块共享的通用工具函数，包括数组/数值/字符串处理、
+ *              Phaser 动画封装、AI 情报池初始化、品质相关时长计算等。
+ *              是整个项目的基础依赖层，几乎所有模块都引用此文件。
+ *
+ * 函数分类：
+ *
+ * 通用工具：
+ *   - shuffle(list): Fisher-Yates 洗牌，返回新数组
+ *   - delay(ms): Promise 化的 setTimeout
+ *   - tweenToPromise(scene, targets, config): Promise 化的 Phaser tween
+ *   - clamp(value, min, max): 数值截断
+ *   - roundToStep(value, step): 按步长取整
+ *   - pickFirstDefined(...values): 取第一个非 null/undefined 的值
+ *
+ * 网格/坐标：
+ *   - toCellKey(x, y): 坐标转字符串键 "x,y"
+ *   - fromCellKey(key): 字符串键转坐标对象 { x, y }
+ *   - sizeTagToCellCount(sizeTag): 尺寸标签 "3x2" 转格子数 6
+ *
+ * 格式化：
+ *   - formatTrackIndex(index): 数字转中文（一~十+）
+ *   - rgbHex(numberColor): Phaser 数字颜色转 CSS hex 字符串
+ *   - formatCompactNumber(value): 紧凑数字（1.5M, 23k）
+ *   - formatBidRevealNumber(value): 出价显示（≥1M 用紧凑格式，否则千分位）
+ *   - trimTrailingZero(value): 去掉 ".0" 后缀
+ *
+ * 字符串/HTML：
+ *   - escapeHtml(value): HTML 转义
+ *   - compactOneLine(value, maxLength): 单行压缩
+ *   - compactPanelText(value, maxLength): 面板文本截断
+ *   - indentMultiline(value, indent): 多行缩进
+ *
+ * AI/LLM 辅助：
+ *   - normalizeActionToken(value): 动作名归一化（去空格/标点/小写）
+ *   - isNoneActionText(value): 判断是否为"无操作"文本
+ *   - safeParseJson(text): 安全 JSON 解析
+ *   - tryExtractDecisionJson(rawText): 从 LLM 回复中提取 JSON（直接/代码块/首尾花括号）
+ *   - createEmptyAiPrivateIntelPool(): 创建空 AI 私有情报池
+ *
+ * 品质时长：
+ *   - qualityPulseDuration(qualityKey): 品质脉冲动画时长
+ *   - settlementRevealDelayByQuality(qualityKey): 结算揭示延迟（受速度倍率影响）
+ *   - settlementSearchDurationByQuality(qualityKey): 结算搜索动画时长（受速度倍率影响）
+ *
+ * @requires MobaoSettings - 品质时长函数中读取 settlementSpeedMultiplier
+ *
+ * @exports window.MobaoUtils - 工具函数库单例
+ */
 (function setupMobaoUtils(global) {
   function shuffle(list) {
     const arr = [...list];

@@ -1,3 +1,44 @@
+/**
+ * @file bridge/battle-record.js
+ * @module bridge/battle-record
+ * @description 战绩记录系统 Bridge。采用工厂函数模式（createBattleRecordBridge），
+ *              通过依赖注入获取常量和工具函数，返回 Mixin 对象。
+ *              负责对局结果的持久化存储、战绩面板渲染、AI决策日志查看、以及对局复现。
+ *
+ * 核心职责：
+ *   - 战绩持久化：saveBattleRecord / loadBattleRecords
+ *     每局结算后保存完整对局数据（成交价、利润、仓库快照、AI决策日志）到 localStorage
+ *     最多保留20条记录，自动清理旧数据
+ *   - 战绩面板：openBattleRecordPanel / renderBattleRecordPanel
+ *     渲染战绩摘要（总局数、胜率、累计利润、最高/最低单局）和详细列表
+ *   - AI决策日志：openBattleRecordLogs / renderBattleRecordLogView
+ *     按轮次分页查看AI决策详情（规则AI信心拆解、LLM prompt/response、缓存命中率）
+ *   - 对局复现：openBattleRecordReplay
+ *     从战绩记录恢复仓库状态，重新展示结算页面
+ *   - 仓库快照：buildWarehouseSnapshotForRecord
+ *     序列化当前仓库布局（位置、品质、真实价值）用于复现
+ *
+ * 数据结构（单条战绩）：
+ *   {
+ *     id, finishedAt, round, mode, winnerId, winnerName, winnerBid,
+ *     totalValue, winnerProfit, playerProfit, playerWon,
+ *     dividendTicketInfo, reasonText,
+ *     warehouse: { cols, rows, itemCount, items[] },
+ *     logs: { aiDecisionPanelText, runNo, aiThoughtLogs[], roundLogsByRound, roundPanelTexts },
+ *     logsRound
+ *   }
+ *
+ * @requires MobaoConstants - 常量（BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS）
+ * @requires MobaoUtils     - 工具函数（clamp, escapeHtml, formatBidRevealNumber）
+ * @requires MobaoAppState  - 全局统计（totalGamesPlayed, totalWins, totalProfit）
+ * @requires MobaoAnimations - 动画系统（animateOverlayOpen/Close）
+ *
+ * @exports MobaoBattleRecord.createBattleRecordBridge - 工厂函数，返回战绩 Mixin
+ *
+ * 使用方式：
+ *   const bridge = createBattleRecordBridge({ BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber });
+ *   Object.assign(scene, bridge);
+ */
 (function setupMobaoBattleRecordBridge(global) {
   function createBattleRecordBridge(deps) {
     const {

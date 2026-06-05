@@ -1,3 +1,55 @@
+/**
+ * @file warehouse/index.js
+ * @module warehouse
+ * @description 仓库核心系统。管理仓库网格的绘制、藏品生成与放置、揭示机制、
+ *              候选预览等完整仓库逻辑。由三个 Mixin 组成，混入 Phaser Scene。
+ *
+ * 三个 Mixin：
+ *
+ * WarehouseCoreMixin（L19-L371）- 仓库核心：
+ *   - preloadArtifactImages(): 预加载藏品缩略图（assets/images/artifacts/thumbs/）
+ *   - drawUnknownWarehouse(): 绘制空白仓库网格（12×25×64px）
+ *   - drawGridLines(): 智能网格线（已揭示区域不画内部分割线）
+ *   - guardWarehouseCapacity(): 容量上限检查
+ *   - spawnRandomItems(): 随机生成藏品（按占用率38%~88%，数量50~300）
+ *   - setupWarehouseAuction(): 初始化拍卖参数（真实价值/AI最高出价/起始出价）
+ *   - renderItem(item): 渲染单个藏品（轮廓/边框/品质标记/点击区域）
+ *   - onArtifactClicked(item, pointer): 藏品点击处理（候选预览/结算查看）
+ *   - rebuildWarehouseCellIndex(): 重建格子→藏品索引
+ *   - placeItem / findFirstEmptySlot / isInBoundsCell / isWarehouseCellOccupied
+ *
+ * WarehouseRevealMixin（L373-L1095）- 揭示系统：
+ *   - revealOutlineBatch(count, category, ...): 批量轮廓揭示
+ *   - revealQualityBatch(count, category, ...): 批量品质揭示
+ *   - revealArtifactFully(item): 完全揭示单件藏品（轮廓+品质+精确）
+ *   - revealArtifactFullyBatch({ count, sortStrategy, ... }): 批量完全揭示
+ *   - playFullRevealEffect(item): 完全揭示特效（外环扩散+内爆+边框淡入+图片弹入）
+ *   - revealOutline / revealQualityCell / revealCell: 单件揭示基础方法
+ *   - pickRevealTargets({ mode, count, category, ... }): 揭示目标选择（支持品类筛选/排序策略/回退）
+ *   - renderQualityVisual(item): 品质视觉渲染（颜色边框+品质格+缩略图）
+ *   - showRevealScrollHintsForTargets / refreshRevealScrollHints: 揭示位置滚动提示
+ *
+ * WarehousePreviewMixin（L1096-L1303）- 候选预览：
+ *   - positionPreview / applyPreviewPosition: 预览弹窗定位（自动避免溢出）
+ *   - renderPreviewCandidates(item): 渲染候选藏品列表（支持品类筛选/排序）
+ *   - hidePreview / repositionPreview: 关闭和重新定位
+ *   - setupPreviewTouchScroll: 触摸滚动支持
+ *
+ * 仓库网格参数（来自 MobaoConstants）：
+ *   GRID_COLS=12, GRID_ROWS=25, CELL_SIZE=64, MARGIN=0
+ *   CANVAS_NATIVE_HEIGHT=1600, MAX_WAREHOUSE_CELLS=300
+ *
+ * 藏品揭示状态（item.revealed）：
+ *   { outline: boolean, qualityCell: {x,y}|null, exact: boolean }
+ *
+ * @requires MobaoConstants  - 常量（网格参数、容量范围）
+ * @requires MobaoUtils      - 工具函数（shuffle, clamp, toCellKey, rgbHex, qualityPulseDuration）
+ * @requires ArtifactData    - 藏品数据（ARTIFACT_LIBRARY, toSizeTag）
+ * @requires Phaser          - 游戏引擎
+ *
+ * @exports window.MobaoWarehouse - 仓库 Mixin 集合
+ *   { WarehouseCoreMixin, WarehouseRevealMixin, WarehousePreviewMixin }
+ */
 (function setupMobaoWarehouse(global) {
   const {
     GRID_COLS,

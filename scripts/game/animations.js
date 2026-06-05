@@ -1,11 +1,49 @@
-/* ============================================================
-   animations.js – 前端动效工具函数
-   无依赖，挂载在 window.MobaoAnimations 上
-   使用方式：MobaoAnimations.ripple(event, element)
-            MobaoAnimations.scrollNumber(element, from, to, options)
-            MobaoAnimations.staggerEnter(elements, options)
-            MobaoAnimations.pulse(element, type)
-   ============================================================ */
+/**
+ * @file animations.js
+ * @module animations
+ * @description 前端动效工具函数库。采用 IIFE 模式，挂载到 window.MobaoAnimations。
+ *              提供项目通用的 UI 动画效果，包括涟漪、数字滚动、卡片入场、脉冲、
+ *              覆盖层开关、回合过渡、暂停视觉等。无外部依赖，纯 DOM + CSS 动画。
+ *
+ * 动效分类（9类）：
+ *
+ * 1. 涟漪效果：
+ *    - ripple(event, element, options): 按钮点击涟漪（自动清理、支持触摸）
+ *    - bindRipple(button, options): 为按钮绑定涟漪事件
+ *
+ * 2. 数字滚动：
+ *    - scrollNumber(element, from, to, options): 数字从旧值滚动到新值
+ *      支持 easeOutCubic 缓出、小数位、千分位、前后缀、自定义格式化
+ *    - scrollToNumber(element, newValue, options): 便捷版，自动检测当前值
+ *
+ * 3. 卡片渐次入场：
+ *    - staggerEnter(elements, options): 一组元素渐次入场
+ *      支持 up/left/right 方向、staggerDelay 间隔、initialDelay 初始延迟
+ *
+ * 4. 脉冲提示：
+ *    - pulse(element, type, options): 4种脉冲类型（heart/soft/alert/badge）
+ *      支持自定义时长、仅播放一次
+ *    - stopPulse(element): 停止脉冲
+ *
+ * 5. 覆盖层动效：
+ *    - animateOverlayOpen(overlayEl, innerEl): 淡入+缩放+面板滑入
+ *    - animateOverlayClose(overlayEl, innerEl, onDone): 淡出+缩放+hidden
+ *
+ * 6. 回合过渡：
+ *    - roundTransition(options): 游戏区→结算页过渡（创建临时覆盖层、文字淡入淡出）
+ *
+ * 7. 暂停/恢复视觉：
+ *    - togglePauseVisual(hudEl, isPaused, timerSpan): HUD 暂停状态切换
+ *
+ * 8. 页面过渡：
+ *    - transitionToSettlement(gameArea, settlePage, onComplete): 游戏区淡出+结算页淡入
+ *
+ * 9. 按钮效果：
+ *    - bindPressScale(button): 按下缩放反馈
+ *    - bindAllButtonEffects(buttons): 批量绑定涟漪+缩放
+ *
+ * @exports window.MobaoAnimations - 动效工具库单例
+ */
 (function setupMobaoAnimations(global) {
   'use strict';
 

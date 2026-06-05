@@ -1,3 +1,42 @@
+/**
+ * @file llm/llm-manager.js
+ * @module llm/manager
+ * @description LLM 多 Provider 管理器。采用 IIFE 模式，挂载到 window.LlmManager。
+ *              统一管理多个 LLM Provider（DeepSeek/OpenAI/Qwen/GLM/Kimi/自定义），
+ *              提供注册、切换、请求转发、Token 监控和自定义 Provider 持久化。
+ *
+ * 核心架构：
+ *   - Provider 注册表（providers: Map<string, Provider>）
+ *   - 活跃 Provider 切换（activeProviderId）
+ *   - 统一请求接口（requestChat → 活跃 Provider.chat）
+ *   - 连接测试（testConnection → 活跃 Provider.testConnection）
+ *
+ * 工厂函数：
+ *   - createBaseProvider(config): 创建基础 Provider（含 chat/testConnection/设置管理）
+ *   - createOpenAICompatibleProvider(config): 创建 OpenAI 兼容 Provider
+ *     所有内置 Provider 均基于此工厂创建，只需提供 id/name/endpoint/model/storageKey 等
+ *   - createDynamicProvider(config): 运行时创建自定义 Provider
+ *
+ * 工具函数（utils）：
+ *   - clamp, toFiniteNumber, normalizeObject: 值规范化
+ *   - normalizeUsage: Token 用量标准化（兼容各厂商格式差异）
+ *   - broadcastToTokenMonitor: Token 监控广播（CustomEvent）
+ *
+ * 自定义 Provider 持久化：
+ *   - loadCustomProviders() / saveCustomProviders(): localStorage 持久化
+ *   - 存储键: mobao_custom_providers_v1
+ *
+ * 日志系统：
+ *   - MAX_LOG_ENTRIES=120，循环覆盖
+ *
+ * @requires localStorage - 设置持久化
+ *
+ * @exports window.LlmManager
+ *   { registerProvider, unregisterProvider, getProvider, getActiveProviderId,
+ *     setActiveProvider, listProviders, requestChat, testConnection,
+ *     createBaseProvider, createOpenAICompatibleProvider,
+ *     loadCustomProviders, saveCustomProviders, createDynamicProvider, utils }
+ */
 (function attachLlmManager(window) {
   "use strict";
 

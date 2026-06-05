@@ -1,3 +1,47 @@
+/**
+ * @file lan/index.js
+ * @module lan
+ * @description 联机房间 UI 与事件处理 Mixin。管理联机大厅的完整生命周期，
+ *              包括服务器连接、房间创建/加入、玩家槽位管理、角色选择、道具携带、
+ *              地图选择、以及游戏过程中的 WebSocket 事件监听。
+ *
+ * 核心职责：
+ *   - initLanLobby: 初始化联机大厅，绑定所有 DOM 元素和事件
+ *   - 服务器连接：connectWithRetry / autoConnectAndCreate / autoConnectAndJoin
+ *     支持手动输入地址和自动发现（子网扫描、Native WiFi IP）
+ *   - 房间管理：创建房间（公开/私密）、加入房间、离开房间（含确认弹窗）
+ *   - 玩家槽位：lanSlotConfig[4] + renderSlots + syncSlotsFromPlayers
+ *     4个槽位：host/client/ai/empty，支持踢出、加AI、LLM勾选
+ *   - 角色选择：renderLanCharacterList + updateLanPortrait
+ *     两列式角色卡片，选择后广播 lan:character-select，Live2D 立绘无缝循环
+ *   - 道具携带：renderLanCarryItems + lanCarryItems
+ *     复用单机道具选择UI，选择后发送 lan:carry-items
+ *   - 地图选择：openLanMapSelect，仅房主可操作
+ *   - 房间管理弹窗：openLanRoomManage，踢出/加AI/编号
+ *
+ * WebSocket 事件监听（bridge.on）：
+ *   房间生命周期：room:created, room:joined, room:join-failed, room:kicked,
+ *     room:player-joined, room:player-left, room:host-left, room:slot-state
+ *   角色同步：lan:character-selected
+ *   游戏流程：game:init, round:start, round:bid-ack, bid:received, all-bids-in,
+ *     round:timeout, round:result, game:settle, game:settle-final
+ *   暂停/恢复：pause:state
+ *   数据同步：full-sync, full-sync-request, game:warehouse-sync
+ *   重开投票：game:restart-vote, game:restart-go, game:restart-cancelled
+ *   AI事件：ai-bids-ready, ai-item-use
+ *   玩家动作：player-action, public-info
+ *   重连：room:player-reconnected, room:player-removed, room:reconnected, room:reconnect-failed
+ *
+ * @requires LanBridge       - 联机通信桥（scripts/game/lan-bridge.js）
+ * @requires MobaoAppState   - 全局状态管理
+ * @requires MobaoConstants  - 常量（DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS）
+ * @requires MobaoSettings   - 设置（savePlayerMoney, GAME_SETTINGS）
+ * @requires CharacterData   - 角色数据（characters.js）
+ * @requires MobaoMapProfiles - 地图配置
+ * @requires MobaoShopBridge - 商店系统
+ *
+ * @exports MobaoLan.LanIndexMixin - 联机大厅 Mixin，混入 Phaser Scene
+ */
 (function setupMobaoLanIndex(global) {
   const { LanBridge } = global;
   const { MobaoAppState } = global;
@@ -660,6 +704,11 @@
             lanSelectedCharacterId = card.dataset.charId;
             renderLanCharacterList();
             updateLanPortrait();
+            var mySlot = lanSlotConfig.find((s) => s.id === (bridge ? bridge.playerId : null));
+            if (mySlot) {
+              mySlot.characterId = lanSelectedCharacterId;
+              renderSlots();
+            }
             if (bridge && bridge.connected) {
               bridge.send({ type: "lan:character-select", characterId: lanSelectedCharacterId });
             }
@@ -1035,8 +1084,15 @@
 
       if (roomShopBtn) {
         roomShopBtn.addEventListener("click", () => {
-          if (window.MobaoShopBridge && typeof window.MobaoShopBridge.openShop === "function") {
-            window.MobaoShopBridge.openShop();
+          if (typeof window.MobaoShopPage !== "undefined") {
+            window.MobaoShopPage.init({
+              onPurchase: () => {
+                if (bridge && bridge.connected) {
+                  bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
+                }
+              }
+            });
+            window.MobaoShopPage.open();
           }
         });
       }
@@ -1055,6 +1111,9 @@
             e.stopPropagation();
             lanCarryItems.splice(idx, 1);
             renderLanCarryItems();
+            if (bridge && bridge.connected) {
+              bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
+            }
           });
           slot.appendChild(removeBtn);
           carryItemsRow.appendChild(slot);
@@ -1064,8 +1123,15 @@
           addSlot.className = "carry-item-add";
           addSlot.textContent = "+";
           addSlot.addEventListener("click", () => {
-            if (window.MobaoShopBridge && typeof window.MobaoShopBridge.openShop === "function") {
-              window.MobaoShopBridge.openShop();
+            if (typeof window.MobaoShopPage !== "undefined") {
+              window.MobaoShopPage.init({
+                onPurchase: () => {
+                  if (bridge && bridge.connected) {
+                    bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
+                  }
+                }
+              });
+              window.MobaoShopPage.open();
             }
           });
           carryItemsRow.appendChild(addSlot);
@@ -1082,6 +1148,11 @@
           }
         }
         updateLanPortrait();
+        var mySlot = lanSlotConfig.find((s) => s.id === (bridge ? bridge.playerId : null));
+        if (mySlot && lanSelectedCharacterId) {
+          mySlot.characterId = lanSelectedCharacterId;
+          renderSlots();
+        }
       };
 
       const updateModeMapCardState = (isHost) => {
@@ -1101,12 +1172,12 @@
         const aiSlots = lanSlotConfig.filter((s) => s.type === "ai");
         let idx = 0;
         if (hostPlayer) {
-          lanSlotConfig[idx] = { type: "host", id: hostPlayer.id, name: hostPlayer.name };
+          lanSlotConfig[idx] = { type: "host", id: hostPlayer.id, name: hostPlayer.name, characterId: hostPlayer.characterId || null };
           idx++;
         }
         clientPlayers.forEach((p) => {
           if (idx < 4) {
-            lanSlotConfig[idx] = { type: "client", id: p.id, name: p.name };
+            lanSlotConfig[idx] = { type: "client", id: p.id, name: p.name, characterId: p.characterId || null };
             idx++;
           }
         });
@@ -1158,6 +1229,9 @@
         initLanCharacterFromStorage();
         renderLanCarryItems();
         updateModeMapCardState(true);
+        if (bridge && bridge.connected) {
+          bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
+        }
         var statusText = "房间 " + msg.roomCode + " 等待玩家加入";
         if (msg.visibility === "private" && msg.password) {
           statusText += " | 密钥: " + msg.password;
@@ -1174,6 +1248,9 @@
         initLanCharacterFromStorage();
         renderLanCarryItems();
         updateModeMapCardState(false);
+        if (bridge && bridge.connected) {
+          bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
+        }
         setOnlineStatus("房间 " + msg.roomCode + " 等待主机开始", "connected");
       });
 
@@ -1199,6 +1276,14 @@
           }
         });
         renderSlots();
+      });
+
+      bridge.on("lan:character-selected", (msg) => {
+        var slotIdx = lanSlotConfig.findIndex((s) => s.id === msg.playerId);
+        if (slotIdx >= 0) {
+          lanSlotConfig[slotIdx].characterId = msg.characterId;
+          renderSlots();
+        }
       });
 
       bridge.on("room:player-joined", (msg) => {

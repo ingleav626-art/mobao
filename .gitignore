@@ -8,6 +8,7 @@ test.txt
 *.spec.js
 
 .agents/
+.trae/
 skills-lock.json
 tools/
 

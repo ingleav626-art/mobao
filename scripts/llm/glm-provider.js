@@ -1,3 +1,23 @@
+/**
+ * @file llm/glm-provider.js
+ * @module llm/glm-provider
+ * @description 智谱 GLM Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
+ *              创建，注册到 LlmManager 的 provider 体系中。
+ *
+ * 默认配置：
+ *   - endpoint: https://open.bigmodel.cn/api/paas/v4/chat/completions
+ *   - model: glm-4-flash
+ *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
+ *   - 支持 thinking 模式、跨局记忆、反思
+ *
+ * 存储键：
+ *   - 设置: mobao_glm_settings_v1
+ *   - API Key: mobao_glm_api_key_v1
+ *
+ * @requires LlmManager - LLM 管理器（scripts/llm/llm-manager.js）
+ *
+ * @exports 通过 LlmManager.registerProvider("glm", provider) 注册，无独立导出
+ */
 (function attachGlmProvider(window) {
   "use strict";
 

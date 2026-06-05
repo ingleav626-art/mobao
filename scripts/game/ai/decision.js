@@ -1,3 +1,31 @@
+/**
+ * @file decision.js
+ * @module ai/decision
+ * @description AI决策日志与调试面板 Mixin。负责记录AI出价的决策过程（规则AI的信心拆解、
+ *              LLM的prompt/response/纠错），并以可读格式渲染到调试面板中。
+ *
+ * 核心职责：
+ *   - buildAiDecisionPanelSnapshot: 将一轮AI决策遥测数据格式化为可读文本快照
+ *     - 规则AI：显示信心拆解、估值、人格、行为标签
+ *     - LLM：显示system/user prompt、模型回复、纠错过程、工具调用结果
+ *   - recordAiThoughtLogs: 将遥测数据存入当前局日志（runLog）
+ *   - beginRunTracking: 新局开始时初始化日志结构
+ *   - writeLog: 写入操作日志并渲染到面板
+ *   - renderAiThoughtLog: 将历史局日志渲染到DOM
+ *
+ * 数据流：
+ *   scene-llm.js (LLM决策) → telemetry → recordAiThoughtLogs() → currentRunLog → renderAiThoughtLog()
+ *   bidding.js (规则AI决策) → lastDecisionLog → buildAiDecisionPanelSnapshot()
+ *
+ * @requires MobaoUtils - 工具函数（formatBidRevealNumber）
+ *
+ * @exports MobaoAi.DecisionMixin - 决策日志 Mixin，混入 Phaser Scene
+ *
+ * 混入方式：Object.assign(scene, MobaoAi.DecisionMixin)
+ * 混入后 scene 将获得：currentRunLog, runLogHistory, runSerial,
+ *   buildAiDecisionPanelSnapshot, compactPanelTextForSnapshot,
+ *   beginRunTracking, recordAiThoughtLogs, renderAiThoughtLog, writeLog
+ */
 (function setupMobaoAiDecision(global) {
   const { formatBidRevealNumber } = global.MobaoUtils;
 

@@ -1,3 +1,39 @@
+/**
+ * @file memory.js
+ * @module ai/memory
+ * @description AI跨局记忆系统 Mixin。管理AI玩家的对局内对话历史和跨局经验本，
+ *              支持持久化存储（localStorage）、导入导出、以及为LLM构建记忆上下文。
+ *
+ * 核心职责：
+ *   - 对局内对话管理（aiConversationByPlayer）：每轮决策记录，最多保留30条
+ *   - 跨局经验本（aiCrossGameMemory）：包含统计、成功经验、策略建议、经验教训
+ *   - 持久化存储：自动保存/恢复到 localStorage（联机模式使用独立key）
+ *   - 上下文构建（getAiConversationMessages）：为LLM构建包含跨局记忆和本局历史的消息
+ *   - 局结算推送（pushRunSettlementContextToAi）：记录结算结果到记忆
+ *   - 导入导出（exportAiMemoryToJson / importAiMemoryFromJson）
+ *
+ * 数据结构：
+ *   aiConversationByPlayer[playerId] = [
+ *     { run, round, bid, skill, item, thought, result }
+ *   ]
+ *   aiCrossGameMemory[playerId] = {
+ *     stats: { totalGames, winRate, avgProfit, warehouseValueMax/Min/Avg, ... },
+ *     praises: [string],    // 成功经验，最多10条
+ *     strategies: [string], // 策略建议，最多10条
+ *     lessons: [string]     // 经验教训，最多10条
+ *   }
+ *
+ * @requires MobaoConstants - 常量（AI_MEMORY_STORAGE_KEY）
+ * @requires MobaoUtils     - 工具函数（formatBidRevealNumber）
+ *
+ * @exports MobaoAi.MemoryMixin - 记忆系统 Mixin，混入 Phaser Scene
+ *
+ * 混入方式：Object.assign(scene, MobaoAi.MemoryMixin)
+ * 混入后 scene 将获得：aiConversationByPlayer, aiCrossGameMemory,
+ *   pendingNextRunAiSummary, runSerial,
+ *   loadAiMemoryFromStorage, saveAiMemoryToStorage, restoreAiMemoryFromStorage,
+ *   getAiConversationMessages, pushAiRoundSummary, updateLastAiRoundResult, 等
+ */
 (function setupMobaoAiMemory(global) {
   const { AI_MEMORY_STORAGE_KEY } = global.MobaoConstants;
   const { formatBidRevealNumber } = global.MobaoUtils;

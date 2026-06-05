@@ -1,3 +1,41 @@
+/**
+ * @file shop/index.js
+ * @module shop
+ * @description 商店页面 UI 管理。采用 IIFE + 揭示模块模式，挂载到 window.MobaoShopPage。
+ *              管理商店的完整交互流程，包括道具浏览、搜索筛选、购买、库存查看、
+ *              限时特惠等。通过 MobaoShopBridge 与后端数据层交互。
+ *
+ * 核心职责：
+ *   - init(options): 初始化商店，绑定事件，支持 onPurchase 回调
+ *   - open / close: 打开/关闭商店覆盖层（支持动画）
+ *   - switchTab(tab): 切换标签页（all/inventory/limited）
+ *   - updateMoneyDisplay(): 更新金额显示
+ *
+ * 道具分类（ITEM_CATEGORIES）：
+ *   - outline: 轮廓类（探照灯/蜡烛/火把/瓷器图谱/铜器拓片/木器图录）
+ *   - quality: 品质类（鉴定针/放大镜/玉器鉴书/书画残卷/金石拓本）
+ *   - reveal/avg/bonus/online/special: 预留分类（暂无道具）
+ *
+ * 商品浏览（renderAllItems）：
+ *   - 搜索：按名称/描述模糊匹配
+ *   - 品类筛选：按 ITEM_CATEGORIES 分组
+ *   - 排序：默认/价格高→低/价格低→高
+ *   - 购买限制：每日限购（remaining/maxDaily）、余额不足时禁用
+ *
+ * 库存查看（renderInventory）：
+ *   - 显示已持有且数量>0的道具
+ *
+ * 限时特惠（renderLimitedOffers）：
+ *   - 每日零点刷新，每人限购一次
+ *   - 折扣标签（4档颜色）、原价/折后价对比
+ *   - 已购买标记
+ *
+ * @requires MobaoShopBridge  - 商店数据层（SHOP_ITEMS, getPlayerMoney, purchaseItem, 等）
+ * @requires MobaoAnimations  - 动画系统（animateOverlayOpen/Close）
+ *
+ * @exports window.MobaoShopPage - 商店页面单例
+ *   { init, open, close, updateMoneyDisplay, renderAllItems, renderInventory, renderLimitedOffers, ITEM_CATEGORIES }
+ */
 window.MobaoShopPage = (function () {
   const ITEM_CATEGORIES = {
     outline: {

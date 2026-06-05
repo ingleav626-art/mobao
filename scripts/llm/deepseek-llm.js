@@ -1,3 +1,37 @@
+/**
+ * @file llm/deepseek-llm.js
+ * @module llm/deepseek-llm
+ * @description DeepSeek LLM 客户端（旧版独立实现）。采用 IIFE 模式，挂载到 window.DeepSeekLLM。
+ *              提供完整的 DeepSeek API 调用、设置管理、Token 监控和日志功能。
+ *              注意：新架构中 Provider 逻辑已迁移至 llm-manager.js + deepseek-provider.js，
+ *              此文件保留用于向后兼容和 DeepSeekClient 类。
+ *
+ * 核心组件：
+ *   - DeepSeekClient: LLM 客户端类
+ *     - chat(messages, options): 发送聊天请求（支持流式/非流式）
+ *     - 支持代理请求（endpoint 以 /api/ 开头时走服务端代理）
+ *     - 支持 thinking 模式（DeepSeek Reasoner）
+ *     - 自动重试（最多3次，指数退避）
+ *     - Token 用量标准化（normalizeUsage）
+ *     - Token 监控广播（broadcastToTokenMonitor → CustomEvent）
+ *
+ * 设置管理：
+ *   - defaultDeepSeekSettings(): 默认设置（provider/endpoint/model/apiKey/timeout/temperature等）
+ *   - normalizeDeepSeekSettings(source, fallback): 规范化设置（clamp范围、endpoint校验）
+ *   - loadDeepSeekSettings() / saveDeepSeekSettings(): localStorage 持久化
+ *     存储键: mobao_deepseek_settings_v2, mobao_deepseek_api_key_v1
+ *   - maskApiKey(key): API Key 脱敏（仅显示前4后4位）
+ *
+ * 日志系统：
+ *   - MAX_LOG_ENTRIES=120，循环覆盖
+ *   - getLog() / clearLog(): 日志查询和清理
+ *
+ * @requires localStorage - 设置持久化
+ *
+ * @exports window.DeepSeekLLM
+ *   { LLM_STORAGE_KEY, defaultDeepSeekSettings, normalizeDeepSeekSettings,
+ *     loadDeepSeekSettings, saveDeepSeekSettings, maskApiKey, DeepSeekClient }
+ */
 (function attachDeepSeekLLM(window) {
   "use strict";
 
