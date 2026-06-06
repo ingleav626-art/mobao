@@ -1227,37 +1227,26 @@
     setupPreviewTouchScroll() {
       const pop = this.dom.previewPopover;
       if (!pop) return;
-      let touchStartY = 0;
-      let touchStartScrollTop = 0;
       let isDraggingToClose = false;
       let dragStartY = 0;
 
       pop.addEventListener("touchstart", (e) => {
-        e.stopPropagation();
         if (e.touches.length === 1) {
-          touchStartY = e.touches[0].clientY;
-          touchStartScrollTop = pop.scrollTop;
           dragStartY = e.touches[0].clientY;
           isDraggingToClose = pop.scrollTop <= 0;
         }
       }, { passive: true });
 
       pop.addEventListener("touchmove", (e) => {
-        e.stopPropagation();
         if (e.touches.length !== 1) return;
         const currentY = e.touches[0].clientY;
-        const dy = touchStartY - currentY;
-        const maxScroll = pop.scrollHeight - pop.clientHeight;
-
         if (isDraggingToClose && currentY - dragStartY > 60) {
           this.hidePreview();
           return;
         }
-
-        if (maxScroll <= 0) return;
-        e.preventDefault();
-        pop.scrollTop = Math.max(0, Math.min(touchStartScrollTop + dy, maxScroll));
-      }, { passive: false });
+        // 不使用 e.preventDefault() 和手动 scrollTop，
+        // 让 CSS overflow-y: auto + -webkit-overflow-scrolling: touch 原生滚动
+      }, { passive: true });
     },
 
     isPointOnSettlementLockedItem(x, y) {
