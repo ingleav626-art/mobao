@@ -63,9 +63,35 @@
       const $ = (id) => document.getElementById(id);
       const bridge = this.lanBridge;
 
+      // 先定义 setOnlineStatus 方法
+      const statusEl = $("lobbyOnlineStatus");
+      this.lanStatusEl = statusEl;
+      this.setOnlineStatus = (text, cls) => {
+        if (!this.lanStatusEl) return;
+        this.lanStatusEl.textContent = text;
+        this.lanStatusEl.className = "lobby-online-status" + (cls ? " " + cls : "");
+      };
+
+      // 检查是否有保存的重连数据
+      const savedPlayerId = localStorage.getItem("mobao_lan_player_id");
+      const savedRoomCode = localStorage.getItem("mobao_lan_room_code");
+      const savedPlayerName = localStorage.getItem("mobao_lan_player_name");
+      const savedIsHost = localStorage.getItem("mobao_lan_is_host") === "true";
+      const reconnectFailed = localStorage.getItem("mobao_lan_reconnect_failed");
+
+      // 如果之前重连已失败，不再尝试
+      if (reconnectFailed) {
+        this.writeLog("之前重连已失败，跳过自动重连");
+        localStorage.removeItem("mobao_lan_reconnect_failed");
+      } else if (savedPlayerId && savedRoomCode && savedPlayerName) {
+        this.writeLog(`检测到保存的房间数据 | room=${savedRoomCode} | player=${savedPlayerId} | host=${savedIsHost}`);
+        // 尝试自动重连
+        this.tryAutoReconnect(savedPlayerId, savedRoomCode, savedPlayerName, savedIsHost);
+        // 重连是异步的，后续逻辑会在重连失败后继续执行
+      }
+
       const serverUrl = $("lobbyOnlineServerUrl");
       const playerName = $("lobbyOnlinePlayerName");
-      const statusEl = $("lobbyOnlineStatus");
       const connectBtn = $("lobbyOnlineConnectBtn");
       const serverField = $("lobbyOnlineServerField");
       const createBtn = $("lobbyOnlineCreateBtn");
@@ -109,13 +135,43 @@
       const mapSelectCloseBtn = $("lanMapSelectCloseBtn");
       const carryItemsRow = $("lanCarryItemsRow");
       const carryAutoReplenish = $("lanCarryAutoReplenish");
+      const alertOverlay = $("lanAlertOverlay");
+      const alertTitle = $("lanAlertTitle");
+      const alertMessage = $("lanAlertMessage");
+      const alertCloseBtn = $("lanAlertCloseBtn");
+      const alertOkBtn = $("lanAlertOkBtn");
 
       var lanSelectedCharacterId = null;
       var lanCarryItems = [];
+      var lanSelectedMapId = "default";
 
       console.log('[LAN] DOM elements: createBtn=' + !!createBtn + ', joinBtn=' + !!joinBtn + ', createConfirmBtn=' + !!createConfirmBtn + ', createPanel=' + !!createPanel);
 
       if (!createBtn || !joinBtn) return;
+
+      // 创建弹窗函数
+      const showLanAlert = (title, message) => {
+        if (!alertOverlay) return;
+        if (alertTitle) alertTitle.textContent = title || "提示";
+        if (alertMessage) alertMessage.textContent = message || "";
+        openOverlay(alertOverlay);
+      };
+
+      const hideLanAlert = () => {
+        closeOverlay(alertOverlay);
+      };
+
+      if (alertCloseBtn) {
+        alertCloseBtn.addEventListener("click", hideLanAlert);
+      }
+      if (alertOkBtn) {
+        alertOkBtn.addEventListener("click", hideLanAlert);
+      }
+      if (alertOverlay) {
+        alertOverlay.addEventListener("click", (e) => {
+          if (e.target === alertOverlay) hideLanAlert();
+        });
+      }
 
       const savedName = localStorage.getItem("mobao_lan_name") || "";
       if (playerName) playerName.value = savedName;
@@ -148,11 +204,7 @@
         });
       }
 
-      const setOnlineStatus = (text, cls) => {
-        if (!statusEl) return;
-        statusEl.textContent = text;
-        statusEl.className = "lobby-online-status" + (cls ? " " + cls : "");
-      };
+      const setOnlineStatus = this.setOnlineStatus;
 
       const showPanel = (panel) => {
         if (connectPanel) connectPanel.classList.add("hidden");
@@ -533,6 +585,7 @@
               hostName: room.hostName,
               visibility: room.visibility,
               playerCount: room.playerCount,
+              aiCount: room.aiCount || 0,
               maxPlayers: room.maxPlayers,
             });
           });
@@ -549,15 +602,17 @@
           item.className = "lobby-room-item";
           var visLabel = room.visibility === "private" ? "🔒 私密" : "🔓 公开";
           var visClass = room.visibility === "private" ? "private" : "public";
+          var totalCount = room.playerCount + room.aiCount;
+          var playerLabel = room.aiCount > 0 ? `👥 ${room.playerCount}+${room.aiCount}AI/${room.maxPlayers}` : `👥 ${room.playerCount}/${room.maxPlayers}`;
           item.innerHTML =
             '<div class="lobby-room-item-info">' +
             '<div class="lobby-room-item-name">' + room.roomName + '</div>' +
             '<div class="lobby-room-item-meta">' +
             '<span class="lobby-room-item-vis ' + visClass + '">' + visLabel + '</span>' +
-            '<span class="lobby-room-item-players">👥 ' + room.playerCount + '/' + room.maxPlayers + '</span>' +
+            '<span class="lobby-room-item-players">' + playerLabel + '</span>' +
             '</div>' +
             '</div>' +
-            '<button class="lobby-room-item-join" data-code="' + room.code + '" data-ip="' + room.serverIp + '" data-vis="' + room.visibility + '">加入</button>';
+            '<button class="lobby-room-item-join" data-code="' + room.code + '" data-ip="' + room.serverIp + '" data-vis="' + room.visibility + '" data-total="' + totalCount + '" data-max="' + room.maxPlayers + '">加入</button>';
           joinList.appendChild(item);
         });
 
@@ -566,6 +621,15 @@
             var code = btn.getAttribute("data-code");
             var ip = btn.getAttribute("data-ip");
             var vis = btn.getAttribute("data-vis");
+            var total = parseInt(btn.getAttribute("data-total"), 10);
+            var max = parseInt(btn.getAttribute("data-max"), 10);
+
+            // 检查房间是否已满
+            if (total >= max) {
+              showLanAlert("房间已满", "该房间已有 " + total + " 人（含AI），无法加入");
+              return;
+            }
+
             pendingJoinServerIp = ip;
             pendingJoinRoomCode = code;
             if (vis === "private") {
@@ -638,7 +702,7 @@
         if (!window.CharacterData) return '<span class="lan-avatar-emoji">👤</span>';
         const char = CharacterData.getCharacterById(characterId);
         if (char && char.avatar) {
-          return '<img src="' + char.avatar + '" alt="' + char.name + '">';
+          return '<img src="' + char.avatar + '" alt="' + char.name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\';"><span class="lan-avatar-emoji" style="display:none;">👤</span>';
         }
         return '<span class="lan-avatar-emoji">👤</span>';
       };
@@ -656,8 +720,22 @@
             e.stopPropagation();
             const slotIdx = parseInt(btn.getAttribute("data-add-ai"), 10);
             if (isNaN(slotIdx)) return;
-            const aiIdx = lanSlotConfig.filter((s) => s.type === "ai").length;
+
+            // 检查是否可以添加AI（总人数不超过4）
+            const humanCount = lanSlotConfig.filter((s) => s.type === "host" || s.type === "client").length;
+            const currentAiCount = lanSlotConfig.filter((s) => s.type === "ai").length;
+            const maxPlayers = 4;
+
+            this.writeLog(`添加AI尝试 | human=${humanCount} | ai=${currentAiCount} | total=${humanCount + currentAiCount}/${maxPlayers}`);
+
+            if (humanCount + currentAiCount >= maxPlayers) {
+              this.writeLog("无法添加更多AI：总人数已达上限（" + maxPlayers + "人）");
+              return;
+            }
+
+            const aiIdx = currentAiCount;
             lanSlotConfig[slotIdx] = { type: "ai", name: "AI-" + (aiIdx + 1), llm: false };
+            this.writeLog(`添加AI成功 | slot=${slotIdx} | name=AI-${aiIdx + 1} | total=${humanCount + currentAiCount + 1}/${maxPlayers}`);
             renderSlots();
             broadcastSlotState();
           });
@@ -1062,9 +1140,40 @@
       if (mapCard) {
         mapCard.addEventListener("click", () => {
           if (!bridge || !bridge.isHost) return;
+          renderLanMapList();
           openOverlay(mapSelectOverlay);
         });
       }
+
+      // 渲染地图选择列表
+      const renderLanMapList = () => {
+        var body = document.getElementById("lanMapSelectBody");
+        if (!body || !window.MobaoMapProfiles) return;
+        var profiles = MobaoMapProfiles.getAllProfiles();
+        body.innerHTML = "";
+        profiles.forEach(function (profile) {
+          var card = document.createElement("div");
+          card.className = "lan-map-item" + (profile.id === lanSelectedMapId ? " selected" : "");
+          card.innerHTML =
+            '<div class="lan-map-item-icon">' + (profile.icon || "🗺") + '</div>' +
+            '<div class="lan-map-item-info">' +
+            '<div class="lan-map-item-name">' + profile.name + '</div>' +
+            '<div class="lan-map-item-desc">' + profile.desc + '</div>' +
+            '<div class="lan-map-item-params">' + profile.params.maxRounds + '回合 · 直接拿下' + Math.round(profile.params.directTakeRatio * 100) + '%</div>' +
+            '</div>';
+          card.addEventListener("click", function () {
+            lanSelectedMapId = profile.id;
+            if (window.MobaoMapProfiles) MobaoMapProfiles.setSelectedProfileId(profile.id);
+            if (mapCardLabel) mapCardLabel.textContent = profile.name;
+            closeOverlay(mapSelectOverlay);
+            if (bridge && bridge.connected) {
+              bridge.send({ type: "lan:map-select", mapProfileId: profile.id, mapParams: profile.params });
+            }
+            renderLanMapList();
+          });
+          body.appendChild(card);
+        });
+      };
 
       if (modeCard) {
         modeCard.addEventListener("click", () => {
@@ -1103,7 +1212,7 @@
         lanCarryItems.forEach((item, idx) => {
           var slot = document.createElement("div");
           slot.className = "carry-item-slot";
-          slot.textContent = item.emoji || "📦";
+          slot.textContent = item.icon || "📦";
           var removeBtn = document.createElement("span");
           removeBtn.className = "carry-item-remove";
           removeBtn.textContent = "✕";
@@ -1122,19 +1231,99 @@
           var addSlot = document.createElement("div");
           addSlot.className = "carry-item-add";
           addSlot.textContent = "+";
-          addSlot.addEventListener("click", () => {
-            if (typeof window.MobaoShopPage !== "undefined") {
-              window.MobaoShopPage.init({
-                onPurchase: () => {
-                  if (bridge && bridge.connected) {
-                    bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
-                  }
-                }
-              });
-              window.MobaoShopPage.open();
+          addSlot.addEventListener("click", () => openLanCarryItemPicker());
+          carryItemsRow.appendChild(addSlot);
+        }
+      };
+
+      // 复用单机道具选择器逻辑，操作 lanCarryItems
+      var lanCarryPickerEl = null;
+      var LAN_MAX_CARRY = 3;
+
+      const openLanCarryItemPicker = () => {
+        if (lanCarryPickerEl) { lanCarryPickerEl.remove(); lanCarryPickerEl = null; }
+
+        var existingIds = new Set(lanCarryItems.map(function (i) { return i.id; }));
+        var bridge2 = window.MobaoShopBridge;
+        var inventory = bridge2 ? bridge2.getFullInventory() : {};
+        var shopItems = bridge2 ? bridge2.SHOP_ITEMS : [];
+        var available = shopItems.map(function (def) {
+          var storageKey = bridge2.getItemStorageKey(def.id);
+          return { id: def.id, name: def.name, icon: def.icon, count: inventory[storageKey] || 0 };
+        }).filter(function (item) { return item.count > 0; });
+
+        var pickerSelected = new Set(existingIds);
+
+        var overlay = document.createElement("div");
+        overlay.className = "carry-picker-overlay";
+        lanCarryPickerEl = overlay;
+
+        var panel = document.createElement("div");
+        panel.className = "carry-picker-panel";
+        overlay.appendChild(panel);
+
+        var renderPicker = function () {
+          var totalSelected = pickerSelected.size;
+          var headCount = totalSelected + " / " + LAN_MAX_CARRY;
+          panel.innerHTML =
+            '<div class="carry-picker-head">' +
+            '<h3>选择携带道具<span class="carry-picker-count">' + headCount + '</span></h3>' +
+            '<button class="carry-picker-close" type="button">\u2715</button>' +
+            '</div>' +
+            '<p class="carry-picker-sub">最多可携带 ' + LAN_MAX_CARRY + ' 个道具进入游戏</p>' +
+            '<div class="carry-picker-body"><div class="carry-picker-grid">' +
+            available.map(function (item) {
+              var isLocked = existingIds.has(item.id);
+              var isChecked = pickerSelected.has(item.id);
+              var isFull = !isChecked && totalSelected >= LAN_MAX_CARRY;
+              var cls = "carry-picker-item";
+              if (isChecked) cls += isLocked ? " locked" : " checked";
+              else if (isFull) cls += " full";
+              return '<div class="' + cls + '" data-item-id="' + item.id + '">' +
+                '<span class="carry-picker-item-icon">' + item.icon + '</span>' +
+                '<div class="carry-picker-item-info">' +
+                '<div class="carry-picker-item-name">' + item.name + '</div>' +
+                '<div class="carry-picker-item-count">库存: ' + item.count + '</div>' +
+                '</div></div>';
+            }).join("") +
+            '</div></div>' +
+            '<div class="carry-picker-foot">' +
+            '<button class="carry-picker-confirm" type="button">确认携带</button>' +
+            '</div>';
+
+          panel.querySelector(".carry-picker-close").addEventListener("click", function () { closeLanCarryItemPicker(); });
+          panel.querySelector(".carry-picker-confirm").addEventListener("click", function () {
+            lanCarryItems = available.filter(function (item) { return pickerSelected.has(item.id); })
+              .map(function (item) { return { id: item.id, name: item.name, icon: item.icon }; });
+            closeLanCarryItemPicker();
+            renderLanCarryItems();
+            if (bridge && bridge.connected) {
+              bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
             }
           });
-          carryItemsRow.appendChild(addSlot);
+          panel.querySelectorAll(".carry-picker-item").forEach(function (el) {
+            el.addEventListener("click", function () {
+              var itemId = el.dataset.itemId;
+              if (existingIds.has(itemId)) return;
+              if (pickerSelected.has(itemId)) { pickerSelected.delete(itemId); }
+              else { if (pickerSelected.size >= LAN_MAX_CARRY) return; pickerSelected.add(itemId); }
+              renderPicker();
+            });
+          });
+        };
+
+        renderPicker();
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", function (e) { if (e.target === overlay) closeLanCarryItemPicker(); });
+        requestAnimationFrame(function () { overlay.classList.add("open"); });
+      };
+
+      const closeLanCarryItemPicker = () => {
+        if (lanCarryPickerEl) {
+          lanCarryPickerEl.classList.remove("open");
+          var el = lanCarryPickerEl;
+          setTimeout(function () { el.remove(); }, 300);
+          lanCarryPickerEl = null;
         }
       };
 
@@ -1166,10 +1355,10 @@
         }
       };
 
-      const syncSlotsFromPlayers = (players) => {
+      const syncSlotsFromPlayers = (players, resetAi = false) => {
         const hostPlayer = (players || []).find((p) => p.isHost);
         const clientPlayers = (players || []).filter((p) => !p.isHost);
-        const aiSlots = lanSlotConfig.filter((s) => s.type === "ai");
+        const aiSlots = resetAi ? [] : lanSlotConfig.filter((s) => s.type === "ai");
         let idx = 0;
         if (hostPlayer) {
           lanSlotConfig[idx] = { type: "host", id: hostPlayer.id, name: hostPlayer.name, characterId: hostPlayer.characterId || null };
@@ -1225,6 +1414,7 @@
         if (roomCodeEl) roomCodeEl.textContent = msg.roomCode;
         if (hostBadge) hostBadge.classList.remove("hidden");
         if (startBtn) startBtn.classList.remove("hidden");
+        if (roomManageBtn) roomManageBtn.classList.remove("hidden");
         syncSlotsFromPlayers([{ id: msg.playerId, name: msg.playerName, isHost: true }]);
         initLanCharacterFromStorage();
         renderLanCarryItems();
@@ -1240,14 +1430,39 @@
       });
 
       bridge.on("room:joined", (msg) => {
+        this.writeLog(`加入房间 ${msg.roomCode} | players=${(msg.players || []).length} | aiSlots=${(msg.aiSlots || []).length} | map=${msg.mapProfileId || "default"}`);
         showPanel(roomPanel);
         if (roomCodeEl) roomCodeEl.textContent = msg.roomCode;
         if (hostBadge) hostBadge.classList.add("hidden");
         if (startBtn) startBtn.classList.add("hidden");
+        if (roomManageBtn) roomManageBtn.classList.add("hidden");
         syncSlotsFromPlayers(msg.players || []);
+        // 同步主机的AI座位
+        if (msg.aiSlots && msg.aiSlots.length > 0) {
+          this.writeLog(`同步AI座位: ${JSON.stringify(msg.aiSlots)}`);
+          msg.aiSlots.forEach((ai) => {
+            const emptyIdx = lanSlotConfig.findIndex((s) => s.type === "empty");
+            if (emptyIdx >= 0) {
+              lanSlotConfig[emptyIdx] = { type: "ai", name: ai.name, llm: ai.llm };
+            }
+          });
+          renderSlots();
+        }
         initLanCharacterFromStorage();
         renderLanCarryItems();
         updateModeMapCardState(false);
+        // 同步主机的地图选择
+        if (msg.mapProfileId) {
+          lanSelectedMapId = msg.mapProfileId;
+          this.writeLog(`同步地图: ${lanSelectedMapId}`);
+          if (window.MobaoMapProfiles) {
+            MobaoMapProfiles.setSelectedProfileId(lanSelectedMapId);
+          }
+          if (mapCardLabel) {
+            var profile = window.MobaoMapProfiles && MobaoMapProfiles.getProfile(lanSelectedMapId);
+            mapCardLabel.textContent = profile ? profile.name : lanSelectedMapId;
+          }
+        }
         if (bridge && bridge.connected) {
           bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
         }
@@ -1256,11 +1471,13 @@
 
       bridge.on("room:join-failed", (msg) => {
         showPanel(connectPanel);
+        showLanAlert("加入失败", msg.reason || "无法加入房间");
         setOnlineStatus("加入失败: " + msg.reason, "error");
       });
 
       bridge.on("room:kicked", () => {
         showPanel(connectPanel);
+        showLanAlert("被踢出", "你已被主机踢出房间");
         setOnlineStatus("你已被主机踢出", "error");
       });
 
@@ -1282,6 +1499,26 @@
         var slotIdx = lanSlotConfig.findIndex((s) => s.id === msg.playerId);
         if (slotIdx >= 0) {
           lanSlotConfig[slotIdx].characterId = msg.characterId;
+          renderSlots();
+        }
+      });
+
+      bridge.on("lan:map-selected", (msg) => {
+        lanSelectedMapId = msg.mapProfileId || "default";
+        if (window.MobaoMapProfiles) {
+          MobaoMapProfiles.setSelectedProfileId(lanSelectedMapId);
+        }
+        if (mapCardLabel) {
+          var profile = window.MobaoMapProfiles && MobaoMapProfiles.getProfile(lanSelectedMapId);
+          mapCardLabel.textContent = profile ? profile.name : lanSelectedMapId;
+        }
+      });
+
+      bridge.on("lan:carry-items-update", (msg) => {
+        var slotIdx = lanSlotConfig.findIndex((s) => s.id === msg.playerId);
+        if (slotIdx >= 0) {
+          lanSlotConfig[slotIdx].carryItems = msg.carryItems || [];
+          // 只更新玩家槽位显示，不渲染自己的道具列表
           renderSlots();
         }
       });
@@ -1309,6 +1546,38 @@
         bridge.disconnect();
         showPanel(connectPanel);
         setOnlineStatus("房间已解散", "");
+      });
+
+      bridge.on("lan:room:return", (msg) => {
+        this.writeLog(`主机已返回房间 | players=${(msg.players || []).length} | aiSlots=${(msg.aiSlots || []).length} | map=${msg.mapProfileId || "default"}`);
+        this.enterLanRoom();
+        // 同步座位信息，重置AI座位（因为主机已经清空了）
+        if (msg.players) {
+          syncSlotsFromPlayers(msg.players, true);
+        }
+        // 同步AI座位（应该为空，因为主机重置了）
+        if (msg.aiSlots && msg.aiSlots.length > 0) {
+          this.writeLog(`同步AI座位: ${JSON.stringify(msg.aiSlots)}`);
+          msg.aiSlots.forEach((ai) => {
+            const emptyIdx = lanSlotConfig.findIndex((s) => s.type === "empty");
+            if (emptyIdx >= 0) {
+              lanSlotConfig[emptyIdx] = { type: "ai", name: ai.name, llm: ai.llm };
+            }
+          });
+          renderSlots();
+        }
+        // 同步地图
+        if (msg.mapProfileId) {
+          lanSelectedMapId = msg.mapProfileId;
+          this.writeLog(`同步地图: ${lanSelectedMapId}`);
+          if (window.MobaoMapProfiles) {
+            MobaoMapProfiles.setSelectedProfileId(lanSelectedMapId);
+          }
+          if (mapCardLabel) {
+            var profile = window.MobaoMapProfiles && MobaoMapProfiles.getProfile(lanSelectedMapId);
+            mapCardLabel.textContent = profile ? profile.name : lanSelectedMapId;
+          }
+        }
       });
 
       bridge.on("room:player-reconnected", (msg) => {
@@ -1357,6 +1626,11 @@
           this.writeLog("连接错误，尝试重连...");
           this.onLanForeground();
         }
+      });
+
+      bridge.on("game:start-failed", (msg) => {
+        this.writeLog("游戏启动失败: " + (msg.reason || "未知原因"));
+        showLanAlert("启动失败", msg.reason || "无法启动游戏，请检查人数配置");
       });
 
       bridge.on("game:init", (msg) => {
@@ -1464,7 +1738,7 @@
         this.showLanRestartDeclinedDialog(msg.decliner);
       });
 
-      bridge.on("pause:state", (msg) => {
+      bridge.on("lan:pause:state", (msg) => {
         this.roundPaused = !!msg.paused;
         if (this.roundPaused) {
           this._pauseSnapshotTimeLeft = this.roundTimeLeft;
@@ -1676,6 +1950,11 @@
         startBtn.addEventListener("click", () => {
           const aiSlots = lanSlotConfig.filter((s) => s.type === "ai");
           const aiCount = aiSlots.length;
+          const humanCount = lanSlotConfig.filter((s) => s.type === "host" || s.type === "client").length;
+          const totalCount = humanCount + aiCount;
+
+          this.writeLog(`开始游戏 | human=${humanCount} | ai=${aiCount} | total=${totalCount}/${4}`);
+
           const aiLlmEnabled = aiSlots.some((s) => s.llm);
           const fixedAiIds = ["p1", "p3", "p4"];
           const aiPlayers = aiSlots.map((s, i) => ({
@@ -1685,6 +1964,8 @@
             isHost: false,
             llm: !!s.llm,
           }));
+
+          this.writeLog(`发送game:start | aiPlayers=${JSON.stringify(aiPlayers.map(p => p.name))}`);
           bridge.startGame({ aiCount, aiLlmEnabled, aiPlayers });
         });
       }
@@ -1826,6 +2107,14 @@
         }
       }
 
+      var playerCharacters = {};
+      this.players.forEach((p) => {
+        var lanId = this.slotIdToLanId[p.id];
+        if (lanId && p.characterId) {
+          playerCharacters[lanId] = p.characterId;
+        }
+      });
+
       return {
         playerId: targetPlayerId,
         round: this.round,
@@ -1839,9 +2128,10 @@
         playerRoundBid: this.playerRoundBid,
         wallets: wallets,
         bids: bids,
+        playerCharacters: playerCharacters,
+        mapProfileId: window.MobaoMapProfiles ? MobaoMapProfiles.getSelectedProfileId() : "default",
         warehouse: this.buildWarehouseSnapshotForSync(),
         publicInfoEntries: this.publicInfoEntries || [],
-        privateIntelEntries: this.privateIntelEntries || [],
       };
     },
 
@@ -1911,13 +2201,35 @@
         }
       }
 
+      if (msg.playerCharacters) {
+        for (var charLanId in msg.playerCharacters) {
+          var charSlotId = this.lanIdToSlotId[charLanId];
+          if (charSlotId) {
+            var cp = this.players.find(function (pl) { return pl.id === charSlotId; });
+            if (cp) {
+              cp.characterId = msg.playerCharacters[charLanId];
+              if (window.CharacterData && window.CharacterData.CHARACTERS) {
+                var charInfo = CharacterData.CHARACTERS.find(function (c) { return c.id === cp.characterId; });
+                if (charInfo) {
+                  cp.characterName = charInfo.name;
+                  cp.avatar = charInfo.avatarLabel || charInfo.name.substring(0, 2);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (msg.mapProfileId) {
+        lanSelectedMapId = msg.mapProfileId;
+        if (window.MobaoMapProfiles) {
+          MobaoMapProfiles.setSelectedProfileId(lanSelectedMapId);
+        }
+      }
+
       if (msg.publicInfoEntries) {
         this.publicInfoEntries = msg.publicInfoEntries;
         this.renderPublicInfoPanel();
-      }
-      if (msg.privateIntelEntries) {
-        this.privateIntelEntries = msg.privateIntelEntries;
-        this.renderPrivateIntelPanel();
       }
 
       this.initPlayersUI();
@@ -2104,6 +2416,20 @@
       this.stopRoundTimer();
       this.exitSettlementPage();
       this.guardWarehouseCapacity();
+
+      // 应用地图配置
+      if (window.MobaoMapProfiles) {
+        var _mapId = MobaoMapProfiles.getSelectedProfileId();
+        var profile = MobaoMapProfiles.getProfile(_mapId);
+        if (profile && profile.params) {
+          var mp = profile.params;
+          if (Number.isFinite(mp.maxRounds)) GAME_SETTINGS.maxRounds = mp.maxRounds;
+          if (Number.isFinite(mp.directTakeRatio)) GAME_SETTINGS.directTakeRatio = mp.directTakeRatio;
+          this._mapQualityWeights = mp.qualityWeights || null;
+          this._mapCategoryWeights = mp.categoryWeights || null;
+        }
+      }
+
       this.round = 1;
       this.actionsLeft = GAME_SETTINGS.actionsPerRound;
       this.roundTimeLeft = GAME_SETTINGS.roundSeconds;
@@ -2170,6 +2496,8 @@
         isHuman: !p.isAI,
         isAI: !!p.isAI,
         isSelf: !p.isAI && (p.id === this.lanBridge.playerId),
+        characterId: p.characterId || null,
+        carryItems: p.carryItems || [],
       }));
 
       this.lanIdToSlotId = {};
@@ -2182,13 +2510,33 @@
       this.lanMySlotId = this.lanIdToSlotId[this.lanBridge.playerId] || "p2";
 
       this.initPlayersUI();
-      if (this.lanAiLlmEnabled && this.lanAiPlayers.length > 0) {
+
+      // 应用角色选择到玩家数据
+      if (window.CharacterSystem) {
+        CharacterSystem.resetForNewGame();
+        this.applyCharacterToPlayer();
+      }
+      // 为其他玩家设置角色信息（从 lanPlayers 同步，game:start 已包含 characterId）
+      this.players.forEach((p) => {
+        if (p.characterId && !p.isSelf) {
+          if (window.CharacterData && window.CharacterData.CHARACTERS) {
+            var charData = CharacterData.CHARACTERS.find((c) => c.id === p.characterId);
+            if (charData) {
+              p.characterName = charData.name;
+              p.avatar = charData.avatarLabel || charData.name.substring(0, 2);
+            }
+          }
+        }
+      });
+
+      // 根据每个AI自己的llm属性设置aiLlmPlayerEnabled
+      if (this.lanAiPlayers.length > 0) {
         this.lanAiPlayers.forEach((ai) => {
           const slotId = this.lanIdToSlotId[ai.id];
           if (slotId) {
-            this.aiLlmPlayerEnabled[slotId] = true;
+            this.aiLlmPlayerEnabled[slotId] = !!ai.llm;
             const toggleEl = document.getElementById("llm-switch-" + slotId);
-            if (toggleEl) toggleEl.checked = true;
+            if (toggleEl) toggleEl.checked = !!ai.llm;
           }
         });
       }
@@ -2333,7 +2681,64 @@
       this.exitSettlementPage();
       this.startLanRun();
       this.writeLog("新一局已开始！");
-    }
+    },
+
+    tryAutoReconnect(playerId, roomCode, playerName, isHost) {
+      const bridge = this.lanBridge;
+      const $ = (id) => document.getElementById(id);
+      const connectPanel = $("lobbyOnlineConnect");
+      const roomPanel = $("lobbyOnlineRoom");
+
+      this.writeLog(`尝试自动重连 | room=${roomCode} | player=${playerId}`);
+
+      // 显示重连提示
+      if (connectPanel) connectPanel.classList.add("hidden");
+      if (roomPanel) roomPanel.classList.remove("hidden");
+      this.setOnlineStatus("正在重连...", "connecting");
+
+      bridge.reconnect("ws://localhost:9720", roomCode, playerId)
+        .then((msg) => {
+          this.writeLog(`重连成功 | room=${msg.roomCode} | state=${msg.roomState}`);
+          // 清除重连失败标记
+          localStorage.removeItem("mobao_lan_reconnect_failed");
+          this.isLanMode = true;
+          this.lanIsHost = msg.isHost;
+          this.lanPlayers = msg.players || [];
+
+          // 根据房间状态恢复界面
+          if (msg.roomState === "waiting") {
+            // 房间等待状态，恢复房间界面
+            this.enterLanRoom();
+            this.setOnlineStatus("已重连到房间 " + msg.roomCode, "connected");
+          } else if (msg.roomState === "playing") {
+            // 游戏进行中，恢复游戏界面
+            this.writeLog("游戏进行中，准备恢复游戏场景");
+            // 退出房间界面
+            this.exitLanRoom();
+            // 进入游戏场景
+            MobaoAppState.patch({ appMode: "game", gameSource: "lan" });
+            this.startLanRun();
+            this.setOnlineStatus("已重连到游戏", "connected");
+            // 请求完整同步
+            bridge.requestFullSync();
+          }
+        })
+        .catch((err) => {
+          this.writeLog(`重连失败 | ${err.message}`);
+          // 清除 localStorage
+          localStorage.removeItem("mobao_lan_player_id");
+          localStorage.removeItem("mobao_lan_room_code");
+          localStorage.removeItem("mobao_lan_player_name");
+          localStorage.removeItem("mobao_lan_is_host");
+          // 设置重连失败标记，防止反复重连
+          localStorage.setItem("mobao_lan_reconnect_failed", "true");
+
+          // 显示正常界面
+          if (connectPanel) connectPanel.classList.remove("hidden");
+          if (roomPanel) roomPanel.classList.add("hidden");
+          this.setOnlineStatus("重连失败: " + err.message, "error");
+        });
+    },
   };
 
   global.MobaoLan = global.MobaoLan || {};

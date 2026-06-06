@@ -131,13 +131,14 @@ function removePlayer(ws, immediate) {
         seat.connected = false;
         var isHostLeft = (ws.playerId === room.hostId);
 
-        if (isHostLeft && immediate && room.state === "waiting") {
+        // 主机在 waiting 状态下断开，立即删除房间
+        if (isHostLeft && room.state === "waiting") {
           broadcastToRoom(room, {
             type: "room:host-left",
             hostName: seat.name,
             message: "房主已离开房间，房间已解散",
           });
-          logRoom(ws.roomCode, "host-left", `${seat.name}(${ws.playerId}) [HOST] room destroyed`);
+          console.log(`[room:${ws.roomCode}] host-left | ${seat.name}(${ws.playerId}) [HOST] | room destroyed`);
           for (const s of room.seats) {
             const c = clients.get(s.id);
             if (c) {
@@ -152,7 +153,8 @@ function removePlayer(ws, immediate) {
           return;
         }
 
-        if (!immediate && room.state === "playing") {
+        // 游戏进行中，允许重连（设置 disconnectedAt）
+        if (room.state === "playing" && !immediate) {
           seat.disconnectedAt = Date.now();
           broadcastToRoom(room, {
             type: "room:player-left",
@@ -166,7 +168,7 @@ function removePlayer(ws, immediate) {
             canReconnect: true,
             graceMs: RECONNECT_GRACE_MS,
           });
-          logRoom(ws.roomCode, "player-left", `${seat.name}(${ws.playerId})${isHostLeft ? " [HOST]" : ""} (grace=${RECONNECT_GRACE_MS}ms)`);
+          console.log(`[room:${ws.roomCode}] player-left | ${seat.name}(${ws.playerId})${isHostLeft ? " [HOST]" : ""} | playing | grace=${RECONNECT_GRACE_MS}ms`);
 
           if (isHostLeft) {
             if (room.roundTimer) { clearTimeout(room.roundTimer); room.roundTimer = null; }
@@ -176,6 +178,7 @@ function removePlayer(ws, immediate) {
 
           scheduleGraceCleanup(room, ws.playerId);
         } else {
+          // waiting 状态下客机断开，或 playing 状态下立即清理
           broadcastToRoom(room, {
             type: "room:player-left",
             playerId: ws.playerId,
@@ -187,7 +190,16 @@ function removePlayer(ws, immediate) {
             })),
             canReconnect: false,
           });
-          logRoom(ws.roomCode, "player-left", `${seat.name}(${ws.playerId})${isHostLeft ? " [HOST]" : ""} (immediate)`);
+          console.log(`[room:${ws.roomCode}] player-left | ${seat.name}(${ws.playerId})${isHostLeft ? " [HOST]" : ""} | ${room.state} | immediate`);
+
+          // waiting 状态下立即从座位列表移除
+          if (room.state === "waiting") {
+            room.seats = room.seats.filter((s) => s.id !== ws.playerId);
+            console.log(`[room:${ws.roomCode}] seat-removed | waiting state | seats=${room.seats.length}`);
+          } else {
+            // playing 状态下标记断开时间
+            seat.disconnectedAt = Date.now();
+          }
 
           if (isHostLeft) {
             if (room.roundTimer) { clearTimeout(room.roundTimer); room.roundTimer = null; }
@@ -196,10 +208,28 @@ function removePlayer(ws, immediate) {
           }
         }
       }
-      if (room.seats.every((s) => !s.connected)) {
+      // 只有当所有座位都断开连接超过 30 秒时才删除房间
+      const now = Date.now();
+      const allDisconnected = room.seats.every((s) => !s.connected);
+      const allDisconnectedLong = room.seats.every((s) => {
+        if (s.connected) return false;
+        if (!s.disconnectedAt) return true;
+        return now - s.disconnectedAt >= 30000;
+      });
+
+      const seatsDebug = room.seats.map((s) => ({
+        id: s.id,
+        connected: s.connected,
+        disconnectedAt: s.disconnectedAt,
+        disconnectedMs: s.disconnectedAt ? (now - s.disconnectedAt) : null,
+      }));
+
+      console.log(`[room:${ws.roomCode}] removePlayer-end | player=${ws.playerId} | seats=${JSON.stringify(seatsDebug)} | allDisconnected=${allDisconnected} | allDisconnectedLong=${allDisconnectedLong}`);
+
+      if (allDisconnectedLong) {
         if (room.roundTimer) clearTimeout(room.roundTimer);
         rooms.delete(ws.roomCode);
-        logRoom(ws.roomCode, "destroyed", "all disconnected");
+        console.log(`[room:${ws.roomCode}] DESTROYED | all disconnected for 30s | aiSlots=${(room.aiSlots || []).length}`);
       }
     }
     ws.roomCode = null;
@@ -272,6 +302,9 @@ function handleRoomMessage(ws, msg) {
         isPaused: false,
         pauseRemainingMs: null,
         humanBidsThisRound: {},
+        aiSlots: [], // 初始化为空数组
+        mapProfileId: "default",
+        mapParams: null,
       });
       sendJson(ws, {
         type: "room:created",
@@ -283,7 +316,7 @@ function handleRoomMessage(ws, msg) {
         visibility,
         password: visibility === "private" ? password : undefined,
       });
-      console.log(`[room] ${code} created by ${name}(${pid}) vis=${visibility}`);
+      console.log(`[room] ${code} created by ${name}(${pid}) vis=${visibility} | aiSlots=[] mapProfileId=default`);
       break;
     }
 
@@ -294,8 +327,21 @@ function handleRoomMessage(ws, msg) {
         sendJson(ws, { type: "room:join-failed", reason: "Room not found" });
         return;
       }
-      if (room.seats.filter((s) => s.connected).length >= room.maxPlayers) {
-        sendJson(ws, { type: "room:join-failed", reason: "Room is full" });
+      // 清理断开连接超过 30 秒的座位
+      const now = Date.now();
+      room.seats = room.seats.filter((s) => {
+        if (s.connected) return true;
+        if (!s.disconnectedAt) return false;
+        return now - s.disconnectedAt < 30000;
+      });
+
+      // 计算总人数：人类 + AI
+      const humanCount = room.seats.filter((s) => s.connected).length;
+      const aiCount = (room.aiSlots || []).length;
+      const totalCount = humanCount + aiCount;
+
+      if (totalCount >= room.maxPlayers) {
+        sendJson(ws, { type: "room:join-failed", reason: "Room is full (including AI slots)" });
         return;
       }
       if (room.state !== "waiting") {
@@ -325,6 +371,9 @@ function handleRoomMessage(ws, msg) {
         players: room.seats.filter((s) => s.connected).map((s) => ({
           id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
         })),
+        mapProfileId: room.mapProfileId || "default",
+        mapParams: room.mapParams || null,
+        aiSlots: room.aiSlots || [],
       });
 
       broadcastToRoom(room, {
@@ -336,7 +385,7 @@ function handleRoomMessage(ws, msg) {
           id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
         })),
       }, pid);
-      console.log(`[room] ${name}(${pid}) joined ${code}`);
+      console.log(`[room] ${name}(${pid}) joined ${code} (total=${totalCount + 1}/${room.maxPlayers})`);
       break;
     }
 
@@ -346,19 +395,53 @@ function handleRoomMessage(ws, msg) {
     }
 
     case "room:list": {
+      const now = Date.now();
       const roomList = [];
+      const debugInfo = [];
+
       for (const [code, room] of rooms) {
+        // 清理断开连接超过 30 秒的座位
+        const beforeSeats = room.seats.length;
+        room.seats = room.seats.filter((s) => {
+          if (s.connected) return true;
+          if (!s.disconnectedAt) return false;
+          return now - s.disconnectedAt < 30000;
+        });
+        const afterSeats = room.seats.length;
+
+        const connectedCount = room.seats.filter((s) => s.connected).length;
+        const aiCount = (room.aiSlots || []).length;
+        const totalCount = connectedCount + aiCount;
+
+        debugInfo.push({
+          code,
+          state: room.state,
+          connectedCount,
+          aiCount,
+          totalCount,
+          seatsBefore: beforeSeats,
+          seatsAfter: afterSeats,
+        });
+
         if (room.state !== "waiting") continue;
-        const playerCount = room.seats.filter((s) => s.connected).length;
+        // 如果房间没有连接的玩家，跳过
+        if (connectedCount === 0) {
+          console.log(`[room:${code}] list:skip | no connected players | state=${room.state} | aiSlots=${aiCount}`);
+          continue;
+        }
+
         roomList.push({
           code,
           roomName: room.roomName || room.hostName + "的房间",
           hostName: room.hostName || "Host",
           visibility: room.visibility || "public",
-          playerCount,
+          playerCount: connectedCount,
+          aiCount: aiCount,
           maxPlayers: room.maxPlayers,
         });
       }
+
+      console.log(`[room:list] total=${rooms.size} | debug=${JSON.stringify(debugInfo)} | returned=${roomList.length}`);
       sendJson(ws, { type: "room:list", rooms: roomList });
       break;
     }
@@ -450,9 +533,24 @@ function handleRoomMessage(ws, msg) {
       if (!ws.roomCode || !ws.playerId) return;
       const slotRoom = rooms.get(ws.roomCode);
       if (!slotRoom || slotRoom.hostId !== ws.playerId) return;
+
+      const slots = msg.slots || [];
+      const beforeAiSlots = (slotRoom.aiSlots || []).length;
+
+      // 存储AI座位信息到房间
+      slotRoom.aiSlots = slots.filter((s) => s.type === "ai").map((s) => ({
+        type: "ai",
+        name: s.name,
+        llm: s.llm,
+      }));
+
+      const afterAiSlots = slotRoom.aiSlots.length;
+
+      console.log(`[room:${ws.roomCode}] slot-state | host=${ws.playerId} | slots=${slots.length} | aiSlots: ${beforeAiSlots} -> ${afterAiSlots} | detail=${JSON.stringify(slotRoom.aiSlots)}`);
+
       broadcastToRoom(slotRoom, {
         type: "room:slot-state",
-        slots: msg.slots || [],
+        slots: slots,
       }, ws.playerId);
       break;
     }
@@ -461,6 +559,29 @@ function handleRoomMessage(ws, msg) {
       if (!ws.roomCode || !ws.playerId) return;
       const room = rooms.get(ws.roomCode);
       if (!room || room.hostId !== ws.playerId) return;
+
+      const aiCount = msg.aiCount || 0;
+      const aiPlayers = msg.aiPlayers || [];
+      const humanCount = room.seats.filter((s) => s.connected).length;
+      const serverAiCount = (room.aiSlots || []).length;
+      const totalCount = humanCount + aiCount;
+
+      console.log(`[room:${ws.roomCode}] game:start | host=${ws.playerId} | human=${humanCount} | clientAI=${aiCount} | serverAI=${serverAiCount} | total=${totalCount}/${room.maxPlayers}`);
+
+      // 检查客户端发送的AI数量和服务端存储的AI数量是否一致
+      if (aiCount !== serverAiCount) {
+        console.log(`[room:${ws.roomCode}] game:start WARN | AI count mismatch: client=${aiCount} server=${serverAiCount}`);
+      }
+
+      if (totalCount > room.maxPlayers) {
+        sendJson(ws, {
+          type: "game:start-failed",
+          reason: `总人数超过限制（人类${humanCount} + AI${aiCount} = ${totalCount}，上限${room.maxPlayers}）`,
+        });
+        console.log(`[room:${ws.roomCode}] game:start FAILED | total=${totalCount} > max=${room.maxPlayers}`);
+        return;
+      }
+
       room.state = "playing";
       room.humanBidsThisRound = {};
       room.restartVotes = {};
@@ -469,16 +590,17 @@ function handleRoomMessage(ws, msg) {
         id: s.id, name: s.name, seat: i, isHost: s.isHost, characterId: s.characterId || null, carryItems: s.carryItems || [],
       }));
 
+      console.log(`[room:${ws.roomCode}] game:start SUCCESS | players=${playersInfo.length} | ai=${aiCount} | total=${totalCount}`);
+
       broadcastToRoom(room, {
         type: "lan:game:init",
         players: playersInfo,
         hostId: room.hostId,
-        aiCount: msg.aiCount || 0,
+        aiCount: aiCount,
         aiLlmEnabled: msg.aiLlmEnabled || false,
-        aiPlayers: msg.aiPlayers || [],
+        aiPlayers: aiPlayers,
         ts: Date.now(),
       });
-      logRoom(room.code, "game-start", `players=${playersInfo.length} ai=${msg.aiCount || 0}`);
       break;
     }
 
@@ -573,6 +695,56 @@ function handleRoomMessage(ws, msg) {
         ts: Date.now(),
       });
       logRoom(dRoom.code, "restart-cancelled", "declined by " + ws.playerId);
+      break;
+    }
+
+    case "room:return": {
+      if (!ws.roomCode || !ws.playerId) return;
+      const retRoom = rooms.get(ws.roomCode);
+      if (!retRoom || retRoom.hostId !== ws.playerId) return;
+
+      const beforeState = {
+        state: retRoom.state,
+        seatsCount: retRoom.seats.length,
+        aiSlotsCount: (retRoom.aiSlots || []).length,
+        connectedCount: retRoom.seats.filter((s) => s.connected).length,
+      };
+
+      retRoom.state = "waiting";
+      retRoom.humanBidsThisRound = {};
+      retRoom.restartVotes = {};
+      // 清理断开连接的玩家座位
+      retRoom.seats = retRoom.seats.filter((s) => s.connected);
+      // 重置AI座位为空（主机需要重新配置）
+      retRoom.aiSlots = [];
+      // 重置游戏相关数据
+      retRoom.mapProfileId = retRoom.mapProfileId || "default";
+      retRoom.isPaused = false;
+      retRoom.pauseRemainingMs = null;
+      if (retRoom.roundTimer) {
+        clearTimeout(retRoom.roundTimer);
+        retRoom.roundTimer = null;
+      }
+
+      const afterState = {
+        state: retRoom.state,
+        seatsCount: retRoom.seats.length,
+        aiSlotsCount: retRoom.aiSlots.length,
+        connectedCount: retRoom.seats.filter((s) => s.connected).length,
+      };
+
+      console.log(`[room:${ws.roomCode}] room:return | host=${ws.playerId} | before=${JSON.stringify(beforeState)} | after=${JSON.stringify(afterState)}`);
+
+      // 广播给客机：主机已返回房间，并附带当前座位信息
+      broadcastToRoom(retRoom, {
+        type: "lan:room:return",
+        players: retRoom.seats.filter((s) => s.connected).map((s) => ({
+          id: s.id, name: s.name, isHost: s.isHost, characterId: s.characterId || null,
+        })),
+        aiSlots: retRoom.aiSlots,
+        mapProfileId: retRoom.mapProfileId,
+        ts: Date.now(),
+      }, ws.playerId);
       break;
     }
 
@@ -817,7 +989,27 @@ function handleLanRelay(ws, msg) {
       var seat = room.seats.find((s) => s.id === ws.playerId);
       if (!seat) return;
       seat.carryItems = msg.carryItems || [];
+      broadcastToRoom(room, {
+        type: "lan:carry-items-update",
+        playerId: ws.playerId,
+        carryItems: seat.carryItems,
+        ts: Date.now(),
+      }, ws.playerId);
       logRoom(room.code, "carry-items", `${seat.name} => ${JSON.stringify(seat.carryItems)}`);
+      break;
+    }
+
+    case "lan:map-select": {
+      if (ws.playerId !== room.hostId) return;
+      room.mapProfileId = msg.mapProfileId || "default";
+      room.mapParams = msg.mapParams || null;
+      broadcastToRoom(room, {
+        type: "lan:map-selected",
+        mapProfileId: room.mapProfileId,
+        mapParams: room.mapParams,
+        ts: Date.now(),
+      }, ws.playerId);
+      logRoom(room.code, "map-select", `host => ${room.mapProfileId}`);
       break;
     }
 
@@ -998,8 +1190,9 @@ const wss = new WebSocketServer({ server });
 wss.on("connection", (ws) => {
   ws.playerId = null;
   ws.roomCode = null;
+  ws.connectedAt = Date.now();
 
-  console.log("[ws] new connection");
+  console.log(`[ws] new connection | time=${new Date().toISOString()} | totalConnections=${wss.clients.size}`);
 
   ws.on("message", (data) => {
     let msg;
@@ -1007,14 +1200,27 @@ wss.on("connection", (ws) => {
     handleMessage(ws, msg);
   });
 
-  ws.on("close", (code) => {
-    console.log("[ws] closed code=" + code + " player=" + (ws.playerId || "unknown"));
-    removePlayer(ws);
+  ws.on("close", (code, reason) => {
+    const connectionDuration = Date.now() - ws.connectedAt;
+    console.log(`[ws] closed | code=${code} reason=${reason || "none"} | player=${ws.playerId || "unknown"} | room=${ws.roomCode || "none"} | duration=${connectionDuration}ms`);
+    // 如果是主机且房间是waiting状态，立即删除房间
+    const room = ws.roomCode ? rooms.get(ws.roomCode) : null;
+    const isHost = room && room.hostId === ws.playerId;
+    const isWaiting = room && room.state === "waiting";
+    const immediate = isHost && isWaiting;
+    console.log(`[ws] close handling | isHost=${isHost} state=${room ? room.state : "none"} immediate=${immediate}`);
+    removePlayer(ws, immediate);
   });
 
   ws.on("error", (err) => {
-    console.log("[ws] error: " + err.message);
-    removePlayer(ws);
+    console.log(`[ws] error | ${err.message} | player=${ws.playerId || "unknown"} | room=${ws.roomCode || "none"}`);
+    // 如果是主机且房间是waiting状态，立即删除房间
+    const room = ws.roomCode ? rooms.get(ws.roomCode) : null;
+    const isHost = room && room.hostId === ws.playerId;
+    const isWaiting = room && room.state === "waiting";
+    const immediate = isHost && isWaiting;
+    console.log(`[ws] error handling | isHost=${isHost} state=${room ? room.state : "none"} immediate=${immediate}`);
+    removePlayer(ws, immediate);
   });
 });
 

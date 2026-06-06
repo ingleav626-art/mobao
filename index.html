@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="./styles/game/_animations.css" />
   <link rel="stylesheet" href="./styles/game/mobile-landscape.css" />
   <link rel="stylesheet" href="./styles/lobby/lobby.css" />
+  <link rel="stylesheet" href="./styles/lobby/lan-room.css" />
   <link rel="stylesheet" href="./styles/lobby/mobile-lobby.css" />
   <script src="./lib/phaser.min.js"></script>
   <style>
@@ -251,9 +252,11 @@
         <div class="lan-room-header">
           <button class="lobby-back-btn" id="lobbyOnlineLeaveBtn" type="button">← 返回</button>
           <div class="lan-room-header-center">
-            <span class="lan-room-title">联机房间</span>
-            <span class="lan-room-code" id="lobbyOnlineRoomCode"></span>
-            <button class="lobby-copy-room-btn" id="lobbyCopyRoomBtn" type="button" title="复制房间号">📋</button>
+            <div>
+              <span class="lan-room-title">联机房间</span>
+              <span class="lan-room-code" id="lobbyOnlineRoomCode"></span>
+              <button class="lobby-copy-room-btn" id="lobbyCopyRoomBtn" type="button" title="复制房间号">📋</button>
+            </div>
           </div>
           <div class="lan-room-header-actions">
             <button class="lan-header-btn" id="lanRoomManageBtn" type="button">⚙ 房间管理</button>
@@ -348,6 +351,21 @@
           </div>
           <div class="lan-map-select-body" id="lanMapSelectBody">
             <div class="lan-map-placeholder">地图选择功能开发中...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lan-overlay hidden" id="lanAlertOverlay">
+        <div class="lan-overlay-panel lan-alert-panel">
+          <div class="lan-overlay-head">
+            <h3 id="lanAlertTitle">提示</h3>
+            <button class="lan-overlay-close" id="lanAlertCloseBtn" type="button">✕</button>
+          </div>
+          <div class="lan-alert-body" id="lanAlertBody">
+            <p id="lanAlertMessage"></p>
+          </div>
+          <div class="lan-alert-footer">
+            <button class="lan-alert-btn" id="lanAlertOkBtn" type="button">确定</button>
           </div>
         </div>
       </div>

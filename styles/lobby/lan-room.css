@@ -1,0 +1,919 @@
+/* ── 联机房间样式 ── */
+/* 移动端为默认样式，桌面端通过 @media (min-width: 768px) 覆盖 */
+
+/* ── 顶部导航栏 ── */
+
+.lan-room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(90, 74, 58, 0.4);
+  gap: 8px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.lan-room-header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.lan-room-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f4dec0;
+}
+
+.lan-room-code {
+  font-size: 16px;
+  font-weight: 800;
+  color: #d4a843;
+  letter-spacing: 2px;
+}
+
+.lan-room-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lan-header-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(90, 74, 58, 0.6);
+  background: rgba(0, 0, 0, 0.2);
+  color: #c0a878;
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+
+.lan-header-btn:hover {
+  border-color: #d4a843;
+  background: rgba(212, 168, 67, 0.1);
+  color: #d4a843;
+}
+
+/* ── 三栏布局（移动端垂直排列） ── */
+
+.lan-room-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 10px;
+  padding: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+.lan-room-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
+}
+
+.lan-room-center {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lan-room-right {
+  flex-shrink: 0;
+}
+
+/* ── 角色立绘区 ── */
+
+.lan-portrait-area {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(90, 74, 58, 0.5);
+  background: linear-gradient(165deg, rgba(30, 22, 14, 0.5), rgba(20, 15, 10, 0.7));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+}
+
+.lan-portrait-area:hover {
+  border-color: rgba(212, 168, 67, 0.5);
+  box-shadow: 0 0 20px rgba(212, 168, 67, 0.08);
+}
+
+.lan-portrait-area.has-character {
+  border-color: transparent;
+  background: transparent;
+  overflow: visible;
+  z-index: 10;
+}
+
+.lan-portrait-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 1;
+}
+
+.lan-portrait-area.has-character .lan-portrait-placeholder {
+  display: none;
+}
+
+.lan-portrait-plus {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.lan-portrait-area:hover .lan-portrait-plus {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.lan-portrait-hint {
+  font-size: 11px;
+  color: rgba(192, 168, 120, 0.5);
+}
+
+.lan-portrait-live2d {
+  position: absolute;
+  width: 300px;
+  left: 50%;
+  margin-left: -150px;
+  top: -20px;
+  bottom: -30px;
+  display: none;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.lan-portrait-area.has-character .lan-portrait-live2d {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.lan-live2d-video {
+  position: absolute;
+  width: 100%;
+  height: 115%;
+  object-fit: contain;
+  object-position: bottom center;
+  opacity: 0;
+}
+
+.lan-live2d-video.active {
+  opacity: 1;
+}
+
+.lan-portrait-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #d4a843;
+  text-align: center;
+}
+
+/* ── 模式/地图卡片 ── */
+
+.lan-mode-map-row {
+  display: flex;
+  gap: 8px;
+}
+
+.lan-mode-card,
+.lan-map-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(90, 74, 58, 0.5);
+  background: linear-gradient(135deg, rgba(35, 27, 18, 0.5), rgba(25, 19, 12, 0.6));
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.lan-mode-card:hover,
+.lan-map-card:hover {
+  border-color: rgba(212, 168, 67, 0.5);
+  background: linear-gradient(135deg, rgba(42, 32, 20, 0.6), rgba(30, 23, 15, 0.7));
+}
+
+.lan-mode-card.disabled,
+.lan-map-card.disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.lan-mode-card.disabled:hover,
+.lan-map-card.disabled:hover {
+  border-color: rgba(90, 74, 58, 0.5);
+  background: linear-gradient(135deg, rgba(35, 27, 18, 0.5), rgba(25, 19, 12, 0.6));
+}
+
+.lan-mode-card-img,
+.lan-map-card-img {
+  width: 60px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.lan-mode-placeholder-icon,
+.lan-map-placeholder-icon {
+  font-size: 22px;
+  opacity: 0.7;
+}
+
+.lan-mode-card-label,
+.lan-map-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #c0a878;
+}
+
+/* ── 道具携带区 ── */
+
+.lan-carry-section {
+  background: linear-gradient(165deg, rgba(30, 22, 14, 0.5), rgba(20, 15, 10, 0.65));
+  border: 1px solid rgba(90, 74, 58, 0.4);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.lan-carry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.lan-carry-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #d4a843;
+}
+
+/* ── 开始游戏 ── */
+
+.lan-start-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 4px;
+  margin-top: 20px;
+}
+
+/* ── 玩家列表 ── */
+
+.lan-player-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.lan-player-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px 8px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(90, 74, 58, 0.5);
+  background: rgba(0, 0, 0, 0.15);
+  position: relative;
+  min-height: 80px;
+  transition: border-color 0.2s;
+}
+
+.lan-player-slot.slot-host {
+  border-color: rgba(212, 168, 67, 0.6);
+  background: rgba(212, 168, 67, 0.05);
+}
+
+.lan-player-slot.slot-client {
+  border-color: rgba(106, 159, 90, 0.5);
+  background: rgba(106, 159, 90, 0.04);
+}
+
+.lan-player-slot.slot-ai {
+  border-color: rgba(122, 106, 154, 0.5);
+  background: rgba(122, 106, 154, 0.04);
+}
+
+.lan-player-slot.slot-empty {
+  border-style: dashed;
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.lan-player-slot.slot-empty:hover {
+  opacity: 0.8;
+  border-color: rgba(212, 168, 67, 0.5);
+}
+
+.lan-slot-kick {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(180, 60, 40, 0.5);
+  background: rgba(180, 60, 40, 0.15);
+  color: #e07060;
+  font-size: 9px;
+  line-height: 16px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.lan-player-slot:hover .lan-slot-kick {
+  opacity: 1;
+}
+
+.lan-slot-kick:hover {
+  background: rgba(180, 60, 40, 0.4);
+}
+
+.lan-slot-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(90, 74, 58, 0.6);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 4px;
+}
+
+.lan-slot-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lan-slot-avatar .lan-avatar-emoji {
+  font-size: 18px;
+}
+
+.lan-slot-avatar .lan-avatar-plus {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.lan-slot-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f4dec0;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lan-slot-tag {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.lan-slot-tag.tag-host {
+  background: rgba(212, 168, 67, 0.2);
+  color: #d4a843;
+}
+
+.lan-slot-tag.tag-client {
+  background: rgba(106, 159, 90, 0.2);
+  color: #6a9f5a;
+}
+
+.lan-slot-tag.tag-ai {
+  background: rgba(122, 106, 154, 0.2);
+  color: #9a8aba;
+}
+
+.lan-slot-llm {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.lan-slot-llm input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  accent-color: #9a8aba;
+  cursor: pointer;
+}
+
+.lan-slot-llm-label {
+  font-size: 9px;
+  color: #9a8aba;
+  cursor: pointer;
+}
+
+/* ── 联机弹窗通用 ── */
+
+.lan-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.lan-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lan-overlay-panel {
+  background: linear-gradient(165deg, rgba(30, 22, 14, 0.97), rgba(20, 15, 10, 0.98));
+  border: 1px solid rgba(90, 74, 58, 0.6);
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.lan-overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(74, 58, 42, 0.4);
+}
+
+.lan-overlay-head h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #d4a843;
+  font-weight: 700;
+}
+
+.lan-overlay-close {
+  background: none;
+  border: none;
+  color: #c0a878;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lan-overlay-close:hover {
+  background: rgba(180, 60, 40, 0.15);
+  color: #e07060;
+}
+
+/* ── 角色选择弹窗 ── */
+
+.lan-character-panel {
+  width: 92vw;
+  max-width: 520px;
+}
+
+.lan-character-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.lan-char-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(74, 58, 42, 0.5);
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.lan-char-card:hover {
+  border-color: rgba(106, 90, 74, 0.8);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.lan-char-card.selected {
+  border-color: rgba(212, 168, 67, 0.7);
+  background: rgba(212, 168, 67, 0.08);
+}
+
+.lan-char-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lan-char-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lan-char-avatar .lan-char-avatar-emoji {
+  font-size: 18px;
+}
+
+.lan-char-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lan-char-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f4dec0;
+  margin-bottom: 2px;
+}
+
+.lan-char-skill {
+  font-size: 10px;
+  color: #d4a843;
+  margin-bottom: 1px;
+}
+
+.lan-char-passive {
+  font-size: 10px;
+  color: #8a7a60;
+}
+
+/* ── 房间管理弹窗 ── */
+
+.lan-manage-panel {
+  width: 92vw;
+  max-width: 400px;
+}
+
+.lan-manage-placeholder {
+  padding: 20px;
+  color: #a09070;
+  text-align: center;
+}
+
+/* ── 提示弹窗 ── */
+
+.lan-alert-panel {
+  width: 92vw;
+  max-width: 360px;
+  padding: 0;
+}
+
+.lan-alert-body {
+  padding: 20px;
+  text-align: center;
+}
+
+.lan-alert-body p {
+  margin: 0;
+  color: #c0a878;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.lan-alert-footer {
+  padding: 12px 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.lan-alert-btn {
+  padding: 8px 24px;
+  border-radius: 6px;
+  border: 1px solid #d4a843;
+  background: rgba(212, 168, 67, 0.15);
+  color: #d4a843;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.lan-alert-btn:hover {
+  background: rgba(212, 168, 67, 0.25);
+  color: #f4dec0;
+}
+
+.lan-manage-body {
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.lan-manage-placeholder,
+.lan-map-placeholder {
+  text-align: center;
+  padding: 30px 16px;
+  color: #8a7a60;
+  font-size: 13px;
+}
+
+/* ── 地图选择弹窗 ── */
+
+.lan-map-panel {
+  width: 92vw;
+  max-width: 480px;
+}
+
+.lan-map-select-body {
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.lan-map-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(74, 58, 42, 0.5);
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 6px;
+}
+
+.lan-map-item:hover {
+  border-color: rgba(106, 90, 74, 0.8);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.lan-map-item.selected {
+  border-color: rgba(212, 168, 67, 0.7);
+  background: rgba(212, 168, 67, 0.08);
+}
+
+.lan-map-item-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.lan-map-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lan-map-item-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f4dec0;
+  margin-bottom: 1px;
+}
+
+.lan-map-item-desc {
+  font-size: 11px;
+  color: #c0a878;
+  margin-bottom: 1px;
+}
+
+.lan-map-item-params {
+  font-size: 10px;
+  color: #8a7a60;
+}
+
+/* ── 联机房间覆盖旧样式 ── */
+
+.lobby-online-room {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0;
+  align-self: stretch;
+}
+
+.lan-room-active {
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+/* ══════════════════════════════════════════════
+   桌面端适配 (min-width: 768px)
+   三栏水平布局，高度对齐无留白
+   ══════════════════════════════════════════════ */
+
+@media (min-width: 768px) {
+  .lan-room-body {
+    flex-direction: row;
+    gap: 14px;
+    padding: 12px 12px 0 12px;
+    overflow: visible;
+    align-items: flex-start;
+  }
+
+  .lan-room-left {
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 12px;
+  }
+
+  .lan-portrait-area {
+    height: 280px;
+    flex: none;
+  }
+
+  .lan-portrait-plus {
+    width: 56px;
+    height: 56px;
+    font-size: 28px;
+  }
+
+  .lan-portrait-live2d {
+    width: 360px;
+    margin-left: -180px;
+  }
+
+  .lan-room-center {
+    flex: 1;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+
+  .lan-mode-card,
+  .lan-map-card {
+    padding: 10px 8px;
+  }
+
+  .lan-mode-card-img,
+  .lan-map-card-img {
+    width: 64px;
+    height: 44px;
+  }
+
+  .lan-mode-placeholder-icon,
+  .lan-map-placeholder-icon {
+    font-size: 22px;
+  }
+
+  .lan-mode-card-label,
+  .lan-map-card-label {
+    font-size: 11px;
+  }
+
+  .lan-carry-section {
+    padding: 8px;
+  }
+
+  .lan-carry-title {
+    font-size: 11px;
+  }
+
+  .lan-room-right {
+    width: 240px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lan-player-grid {
+    gap: 8px;
+    align-content: start;
+  }
+
+  .lan-player-slot {
+    min-height: 80px;
+    padding: 10px 6px 8px;
+  }
+
+  .lan-slot-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .lan-slot-avatar .lan-avatar-emoji {
+    font-size: 20px;
+  }
+
+  .lan-slot-name {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lan-room-body {
+    gap: 16px;
+    padding: 14px;
+  }
+
+  .lan-room-left {
+    width: 280px;
+  }
+
+  .lan-portrait-area {
+    height: 400px;
+  }
+
+  .lan-portrait-live2d {
+    width: 420px;
+    margin-left: -210px;
+  }
+
+  .lan-room-right {
+    width: 280px;
+  }
+
+  .lan-player-grid {
+    gap: 10px;
+  }
+
+  .lan-player-slot {
+    padding: 12px 8px 10px;
+    min-height: 90px;
+  }
+
+  .lan-slot-avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .lan-slot-avatar .lan-avatar-emoji {
+    font-size: 22px;
+  }
+
+  .lan-slot-name {
+    font-size: 12px;
+  }
+
+  .lan-header-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+  }
+
+  .lan-mode-card,
+  .lan-map-card {
+    padding: 12px 10px;
+  }
+
+  .lan-mode-card-img,
+  .lan-map-card-img {
+    width: 72px;
+    height: 52px;
+  }
+}

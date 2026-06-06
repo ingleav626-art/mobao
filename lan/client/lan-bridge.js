@@ -246,6 +246,12 @@
     this.send({ type: "room:leave" });
     this.roomCode = null;
     this.isHost = false;
+    // 清除 localStorage
+    localStorage.removeItem("mobao_lan_player_id");
+    localStorage.removeItem("mobao_lan_room_code");
+    localStorage.removeItem("mobao_lan_player_name");
+    localStorage.removeItem("mobao_lan_is_host");
+    LanBridgeLog("info", "Left room, cleared localStorage");
   };
 
   LanBridge.prototype.startGame = function (options) {
@@ -318,7 +324,13 @@
         this.playerId = msg.playerId;
         this.roomCode = msg.roomCode;
         this.isHost = true;
-        LanBridgeLog("info", "Room created: " + msg.roomCode);
+        // 保存到 localStorage 用于重连
+        localStorage.setItem("mobao_lan_player_id", msg.playerId);
+        localStorage.setItem("mobao_lan_room_code", msg.roomCode);
+        localStorage.setItem("mobao_lan_player_name", this.playerName);
+        localStorage.setItem("mobao_lan_is_host", "true");
+        localStorage.removeItem("mobao_lan_reconnect_failed");
+        LanBridgeLog("info", "Room created: " + msg.roomCode + " (saved to localStorage)");
         this._emit("room:created", msg);
         break;
 
@@ -326,13 +338,42 @@
         this.playerId = msg.playerId;
         this.roomCode = msg.roomCode;
         this.isHost = false;
-        LanBridgeLog("info", "Joined room: " + msg.roomCode);
+        // 保存到 localStorage 用于重连
+        localStorage.setItem("mobao_lan_player_id", msg.playerId);
+        localStorage.setItem("mobao_lan_room_code", msg.roomCode);
+        localStorage.setItem("mobao_lan_player_name", this.playerName);
+        localStorage.setItem("mobao_lan_is_host", "false");
+        localStorage.removeItem("mobao_lan_reconnect_failed");
+        LanBridgeLog("info", "Joined room: " + msg.roomCode + " (saved to localStorage)");
         this._emit("room:joined", msg);
         break;
 
       case "room:join-failed":
         LanBridgeLog("error", "Join failed: " + msg.reason);
+        // 清除 localStorage
+        localStorage.removeItem("mobao_lan_player_id");
+        localStorage.removeItem("mobao_lan_room_code");
+        localStorage.removeItem("mobao_lan_player_name");
+        localStorage.removeItem("mobao_lan_is_host");
         this._emit("room:join-failed", msg);
+        break;
+
+      case "room:reconnected":
+        this.playerId = msg.playerId;
+        this.roomCode = msg.roomCode;
+        this.isHost = msg.isHost;
+        LanBridgeLog("info", "Reconnected to room " + msg.roomCode);
+        this._emit("room:reconnected", msg);
+        break;
+
+      case "room:reconnect-failed":
+        // 清除 localStorage
+        localStorage.removeItem("mobao_lan_player_id");
+        localStorage.removeItem("mobao_lan_room_code");
+        localStorage.removeItem("mobao_lan_player_name");
+        localStorage.removeItem("mobao_lan_is_host");
+        LanBridgeLog("error", "Reconnect failed: " + msg.reason);
+        this._emit("room:reconnect-failed", msg);
         break;
 
       case "room:player-joined":
@@ -360,19 +401,6 @@
       case "room:player-removed":
         LanBridgeLog("warn", msg.playerName + " removed (grace expired)");
         this._emit("room:player-removed", msg);
-        break;
-
-      case "room:reconnected":
-        this.playerId = msg.playerId;
-        this.roomCode = msg.roomCode;
-        this.isHost = msg.isHost;
-        LanBridgeLog("info", "Reconnected to room " + msg.roomCode);
-        this._emit("room:reconnected", msg);
-        break;
-
-      case "room:reconnect-failed":
-        LanBridgeLog("error", "Reconnect failed: " + msg.reason);
-        this._emit("room:reconnect-failed", msg);
         break;
 
       case "room:kicked":
@@ -478,7 +506,7 @@
 
       case "lan:pause:state":
         LanBridgeLog("info", "Pause: " + msg.paused);
-        this._emit("pause:state", msg);
+        this._emit("lan:pause:state", msg);
         break;
 
       case "lan:pong":
@@ -495,6 +523,31 @@
       case "lan:full-sync":
         LanBridgeLog("info", "Full sync received");
         this._emit("full-sync", msg);
+        break;
+
+      case "lan:map-selected":
+        LanBridgeLog("info", "Map selected: " + msg.mapProfileId);
+        this._emit("lan:map-selected", msg);
+        break;
+
+      case "lan:character-selected":
+        LanBridgeLog("info", "Character selected by " + msg.playerId);
+        this._emit("lan:character-selected", msg);
+        break;
+
+      case "lan:carry-items-update":
+        LanBridgeLog("info", "Carry items update from " + msg.playerId);
+        this._emit("lan:carry-items-update", msg);
+        break;
+
+      case "lan:room:return":
+        LanBridgeLog("info", "Host returned to room");
+        this._emit("lan:room:return", msg);
+        break;
+
+      case "game:start-failed":
+        LanBridgeLog("error", "Game start failed: " + msg.reason);
+        this._emit("game:start-failed", msg);
         break;
 
       case "chat":

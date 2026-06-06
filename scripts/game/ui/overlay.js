@@ -525,6 +525,8 @@
     },
 
     showLanPauseOverlay() {
+      // 只在游戏场景显示暂停弹窗
+      if (!this.isLanMode || this.settled || !this.dom.hud) return;
       let overlay = document.getElementById("lanPauseOverlay");
       if (overlay) return;
       overlay = document.createElement("div");
