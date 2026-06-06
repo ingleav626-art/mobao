@@ -110,7 +110,10 @@
         if (avatarEl) {
           this.updatePlayerAvatar(player.id, avatarEl);
         }
-        // 同步更新角色名字（name-p* 和 .avatar-char-name）
+        // 保持玩家名字为"左上AI"等，不改为角色名
+        const nameEl = document.getElementById(`name-${player.id}`);
+        if (nameEl) nameEl.textContent = player.name;
+        // 更新头像下方的角色名标签
         let charName = "";
         if (player.isHuman) {
           const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter();
@@ -119,9 +122,6 @@
           const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[player.id];
           if (charAssign && charAssign.characterName) charName = charAssign.characterName;
         }
-        const nameEl = document.getElementById(`name-${player.id}`);
-        if (nameEl && charName) nameEl.textContent = charName;
-        // 更新 .avatar-char-name 标签
         if (avatarEl && charName) {
           let wrap = avatarEl.parentElement;
           if (wrap && wrap.classList.contains("avatar-wrap")) {

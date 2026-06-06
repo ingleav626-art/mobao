@@ -275,12 +275,18 @@
       this.lanIdToSlotId = {};
       this.slotIdToLanId = {};
       this.lanMySlotId = null;
+      // 重置AI LLM状态，避免被联机模式污染，然后从localStorage加载单机模式的状态
+      this.aiLlmPlayerEnabled = {};
       this.players = [
         { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
         { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
         { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
         { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
       ];
+      // 从localStorage加载单机模式的AI LLM开关状态
+      if (typeof LLM_BRIDGE !== "undefined" && LLM_BRIDGE.loadAiLlmPlayerSwitches) {
+        this.aiLlmPlayerEnabled = LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players);
+      }
       this.initPlayersUI();
       this.showLobbyMain(true);
       this.updateLobbyMoneyDisplay();
@@ -322,6 +328,13 @@
       if (typeof AudioManager !== "undefined") {
         AudioManager.stopBgm();
         AudioManager.playBgm("lobby");
+      }
+      // 房主返回房间时，通知客机也返回房间
+      if (this.isLanMode && this.lanIsHost && this.lanBridge) {
+        const sent = this.lanBridge.send({ type: "room:return" });
+        if (!sent) {
+          this.writeLog("连接已断开，无法通知客机返回房间");
+        }
       }
     },
 

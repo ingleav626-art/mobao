@@ -530,8 +530,9 @@
       const useProxyEndpoint = isProxyEndpoint(mergedSettings.endpoint);
       const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.getServerUrl);
       const useNativeProxy = isNativeEnv && window.NativeBridge.llmProxyAsync;
+      const isLocalEndpoint = /^(https?:\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?\//i.test(mergedSettings.endpoint || "");
 
-      if (!mergedSettings.apiKey && !(useProxyEndpoint && !useNativeProxy)) {
+      if (!mergedSettings.apiKey && !(useProxyEndpoint && !useNativeProxy) && !isLocalEndpoint) {
         console.log("[requestChat] BLOCKED: missing_api_key");
         base.log("warn", "request.blocked", { reason: "missing_api_key" });
         return {

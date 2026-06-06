@@ -212,7 +212,7 @@
 @media (pointer: coarse) {
   .char-live2d-overlay {
     position: absolute;
-    top: -15px;
+    top: -25px;
     left: 25px;
     width: 200px;
     height: 400px;
@@ -248,7 +248,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .overlay-live2d-video {
