@@ -290,7 +290,8 @@
   }
 
   .preview-list {
-    max-height: 160px;
+    /* 移除 max-height，让滚动发生在父容器 preview-popover 上 */
+    /* max-height: 160px; */
   }
 
   .bid-keypad {
