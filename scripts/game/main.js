@@ -934,19 +934,27 @@ class WarehouseScene extends Phaser.Scene {
         this.renderPreviewCandidates(this.selectedItem);
       }
     });
-    // 修复：select 展开下拉时需要临时让 popover overflow visible，否则下拉被裁切
+    // 修复：select 展开下拉时需要临时让父容器 overflow visible，否则下拉被裁切
+    // preview-popover 和 #game-root 都有 overflow 限制，需要同时放开
+    const _previewOverflowEls = () => {
+      const popover = this.dom.previewCategorySelect.closest(".preview-popover");
+      const gameRoot = document.getElementById("game-root");
+      return [popover, gameRoot].filter(Boolean);
+    };
     this.dom.previewCategorySelect.addEventListener("mousedown", () => {
-      const popover = this.dom.previewCategorySelect.closest(".preview-popover");
-      if (popover) popover.style.overflow = "visible";
+      _previewOverflowEls().forEach((el) => {
+        el.dataset.prevOverflow = el.style.overflow || "";
+        el.style.overflow = "visible";
+      });
     });
-    this.dom.previewCategorySelect.addEventListener("change", () => {
-      const popover = this.dom.previewCategorySelect.closest(".preview-popover");
-      if (popover) popover.style.overflow = "";
-    });
-    this.dom.previewCategorySelect.addEventListener("blur", () => {
-      const popover = this.dom.previewCategorySelect.closest(".preview-popover");
-      if (popover) popover.style.overflow = "";
-    });
+    const _restoreOverflow = () => {
+      _previewOverflowEls().forEach((el) => {
+        el.style.overflow = el.dataset.prevOverflow || "";
+        delete el.dataset.prevOverflow;
+      });
+    };
+    this.dom.previewCategorySelect.addEventListener("change", _restoreOverflow);
+    this.dom.previewCategorySelect.addEventListener("blur", _restoreOverflow);
 
     this.dom.settingsCloseBtn.addEventListener("click", () => this.closeSettingsOverlay(false));
     this.dom.settingsResetBtn.addEventListener("click", () => {

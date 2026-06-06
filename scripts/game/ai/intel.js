@@ -110,15 +110,29 @@
         if (avatarEl) {
           this.updatePlayerAvatar(player.id, avatarEl);
         }
-        // 同步更新角色名字
+        // 同步更新角色名字（name-p* 和 .avatar-char-name）
+        let charName = "";
+        if (player.isHuman) {
+          const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter();
+          if (char && char.name) charName = char.name;
+        } else {
+          const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[player.id];
+          if (charAssign && charAssign.characterName) charName = charAssign.characterName;
+        }
         const nameEl = document.getElementById(`name-${player.id}`);
-        if (nameEl) {
-          if (player.isHuman) {
-            const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter();
-            if (char && char.name) nameEl.textContent = char.name;
-          } else {
-            const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[player.id];
-            if (charAssign && charAssign.characterName) nameEl.textContent = charAssign.characterName;
+        if (nameEl && charName) nameEl.textContent = charName;
+        // 更新 .avatar-char-name 标签
+        if (avatarEl && charName) {
+          let wrap = avatarEl.parentElement;
+          if (wrap && wrap.classList.contains("avatar-wrap")) {
+            let nameTag = wrap.querySelector(".avatar-char-name");
+            if (!nameTag) {
+              nameTag = document.createElement("div");
+              nameTag.className = "avatar-char-name";
+              wrap.appendChild(nameTag);
+            }
+            nameTag.textContent = charName;
+            nameTag.style.display = "";
           }
         }
       });
