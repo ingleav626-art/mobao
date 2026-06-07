@@ -30,8 +30,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: '0.0.0.0',  // 允许局域网访问，手机端调试用
     open: true,
     proxy: {
+      // 联机请求直连 9720（ws:// / http://），此代理为备用
       '/api': 'http://localhost:9720'
     }
   }
