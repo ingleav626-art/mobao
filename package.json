@@ -4,6 +4,9 @@
   "private": true,
   "description": "仓库摸宝 — 盲拍竞猜游戏",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "server": "node lan/server/server.js",
     "lint": "eslint scripts/",
     "format": "prettier --check scripts/",
@@ -16,6 +19,7 @@
     "@eslint/js": "^10.0.1",
     "eslint": "^10.4.1",
     "globals": "^17.6.0",
-    "prettier": "^3.8.3"
+    "prettier": "^3.8.3",
+    "vite": "^5.4.21"
   }
 }
