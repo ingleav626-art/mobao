@@ -2113,268 +2113,44 @@ class WarehouseScene extends Phaser.Scene {
   }
 
   buildBidHistorySnapshot() {
-    const rounds = Array.from({ length: Math.max(0, this.round - 1) }, (_v, idx) => idx + 1)
-    return rounds.map((roundNo) => {
-      const bids = {}
-      this.players.forEach((player) => {
-        const records = this.playerRoundHistory[player.id] || []
-        const entry = records.find((record) => record.round === roundNo)
-        bids[player.id] = entry ? Math.round(Number(entry.bid) || 0) : 0
-      })
-      return {
-        round: roundNo,
-        bids
-      }
-    })
+    return window.MobaoContextBuilder.buildBidHistorySnapshot(this.round, this.players, this.playerRoundHistory)
   }
 
   buildPublicEventSnapshot(options = {}) {
-    const compact = Boolean(options.compact)
-    const viewerId = options.viewerId || ""
-    const events = []
-
-    const pushEventsFromUsage = (usageMap, stageLabelBuilder) => {
-      this.players.forEach((player) => {
-        if (viewerId && player.id === viewerId) {
-          return
-        }
-        const list = usageMap[player.id] || []
-        list.forEach((entry) => {
-          const stage = stageLabelBuilder(entry.round)
-          const actionIds = Array.isArray(entry.actions) ? entry.actions : []
-          actionIds.forEach((actionId) => {
-            const def = this.getActionDefById(actionId)
-            events.push({
-              stage,
-              playerId: player.id,
-              playerName: player.name,
-              actionType: def.type,
-              actionName: def.name,
-              actionId,
-              ...(compact ? {} : { effectText: def.description }),
-              resultPublic: false,
-              publicResult: null
-            })
-          })
-        })
-      })
-    }
-
-    pushEventsFromUsage(this.playerUsageHistory, (roundNo) => `第 ${roundNo} 轮出价后`)
-
-    this.players.forEach((player) => {
-      if (viewerId && player.id === viewerId) {
-        return
-      }
-      const actionIds = this.currentRoundUsage[player.id] || []
-      actionIds.forEach((actionId) => {
-        const def = this.getActionDefById(actionId)
-        events.push({
-          stage: `第 ${this.round} 轮出价前`,
-          playerId: player.id,
-          playerName: player.name,
-          actionType: def.type,
-          actionName: def.name,
-          actionId,
-          ...(compact ? {} : { effectText: def.description }),
-          resultPublic: false,
-          publicResult: null
-        })
-      })
-    })
-
-    if (this.currentPublicEvent) {
-      events.push({
-        stage: "开局",
-        playerId: "system",
-        playerName: "系统",
-        actionType: "public-event",
-        actionName: this.currentPublicEvent.category,
-        actionId: this.currentPublicEvent.id,
-        ...(compact ? {} : { effectText: this.currentPublicEvent.text }),
-        resultPublic: true,
-        publicResult: this.currentPublicEvent.text
-      })
-    }
-
-    return events.slice(-30)
+    return window.MobaoContextBuilder.buildPublicEventSnapshot(
+      this.players, this.playerUsageHistory, this.currentRoundUsage, this.round,
+      this.getActionDefById.bind(this), this.currentPublicEvent, options
+    )
   }
 
   buildRoundPublicStateTable(viewerId) {
-    const bidHistory = this.buildBidHistorySnapshot()
-    const bidByRound = new Map(bidHistory.map((entry) => [entry.round, entry.bids || {}]))
-    const actionPlayers = this.players.filter((player) => player.id !== viewerId)
-
-    const columns = [
-      "round_no",
-      "round_stage",
-      ...this.players.map((player) => `${player.id}_bid_value`),
-      ...actionPlayers.map((player) => `${player.id}_public_action_ids`)
-    ]
-
-    const rows = []
-    const maxRound = Math.max(0, this.round)
-    for (let roundNo = 1; roundNo <= maxRound; roundNo += 1) {
-      const isCurrentRound = roundNo === this.round
-      const stage = isCurrentRound ? "pre_bid_current_round" : "post_bid"
-      const roundBidMap = bidByRound.get(roundNo) || {}
-
-      const bidValues = this.players.map((player) => {
-        if (isCurrentRound) {
-          return null
-        }
-        return Math.round(Number(roundBidMap[player.id]) || 0)
-      })
-
-      const actionValues = actionPlayers.map((player) => {
-        const actionIds = isCurrentRound
-          ? this.currentRoundUsage[player.id] || []
-          : (this.playerUsageHistory[player.id] || []).find((entry) => entry.round === roundNo)?.actions || []
-        if (!Array.isArray(actionIds) || actionIds.length === 0) {
-          return "none"
-        }
-        return actionIds.join("|")
-      })
-
-      rows.push([roundNo, stage, ...bidValues, ...actionValues])
-    }
-
-    return {
-      columns,
-      rows
-    }
+    return window.MobaoContextBuilder.buildRoundPublicStateTable(
+      this.round, this.players, this.playerRoundHistory,
+      this.currentRoundUsage, this.playerUsageHistory, viewerId
+    )
   }
 
   buildQualityPriceRangeTableCompact() {
-    const columns = ["quality_key", "quality_name", "min_price", "max_price", "avg_price"]
-    const rows = Object.keys(QUALITY_CONFIG).map((qualityKey) => {
-      const entries = ARTIFACT_LIBRARY.filter((artifact) => artifact.qualityKey === qualityKey)
-      const prices = entries.map((artifact) => Number(artifact.basePrice) || 0).filter((value) => value > 0)
-      const total = prices.reduce((sum, value) => sum + value, 0)
-      const minPrice = prices.length > 0 ? Math.min(...prices) : 0
-      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0
-      const avgPrice = prices.length > 0 ? Math.round(total / prices.length) : 0
-      return [
-        qualityKey,
-        QUALITY_CONFIG[qualityKey] ? QUALITY_CONFIG[qualityKey].label : qualityKey,
-        minPrice,
-        maxPrice,
-        avgPrice
-      ]
-    })
-
-    return { columns, rows }
+    return window.MobaoContextBuilder.buildQualityPriceRangeTableCompact()
   }
 
   buildCatalogSummary(options = {}) {
-    const compact = Boolean(options.compact)
-    const prices = ARTIFACT_LIBRARY.map((entry) => Number(entry.basePrice) || 0)
-      .filter((value) => value > 0)
-      .sort((a, b) => a - b)
-    const minPrice = prices.length > 0 ? prices[0] : 0
-    const maxPrice = prices.length > 0 ? prices[prices.length - 1] : 0
-    const qualityLabels = Object.values(QUALITY_CONFIG).map((entry) => entry.label)
-
-    return {
-      totalArtifacts: ARTIFACT_LIBRARY.length,
-      qualityRangeText: `参考价值大致 ${minPrice}~${maxPrice}，品质档位：${qualityLabels.join("/")}`,
-      ...(compact
-        ? {}
-        : {
-            warehouseDefinition: `仓库是隐藏在 ${GRID_COLS}x${GRID_ROWS} 网格中的藏品堆栈；每件藏品都有固定的品质、品类、基础价格和占格尺寸，玩家只能通过出价、公开事件和私有探查去推断整座仓库的真实价值。`
-          }),
-      specialMechanismHint: "绝品或高价藏品可能为单格高价，也可能为多格组合高价。",
-      poolRestrictionHint: "当前对局未设置朝代子集限制。",
-      ...(compact
-        ? { qualityPriceRangeTable: this.buildQualityPriceRangeTableCompact() }
-        : { qualityPriceGuide: this.buildQualityPriceGuide({ compact }) })
-    }
+    return window.MobaoContextBuilder.buildCatalogSummary(options)
   }
 
   buildQualityPriceGuide(options = {}) {
-    const compact = Boolean(options.compact)
-    return Object.keys(QUALITY_CONFIG).map((qualityKey) => {
-      const entries = ARTIFACT_LIBRARY.filter((artifact) => artifact.qualityKey === qualityKey)
-      const prices = entries.map((artifact) => Number(artifact.basePrice) || 0).filter((value) => value > 0)
-      const total = prices.reduce((sum, value) => sum + value, 0)
-      const minPrice = prices.length > 0 ? Math.min(...prices) : 0
-      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0
-
-      return {
-        qualityKey,
-        qualityName: QUALITY_CONFIG[qualityKey] ? QUALITY_CONFIG[qualityKey].label : qualityKey,
-        ...(compact
-          ? {}
-          : {
-              count: entries.length,
-              minPrice,
-              maxPrice
-            }),
-        avgPrice: prices.length > 0 ? Math.round(total / prices.length) : 0
-      }
-    })
+    return window.MobaoContextBuilder.buildQualityPriceGuide(options)
   }
 
   getActionDefById(actionId) {
-    const skill = SKILL_DEFS.find((entry) => entry.id === actionId)
-    if (skill) {
-      return {
-        id: skill.id,
-        type: "skill",
-        name: skill.name,
-        description: skill.description
-      }
-    }
-
-    const item = ITEM_DEFS.find((entry) => entry.id === actionId)
-    if (item) {
-      return {
-        id: item.id,
-        type: "item",
-        name: item.name,
-        description: item.description
-      }
-    }
-
-    return {
-      id: actionId,
-      type: "unknown",
-      name: actionId,
-      description: "未知动作"
-    }
+    return window.MobaoContextBuilder.getActionDefById(actionId)
   }
 
   buildOtherPlayersPublicInfo(viewerId, options = {}) {
-    const compact = Boolean(options.compact)
-    return this.players
-      .filter((player) => player.id !== viewerId)
-      .map((player) => {
-        const persona = this.aiEngine.personalityMap[player.id] || null
-        const usageNames = []
-
-        ;(this.playerUsageHistory[player.id] || []).forEach((entry) => {
-          ;(entry.actions || []).forEach((actionId) => {
-            usageNames.push(this.getActionDefById(actionId).name)
-          })
-        })
-
-        return {
-          playerId: player.id,
-          playerName: player.name,
-          roleName: persona ? persona.archetype : "玩家",
-          passiveSkillText: persona
-            ? `倾向：激进${persona.aggression.toFixed(2)}，纪律${persona.discipline.toFixed(2)}，跟风${persona.followRate.toFixed(2)}`
-            : "未知",
-          activeSkillList: compact
-            ? SKILL_DEFS.map((entry) => ({ name: entry.name }))
-            : SKILL_DEFS.map((entry) => ({
-                name: entry.name,
-                description: entry.description
-              })),
-          folded: false,
-          publicUsedActions: [...new Set(usageNames)].slice(-10)
-        }
-      })
+    return window.MobaoContextBuilder.buildOtherPlayersPublicInfo(
+      this.players, this.aiEngine, this.playerUsageHistory,
+      this.getActionDefById.bind(this), viewerId, options
+    )
   }
 
   buildAiLlmRoundPayload(player) {
@@ -2767,7 +2543,7 @@ class WarehouseScene extends Phaser.Scene {
       dividendTicketInfo
     }
     const crossGameRecord = this.createCrossGameRecord(settlementResult)
-    this.triggerAiReflection(crossGameRecord).catch(() => {})
+    this.triggerAiReflection(crossGameRecord).catch(() => { })
 
     try {
       await this.revealAllArtifactsForSettlement()

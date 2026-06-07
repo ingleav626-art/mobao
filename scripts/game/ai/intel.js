@@ -52,7 +52,7 @@ const {
 const { SKILL_DEFS } = window.SkillSystem
 const { ITEM_DEFS } = window.ItemSystem
 const { GAME_SETTINGS } = window.MobaoSettings
-const { QUALITY_CONFIG, toSizeTag } = window.ArtifactData
+const { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } = window.ArtifactData
 
 export const AiIntelMixin = {
   buildSkillContext() {
