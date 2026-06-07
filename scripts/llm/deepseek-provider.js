@@ -23,191 +23,186 @@
  * @requires LlmManager - LLM 管理器（scripts/llm/llm-manager.js）
  *
  * @exports 通过 LlmManager.registerProvider("deepseek", provider) 注册，无独立导出
+ * @exports DeepSeekProvider - DeepSeek Provider 对象
  */
-(function attachDeepSeekProvider(window) {
-  "use strict";
+"use strict"
 
-  if (!window.LlmManager) {
-    console.error("LlmManager not loaded. Please load llm-manager.js first.");
-    return;
+if (!window.LlmManager) {
+  console.error("LlmManager not loaded. Please load llm-manager.js first.")
+}
+
+const { createOpenAICompatibleProvider, utils } = window.LlmManager
+const { clamp, toFiniteNumber, normalizeObject } = utils
+
+const DEEPSEEK_STORAGE_KEY = "mobao_deepseek_settings_v2"
+const DEEPSEEK_API_KEY_STORAGE_KEY = "mobao_deepseek_api_key_v1"
+
+function defaultDeepSeekSettings() {
+  return {
+    provider: "deepseek",
+    enabled: false,
+    multiGameMemoryEnabled: false,
+    reflectionEnabled: false,
+    thinkingEnabled: false,
+    thinkingParams: "",
+    independentModelEnabled: false,
+    independentReflectionEnabled: true,
+    endpoint: "/api/deepseek/chat/completions",
+    model: "deepseek-v4-flash",
+    apiKey: "",
+    timeoutMs: 40000,
+    temperature: 0.2,
+    maxTokens: 2048
+  }
+}
+
+function normalizeEndpoint(raw, fallback) {
+  const input = typeof raw === "string" ? raw.trim() : ""
+  if (!input) {
+    return fallback
   }
 
-  const { createOpenAICompatibleProvider, utils } = window.LlmManager;
-  const { clamp, toFiniteNumber, normalizeObject } = utils;
-
-  const DEEPSEEK_STORAGE_KEY = "mobao_deepseek_settings_v2";
-  const DEEPSEEK_API_KEY_STORAGE_KEY = "mobao_deepseek_api_key_v1";
-
-  function defaultDeepSeekSettings() {
-    return {
-      provider: "deepseek",
-      enabled: false,
-      multiGameMemoryEnabled: false,
-      reflectionEnabled: false,
-      thinkingEnabled: false,
-      thinkingParams: "",
-      independentModelEnabled: false,
-      independentReflectionEnabled: true,
-      endpoint: "/api/deepseek/chat/completions",
-      model: "deepseek-v4-flash",
-      apiKey: "",
-      timeoutMs: 40000,
-      temperature: 0.2,
-      maxTokens: 2048
-    };
+  if (input.startsWith("/")) {
+    return input.replace(/\/$/, "") || "/"
   }
 
-  function normalizeEndpoint(raw, fallback) {
-    const input = typeof raw === "string" ? raw.trim() : "";
-    if (!input) {
-      return fallback;
+  if (!/^https?:\/\//i.test(input)) {
+    return fallback
+  }
+
+  try {
+    const url = new URL(input)
+    if (url.hostname === "api.deepseek.com" && url.pathname === "/chat/completions") {
+      url.pathname = "/v1/chat/completions"
     }
-
-    if (input.startsWith("/")) {
-      return input.replace(/\/$/, "") || "/";
-    }
-
-    if (!/^https?:\/\//i.test(input)) {
-      return fallback;
-    }
-
-    try {
-      const url = new URL(input);
-      if (url.hostname === "api.deepseek.com" && url.pathname === "/chat/completions") {
-        url.pathname = "/v1/chat/completions";
-      }
-      return url.toString().replace(/\/$/, "");
-    } catch (_error) {
-      return fallback;
-    }
+    return url.toString().replace(/\/$/, "")
+  } catch (_error) {
+    return fallback
   }
+}
 
-  function normalizeDeepSeekSettings(source, fallback) {
-    const defaults = {
-      ...defaultDeepSeekSettings(),
-      ...normalizeObject(fallback)
-    };
-    const input = normalizeObject(source);
-
-    const endpointRaw = typeof input.endpoint === "string"
-      ? input.endpoint.trim()
-      : String(defaults.endpoint);
-    const modelRaw = typeof input.model === "string"
-      ? input.model.trim()
-      : String(defaults.model);
-    const apiKeyRaw = (typeof input.apiKey === "string" && input.apiKey.trim())
-      ? input.apiKey.trim()
-      : String(defaults.apiKey || "");
-
-    const endpoint = normalizeEndpoint(endpointRaw, defaults.endpoint);
-
-    return {
-      provider: "deepseek",
-      enabled: Boolean(input.enabled),
-      multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
-      reflectionEnabled: Boolean(input.reflectionEnabled),
-      thinkingEnabled: Boolean(input.thinkingEnabled),
-      independentModelEnabled: Boolean(input.independentModelEnabled),
-      independentReflectionEnabled: input.independentReflectionEnabled !== undefined ? Boolean(input.independentReflectionEnabled) : true,
-      thinkingParams: typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,
-      endpoint,
-      model: modelRaw.length > 0 ? modelRaw : defaults.model,
-      apiKey: apiKeyRaw,
-      timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
-      temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 1.5),
-      maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
-    };
+function normalizeDeepSeekSettings(source, fallback) {
+  const defaults = {
+    ...defaultDeepSeekSettings(),
+    ...normalizeObject(fallback)
   }
+  const input = normalizeObject(source)
 
-  function isDeepSeekThinkingModel(model) {
-    return /deepseek-(v4|reasoner)/i.test(model);
+  const endpointRaw = typeof input.endpoint === "string" ? input.endpoint.trim() : String(defaults.endpoint)
+  const modelRaw = typeof input.model === "string" ? input.model.trim() : String(defaults.model)
+  const apiKeyRaw =
+    typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : String(defaults.apiKey || "")
+
+  const endpoint = normalizeEndpoint(endpointRaw, defaults.endpoint)
+
+  return {
+    provider: "deepseek",
+    enabled: Boolean(input.enabled),
+    multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
+    reflectionEnabled: Boolean(input.reflectionEnabled),
+    thinkingEnabled: Boolean(input.thinkingEnabled),
+    independentModelEnabled: Boolean(input.independentModelEnabled),
+    independentReflectionEnabled:
+      input.independentReflectionEnabled !== undefined ? Boolean(input.independentReflectionEnabled) : true,
+    thinkingParams: typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,
+    endpoint,
+    model: modelRaw.length > 0 ? modelRaw : defaults.model,
+    apiKey: apiKeyRaw,
+    timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
+    temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 1.5),
+    maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
   }
+}
 
-  function isThinkingModel(model) {
-    return /deepseek-(v4|reasoner)|qwen.*think|glm.*z1|o1-|o3-/i.test(model);
-  }
+function isDeepSeekThinkingModel(model) {
+  return /deepseek-(v4|reasoner)/i.test(model)
+}
 
-  function buildRequestBody(settings, context) {
-    const { isThinking, temperature } = context;
-    const isV4OrReasoner = isDeepSeekThinkingModel(settings.model);
-    const body = {};
+function isThinkingModel(model) {
+  return /deepseek-(v4|reasoner)|qwen.*think|glm.*z1|o1-|o3-/i.test(model)
+}
 
-    if (isV4OrReasoner) {
-      if (isThinking) {
-        body.thinking = { type: "enabled" };
-        body.reasoning_effort = "high";
-      } else {
-        body.thinking = { type: "disabled" };
-        body.temperature = temperature;
-      }
+function buildRequestBody(settings, context) {
+  const { isThinking, temperature } = context
+  const isV4OrReasoner = isDeepSeekThinkingModel(settings.model)
+  const body = {}
+
+  if (isV4OrReasoner) {
+    if (isThinking) {
+      body.thinking = { type: "enabled" }
+      body.reasoning_effort = "high"
     } else {
-      body.temperature = temperature;
+      body.thinking = { type: "disabled" }
+      body.temperature = temperature
     }
-
-    if (isV4OrReasoner && isThinking && settings.thinkingParams) {
-      try {
-        const customParams = JSON.parse(settings.thinkingParams);
-        if (customParams && typeof customParams === "object") {
-          Object.assign(body, customParams);
-        }
-      } catch (_e) {
-      }
-    }
-
-    return body;
+  } else {
+    body.temperature = temperature
   }
 
-  const deepSeekProvider = createOpenAICompatibleProvider({
-    id: "deepseek",
-    name: "DeepSeek",
-    description: "DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型",
-    storageKey: DEEPSEEK_STORAGE_KEY,
-    apiKeyStorageKey: DEEPSEEK_API_KEY_STORAGE_KEY,
-    defaultSettings: defaultDeepSeekSettings,
-    normalizeSettings: normalizeDeepSeekSettings,
-    isThinkingModel: isThinkingModel,
-    buildRequestBody: buildRequestBody,
-    supportsFeature: function (feature) {
-      const supportedFeatures = ["thinking", "reasoning", "streaming"];
-      return supportedFeatures.indexOf(feature) !== -1;
-    }
-  });
+  if (isV4OrReasoner && isThinking && settings.thinkingParams) {
+    try {
+      const customParams = JSON.parse(settings.thinkingParams)
+      if (customParams && typeof customParams === "object") {
+        Object.assign(body, customParams)
+      }
+    } catch (_e) { }
+  }
 
-  const provider = {
-    ...deepSeekProvider,
-    id: "deepseek",
-    name: "DeepSeek",
-    description: "DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型"
-  };
+  return body
+}
 
-  window.LlmManager.registerProvider(provider);
+const deepSeekProvider = createOpenAICompatibleProvider({
+  id: "deepseek",
+  name: "DeepSeek",
+  description: "DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型",
+  storageKey: DEEPSEEK_STORAGE_KEY,
+  apiKeyStorageKey: DEEPSEEK_API_KEY_STORAGE_KEY,
+  defaultSettings: defaultDeepSeekSettings,
+  normalizeSettings: normalizeDeepSeekSettings,
+  isThinkingModel: isThinkingModel,
+  buildRequestBody: buildRequestBody,
+  supportsFeature: function (feature) {
+    const supportedFeatures = ["thinking", "reasoning", "streaming"]
+    return supportedFeatures.indexOf(feature) !== -1
+  }
+})
 
-  window.DeepSeekProvider = {
-    id: "deepseek",
-    name: "DeepSeek",
-    DEEPSEEK_STORAGE_KEY,
-    DEEPSEEK_API_KEY_STORAGE_KEY,
-    defaultDeepSeekSettings,
-    normalizeDeepSeekSettings,
-    isDeepSeekThinkingModel,
-    isThinkingModel,
-    getSettings: function () {
-      return provider.loadSettings();
-    },
-    applySettings: function (settings) {
-      return provider.saveSettings(settings);
-    },
-    getLogs: function () {
-      return provider.getLogs();
-    },
-    clearLogs: function () {
-      provider.clearLogs();
-    },
-    requestChat: function (options) {
-      return provider.requestChat(options);
-    },
-    testConnection: function (overrideSettings) {
-      return provider.testConnection(overrideSettings);
-    }
-  };
-})(window);
+const provider = {
+  ...deepSeekProvider,
+  id: "deepseek",
+  name: "DeepSeek",
+  description: "DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型"
+}
+
+window.LlmManager.registerProvider(provider)
+
+export const DeepSeekProvider = {
+  id: "deepseek",
+  name: "DeepSeek",
+  DEEPSEEK_STORAGE_KEY,
+  DEEPSEEK_API_KEY_STORAGE_KEY,
+  defaultDeepSeekSettings,
+  normalizeDeepSeekSettings,
+  isDeepSeekThinkingModel,
+  isThinkingModel,
+  getSettings: function () {
+    return provider.loadSettings()
+  },
+  applySettings: function (settings) {
+    return provider.saveSettings(settings)
+  },
+  getLogs: function () {
+    return provider.getLogs()
+  },
+  clearLogs: function () {
+    provider.clearLogs()
+  },
+  requestChat: function (options) {
+    return provider.requestChat(options)
+  },
+  testConnection: function (overrideSettings) {
+    return provider.testConnection(overrideSettings)
+  }
+}
+// 兼容层：保持 window.DeepSeekProvider 全局变量可用
+window.DeepSeekProvider = DeepSeekProvider

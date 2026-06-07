@@ -1,7 +1,7 @@
 /**
  * @file core/app-state.js
  * @module core/app-state
- * @description 应用全局状态管理。采用 IIFE + 闭包模式，挂载到 window.MobaoAppState。
+ * @description 应用全局状态管理。采用 ES Module 模式，同时挂载到 window.MobaoAppState 保持兼容。
  *              管理应用的持久化状态（当前模式、大厅标签页、地图选择、游戏统计等），
  *              通过 localStorage 持久化，提供 load/save/patch/get/set/reset 等操作。
  *
@@ -29,93 +29,93 @@
  *
  * 存储键：mobao_app_state_v1
  *
- * @exports window.MobaoAppState - 应用状态管理单例
+ * @exports window.MobaoAppState - 应用状态管理单例（兼容）
+ * @exports load, save, patch, get, set, reset, recordGameFinished - 命名导出
  *
  * 使用方式：
  *   MobaoAppState.set("lobbyTab", "lan");
  *   const tab = MobaoAppState.get("lobbyTab");
  *   MobaoAppState.recordGameFinished(true, 150000);
  */
-window.MobaoAppState = (function () {
-  const APP_STATE_KEY = "mobao_app_state_v1";
+const APP_STATE_KEY = "mobao_app_state_v1"
 
-  const DEFAULT_STATE = {
-    appMode: "lobby",
-    gameSource: null,
-    lobbyTab: "solo",
-    selectedMapProfile: "default",
-    lastPlayedAt: null,
-    totalGamesPlayed: 0,
-    totalWins: 0,
-    totalProfit: 0
-  };
+const DEFAULT_STATE = {
+  appMode: "lobby",
+  gameSource: null,
+  lobbyTab: "solo",
+  selectedMapProfile: "default",
+  lastPlayedAt: null,
+  totalGamesPlayed: 0,
+  totalWins: 0,
+  totalProfit: 0
+}
 
-  function load() {
-    try {
-      const raw = window.localStorage.getItem(APP_STATE_KEY);
-      if (!raw) {
-        return { ...DEFAULT_STATE };
-      }
-      const parsed = JSON.parse(raw);
-      return { ...DEFAULT_STATE, ...parsed };
-    } catch (_e) {
-      return { ...DEFAULT_STATE };
+export function load() {
+  try {
+    const raw = window.localStorage.getItem(APP_STATE_KEY)
+    if (!raw) {
+      return { ...DEFAULT_STATE }
     }
+    const parsed = JSON.parse(raw)
+    return { ...DEFAULT_STATE, ...parsed }
+  } catch (_e) {
+    return { ...DEFAULT_STATE }
   }
+}
 
-  function save(state) {
-    try {
-      window.localStorage.setItem(APP_STATE_KEY, JSON.stringify(state));
-    } catch (_e) {
-      // storage full or unavailable
-    }
+export function save(state) {
+  try {
+    window.localStorage.setItem(APP_STATE_KEY, JSON.stringify(state))
+  } catch (_e) {
+    // storage full or unavailable
   }
+}
 
-  function patch(partial) {
-    const current = load();
-    const merged = { ...current, ...partial };
-    save(merged);
-    return merged;
+export function patch(partial) {
+  const current = load()
+  const merged = { ...current, ...partial }
+  save(merged)
+  return merged
+}
+
+export function get(key) {
+  const state = load()
+  return key ? state[key] : state
+}
+
+export function set(key, value) {
+  const current = load()
+  current[key] = value
+  save(current)
+  return current
+}
+
+export function reset() {
+  save({ ...DEFAULT_STATE })
+  return { ...DEFAULT_STATE }
+}
+
+export function recordGameFinished(playerWon, profit) {
+  const current = load()
+  current.totalGamesPlayed = (current.totalGamesPlayed || 0) + 1
+  if (playerWon) {
+    current.totalWins = (current.totalWins || 0) + 1
   }
+  current.totalProfit = (current.totalProfit || 0) + (profit || 0)
+  current.lastPlayedAt = Date.now()
+  save(current)
+  return current
+}
 
-  function get(key) {
-    const state = load();
-    return key ? state[key] : state;
-  }
-
-  function set(key, value) {
-    const current = load();
-    current[key] = value;
-    save(current);
-    return current;
-  }
-
-  function reset() {
-    save({ ...DEFAULT_STATE });
-    return { ...DEFAULT_STATE };
-  }
-
-  function recordGameFinished(playerWon, profit) {
-    const current = load();
-    current.totalGamesPlayed = (current.totalGamesPlayed || 0) + 1;
-    if (playerWon) {
-      current.totalWins = (current.totalWins || 0) + 1;
-    }
-    current.totalProfit = (current.totalProfit || 0) + (profit || 0);
-    current.lastPlayedAt = Date.now();
-    save(current);
-    return current;
-  }
-
-  return {
-    APP_STATE_KEY,
-    DEFAULT_STATE,
-    load,
-    save,
-    patch,
-    get,
-    set,
-    reset,
-    recordGameFinished
-  };
-})();
+// 兼容层：保持 window.MobaoAppState 全局变量可用
+window.MobaoAppState = {
+  APP_STATE_KEY,
+  DEFAULT_STATE,
+  load,
+  save,
+  patch,
+  get,
+  set,
+  reset,
+  recordGameFinished
+}

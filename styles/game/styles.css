@@ -3133,6 +3133,8 @@ body.settlement-mode #game-root {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  /* 关键：flexbox 布局中滚动需要 min-height: 0 */
+  min-height: 0;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   z-index: 20;
@@ -3140,6 +3142,8 @@ body.settlement-mode #game-root {
   border-radius: 10px;
   background: #fff9ea;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  /* 添加 padding 确保内容布局正确 */
+  padding: 8px 10px;
 }
 
 .preview-popover::-webkit-scrollbar {
@@ -3174,6 +3178,8 @@ body.settlement-mode #game-root {
   justify-content: flex-start;
   align-items: center;
   margin-bottom: 6px;
+  /* 确保 flex 子元素不会阻止滚动 */
+  min-height: 0;
 }
 
 .preview-filter {
@@ -3182,6 +3188,8 @@ body.settlement-mode #game-root {
   align-items: center;
   font-size: 13px;
   margin-bottom: 6px;
+  /* 确保 flex 子元素不会阻止滚动 */
+  min-height: 0;
 }
 
 .preview-filter select {
@@ -3212,12 +3220,16 @@ body.settlement-mode #game-root {
   font-size: 12px;
   color: #6a5334;
   margin-bottom: 6px;
+  /* 确保 flex 子元素不会阻止滚动 */
+  min-height: 0;
 }
 
 .preview-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+  /* 确保 grid 不会阻止父容器滚动 */
+  min-height: 0;
 }
 
 .preview-item {
@@ -3742,6 +3754,8 @@ body.settlement-mode #game-root {
     width: 100%;
     max-width: 100%;
     max-height: 60vh;
+    /* 关键：flexbox 布局中滚动需要 min-height: 0 */
+    min-height: 0;
     /* 确保滚动在移动端正常工作 */
     overflow-y: auto;
     overflow-x: hidden;
@@ -3751,6 +3765,8 @@ body.settlement-mode #game-root {
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
     animation: slideUp 0.25s ease-out;
+    /* 移动端 padding */
+    padding: 12px 16px;
   }
 
   @keyframes slideUp {
