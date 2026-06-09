@@ -42,9 +42,10 @@ export const LanEventsMixin = {
       connectBtn, roomCodeEl, hostBadge, startBtn, roomManageBtn, connectPanel, roomPanel,
       renderSlots, syncSlotsFromPlayers, initLanCharacterFromStorage,
       renderLanCarryItems, updateModeMapCardState,
-      lanCarryItems, lanSlotConfig, lanSelectedMapId, mapCardLabel,
+      lanCarryItems, lanSlotConfig, mapCardLabel,
       broadcastSlotState, leaveBtn,
     } = ctx;
+    let lanSelectedMapId = ctx.lanSelectedMapId;
 
     bridge.on("ws:open", () => {
       setOnlineStatus("已连接", "connected");

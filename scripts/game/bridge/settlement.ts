@@ -38,7 +38,7 @@
  *   const bridge = createSettlementBridge({ MARGIN, CELL_SIZE, delay, tweenToPromise, ... });
  *   Object.assign(scene, bridge);
  */
-export function createSettlementBridge(deps) {
+export function createSettlementBridge(deps: Record<string, any>): { methods: Record<string, any> } {
   const {
     MARGIN,
     CELL_SIZE,
@@ -294,7 +294,7 @@ export function createSettlementBridge(deps) {
       this.activeSettlementSpinner = null
     },
 
-    playSettlementFinalEffect(winnerProfit) {
+    playSettlementFinalEffect(winnerProfit: number) {
       if (winnerProfit <= 0) {
         return
       }
@@ -482,7 +482,7 @@ export function createSettlementBridge(deps) {
       }
     },
 
-    triggerSettlementFinalAnimation(winnerProfit, isSelfWinner) {
+    triggerSettlementFinalAnimation(winnerProfit: number, isSelfWinner: boolean) {
       if (!isSelfWinner) {
         return
       }
@@ -520,7 +520,7 @@ export function createSettlementBridge(deps) {
       }
     },
 
-    enterSettlementPage(winnerPlayer, winnerBid, reasonText) {
+    enterSettlementPage(winnerPlayer: Record<string, any>, winnerBid: number, reasonText: string) {
       this.settlementSession = {
         winnerId: winnerPlayer.id,
         winnerName: winnerPlayer.name,
@@ -626,7 +626,7 @@ export function createSettlementBridge(deps) {
       }
     },
 
-    setSettlementProgress(text, progress) {
+    setSettlementProgress(text: string, progress: number) {
       this.dom.settleProgressText.textContent = text
       const fillEl = this.dom.settleProgressFill
       if (fillEl) {
@@ -641,7 +641,7 @@ export function createSettlementBridge(deps) {
       }
     },
 
-    updateSettlementPanelMetrics(revealedValue, winnerProfit) {
+    updateSettlementPanelMetrics(revealedValue: number, winnerProfit: number) {
       this._lastRevealedValue = revealedValue
       this.dom.settleRevealedValue.textContent = String(revealedValue)
       let displayProfit = winnerProfit
@@ -678,7 +678,7 @@ export function createSettlementBridge(deps) {
       }
     },
 
-    showSelfProfit(selfProfit, label) {
+    showSelfProfit(selfProfit: number, label: string) {
       if (!this.dom.settleSelfProfitRow || !this.dom.settleSelfProfit) {
         return
       }
@@ -711,4 +711,4 @@ export function createSettlementBridge(deps) {
 // 兼容层：保持 window.MobaoSettlementBridge 全局变量可用
 window.MobaoSettlementBridge = {
   createSettlementBridge
-}
+} as any

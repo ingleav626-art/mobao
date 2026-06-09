@@ -1,34 +1,13 @@
 /**
- * @file data/public-events.js
+ * @file data/public-events.ts
  * @module data/public-events
- * @description 公共事件系统。采用 ES Module 模式，同时挂载到 window.PublicEventSystem 保持兼容。
- *              根据仓库藏品分布自动生成公共情报事件，为玩家提供对局背景信息。
- *              事件基于仓库分析（品质分布、品类占比、价值区间等）按优先级排序生成。
- *
- * 核心职责：
- *   - analyzeWarehouse(items): 分析仓库藏品分布
- *     统计：总数、总值、均价、品类分布、品质分布、尺寸分布、高/低价值数量等
- *   - generateEvents(items, gridCols, gridRows): 生成所有可能的公共事件
- *     按分析结果触发不同事件（绝品存在、珍品数量、高价值、品类主导、品质高低等）
- *     事件按 priority 降序排列
- *   - pickRandomPublicEvent(items, gridCols, gridRows): 从前5个事件中随机选1个
- *   - pickMultiplePublicEvents(items, gridCols, gridRows, count): 取前N个事件
- *   - getWarehouseAnalysis(items, gridCols, gridRows): 返回原始分析数据
- *
- * 事件类型与优先级：
- *   - 绝品存在（100）、珍品≥2（90）、高价值≥3（85）、品质较高（75）
- *   - 品类主导（70）、超大件（65）、最高估值（60）、品质偏低（55）
- *   - 大件≥3（55）、价值偏高/低（55）、品类≥5（50）
- *   - 仓库密集/稀疏（45）、仓库统计（40）、捡漏提示（35）
- *
- * 事件数据结构：
- *   { id, text, category, priority }
+ * @description 公共事件系统。根据仓库藏品分布自动生成公共情报事件，
+ *              事件基于仓库分析按优先级排序生成。
  *
  * @exports window.PublicEventSystem - 公共事件系统单例（兼容）
- * @exports generateEvents, pickRandomPublicEvent, ... - 命名导出
- *   关键方法：generateEvents, pickRandomPublicEvent, pickMultiplePublicEvents, getWarehouseAnalysis
  */
-export const QUALITY_LABELS = {
+
+export const QUALITY_LABELS: Record<string, string> = {
   poor: "粗品",
   normal: "良品",
   fine: "精品",
@@ -36,9 +15,9 @@ export const QUALITY_LABELS = {
   legendary: "绝品"
 }
 
-export const QUALITY_ORDER = ["poor", "normal", "fine", "rare", "legendary"]
+export const QUALITY_ORDER: string[] = ["poor", "normal", "fine", "rare", "legendary"]
 
-export const CATEGORY_NAMES = {
+export const CATEGORY_NAMES: Record<string, string> = {
   瓷器: "瓷器",
   玉器: "玉器",
   书画: "书画",
@@ -47,12 +26,49 @@ export const CATEGORY_NAMES = {
   金石: "金石"
 }
 
-export function analyzeWarehouse(items) {
+interface WarehouseItem {
+  trueValue?: number
+  basePrice?: number
+  w?: number
+  h?: number
+  qualityKey?: string
+  category?: string
+}
+
+interface WarehouseAnalysis {
+  total: number
+  totalCells: number
+  totalValue: number
+  avgPrice: number
+  categories: Record<string, number>
+  qualities: Record<string, number>
+  sizes: Record<string, number>
+  largeItems: number
+  highValueItems: number
+  lowValueItems: number
+  maxPrice: number
+  minPrice: number
+  topCategory: string | null
+  topQuality: string | null
+  hasLegendary: boolean
+  hasRare: boolean
+  legendaryCount: number
+  rareCount: number
+}
+
+interface PublicEvent {
+  id: string
+  text: string
+  category: string
+  priority?: number
+}
+
+export function analyzeWarehouse(items: WarehouseItem[]): WarehouseAnalysis | null {
   if (!items || items.length === 0) {
     return null
   }
 
-  const analysis = {
+  const analysis: WarehouseAnalysis = {
     total: items.length,
     totalCells: 0,
     totalValue: 0,
@@ -94,15 +110,9 @@ export function analyzeWarehouse(items) {
       analysis.sizes[sizeKey]++
     }
 
-    if (cells >= 2) {
-      analysis.largeItems++
-    }
-    if (price >= 6000) {
-      analysis.highValueItems++
-    }
-    if (price <= 2500) {
-      analysis.lowValueItems++
-    }
+    if (cells >= 2) analysis.largeItems++
+    if (price >= 6000) analysis.highValueItems++
+    if (price <= 2500) analysis.lowValueItems++
 
     if (qualityKey === "legendary") {
       analysis.hasLegendary = true
@@ -136,11 +146,11 @@ export function analyzeWarehouse(items) {
   return analysis
 }
 
-export function generateEvents(items, gridCols, gridRows) {
+export function generateEvents(items: WarehouseItem[], gridCols: number, gridRows: number): PublicEvent[] {
   const analysis = analyzeWarehouse(items)
   if (!analysis) return []
 
-  const events = []
+  const events: PublicEvent[] = []
   const totalGridCells = (gridCols || 12) * (gridRows || 25)
   const occupancyRate = analysis.totalCells / totalGridCells
 
@@ -287,48 +297,35 @@ export function generateEvents(items, gridCols, gridRows) {
     })
   }
 
-  events.sort((a, b) => b.priority - a.priority)
-
+  events.sort((a, b) => (b.priority || 0) - (a.priority || 0))
   return events
 }
 
-export function pickRandomPublicEvent(items, gridCols, gridRows) {
+export function pickRandomPublicEvent(items: WarehouseItem[], gridCols: number, gridRows: number): PublicEvent {
   const events = generateEvents(items, gridCols, gridRows)
   if (events.length === 0) {
-    return {
-      id: "evt-default",
-      text: "仓库已开启，请开始探索藏品。",
-      category: "系统提示"
-    }
+    return { id: "evt-default", text: "仓库已开启，请开始探索藏品。", category: "系统提示" }
   }
-
   const topEvents = events.slice(0, Math.min(5, events.length))
   const randomIndex = Math.floor(Math.random() * topEvents.length)
   return { ...topEvents[randomIndex] }
 }
 
-export function pickMultiplePublicEvents(items, gridCols, gridRows, count) {
+export function pickMultiplePublicEvents(items: WarehouseItem[], gridCols: number, gridRows: number, count: number): PublicEvent[] {
   const events = generateEvents(items, gridCols, gridRows)
   if (events.length === 0) {
-    return [
-      {
-        id: "evt-default",
-        text: "仓库已开启，请开始探索藏品。",
-        category: "系统提示"
-      }
-    ]
+    return [{ id: "evt-default", text: "仓库已开启，请开始探索藏品。", category: "系统提示" }]
   }
-
   const selectedCount = Math.min(count || 3, events.length)
   return events.slice(0, selectedCount).map((e) => ({ ...e }))
 }
 
-export function getWarehouseAnalysis(items, gridCols, gridRows) {
+export function getWarehouseAnalysis(items: WarehouseItem[], gridCols: number, gridRows: number): WarehouseAnalysis | null {
   return analyzeWarehouse(items)
 }
 
 // 兼容层：保持 window.PublicEventSystem 全局变量可用
-window.PublicEventSystem = {
+;(window as any).PublicEventSystem = {
   generateEvents,
   pickRandomPublicEvent,
   pickMultiplePublicEvents,

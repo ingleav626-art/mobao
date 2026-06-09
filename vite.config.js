@@ -9,11 +9,11 @@ export default defineConfig({
       targets: [
         {
           src: 'lib/phaser.min.js',
-          dest: 'lib'
+          dest: '.'
         },
         {
           src: 'assets/**/*',
-          dest: 'assets'
+          dest: '.'
         }
       ]
     })

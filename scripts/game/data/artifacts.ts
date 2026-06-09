@@ -37,7 +37,7 @@
  * @exports window.ArtifactData - 藏品数据与管理（兼容）
  * @exports QUALITY_CONFIG, ARTIFACT_LIBRARY, ArtifactManager, ... - 命名导出
  */
-export const QUALITY_CONFIG = {
+export const QUALITY_CONFIG: Record<string, { label: string; color: number; glow: number; weight: number }> = {
   poor: { label: "粗品", color: 0x9f9f9f, glow: 0xdcdcdc, weight: 28 },
   normal: { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff, weight: 34 },
   fine: { label: "精品", color: 0x12b46d, glow: 0x8ae4bf, weight: 22 },
@@ -45,7 +45,7 @@ export const QUALITY_CONFIG = {
   legendary: { label: "绝品", color: 0xf04242, glow: 0xffa0a0, weight: 4 }
 }
 
-export const SIZE_TAG_BY_DIMENSION = {
+export const SIZE_TAG_BY_DIMENSION: Record<string, string> = {
   "1x1": "1x1",
   "2x1": "2x1",
   "1x2": "1x2",
@@ -811,7 +811,7 @@ export const ARTIFACT_LIBRARY = [
   }
 ]
 
-export const CATEGORY_WEIGHTS = [
+export const CATEGORY_WEIGHTS: Array<{ key: string; weight: number }> = [
   // 古董类
   { key: "瓷器", weight: 16 },
   { key: "玉器", weight: 12 },
@@ -827,18 +827,23 @@ export const CATEGORY_WEIGHTS = [
 ]
 
 export class ArtifactManager {
+  counter: number
+
   constructor() {
     this.counter = 1
   }
 
-  createRandomArtifact() {
+  createRandomArtifact(): Record<string, any> {
     const category = weightedPick(CATEGORY_WEIGHTS).key
     const defs = ARTIFACT_LIBRARY.filter((item) => item.category === category)
     const def = defs[Math.floor(Math.random() * defs.length)]
     return this.buildArtifactFromDef(def)
   }
 
-  createRandomArtifactForSlot({ col, row, gridCols, gridRows, occupancy, categoryWeights, qualityWeights }) {
+  createRandomArtifactForSlot({ col, row, gridCols, gridRows, occupancy, categoryWeights, qualityWeights }: {
+    col: number; row: number; gridCols: number; gridRows: number; occupancy: number[][];
+    categoryWeights?: Record<string, number>; qualityWeights?: Record<string, number>
+  }): Record<string, any> | null {
     const categoryWeightMap = categoryWeights
       ? { ...categoryWeights }
       : CATEGORY_WEIGHTS.reduce((acc, item) => {
@@ -846,12 +851,12 @@ export class ArtifactManager {
         return acc
       }, {})
 
-    let fitDefs = ARTIFACT_LIBRARY.filter((def) =>
+    let fitDefs: any[] = ARTIFACT_LIBRARY.filter((def) =>
       canPlaceRect(col, row, def.w, def.h, gridCols, gridRows, occupancy)
     )
 
     if (qualityWeights) {
-      const totalQ = Object.values(qualityWeights).reduce((s, v) => s + v, 0) || 1
+      const totalQ = (Object.values(qualityWeights) as number[]).reduce((s, v) => s + v, 0) || 1
       fitDefs = fitDefs.map((def) => ({
         ...def,
         _qw: qualityWeights[def.qualityKey] || 1
@@ -883,7 +888,7 @@ export class ArtifactManager {
     return this.buildArtifactFromDef(picked)
   }
 
-  buildArtifactFromDef(def) {
+  buildArtifactFromDef(def: Record<string, any>): Record<string, any> {
     const quality = QUALITY_CONFIG[def.qualityKey]
 
     return {
@@ -902,7 +907,7 @@ export class ArtifactManager {
     }
   }
 
-  getCandidatesByRevealState(state) {
+  getCandidatesByRevealState(state: Record<string, any>): Array<Record<string, any>> {
     const { qualityKey = null, sizeTag = null, category = null } = state
     return ARTIFACT_LIBRARY.filter((artifact) => {
       if (category && artifact.category !== category) {
@@ -930,12 +935,12 @@ export class ArtifactManager {
     }))
   }
 
-  getCandidateStatsByRevealState(state) {
+  getCandidateStatsByRevealState(state: Record<string, any>): Record<string, any> {
     const candidates = this.getCandidatesByRevealState(state)
     return summarizeCandidatePrices(candidates)
   }
 
-  getSignalPriceStats(signals = []) {
+  getSignalPriceStats(signals: any[] = []): Record<string, any> {
     const list = Array.isArray(signals) ? signals.filter(Boolean) : []
     const detail = list.map((signal) => {
       const revealState = signalToRevealState(signal)
@@ -972,7 +977,7 @@ export class ArtifactManager {
   }
 }
 
-export function estimatePriceByQuality(basePrice, qualityKey) {
+export function estimatePriceByQuality(basePrice: number, qualityKey: string): number {
   const multiplierMap = {
     poor: 0.72,
     normal: 0.95,
@@ -985,8 +990,8 @@ export function estimatePriceByQuality(basePrice, qualityKey) {
   return Math.round(basePrice * ratio)
 }
 
-export function signalToRevealState(signal) {
-  const state = {}
+export function signalToRevealState(signal: Record<string, any>): Record<string, any> {
+  const state: Record<string, any> = {}
   if (signal.qualityKey) {
     state.qualityKey = signal.qualityKey
   }
@@ -999,7 +1004,7 @@ export function signalToRevealState(signal) {
   return state
 }
 
-export function summarizeCandidatePrices(candidates = []) {
+export function summarizeCandidatePrices(candidates: any[] = []): Record<string, any> {
   const prices = candidates
     .map((item) => Number(item.expectedPrice ?? item.basePrice) || 0)
     .filter((value) => value > 0)
@@ -1044,7 +1049,7 @@ export function summarizeCandidatePrices(candidates = []) {
   }
 }
 
-export function summarizeStatsCollection(statsList = []) {
+export function summarizeStatsCollection(statsList: any[] = []): Record<string, any> {
   const list = statsList.filter((stats) => stats && Number.isFinite(stats.count) && stats.count > 0)
   if (list.length === 0) {
     return emptyPriceStats()
@@ -1070,7 +1075,7 @@ export function summarizeStatsCollection(statsList = []) {
   }
 }
 
-function emptyPriceStats() {
+function emptyPriceStats(): Record<string, number> {
   return {
     count: 0,
     mean: 0,
@@ -1088,7 +1093,7 @@ function emptyPriceStats() {
   }
 }
 
-function quantileSorted(values, ratio) {
+function quantileSorted(values: number[], ratio: number): number {
   if (!values || values.length === 0) {
     return 0
   }
@@ -1105,11 +1110,11 @@ function quantileSorted(values, ratio) {
   return values[left] + (values[right] - values[left]) * frac
 }
 
-export function toSizeTag(w, h) {
+export function toSizeTag(w: number, h: number): string {
   return SIZE_TAG_BY_DIMENSION[`${w}x${h}`] || `${w}x${h}`
 }
 
-function canPlaceRect(col, row, w, h, gridCols, gridRows, occupancy) {
+function canPlaceRect(col: number, row: number, w: number, h: number, gridCols: number, gridRows: number, occupancy: number[][]): boolean {
   if (col + w > gridCols || row + h > gridRows) {
     return false
   }
@@ -1125,7 +1130,7 @@ function canPlaceRect(col, row, w, h, gridCols, gridRows, occupancy) {
   return true
 }
 
-function weightedPick(pool) {
+function weightedPick(pool: Array<{ weight: number;[key: string]: any }>): Record<string, any> {
   const total = pool.reduce((sum, item) => sum + item.weight, 0)
   let cursor = Math.random() * total
 
@@ -1140,7 +1145,7 @@ function weightedPick(pool) {
 }
 
 // 兼容层：保持 window.ArtifactData 全局变量可用
-window.ArtifactData = {
+; (window as any).ArtifactData = {
   QUALITY_CONFIG,
   ARTIFACT_LIBRARY,
   SIZE_TAG_BY_DIMENSION,

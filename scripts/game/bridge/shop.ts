@@ -115,7 +115,7 @@ const SHOP_ITEMS = [
   }
 ]
 
-function getItemStorageKey(itemId) {
+function getItemStorageKey(itemId: string): string {
   const map = {
     "item-outline-lamp": "outlineLamp",
     "item-quality-needle": "qualityNeedle",
@@ -132,7 +132,7 @@ function getItemStorageKey(itemId) {
   return map[itemId] || itemId
 }
 
-function getDefaultInventory() {
+function getDefaultInventory(): Record<string, number> {
   return {
     outlineLamp: 99,
     qualityNeedle: 99,
@@ -148,7 +148,7 @@ function getDefaultInventory() {
   }
 }
 
-function loadInventory() {
+function loadInventory(): Record<string, number> {
   try {
     const raw = window.localStorage.getItem(SHOP_STORAGE_KEY)
     if (!raw) return getDefaultInventory()
@@ -166,18 +166,18 @@ function loadInventory() {
   }
 }
 
-function saveInventory(inv) {
+function saveInventory(inv: Record<string, number>): void {
   window.localStorage.setItem(SHOP_STORAGE_KEY, JSON.stringify(inv))
 }
 
-function getTodayDateStr() {
+function getTodayDateStr(): string {
   const d = new Date()
   return (
     d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")
   )
 }
 
-function loadDailyPurchases() {
+function loadDailyPurchases(): Record<string, number> {
   try {
     const raw = window.localStorage.getItem(SHOP_REFRESH_DATE_KEY)
     if (!raw) return {}
@@ -190,7 +190,7 @@ function loadDailyPurchases() {
   }
 }
 
-function saveDailyPurchases(purchases) {
+function saveDailyPurchases(purchases: Record<string, number>): void {
   window.localStorage.setItem(
     SHOP_REFRESH_DATE_KEY,
     JSON.stringify({
@@ -200,7 +200,7 @@ function saveDailyPurchases(purchases) {
   )
 }
 
-function getRemainingDaily(itemId) {
+function getRemainingDaily(itemId: string): number {
   const daily = loadDailyPurchases()
   const shopItem = SHOP_ITEMS.find((s) => s.id === itemId)
   if (!shopItem) return 0
@@ -208,7 +208,7 @@ function getRemainingDaily(itemId) {
   return Math.max(0, shopItem.maxDaily - bought)
 }
 
-function purchaseItem(itemId) {
+function purchaseItem(itemId: string): { ok: boolean; message: string; newMoney?: number; newInventory?: Record<string, number> } {
   const shopItem = SHOP_ITEMS.find((s) => s.id === itemId)
   if (!shopItem) return { ok: false, message: "商品不存在" }
 
@@ -238,7 +238,7 @@ function purchaseItem(itemId) {
   return { ok: true, message: "购买成功", newMoney, newInventory: inv }
 }
 
-function consumeItem(itemId) {
+function consumeItem(itemId: string): { ok: boolean; message?: string; newInventory?: Record<string, number> } {
   const inv = loadInventory()
   const invKey = getItemStorageKey(itemId)
   if ((inv[invKey] || 0) <= 0) {
@@ -249,22 +249,22 @@ function consumeItem(itemId) {
   return { ok: true, newInventory: inv }
 }
 
-function getItemCount(itemId) {
+function getItemCount(itemId: string): number {
   const inv = loadInventory()
   const invKey = getItemStorageKey(itemId)
   return inv[invKey] || 0
 }
 
-function getFullInventory() {
+function getFullInventory(): Record<string, number> {
   return loadInventory()
 }
 
-function getPlayerMoney() {
+function getPlayerMoney(): number {
   const raw = window.localStorage.getItem("mobao_player_money_v1")
   return Math.max(0, Math.round(Number(raw) || 0))
 }
 
-function getDiscountBadge(discount) {
+function getDiscountBadge(discount: number): { type: string; label: string; color: string; minDiscount: number; maxDiscount: number } {
   for (let i = 0; i < DISCOUNT_BADGES.length; i++) {
     const badge = DISCOUNT_BADGES[i]
     if (discount >= badge.minDiscount && discount <= badge.maxDiscount) {
@@ -274,7 +274,7 @@ function getDiscountBadge(discount) {
   return DISCOUNT_BADGES[DISCOUNT_BADGES.length - 1]
 }
 
-function generateLimitedOffers() {
+function generateLimitedOffers(): Array<Record<string, any>> {
   const availableItems = SHOP_ITEMS.filter(function (item) {
     return item.maxDaily > 0
   })
@@ -296,7 +296,7 @@ function generateLimitedOffers() {
   })
 }
 
-function loadLimitedOffers() {
+function loadLimitedOffers(): Array<Record<string, any>> | null {
   try {
     const raw = window.localStorage.getItem(LIMITED_OFFER_KEY)
     if (!raw) return null
@@ -310,7 +310,7 @@ function loadLimitedOffers() {
   }
 }
 
-function saveLimitedOffers(offers) {
+function saveLimitedOffers(offers: Array<Record<string, any>>): void {
   window.localStorage.setItem(
     LIMITED_OFFER_KEY,
     JSON.stringify({
@@ -320,7 +320,7 @@ function saveLimitedOffers(offers) {
   )
 }
 
-function getLimitedOffers() {
+function getLimitedOffers(): Array<Record<string, any>> {
   const cached = loadLimitedOffers()
   if (cached) return cached
   const newOffers = generateLimitedOffers()
@@ -328,7 +328,7 @@ function getLimitedOffers() {
   return newOffers
 }
 
-function purchaseLimitedOffer(offerIndex) {
+function purchaseLimitedOffer(offerIndex: number): { ok: boolean; message: string; newMoney?: number; newInventory?: Record<string, number>; offer?: Record<string, any> } {
   const offers = getLimitedOffers()
   if (offerIndex < 0 || offerIndex >= offers.length) {
     return { ok: false, message: "特惠商品不存在" }
@@ -385,4 +385,4 @@ export const MobaoShopBridge = {
 }
 
 // 兼容层：保持 window.MobaoShopBridge 全局变量可用
-window.MobaoShopBridge = MobaoShopBridge
+window.MobaoShopBridge = MobaoShopBridge as any

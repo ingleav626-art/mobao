@@ -1,39 +1,29 @@
 /**
- * @file core/settings.js
+ * @file core/settings.ts
  * @module core/settings
- * @description 游戏设置与玩家资金管理。采用 ES Module 模式，同时挂载到 window.MobaoSettings 保持兼容。
- *              管理游戏规则参数（回合数、出价步长、直接拿下比例等）的持久化存储、
- *              规范化校验、以及玩家资金的读写。
- *
- * 核心职责：
- *   - 游戏设置：loadGameSettings / saveGameSettings / normalizeGameSettings
- *     从 localStorage（mobao_settings_v2）读取设置，所有字段经过 clamp 规范化
- *   - 设置规范化：normalizeGameSettings
- *     每个字段都有合法范围，超出范围自动修正：
- *     - maxRounds: 3-12, roundSeconds: 10-180, directTakeRatio: 0.05-0.6
- *     - bidRevealIntervalMs: 250-1800, postRevealWaitMs: 800-6000
- *     - bidStep: 10-10000, settlementSpeedMultiplier: 0.5-3
- *     - musicVolume/sfxVolume: 0-100
- *   - 玩家资金：loadPlayerMoney / savePlayerMoney
- *     从 localStorage（mobao_player_money_v1）读取，0且无结算标记时回退到默认值
- *   - 全局设置对象：GAME_SETTINGS（模块加载时从 localStorage 恢复）
- *
- * 默认设置（defaultGameSettings）：
- *   maxRounds=5, roundSeconds=60, directTakeRatio=0.2,
- *   bidRevealIntervalMs=650, postRevealWaitMs=3000, bidStep=100,
- *   bidDefaultRaise=500, settlementSpeedMultiplier=1
- *
- * @requires MobaoConstants - 常量（SETTINGS_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY, DEFAULT_START_MONEY）
- * @requires MobaoUtils     - 工具函数（clamp）
+ * @description 游戏设置与玩家资金管理。管理游戏规则参数的持久化存储、规范化校验、以及玩家资金的读写。
  *
  * @exports window.MobaoSettings - 设置管理单例（兼容）
- * @exports defaultGameSettings, normalizeGameSettings, ... - 命名导出
- *   关键属性：GAME_SETTINGS（当前生效的游戏设置对象）
  */
-const { SETTINGS_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY, DEFAULT_START_MONEY } = window.MobaoConstants
-const { clamp } = window.MobaoUtils
 
-export function defaultGameSettings() {
+export interface GameSettingsData {
+  maxRounds: number
+  actionsPerRound: number
+  roundSeconds: number
+  directTakeRatio: number
+  bidRevealIntervalMs: number
+  postRevealWaitMs: number
+  bidStep: number
+  bidDefaultRaise: number
+  settlementSpeedMultiplier: number
+  musicVolume: number
+  sfxVolume: number
+}
+
+const { SETTINGS_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY, DEFAULT_START_MONEY } = (window as any).MobaoConstants
+const { clamp } = (window as any).MobaoUtils
+
+export function defaultGameSettings(): GameSettingsData {
   return {
     maxRounds: 5,
     actionsPerRound: 99,
@@ -49,14 +39,14 @@ export function defaultGameSettings() {
   }
 }
 
-export function normalizeSettingsSource(value) {
+export function normalizeSettingsSource(value: any): Record<string, any> {
   if (!value || typeof value !== "object") {
     return {}
   }
   return value
 }
 
-export function normalizeGameSettings(source, fallback) {
+export function normalizeGameSettings(source: any, fallback?: any): GameSettingsData {
   const defaults = normalizeSettingsSource(fallback || defaultGameSettings())
   const input = normalizeSettingsSource(source)
 
@@ -79,7 +69,7 @@ export function normalizeGameSettings(source, fallback) {
   }
 }
 
-export function loadGameSettings() {
+export function loadGameSettings(): GameSettingsData {
   const defaults = defaultGameSettings()
   const raw = window.localStorage.getItem(SETTINGS_STORAGE_KEY)
   if (!raw) {
@@ -94,12 +84,12 @@ export function loadGameSettings() {
   }
 }
 
-export function saveGameSettings(value) {
+export function saveGameSettings(value: any): void {
   const normalized = normalizeGameSettings(value, defaultGameSettings())
   window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(normalized))
 }
 
-export function loadPlayerMoney() {
+export function loadPlayerMoney(): number {
   const raw = window.localStorage.getItem(PLAYER_MONEY_STORAGE_KEY)
   const settledRunToken = window.localStorage.getItem("mobao_money_settled_run")
   const parsed = Number(raw)
@@ -114,15 +104,15 @@ export function loadPlayerMoney() {
   return Math.round(parsed)
 }
 
-export function savePlayerMoney(value) {
+export function savePlayerMoney(value: number): void {
   window.localStorage.setItem(PLAYER_MONEY_STORAGE_KEY, String(Math.max(0, Math.round(value))))
 }
 
-export let GAME_SETTINGS = loadGameSettings()
+export let GAME_SETTINGS: GameSettingsData = loadGameSettings()
 GAME_SETTINGS.actionsPerRound = 99
 
 // 兼容层：保持 window.MobaoSettings 全局变量可用
-window.MobaoSettings = {
+;(window as any).MobaoSettings = {
   defaultGameSettings,
   normalizeSettingsSource,
   normalizeGameSettings,
@@ -133,4 +123,4 @@ window.MobaoSettings = {
   GAME_SETTINGS
 }
 // 兼容层：部分文件直接引用 GAME_SETTINGS 全局变量
-window.GAME_SETTINGS = GAME_SETTINGS
+;(window as any).GAME_SETTINGS = GAME_SETTINGS

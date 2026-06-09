@@ -42,6 +42,8 @@
  *
  * @exports IndexMixin - 大厅主页面 Mixin，混入 Phaser Scene
  */
+import { Deps } from '../core/deps.js'
+
 const { loadPlayerMoney } = window.MobaoSettings
 
 export const LobbyIndexMixin = {
@@ -297,8 +299,8 @@ export const LobbyIndexMixin = {
       { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
     ]
     // 从localStorage加载单机模式的AI LLM开关状态
-    if (typeof LLM_BRIDGE !== "undefined" && LLM_BRIDGE.loadAiLlmPlayerSwitches) {
-      this.aiLlmPlayerEnabled = LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players)
+    if (Deps.LLM_BRIDGE && Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches) {
+      this.aiLlmPlayerEnabled = Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players)
     }
     this.initPlayersUI()
     this.showLobbyMain(true)
@@ -494,7 +496,7 @@ export const LobbyIndexMixin = {
             input.checked = this.isAiLlmEnabledForPlayer(player.id)
             input.addEventListener("change", () => {
               this.aiLlmPlayerEnabled[player.id] = Boolean(input.checked)
-              LLM_BRIDGE.saveAiLlmPlayerSwitches(this.aiLlmPlayerEnabled)
+              Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches(this.aiLlmPlayerEnabled)
               this.writeLog(
                 `${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`
               )

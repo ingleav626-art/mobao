@@ -39,10 +39,10 @@
  *   const bridge = createBattleRecordBridge({ BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber });
  *   Object.assign(scene, bridge);
  */
-export function createBattleRecordBridge(deps) {
+export function createBattleRecordBridge(deps: Record<string, any>): Record<string, any> {
   const { BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber } = deps
 
-  function loadBattleRecords() {
+  function loadBattleRecords(): Array<Record<string, any>> {
     const raw = window.localStorage.getItem(BATTLE_RECORD_STORAGE_KEY)
     if (!raw) {
       return []
@@ -70,12 +70,12 @@ export function createBattleRecordBridge(deps) {
     }
   }
 
-  function saveBattleRecords(records) {
+  function saveBattleRecords(records: Array<Record<string, any>>): void {
     const list = Array.isArray(records) ? records.slice(0, 20) : []
     window.localStorage.setItem(BATTLE_RECORD_STORAGE_KEY, JSON.stringify(list))
   }
 
-  function formatRecordTime(iso) {
+  function formatRecordTime(iso: string): string {
     const date = new Date(iso)
     if (Number.isNaN(date.getTime())) {
       return "未知时间"
@@ -349,7 +349,7 @@ export function createBattleRecordBridge(deps) {
       const roundLogsByRound = record.logs && record.logs.roundLogsByRound ? record.logs.roundLogsByRound : {}
       const roundPanelTexts = record.logs && record.logs.roundPanelTexts ? record.logs.roundPanelTexts : {}
 
-      const roundSet = new Set()
+      const roundSet = new Set<number>()
       aiThoughtLogs.forEach((e) => {
         if (e.round) roundSet.add(e.round)
       })
@@ -659,4 +659,4 @@ export function createBattleRecordBridge(deps) {
 // 兼容层：保持 window.MobaoBattleRecordBridge 全局变量可用
 window.MobaoBattleRecordBridge = {
   createBattleRecordBridge
-}
+} as any
