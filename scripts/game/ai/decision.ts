@@ -26,10 +26,10 @@
  *   buildAiDecisionPanelSnapshot, compactPanelTextForSnapshot,
  *   beginRunTracking, recordAiThoughtLogs, renderAiThoughtLog, writeLog
  */
-const { formatBidRevealNumber } = window.MobaoUtils
+const { formatBidRevealNumber } = (window as any).MobaoUtils
 
-export const AiDecisionMixin = {
-  buildAiDecisionPanelSnapshot(telemetry) {
+export const AiDecisionMixin: Record<string, any> = {
+  buildAiDecisionPanelSnapshot(telemetry: Record<string, any>): string | null {
     if (!telemetry || telemetry.mode !== "llm" || !Array.isArray(telemetry.entries)) {
       return null
     }
@@ -44,8 +44,8 @@ export const AiDecisionMixin = {
       this.aiEngine && typeof this.aiEngine.getLastDecisionLog === "function"
         ? this.aiEngine.getLastDecisionLog()
         : null
-    const ruleEntryById = new Map(
-      ((rulePayload && rulePayload.entries) || []).map((entry) => [entry.playerId, entry])
+    const ruleEntryById = new Map<string, any>(
+      ((rulePayload && rulePayload.entries) || []).map((entry: any) => [entry.playerId, entry])
     )
 
     const CONTROL_MODE_LABELS = {
@@ -171,7 +171,7 @@ export const AiDecisionMixin = {
     return lines.join("\n")
   },
 
-  compactPanelTextForSnapshot(text) {
+  compactPanelTextForSnapshot(text: string): string {
     const input = typeof text === "string" ? text.trim() : ""
     if (!input) {
       return "    （空）"
@@ -189,7 +189,7 @@ export const AiDecisionMixin = {
       .join("\n")
   },
 
-  beginRunTracking() {
+  beginRunTracking(): void {
     this.runSerial += 1
     this.saveAiMemoryToStorage()
     const runLog = {
@@ -208,7 +208,7 @@ export const AiDecisionMixin = {
     this.renderAiThoughtLog()
   },
 
-  recordAiThoughtLogs(telemetry) {
+  recordAiThoughtLogs(telemetry: Record<string, any>): void {
     if (!telemetry || telemetry.mode !== "llm" || !Array.isArray(telemetry.entries) || !this.currentRunLog) {
       return
     }
@@ -295,7 +295,7 @@ export const AiDecisionMixin = {
     this.renderAiThoughtLog()
   },
 
-  renderAiThoughtLog() {
+  renderAiThoughtLog(): void {
     if (!this.dom.aiThoughtContent) {
       return
     }
@@ -331,7 +331,7 @@ export const AiDecisionMixin = {
     this.dom.aiThoughtContent.textContent = lines.length > 0 ? lines.join("\n") : "暂无AI思考记录。"
   },
 
-  writeLog(text) {
+  writeLog(text: string): void {
     const line = `日志: ${text}`
     if (this.dom.actionLog) this.dom.actionLog.textContent = line
     if (this.currentRunLog) {
@@ -354,6 +354,6 @@ export const AiDecisionMixin = {
   }
 }
 
-// 兼容层：保持 window.MobaoAi 全局变量可用
-window.MobaoAi = window.MobaoAi || {}
-window.MobaoAi.DecisionMixin = AiDecisionMixin
+  // 兼容层：保持 window.MobaoAi 全局变量可用
+  ; (window as any).MobaoAi = (window as any).MobaoAi || {}
+  ; (window as any).MobaoAi.DecisionMixin = AiDecisionMixin

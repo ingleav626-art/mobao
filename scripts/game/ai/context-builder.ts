@@ -22,12 +22,10 @@
  * @exports window.MobaoContextBuilder - 上下文构建器
  */
 
-const { QUALITY_CONFIG, ARTIFACT_LIBRARY } = window.ArtifactData
-const { SKILL_DEFS } = window.SkillSystem
-const { ITEM_DEFS } = window.ItemSystem
-const { GRID_COLS, GRID_ROWS } = window.MobaoConstants
+const { QUALITY_CONFIG, ARTIFACT_LIBRARY } = (window as any).ArtifactData
+const { GRID_COLS, GRID_ROWS } = (window as any).MobaoConstants
 
-function buildBidHistorySnapshot(round, players, playerRoundHistory) {
+function buildBidHistorySnapshot(round: number, players: any[], playerRoundHistory: Record<string, any[]>): Array<Record<string, any>> {
   const rounds = Array.from({ length: Math.max(0, round - 1) }, (_v, idx) => idx + 1)
   return rounds.map((roundNo) => {
     const bids = {}
@@ -43,7 +41,7 @@ function buildBidHistorySnapshot(round, players, playerRoundHistory) {
   })
 }
 
-function buildPublicEventSnapshot(players, playerUsageHistory, currentRoundUsage, round, getActionDefById, currentPublicEvent, options = {}) {
+function buildPublicEventSnapshot(players: any[], playerUsageHistory: Record<string, any[]>, currentRoundUsage: Record<string, any[]>, round: number, getActionDefById: (id: string) => Record<string, any>, currentPublicEvent: Record<string, any> | null, options: Record<string, any> = {}): any[] {
   const compact = Boolean(options.compact)
   const viewerId = options.viewerId || ""
   const events = []
@@ -115,7 +113,7 @@ function buildPublicEventSnapshot(players, playerUsageHistory, currentRoundUsage
   return events.slice(-30)
 }
 
-function buildRoundPublicStateTable(round, players, playerRoundHistory, currentRoundUsage, playerUsageHistory, viewerId) {
+function buildRoundPublicStateTable(round: number, players: any[], playerRoundHistory: Record<string, any[]>, currentRoundUsage: Record<string, any[]>, playerUsageHistory: Record<string, any[]>, viewerId: string): Record<string, any> {
   const bidHistory = buildBidHistorySnapshot(round, players, playerRoundHistory)
   const bidByRound = new Map(bidHistory.map((entry) => [entry.round, entry.bids || {}]))
   const actionPlayers = players.filter((player) => player.id !== viewerId)
@@ -144,7 +142,7 @@ function buildRoundPublicStateTable(round, players, playerRoundHistory, currentR
     var actionValues = actionPlayers.map((player) => {
       var actionIds = isCurrentRound
         ? currentRoundUsage[player.id] || []
-        : (playerUsageHistory[player.id] || []).find(function(entry) { return entry.round === roundNo })?.actions || []
+        : (playerUsageHistory[player.id] || []).find(function (entry) { return entry.round === roundNo })?.actions || []
       if (!Array.isArray(actionIds) || actionIds.length === 0) {
         return "none"
       }
@@ -160,7 +158,7 @@ function buildRoundPublicStateTable(round, players, playerRoundHistory, currentR
   }
 }
 
-function buildQualityPriceRangeTableCompact() {
+function buildQualityPriceRangeTableCompact(): Record<string, any> {
   var columns = ["quality_key", "quality_name", "min_price", "max_price", "avg_price"]
   var rows = Object.keys(QUALITY_CONFIG).map((qualityKey) => {
     var entries = ARTIFACT_LIBRARY.filter((artifact) => artifact.qualityKey === qualityKey)
@@ -181,14 +179,14 @@ function buildQualityPriceRangeTableCompact() {
   return { columns, rows }
 }
 
-function buildCatalogSummaryInner(options = {}) {
+function buildCatalogSummaryInner(options: Record<string, any> = {}): Record<string, any> {
   var compact = Boolean(options.compact)
   var prices = ARTIFACT_LIBRARY.map((entry) => Number(entry.basePrice) || 0)
     .filter((value) => value > 0)
     .sort((a, b) => a - b)
   var minPrice = prices.length > 0 ? prices[0] : 0
   var maxPrice = prices.length > 0 ? prices[prices.length - 1] : 0
-  var qualityLabels = Object.values(QUALITY_CONFIG).map((entry) => entry.label)
+  var qualityLabels = Object.values(QUALITY_CONFIG as any).map((entry: any) => entry.label)
 
   return {
     totalArtifacts: ARTIFACT_LIBRARY.length,
@@ -196,8 +194,8 @@ function buildCatalogSummaryInner(options = {}) {
     ...(compact
       ? {}
       : {
-          warehouseDefinition: "仓库是隐藏在 " + GRID_COLS + "x" + GRID_ROWS + " 网格中的藏品堆栈；每件藏品都有固定的品质、品类、基础价格和占格尺寸，玩家只能通过出价、公开事件和私有探查去推断整座仓库的真实价值。"
-        }),
+        warehouseDefinition: "仓库是隐藏在 " + GRID_COLS + "x" + GRID_ROWS + " 网格中的藏品堆栈；每件藏品都有固定的品质、品类、基础价格和占格尺寸，玩家只能通过出价、公开事件和私有探查去推断整座仓库的真实价值。"
+      }),
     specialMechanismHint: "绝品或高价藏品可能为单格高价，也可能为多格组合高价。",
     poolRestrictionHint: "当前对局未设置朝代子集限制。",
     ...(compact
@@ -206,7 +204,7 @@ function buildCatalogSummaryInner(options = {}) {
   }
 }
 
-function buildQualityPriceGuide(options = {}) {
+function buildQualityPriceGuide(options: Record<string, any> = {}): any[] {
   var compact = Boolean(options.compact)
   return Object.keys(QUALITY_CONFIG).map((qualityKey) => {
     var entries = ARTIFACT_LIBRARY.filter((artifact) => artifact.qualityKey === qualityKey)
@@ -221,16 +219,16 @@ function buildQualityPriceGuide(options = {}) {
       ...(compact
         ? {}
         : {
-            count: entries.length,
-            minPrice,
-            maxPrice
-          }),
+          count: entries.length,
+          minPrice,
+          maxPrice
+        }),
       avgPrice: prices.length > 0 ? Math.round(total / prices.length) : 0
     }
   })
 }
 
-function getActionDefById(actionId) {
+function getActionDefById(actionId: string): Record<string, any> {
   var skill = SKILL_DEFS.find((entry) => entry.id === actionId)
   if (skill) {
     return {
@@ -259,7 +257,7 @@ function getActionDefById(actionId) {
   }
 }
 
-function buildOtherPlayersPublicInfo(players, aiEngine, playerUsageHistory, getActionDefById, viewerId, options = {}) {
+function buildOtherPlayersPublicInfo(players: any[], aiEngine: any, playerUsageHistory: Record<string, any[]>, getActionDefById: (id: string) => Record<string, any>, viewerId: string, options: Record<string, any> = {}): any[] {
   var compact = Boolean(options.compact)
   return players
     .filter((player) => player.id !== viewerId)
@@ -267,11 +265,11 @@ function buildOtherPlayersPublicInfo(players, aiEngine, playerUsageHistory, getA
       var persona = aiEngine.personalityMap[player.id] || null
       var usageNames = []
 
-      ;(playerUsageHistory[player.id] || []).forEach((entry) => {
-        ;(entry.actions || []).forEach((actionId) => {
-          usageNames.push(getActionDefById(actionId).name)
+        ; (playerUsageHistory[player.id] || []).forEach((entry) => {
+          ; (entry.actions || []).forEach((actionId) => {
+            usageNames.push(getActionDefById(actionId).name)
+          })
         })
-      })
 
       return {
         playerId: player.id,
@@ -283,9 +281,9 @@ function buildOtherPlayersPublicInfo(players, aiEngine, playerUsageHistory, getA
         activeSkillList: compact
           ? SKILL_DEFS.map((entry) => ({ name: entry.name }))
           : SKILL_DEFS.map((entry) => ({
-              name: entry.name,
-              description: entry.description
-            })),
+            name: entry.name,
+            description: entry.description
+          })),
         folded: false,
         publicUsedActions: [...new Set(usageNames)].slice(-10)
       }
@@ -293,7 +291,7 @@ function buildOtherPlayersPublicInfo(players, aiEngine, playerUsageHistory, getA
 }
 
 // 兼容层
-window.MobaoContextBuilder = {
+; (window as any).MobaoContextBuilder = {
   buildBidHistorySnapshot,
   buildPublicEventSnapshot,
   buildRoundPublicStateTable,

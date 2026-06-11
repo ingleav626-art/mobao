@@ -34,23 +34,23 @@
  *   loadAiMemoryFromStorage, saveAiMemoryToStorage, restoreAiMemoryFromStorage,
  *   getAiConversationMessages, pushAiRoundSummary, updateLastAiRoundResult, 等
  */
-const { AI_MEMORY_STORAGE_KEY } = window.MobaoConstants
-const { formatBidRevealNumber } = window.MobaoUtils
+const { AI_MEMORY_STORAGE_KEY } = (window as any).MobaoConstants
+const { formatBidRevealNumber } = (window as any).MobaoUtils
 
-export const AiMemoryMixin = {
-  getAiMemoryStorageKey() {
+export const AiMemoryMixin: Record<string, any> = {
+  getAiMemoryStorageKey(): string {
     if (this.isLanMode) {
       return AI_MEMORY_STORAGE_KEY + "_lan"
     }
     return AI_MEMORY_STORAGE_KEY
   },
 
-  isAiMultiGameMemoryEnabled() {
+  isAiMultiGameMemoryEnabled(): boolean {
     const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null
     return Boolean(settings && settings.multiGameMemoryEnabled)
   },
 
-  loadAiMemoryFromStorage() {
+  loadAiMemoryFromStorage(): any {
     try {
       const storageKey = this.getAiMemoryStorageKey()
       const raw = window.localStorage.getItem(storageKey)
@@ -63,7 +63,7 @@ export const AiMemoryMixin = {
     }
   },
 
-  saveAiMemoryToStorage() {
+  saveAiMemoryToStorage(): void {
     try {
       const storageKey = this.getAiMemoryStorageKey()
       const data = {
@@ -77,7 +77,7 @@ export const AiMemoryMixin = {
     } catch (_error) { }
   },
 
-  restoreAiMemoryFromStorage() {
+  restoreAiMemoryFromStorage(): void {
     const stored = this.loadAiMemoryFromStorage()
     if (!stored) return
     if (stored.conversations && typeof stored.conversations === "object") {
@@ -160,14 +160,14 @@ export const AiMemoryMixin = {
     }
   },
 
-  ensureAiConversationBucket(playerId) {
+  ensureAiConversationBucket(playerId: string): any[] {
     if (!this.aiConversationByPlayer[playerId]) {
       this.aiConversationByPlayer[playerId] = []
     }
     return this.aiConversationByPlayer[playerId]
   },
 
-  ensureAiCrossGameMemory(playerId) {
+  ensureAiCrossGameMemory(playerId: string): Record<string, any> {
     if (!this.aiCrossGameMemory[playerId]) {
       this.aiCrossGameMemory[playerId] = {
         stats: {
@@ -198,16 +198,16 @@ export const AiMemoryMixin = {
     return this.aiCrossGameMemory[playerId]
   },
 
-  getAiCrossGameMemoryCount(playerId) {
+  getAiCrossGameMemoryCount(playerId: string): number {
     return this.ensureAiCrossGameMemory(playerId).length
   },
 
-  getAiInGameHistoryCount(playerId) {
+  getAiInGameHistoryCount(playerId: string): number {
     const bucket = this.aiConversationByPlayer[playerId]
     return Array.isArray(bucket) ? bucket.length : 0
   },
 
-  getQualityCounts() {
+  getQualityCounts(): Record<string, number> {
     const counts = { poor: 0, normal: 0, fine: 0, rare: 0, legendary: 0 }
     this.items.forEach((item) => {
       const qk = item.qualityKey
@@ -218,11 +218,11 @@ export const AiMemoryMixin = {
     return counts
   },
 
-  getTotalOccupiedCells() {
+  getTotalOccupiedCells(): number {
     return this.items.reduce((sum, item) => sum + item.w * item.h, 0)
   },
 
-  getAiConversationMessages(playerId) {
+  getAiConversationMessages(playerId: string): Array<Record<string, string>> {
     const messages = []
     const crossMemory = this.ensureAiCrossGameMemory(playerId)
     const stats = crossMemory.stats || {}
@@ -292,7 +292,7 @@ export const AiMemoryMixin = {
     return messages
   },
 
-  pushAiRoundSummary(playerId, plan) {
+  pushAiRoundSummary(playerId: string, plan: Record<string, any>): void {
     if (!this.isAiMultiGameMemoryEnabled()) {
       return
     }
@@ -313,7 +313,7 @@ export const AiMemoryMixin = {
     this.saveAiMemoryToStorage()
   },
 
-  updateLastAiRoundResult(playerId, resultText) {
+  updateLastAiRoundResult(playerId: string, resultText: string): void {
     if (!this.isAiMultiGameMemoryEnabled()) {
       return
     }
@@ -324,14 +324,14 @@ export const AiMemoryMixin = {
     }
   },
 
-  resetAiConversations() {
+  resetAiConversations(): void {
     this.aiConversationByPlayer = {}
     this.aiCrossGameMemory = {}
     this.aiReflectionPending = {}
     this.pendingNextRunAiSummary = ""
   },
 
-  clearAiMemoryStorage() {
+  clearAiMemoryStorage(): void {
     this.aiConversationByPlayer = {}
     this.aiCrossGameMemory = {}
     this.aiReflectionPending = {}
@@ -342,7 +342,7 @@ export const AiMemoryMixin = {
     } catch (_error) { }
   },
 
-  exportAiMemoryToJson() {
+  exportAiMemoryToJson(): string {
     const data = {
       conversations: this.aiConversationByPlayer || {},
       crossGameMemory: this.aiCrossGameMemory || {},
@@ -354,7 +354,7 @@ export const AiMemoryMixin = {
     return JSON.stringify(data, null, 2)
   },
 
-  importAiMemoryFromJson(jsonString) {
+  importAiMemoryFromJson(jsonString: string): { ok: boolean; error?: string } {
     try {
       const parsed = JSON.parse(jsonString)
       if (!parsed || typeof parsed !== "object") {
@@ -448,9 +448,9 @@ export const AiMemoryMixin = {
     }
   },
 
-  pushRunStartContextToAi() { },
+  pushRunStartContextToAi(): void { },
 
-  pushRunSettlementContextToAi(result) {
+  pushRunSettlementContextToAi(result: Record<string, any>): void {
     const winnerId = result && result.winnerId ? result.winnerId : null
     const winnerName = result && result.winnerName ? result.winnerName : "未知"
     const winnerBid = Math.round(Number(result && result.winnerBid) || 0)
@@ -493,7 +493,7 @@ export const AiMemoryMixin = {
     this.saveAiMemoryToStorage()
   },
 
-  createCrossGameRecord(result) {
+  createCrossGameRecord(result: Record<string, any>): Record<string, any> {
     const winnerId = result && result.winnerId ? result.winnerId : null
     const winnerName = result && result.winnerName ? result.winnerName : "未知"
     const winnerBid = Math.round(Number(result && result.winnerBid) || 0)
@@ -538,7 +538,7 @@ export const AiMemoryMixin = {
     return record
   },
 
-  getAiFirstRoundExtraBlocks() {
+  getAiFirstRoundExtraBlocks(): string[] {
     if (!this.isAiMultiGameMemoryEnabled() || this.round !== 1) {
       return []
     }
@@ -683,6 +683,6 @@ export const AiMemoryMixin = {
   }
 }
 
-// 兼容层：保持 window.MobaoAi 全局变量可用
-window.MobaoAi = window.MobaoAi || {}
-window.MobaoAi.MemoryMixin = AiMemoryMixin
+  // 兼容层：保持 window.MobaoAi 全局变量可用
+  ; (window as any).MobaoAi = (window as any).MobaoAi || {}
+  ; (window as any).MobaoAi.MemoryMixin = AiMemoryMixin

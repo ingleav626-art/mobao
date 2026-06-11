@@ -32,13 +32,13 @@
  *   triggerAiReflection, applyMemoryOperations, updateCrossGameMemory,
  *   updateReflectionStatusUI, proceedToNewRun
  */
-export const AiReflectionMixin = {
-  isAiReflectionEnabled() {
+export const AiReflectionMixin: Record<string, any> = {
+  isAiReflectionEnabled(): boolean {
     const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null
     return Boolean(settings && settings.reflectionEnabled)
   },
 
-  async triggerAiReflection(record) {
+  async triggerAiReflection(record: Record<string, any>): Promise<void> {
     console.log("[triggerAiReflection] called, checking conditions...")
     console.log(
       "[triggerAiReflection] isAiReflectionEnabled:",
@@ -381,7 +381,7 @@ export const AiReflectionMixin = {
     this.updateReflectionStatusUI()
   },
 
-  applyMemoryOperations(array, operations, maxLength) {
+  applyMemoryOperations(array: string[], operations: Record<string, any>, maxLength: number): void {
     if (!operations || typeof operations !== "object") return
 
     if (Array.isArray(operations.delete)) {
@@ -418,7 +418,7 @@ export const AiReflectionMixin = {
     }
   },
 
-  updateCrossGameMemory(playerId, record, parsedReflection) {
+  updateCrossGameMemory(playerId: string, record: Record<string, any>, parsedReflection: Record<string, any>): void {
     const memory = this.ensureAiCrossGameMemory(playerId)
     if (!memory) return
 
@@ -529,11 +529,11 @@ export const AiReflectionMixin = {
     )
   },
 
-  shouldShowReflectionUI() {
+  shouldShowReflectionUI(): boolean {
     return this.isAiReflectionEnabled() && this.canUseLlmDecision() && this.llmEverUsedThisRun
   },
 
-  updateReflectionStatusUI() {
+  updateReflectionStatusUI(): void {
     const el = this.dom.settleReflectionStatus
     if (!el) return
     if (!this.shouldShowReflectionUI()) {
@@ -645,7 +645,7 @@ export const AiReflectionMixin = {
     if (el) el.remove()
   },
 
-  proceedToNewRun() {
+  proceedToNewRun(): void {
     this.exitSettlementPage()
     this.startNewRun()
     if (typeof AudioManager !== "undefined") {
@@ -654,6 +654,6 @@ export const AiReflectionMixin = {
   }
 }
 
-// 兼容层：保持 window.MobaoAi 全局变量可用
-window.MobaoAi = window.MobaoAi || {}
-window.MobaoAi.ReflectionMixin = AiReflectionMixin
+  // 兼容层：保持 window.MobaoAi 全局变量可用
+  ; (window as any).MobaoAi = (window as any).MobaoAi || {}
+  ; (window as any).MobaoAi.ReflectionMixin = AiReflectionMixin

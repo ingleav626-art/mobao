@@ -21,14 +21,14 @@
  * 混入后 scene 将获得：aiWallets, loadAiWalletsFromStorage, saveAiWalletsToStorage,
  *   resetAiWallets, initAiWallets, getAiWallet, getAiMinimumBid, normalizeAiBidValue
  */
-const { GAME_SETTINGS } = window.MobaoSettings
-const { clamp, roundToStep } = window.MobaoUtils
+const { GAME_SETTINGS } = (window as any).MobaoSettings
+const { clamp, roundToStep } = (window as any).MobaoUtils
 
 export const AI_WALLET_INITIAL = 1000000
 const AI_WALLET_STORAGE_KEY = "mobao_ai_wallets_v1"
 
-export const AiWalletMixin = {
-  loadAiWalletsFromStorage() {
+export const AiWalletMixin: Record<string, any> = {
+  loadAiWalletsFromStorage(): Record<string, number> {
     try {
       const raw = localStorage.getItem(AI_WALLET_STORAGE_KEY)
       if (raw) {
@@ -43,7 +43,7 @@ export const AiWalletMixin = {
     return {}
   },
 
-  saveAiWalletsToStorage() {
+  saveAiWalletsToStorage(): void {
     try {
       localStorage.setItem(AI_WALLET_STORAGE_KEY, JSON.stringify(this.aiWallets || {}))
     } catch (e) {
@@ -51,7 +51,7 @@ export const AiWalletMixin = {
     }
   },
 
-  resetAiWallets() {
+  resetAiWallets(): void {
     this.aiWallets = {}
     const aiPlayers = this.players.filter((player) => !player.isHuman)
     aiPlayers.forEach((player) => {
@@ -61,7 +61,7 @@ export const AiWalletMixin = {
     console.log("[resetAiWallets] AI wallets reset to", AI_WALLET_INITIAL)
   },
 
-  initAiWallets() {
+  initAiWallets(): void {
     const aiPlayers = this.players.filter((player) => !player.isHuman)
     const stored = this.loadAiWalletsFromStorage()
     this.aiWallets = {}
@@ -75,7 +75,7 @@ export const AiWalletMixin = {
     console.log("[initAiWallets] AI wallets loaded:", this.aiWallets)
   },
 
-  getAiWallet(playerId) {
+  getAiWallet(playerId: string): number {
     const fallback = Math.max(this.currentBid + GAME_SETTINGS.bidStep, this.aiMaxBid || 0)
     const direct = Math.max(0, Math.round(Number(this.aiWallets[playerId]) || 0))
     if (direct > 0) return direct
@@ -87,7 +87,7 @@ export const AiWalletMixin = {
     return fallback
   },
 
-  getAiMinimumBid(playerId, wallet = null) {
+  getAiMinimumBid(playerId: string, wallet: number | null = null): number {
     const safeWallet = wallet === null ? this.getAiWallet(playerId) : Math.max(0, Math.round(Number(wallet) || 0))
     const step = Math.max(1, Math.round(Number(GAME_SETTINGS.bidStep) || 1))
     if (safeWallet <= 0) {
@@ -96,7 +96,7 @@ export const AiWalletMixin = {
     return roundToStep(step, step)
   },
 
-  normalizeAiBidValue(playerId, bid, wallet = null) {
+  normalizeAiBidValue(playerId: string, bid: number, wallet: number | null = null): number {
     const safeWallet = wallet === null ? this.getAiWallet(playerId) : Math.max(0, Math.round(Number(wallet) || 0))
     const step = Math.max(1, Math.round(Number(GAME_SETTINGS.bidStep) || 1))
     const minBid = this.getAiMinimumBid(playerId, safeWallet)
@@ -108,7 +108,7 @@ export const AiWalletMixin = {
   }
 }
 
-// 兼容层：保持 window.MobaoAi 全局变量可用
-window.MobaoAi = window.MobaoAi || {}
-window.MobaoAi.WalletMixin = AiWalletMixin
-window.MobaoAi.AI_WALLET_INITIAL = AI_WALLET_INITIAL
+  // 兼容层：保持 window.MobaoAi 全局变量可用
+  ; (window as any).MobaoAi = (window as any).MobaoAi || {}
+  ; (window as any).MobaoAi.WalletMixin = AiWalletMixin
+  ; (window as any).MobaoAi.AI_WALLET_INITIAL = AI_WALLET_INITIAL
