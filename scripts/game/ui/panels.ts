@@ -22,10 +22,10 @@
  *
  * @exports PanelsMixin - 侧边信息面板 Mixin，混入 Phaser Scene
  */
-const { escapeHtml } = window.MobaoUtils
+const { escapeHtml } = (window as any).MobaoUtils
 
-export const UiPanelsMixin = {
-  addPrivateIntelEntry(entry) {
+export const UiPanelsMixin: Record<string, any> = {
+  addPrivateIntelEntry(entry: { source?: string; text?: string }): void {
     this.privateIntelEntries.push({
       source: entry.source || "未知",
       text: entry.text || "",
@@ -33,7 +33,7 @@ export const UiPanelsMixin = {
     })
   },
 
-  addPublicInfoEntry(entry) {
+  addPublicInfoEntry(entry: { source?: string; text?: string }): void {
     this.publicInfoEntries.push({
       source: entry.source || "未知",
       text: entry.text || "",
@@ -49,7 +49,7 @@ export const UiPanelsMixin = {
     }
   },
 
-  renderPrivateIntelPanel() {
+  renderPrivateIntelPanel(): void {
     const container = this.dom.personalPanelScroll
     if (!container) {
       return
@@ -76,7 +76,7 @@ export const UiPanelsMixin = {
     }
   },
 
-  renderPublicInfoPanel() {
+  renderPublicInfoPanel(): void {
     const container = this.dom.publicInfoScroll
     if (!container) {
       return
@@ -99,12 +99,12 @@ export const UiPanelsMixin = {
     }
   },
 
-  updateSidePanels(skillState, itemState, clueCount, occupiedCells, capacity, bidState) {
+  updateSidePanels(skillState?: any, itemState?: any, clueCount?: any, occupiedCells?: any, capacity?: any, bidState?: any): void {
     this.renderPrivateIntelPanel()
     this.renderPublicInfoPanel()
   }
 }
 
-// 兼容层：保持 window.MobaoUi 全局变量可用
-window.MobaoUi = window.MobaoUi || {}
-window.MobaoUi.PanelsMixin = UiPanelsMixin
+  // 兼容层：保持 window.MobaoUi 全局变量可用
+  ; (window as any).MobaoUi = (window as any).MobaoUi || {}
+  ; (window as any).MobaoUi.PanelsMixin = UiPanelsMixin

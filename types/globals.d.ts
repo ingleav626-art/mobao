@@ -25,18 +25,7 @@ declare var MobaoAnimations: {
   animateProfit(el: Element, val: number): void
 }
 
-declare var AudioManager: {
-  pauseBgm(): void
-  resumeBgm(): void
-}
-
-declare var AudioUI: {
-  play(key: string): void
-  startSearch(): void
-  stopSearch(): void
-  playSettlementReveal(quality: string): void
-  playCountdown(): void
-}
+// AudioManager 和 AudioUI 已在 TS 文件中定义，不再需要全局声明
 
 declare var CharacterSystem: {
   getOutlineBonus(): number
@@ -84,7 +73,8 @@ interface Window {
   }
   CharacterSystem: typeof CharacterSystem
   ArtifactData: typeof ArtifactData
-  AudioUI: typeof AudioUI
+  AudioUI: Record<string, any>
+  AudioManager: Record<string, any>
   Deps: Record<string, any>
   initDeps: (bridges: Record<string, any>) => void
 }

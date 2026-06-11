@@ -33,19 +33,29 @@
  *
  * @exports window.AudioManager - 音频管理器单例
  */
-const AudioManager = {
-  _initialized: false,
-  _enabled: true,
-  _bgmEnabled: true,
-  _sfxEnabled: true,
-  _bgmVolume: 0.5,
-  _sfxVolume: 0.7,
-  _currentBgm: null,
-  _bgmAudio: null,
-  _sfxPool: new Map(),
-  _loopingSfx: new Map(),
-  _stopableSfx: new Map(),
-  _audioContext: null,
+interface SoundEntry {
+  path: string;
+  loaded: boolean;
+  audio: HTMLAudioElement | null;
+}
+
+interface SoundCategory {
+  [key: string]: SoundEntry;
+}
+
+const AudioManager: Record<string, any> = {
+  _initialized: false as boolean,
+  _enabled: true as boolean,
+  _bgmEnabled: true as boolean,
+  _sfxEnabled: true as boolean,
+  _bgmVolume: 0.5 as number,
+  _sfxVolume: 0.7 as number,
+  _currentBgm: null as string | null,
+  _bgmAudio: null as HTMLAudioElement | null,
+  _sfxPool: new Map<string, SoundEntry>(),
+  _loopingSfx: new Map<string, HTMLAudioElement>(),
+  _stopableSfx: new Map<string, HTMLAudioElement>(),
+  _audioContext: null as AudioContext | null,
 
   sounds: {
     ui: {
@@ -75,13 +85,13 @@ const AudioManager = {
     }
   },
 
-  async init() {
+  async init(): Promise<void> {
     if (this._initialized) return
 
     this._loadSettings()
 
     try {
-      this._audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      this._audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
     } catch (e) {
       console.warn("[AudioManager] Web Audio API not supported")
     }
@@ -90,7 +100,7 @@ const AudioManager = {
     console.log("[AudioManager] Initialized")
   },
 
-  _loadSettings() {
+  _loadSettings(): void {
     try {
       const saved = localStorage.getItem("mobao_audio_settings")
       if (saved) {
@@ -116,7 +126,7 @@ const AudioManager = {
     }
   },
 
-  _saveSettings() {
+  _saveSettings(): void {
     try {
       localStorage.setItem(
         "mobao_audio_settings",
@@ -133,7 +143,7 @@ const AudioManager = {
     }
   },
 
-  async preload(category = "ui", keys = null) {
+  async preload(category: string = "ui", keys: string[] | null = null): Promise<void> {
     const sounds = this.sounds[category]
     if (!sounds) return
 
@@ -147,7 +157,7 @@ const AudioManager = {
         const audio = new Audio()
         audio.preload = "auto"
         audio.src = sound.path
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
           const timer = setTimeout(() => reject(new Error(`Load timeout: ${sound.path}`)), 5000)
           audio.oncanplaythrough = () => {
             clearTimeout(timer)
@@ -167,7 +177,7 @@ const AudioManager = {
     }
   },
 
-  playSfx(key, options = {}) {
+  playSfx(key: string, options: Record<string, any> = {}): void {
     if (!this._enabled || !this._sfxEnabled) return
 
     let sound = null
@@ -200,7 +210,7 @@ const AudioManager = {
     }
   },
 
-  playLoopingSfx(key, options = {}) {
+  playLoopingSfx(key: string, options: Record<string, any> = {}): void {
     if (!this._enabled || !this._sfxEnabled) return
 
     this.stopLoopingSfx(key)
@@ -234,7 +244,7 @@ const AudioManager = {
     }
   },
 
-  stopLoopingSfx(key) {
+  stopLoopingSfx(key: string): void {
     const audio = this._loopingSfx.get(key)
     if (audio) {
       audio.pause()
@@ -243,7 +253,7 @@ const AudioManager = {
     }
   },
 
-  stopAllLoopingSfx() {
+  stopAllLoopingSfx(): void {
     this._loopingSfx.forEach((audio, key) => {
       audio.pause()
       audio.currentTime = 0
@@ -251,7 +261,7 @@ const AudioManager = {
     this._loopingSfx.clear()
   },
 
-  playStopableSfx(key, options = {}) {
+  playStopableSfx(key: string, options: Record<string, any> = {}): void {
     if (!this._enabled || !this._sfxEnabled) return
 
     this.stopStopableSfx(key)
@@ -288,7 +298,7 @@ const AudioManager = {
     }
   },
 
-  stopStopableSfx(key) {
+  stopStopableSfx(key: string): void {
     const audio = this._stopableSfx.get(key)
     if (audio) {
       audio.pause()
@@ -297,7 +307,7 @@ const AudioManager = {
     }
   },
 
-  playBgm(key, options = {}) {
+  playBgm(key: string, options: Record<string, any> = {}): void {
     if (!this._enabled || !this._bgmEnabled) return
 
     const sound = this.sounds.bgm[key]
@@ -328,7 +338,7 @@ const AudioManager = {
     }
   },
 
-  stopBgm(fadeOut = 0) {
+  stopBgm(fadeOut: number = 0): void {
     if (!this._bgmAudio) return
 
     if (fadeOut > 0) {
@@ -350,19 +360,19 @@ const AudioManager = {
     this._currentBgm = null
   },
 
-  pauseBgm() {
+  pauseBgm(): void {
     if (this._bgmAudio && !this._bgmAudio.paused) {
       this._bgmAudio.pause()
     }
   },
 
-  resumeBgm() {
+  resumeBgm(): void {
     if (this._bgmAudio && this._bgmAudio.paused && this._bgmEnabled) {
-      this._bgmAudio.play().catch(() => {})
+      this._bgmAudio.play().catch(() => { })
     }
   },
 
-  setEnabled(enabled) {
+  setEnabled(enabled: boolean): void {
     this._enabled = enabled
     if (!enabled) {
       this.stopBgm()
@@ -370,7 +380,7 @@ const AudioManager = {
     this._saveSettings()
   },
 
-  setBgmEnabled(enabled) {
+  setBgmEnabled(enabled: boolean): void {
     this._bgmEnabled = enabled
     if (!enabled) {
       this.stopBgm()
@@ -380,12 +390,12 @@ const AudioManager = {
     this._saveSettings()
   },
 
-  setSfxEnabled(enabled) {
+  setSfxEnabled(enabled: boolean): void {
     this._sfxEnabled = enabled
     this._saveSettings()
   },
 
-  setBgmVolume(volume) {
+  setBgmVolume(volume: number): void {
     this._bgmVolume = Math.max(0, Math.min(1, volume))
     if (this._bgmAudio) {
       this._bgmAudio.volume = this._bgmVolume
@@ -393,12 +403,12 @@ const AudioManager = {
     this._saveSettings()
   },
 
-  setSfxVolume(volume) {
+  setSfxVolume(volume: number): void {
     this._sfxVolume = Math.max(0, Math.min(1, volume))
     this._saveSettings()
   },
 
-  getSettings() {
+  getSettings(): Record<string, any> {
     return {
       enabled: this._enabled,
       bgmEnabled: this._bgmEnabled,
@@ -408,13 +418,13 @@ const AudioManager = {
     }
   },
 
-  isBgmPlaying() {
+  isBgmPlaying(): boolean {
     return this._bgmAudio && !this._bgmAudio.paused
   },
 
-  getCurrentBgm() {
+  getCurrentBgm(): string | null {
     return this._currentBgm
   }
 }
 
-window.AudioManager = AudioManager
+  ; (window as any).AudioManager = AudioManager

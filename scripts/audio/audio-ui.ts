@@ -29,13 +29,13 @@
  *
  * @exports window.AudioUI - 音频 UI 交互层单例
  */
-const AudioUI = {
-  _initialized: false,
+const AudioUI: Record<string, any> = {
+  _initialized: false as boolean,
   _clickSelector: 'button, .btn, [role="button"], .clickable, .tab, .menu-item',
   _hoverSelector: ".hover-sound",
-  _customBindings: new Map(),
+  _customBindings: new Map<string, string>(),
 
-  init() {
+  init(): void {
     if (this._initialized) return
 
     document.addEventListener("click", this._handleClick.bind(this), true)
@@ -49,39 +49,39 @@ const AudioUI = {
     console.log("[AudioUI] Initialized")
   },
 
-  _handleClick(e) {
-    if (!AudioManager._enabled || !AudioManager._sfxEnabled) return
+  _handleClick(e: MouseEvent): void {
+    if (!(window as any).AudioManager._enabled || !(window as any).AudioManager._sfxEnabled) return
 
-    const target = e.target.closest(this._clickSelector)
+    const target = (e.target as HTMLElement).closest(this._clickSelector)
     if (target) {
       if (target.dataset.noSound === "true") return
       if (target.disabled || target.classList.contains("disabled")) return
 
-      const soundName = this._getSoundForElement(target)
-      const volume = parseFloat(target.dataset.soundVolume) || 0.8
+      const soundName = this._getSoundForElement(target as HTMLElement)
+      const volume = parseFloat((target as HTMLElement).dataset.soundVolume || "") || 0.8
 
-      AudioManager.playSfx(soundName, { volume })
+        ; (window as any).AudioManager.playSfx(soundName, { volume })
     }
   },
 
-  _handleKeydown(e) {
-    if (!AudioManager._enabled || !AudioManager._sfxEnabled) return
+  _handleKeydown(e: KeyboardEvent): void {
+    if (!(window as any).AudioManager._enabled || !(window as any).AudioManager._sfxEnabled) return
 
     if (e.key === "Enter" || e.key === " ") {
-      const activeEl = document.activeElement
+      const activeEl = document.activeElement as HTMLElement
       if (activeEl && activeEl.matches(this._clickSelector)) {
         if (activeEl.dataset.noSound === "true") return
-        if (activeEl.disabled || activeEl.classList.contains("disabled")) return
+        if ((activeEl as HTMLButtonElement).disabled || activeEl.classList.contains("disabled")) return
 
-        const soundName = this._getSoundForElement(activeEl)
-        const volume = parseFloat(activeEl.dataset.soundVolume) || 0.8
+        const soundName = this._getSoundForElement(activeEl as HTMLElement)
+        const volume = parseFloat((activeEl as HTMLElement).dataset.soundVolume || "") || 0.8
 
-        AudioManager.playSfx(soundName, { volume })
+          ; (window as any).AudioManager.playSfx(soundName, { volume })
       }
     }
   },
 
-  _getSoundForElement(el) {
+  _getSoundForElement(el: HTMLElement): string {
     if (el.dataset.sound) {
       return el.dataset.sound
     }
@@ -101,71 +101,71 @@ const AudioUI = {
     return "click"
   },
 
-  bindSound(selector, soundName) {
+  bindSound(selector: string, soundName: string): void {
     this._customBindings.set(selector, soundName)
   },
 
-  unbindSound(selector) {
+  unbindSound(selector: string): void {
     this._customBindings.delete(selector)
   },
 
-  playClick() {
-    AudioManager.playSfx("click")
+  playClick(): void {
+    ; (window as any).AudioManager.playSfx("click")
   },
 
-  playCoin() {
-    AudioManager.playSfx("coin")
+  playCoin(): void {
+    ; (window as any).AudioManager.playSfx("coin")
   },
 
-  playReveal() {
-    AudioManager.playSfx("reveal", { volume: 0.5 })
+  playReveal(): void {
+    ; (window as any).AudioManager.playSfx("reveal", { volume: 0.5 })
   },
 
-  playWin() {
-    AudioManager.playSfx("win")
+  playWin(): void {
+    ; (window as any).AudioManager.playSfx("win")
   },
 
-  playLose() {
-    AudioManager.playSfx("lose")
+  playLose(): void {
+    ; (window as any).AudioManager.playSfx("lose")
   },
 
-  playCountdown() {
-    AudioManager.playStopableSfx("countdown")
+  playCountdown(): void {
+    ; (window as any).AudioManager.playStopableSfx("countdown")
   },
 
-  stopCountdown() {
-    AudioManager.stopStopableSfx("countdown")
+  stopCountdown(): void {
+    ; (window as any).AudioManager.stopStopableSfx("countdown")
   },
 
-  playRound() {
-    AudioManager.playSfx("round")
+  playRound(): void {
+    ; (window as any).AudioManager.playSfx("round")
   },
 
-  playSkill(skillName) {
-    AudioManager.playSfx(skillName)
+  playSkill(skillName: string): void {
+    ; (window as any).AudioManager.playSfx(skillName)
   },
 
-  play(soundName, options = {}) {
-    AudioManager.playSfx(soundName, options)
+  play(soundName: string, options: Record<string, any> = {}): void {
+    ; (window as any).AudioManager.playSfx(soundName, options)
   },
 
-  startSearch() {
-    AudioManager.playStopableSfx("search", { volume: 1 })
+  startSearch(): void {
+    ; (window as any).AudioManager.playStopableSfx("search", { volume: 1 })
   },
 
-  stopSearch() {
-    AudioManager.stopStopableSfx("search")
+  stopSearch(): void {
+    ; (window as any).AudioManager.stopStopableSfx("search")
   },
 
-  playSettlementReveal(qualityKey) {
+  playSettlementReveal(qualityKey: string): void {
     if (qualityKey === "legendary") {
-      AudioManager.playSfx("revealLegendary", { volume: 0.8 })
+      ; (window as any).AudioManager.playSfx("revealLegendary", { volume: 0.8 })
     } else if (qualityKey === "rare") {
-      AudioManager.playSfx("revealRare", { volume: 0.7 })
+      ; (window as any).AudioManager.playSfx("revealRare", { volume: 0.7 })
     } else {
-      AudioManager.playSfx("revealNormal", { volume: 0.6 })
+      ; (window as any).AudioManager.playSfx("revealNormal", { volume: 0.6 })
     }
   }
 }
 
-window.AudioUI = AudioUI
+  ; (window as any).AudioUI = AudioUI

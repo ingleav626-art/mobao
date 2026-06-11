@@ -23,11 +23,11 @@
  *
  * @exports HistoryMixin - 历史记录与道具抽屉 Mixin，混入 Phaser Scene
  */
-const { escapeHtml, formatCompactNumber } = window.MobaoUtils
-const { GAME_SETTINGS } = window.MobaoSettings
+const { escapeHtml, formatCompactNumber } = (window as any).MobaoUtils
+const { GAME_SETTINGS } = (window as any).MobaoSettings
 
-export const UiHistoryMixin = {
-  resetPlayerHistoryState() {
+export const UiHistoryMixin: Record<string, any> = {
+  resetPlayerHistoryState(): void {
     this.players.forEach((player) => {
       this.playerRoundHistory[player.id] = []
       this.playerUsageHistory[player.id] = []
@@ -36,13 +36,13 @@ export const UiHistoryMixin = {
     this.refreshPlayerHistoryUI()
   },
 
-  clearCurrentRoundUsage() {
+  clearCurrentRoundUsage(): void {
     this.players.forEach((player) => {
       this.currentRoundUsage[player.id] = []
     })
   },
 
-  recordPlayerUsage(playerId, itemId) {
+  recordPlayerUsage(playerId: string, itemId: string): void {
     if (!this.currentRoundUsage[playerId]) {
       this.currentRoundUsage[playerId] = []
     }
@@ -50,7 +50,7 @@ export const UiHistoryMixin = {
     this.refreshPlayerHistoryUI()
   },
 
-  recordRoundHistory(roundBids) {
+  recordRoundHistory(roundBids: Array<{ playerId: string; bid: number }>): void {
     const roundNumber = this.round
     this.players.forEach((player) => {
       const bid = roundBids.find((entry) => entry.playerId === player.id)?.bid ?? 0
@@ -69,7 +69,7 @@ export const UiHistoryMixin = {
     this.refreshPlayerHistoryUI()
   },
 
-  refreshPlayerHistoryUI() {
+  refreshPlayerHistoryUI(): void {
     this.players.forEach((player) => {
       const panel = this.playerHistoryPanels[player.id]
       if (!panel) {
@@ -102,7 +102,7 @@ export const UiHistoryMixin = {
     })
   },
 
-  renderItemUsageCell(actions) {
+  renderItemUsageCell(actions: string[]): string {
     if (!actions || actions.length === 0) {
       return '<span class="history-empty">-</span>'
     }
@@ -115,7 +115,7 @@ export const UiHistoryMixin = {
       .join(" ")
   },
 
-  toggleItemDrawer() {
+  toggleItemDrawer(): void {
     if (!this.dom.itemDrawer) {
       return
     }
@@ -127,7 +127,7 @@ export const UiHistoryMixin = {
     }
   },
 
-  openItemDrawer() {
+  openItemDrawer(): void {
     if (!this.dom.itemDrawer) {
       return
     }
@@ -145,7 +145,7 @@ export const UiHistoryMixin = {
     }
   },
 
-  closeItemDrawer() {
+  closeItemDrawer(): void {
     if (!this.dom.itemDrawer) {
       return
     }
@@ -156,7 +156,7 @@ export const UiHistoryMixin = {
     }
   },
 
-  renderItemDrawer() {
+  renderItemDrawer(): void {
     if (!this.dom.itemDrawerList) {
       return
     }
@@ -199,6 +199,6 @@ export const UiHistoryMixin = {
   }
 }
 
-// 兼容层：保持 window.MobaoUi 全局变量可用
-window.MobaoUi = window.MobaoUi || {}
-window.MobaoUi.HistoryMixin = UiHistoryMixin
+  // 兼容层：保持 window.MobaoUi 全局变量可用
+  ; (window as any).MobaoUi = (window as any).MobaoUi || {}
+  ; (window as any).MobaoUi.HistoryMixin = UiHistoryMixin
