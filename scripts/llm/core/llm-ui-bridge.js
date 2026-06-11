@@ -1,6 +1,6 @@
 /**
- * @file llm/llm-ui-bridge.js
- * @module llm/ui-bridge
+ * @file llm/core/llm-ui-bridge.js
+ * @module llm/core/ui-bridge
  * @description LLM 设置 UI 桥接层。采用 IIFE 模式，挂载到 window.LlmUiBridge。
  *              连接 LlmManager 后端与设置面板 DOM，处理 Provider 切换、表单读写、
  *              连接测试、自定义 Provider 增删等 UI 交互。
@@ -30,7 +30,7 @@
  *   setting-llmProvider, setting-llmApiKey, setting-llmEndpoint,
  *   setting-llmModel, setting-llmTimeout, setting-llmTemperature, 等
  *
- * @requires LlmManager   - LLM 管理器（scripts/llm/llm-manager.js）
+ * @requires LlmManager   - LLM 管理器（scripts/llm/core/llm-manager.js）
  * @requires DOM           - 设置面板表单元素
  *
  * @exports window.LlmUiBridge

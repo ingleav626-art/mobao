@@ -1,22 +1,23 @@
 /**
- * @file llm/qwen-provider.js
- * @module llm/qwen-provider
- * @description 通义千问 Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
+ * @file llm/providers/glm-provider.js
+ * @module llm/providers/glm-provider
+ * @description 智谱 GLM Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
  *
  * 默认配置：
- *   - endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
- *   - model: qwen-turbo
+ *   - endpoint: https://open.bigmodel.cn/api/paas/v4/chat/completions
+ *   - model: glm-4-flash
  *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
- *   - 支持 thinking 模式、独立模型、跨局记忆、反思
+ *   - 支持 thinking 模式、跨局记忆、反思
  *
  * 存储键：
- *   - 设置: mobao_qwen_settings_v1
- *   - API Key: mobao_qwen_api_key_v1
+ *   - 设置: mobao_glm_settings_v1
+ *   - API Key: mobao_glm_api_key_v1
  *
- * @requires LlmManager - LLM 管理器（scripts/llm/llm-manager.js）
+ * @requires LlmManager - LLM 管理器（scripts/llm/core/llm-manager.js）
  *
- * @exports QwenProvider - 通义千问 Provider 对象
+ * @exports 通过 LlmManager.registerProvider("glm", provider) 注册，无独立导出
+ * @exports GlmProvider - 智谱GLM Provider 对象
  */
 "use strict"
 
@@ -27,21 +28,19 @@ if (!window.LlmManager) {
 const { createOpenAICompatibleProvider, utils } = window.LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
-const QWEN_STORAGE_KEY = "mobao_qwen_settings_v1"
-const QWEN_API_KEY_STORAGE_KEY = "mobao_qwen_api_key_v1"
+const GLM_STORAGE_KEY = "mobao_glm_settings_v1"
+const GLM_API_KEY_STORAGE_KEY = "mobao_glm_api_key_v1"
 
-function defaultQwenSettings() {
+function defaultGlmSettings() {
   return {
-    provider: "qwen",
+    provider: "glm",
     enabled: false,
     multiGameMemoryEnabled: false,
     reflectionEnabled: false,
     thinkingEnabled: false,
     thinkingParams: "",
-    independentModelEnabled: false,
-    independentReflectionEnabled: true,
-    endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-    model: "qwen-turbo",
+    endpoint: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    model: "glm-4-flash",
     apiKey: "",
     timeoutMs: 40000,
     temperature: 0.2,
@@ -49,9 +48,9 @@ function defaultQwenSettings() {
   }
 }
 
-function normalizeQwenSettings(source, fallback) {
+function normalizeGlmSettings(source, fallback) {
   const defaults = {
-    ...defaultQwenSettings(),
+    ...defaultGlmSettings(),
     ...normalizeObject(fallback)
   }
   const input = normalizeObject(source)
@@ -62,34 +61,32 @@ function normalizeQwenSettings(source, fallback) {
     typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : String(defaults.apiKey || "")
 
   return {
-    provider: "qwen",
+    provider: "glm",
     enabled: Boolean(input.enabled),
     multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
     reflectionEnabled: Boolean(input.reflectionEnabled),
     thinkingEnabled: Boolean(input.thinkingEnabled),
     independentModelEnabled: Boolean(input.independentModelEnabled),
-    independentReflectionEnabled:
-      input.independentReflectionEnabled !== undefined ? Boolean(input.independentReflectionEnabled) : true,
     thinkingParams: typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,
     endpoint: endpointRaw || defaults.endpoint,
     model: modelRaw.length > 0 ? modelRaw : defaults.model,
     apiKey: apiKeyRaw,
     timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
-    temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 2),
+    temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 1),
     maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
   }
 }
 
-function isQwenThinkingModel(model) {
-  return /qwen.*think|qwen.*reasoning/i.test(model)
+function isGlmThinkingModel(model) {
+  return /glm.*z1|glm.*think/i.test(model)
 }
 
 function buildRequestBody(settings, context) {
   const { isThinking, temperature } = context
-  const isQwenThinkingModelName = isQwenThinkingModel(settings.model)
+  const isGlmThinkingModelName = isGlmThinkingModel(settings.model)
   const body = {}
 
-  if (isThinking && isQwenThinkingModelName) {
+  if (isThinking && isGlmThinkingModelName) {
     body.enable_thinking = true
   } else {
     body.temperature = temperature
@@ -107,37 +104,39 @@ function buildRequestBody(settings, context) {
   return body
 }
 
-const qwenProvider = createOpenAICompatibleProvider({
-  id: "qwen",
-  name: "通义千问",
-  description: "阿里云通义千问，支持 qwen-turbo、qwen-plus、qwen-max 等模型",
-  storageKey: QWEN_STORAGE_KEY,
-  apiKeyStorageKey: QWEN_API_KEY_STORAGE_KEY,
-  defaultSettings: defaultQwenSettings,
-  normalizeSettings: normalizeQwenSettings,
-  isThinkingModel: isQwenThinkingModel,
+const glmProvider = createOpenAICompatibleProvider({
+  id: "glm",
+  name: "智谱GLM",
+  description: "智谱AI GLM系列，支持 glm-4、glm-4-flash、glm-z1 等模型",
+  storageKey: GLM_STORAGE_KEY,
+  apiKeyStorageKey: GLM_API_KEY_STORAGE_KEY,
+  defaultSettings: defaultGlmSettings,
+  normalizeSettings: normalizeGlmSettings,
+  isThinkingModel: isGlmThinkingModel,
   buildRequestBody: buildRequestBody,
   supportsFeature: function (feature) {
-    const supportedFeatures = ["streaming", "thinking"]
+    const supportedFeatures = ["streaming"]
     return supportedFeatures.indexOf(feature) !== -1
   }
 })
 
 const provider = {
-  ...qwenProvider,
-  id: "qwen",
-  name: "通义千问",
-  description: "阿里云通义千问，支持 qwen-turbo、qwen-plus、qwen-max 等模型"
+  ...glmProvider,
+  id: "glm",
+  name: "智谱GLM",
+  description: "智谱AI GLM系列，支持 glm-4、glm-4-flash、glm-z1 等模型"
 }
 
-export const QwenProvider = {
-  id: "qwen",
-  name: "通义千问",
-  QWEN_STORAGE_KEY,
-  QWEN_API_KEY_STORAGE_KEY,
-  defaultQwenSettings,
-  normalizeQwenSettings,
-  isQwenThinkingModel,
+window.LlmManager.registerProvider(provider)
+
+export const GlmProvider = {
+  id: "glm",
+  name: "智谱GLM",
+  GLM_STORAGE_KEY,
+  GLM_API_KEY_STORAGE_KEY,
+  defaultGlmSettings,
+  normalizeGlmSettings,
+  isGlmThinkingModel,
   getSettings: function () {
     return provider.loadSettings()
   },
@@ -157,6 +156,5 @@ export const QwenProvider = {
     return provider.testConnection(overrideSettings)
   }
 }
-
-// 兼容层：保持 window.QwenProvider 全局变量可用
-window.QwenProvider = QwenProvider
+// 兼容层：保持 window.GlmProvider 全局变量可用
+window.GlmProvider = GlmProvider

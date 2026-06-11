@@ -169,7 +169,7 @@ if (!window.AuctionAI) {
 }
 
 if (!window.DeepSeekLLM) {
-  throw new Error("DeepSeekLLM not found: 请先加载 scripts/llm/deepseek-llm.js")
+  throw new Error("DeepSeekLLM not found: 请先加载 scripts/llm/providers/deepseek-llm.js")
 }
 
 if (!window.MobaoSceneLlm) {

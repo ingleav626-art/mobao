@@ -1,6 +1,6 @@
 /**
- * @file llm/prompts.js
- * @module llm/prompts
+ * @file llm/core/prompts.js
+ * @module llm/core/prompts
  * @description LLM 决策 Prompt 模板。集中管理所有 LLM 提示词，便于调优和版本管理。
  *
  * @exports LLM_DECISION_SYSTEM_PROMPT - AI 竞拍决策系统 Prompt

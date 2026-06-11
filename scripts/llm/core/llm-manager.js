@@ -1,6 +1,6 @@
 /**
- * @file llm/llm-manager.js
- * @module llm/manager
+ * @file llm/core/llm-manager.js
+ * @module llm/core/manager
  * @description LLM 多 Provider 管理器。采用 IIFE 模式，挂载到 window.LlmManager。
  *              统一管理多个 LLM Provider（DeepSeek/OpenAI/Qwen/GLM/Kimi/自定义），
  *              提供注册、切换、请求转发、Token 监控和自定义 Provider 持久化。

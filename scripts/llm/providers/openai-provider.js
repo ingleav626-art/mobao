@@ -1,6 +1,6 @@
 /**
- * @file llm/openai-provider.js
- * @module llm/openai-provider
+ * @file llm/providers/openai-provider.js
+ * @module llm/providers/openai-provider
  * @description OpenAI Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
  *
@@ -14,7 +14,7 @@
  *   - 设置: mobao_openai_settings_v1
  *   - API Key: mobao_openai_api_key_v1
  *
- * @requires LlmManager - LLM 管理器（scripts/llm/llm-manager.js）
+ * @requires LlmManager - LLM 管理器（scripts/llm/core/llm-manager.js）
  *
  * @exports 通过 LlmManager.registerProvider("openai", provider) 注册，无独立导出
  * @exports OpenAIProvider - OpenAI Provider 对象

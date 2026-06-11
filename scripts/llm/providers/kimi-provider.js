@@ -1,23 +1,23 @@
 /**
- * @file llm/glm-provider.js
- * @module llm/glm-provider
- * @description 智谱 GLM Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
+ * @file llm/providers/kimi-provider.js
+ * @module llm/providers/kimi-provider
+ * @description Moonshot Kimi Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
  *
  * 默认配置：
- *   - endpoint: https://open.bigmodel.cn/api/paas/v4/chat/completions
- *   - model: glm-4-flash
+ *   - endpoint: https://api.moonshot.cn/v1/chat/completions
+ *   - model: moonshot-v1-8k
  *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
  *   - 支持 thinking 模式、跨局记忆、反思
  *
  * 存储键：
- *   - 设置: mobao_glm_settings_v1
- *   - API Key: mobao_glm_api_key_v1
+ *   - 设置: mobao_kimi_settings_v1
+ *   - API Key: mobao_kimi_api_key_v1
  *
- * @requires LlmManager - LLM 管理器（scripts/llm/llm-manager.js）
+ * @requires LlmManager - LLM 管理器（scripts/llm/core/llm-manager.js）
  *
- * @exports 通过 LlmManager.registerProvider("glm", provider) 注册，无独立导出
- * @exports GlmProvider - 智谱GLM Provider 对象
+ * @exports 通过 LlmManager.registerProvider("kimi", provider) 注册，无独立导出
+ * @exports KimiProvider - Kimi Provider 对象
  */
 "use strict"
 
@@ -28,19 +28,19 @@ if (!window.LlmManager) {
 const { createOpenAICompatibleProvider, utils } = window.LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
-const GLM_STORAGE_KEY = "mobao_glm_settings_v1"
-const GLM_API_KEY_STORAGE_KEY = "mobao_glm_api_key_v1"
+const KIMI_STORAGE_KEY = "mobao_kimi_settings_v1"
+const KIMI_API_KEY_STORAGE_KEY = "mobao_kimi_api_key_v1"
 
-function defaultGlmSettings() {
+function defaultKimiSettings() {
   return {
-    provider: "glm",
+    provider: "kimi",
     enabled: false,
     multiGameMemoryEnabled: false,
     reflectionEnabled: false,
     thinkingEnabled: false,
     thinkingParams: "",
-    endpoint: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-    model: "glm-4-flash",
+    endpoint: "https://api.moonshot.cn/v1/chat/completions",
+    model: "moonshot-v1-8k",
     apiKey: "",
     timeoutMs: 40000,
     temperature: 0.2,
@@ -48,9 +48,9 @@ function defaultGlmSettings() {
   }
 }
 
-function normalizeGlmSettings(source, fallback) {
+function normalizeKimiSettings(source, fallback) {
   const defaults = {
-    ...defaultGlmSettings(),
+    ...defaultKimiSettings(),
     ...normalizeObject(fallback)
   }
   const input = normalizeObject(source)
@@ -61,7 +61,7 @@ function normalizeGlmSettings(source, fallback) {
     typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : String(defaults.apiKey || "")
 
   return {
-    provider: "glm",
+    provider: "kimi",
     enabled: Boolean(input.enabled),
     multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
     reflectionEnabled: Boolean(input.reflectionEnabled),
@@ -77,43 +77,20 @@ function normalizeGlmSettings(source, fallback) {
   }
 }
 
-function isGlmThinkingModel(model) {
-  return /glm.*z1|glm.*think/i.test(model)
-}
-
-function buildRequestBody(settings, context) {
-  const { isThinking, temperature } = context
-  const isGlmThinkingModelName = isGlmThinkingModel(settings.model)
-  const body = {}
-
-  if (isThinking && isGlmThinkingModelName) {
-    body.enable_thinking = true
-  } else {
-    body.temperature = temperature
-  }
-
-  if (isThinking && settings.thinkingParams) {
-    try {
-      const customParams = JSON.parse(settings.thinkingParams)
-      if (customParams && typeof customParams === "object") {
-        Object.assign(body, customParams)
-      }
-    } catch (_e) { }
-  }
-
-  return body
-}
-
-const glmProvider = createOpenAICompatibleProvider({
-  id: "glm",
-  name: "智谱GLM",
-  description: "智谱AI GLM系列，支持 glm-4、glm-4-flash、glm-z1 等模型",
-  storageKey: GLM_STORAGE_KEY,
-  apiKeyStorageKey: GLM_API_KEY_STORAGE_KEY,
-  defaultSettings: defaultGlmSettings,
-  normalizeSettings: normalizeGlmSettings,
-  isThinkingModel: isGlmThinkingModel,
-  buildRequestBody: buildRequestBody,
+const kimiProvider = createOpenAICompatibleProvider({
+  id: "kimi",
+  name: "Kimi",
+  description: "Moonshot Kimi，支持 moonshot-v1-8k、moonshot-v1-32k 等模型",
+  storageKey: KIMI_STORAGE_KEY,
+  apiKeyStorageKey: KIMI_API_KEY_STORAGE_KEY,
+  defaultSettings: defaultKimiSettings,
+  normalizeSettings: normalizeKimiSettings,
+  isThinkingModel: function (model) {
+    return false
+  },
+  buildRequestBody: function (settings, context) {
+    return { temperature: context.temperature }
+  },
   supportsFeature: function (feature) {
     const supportedFeatures = ["streaming"]
     return supportedFeatures.indexOf(feature) !== -1
@@ -121,22 +98,21 @@ const glmProvider = createOpenAICompatibleProvider({
 })
 
 const provider = {
-  ...glmProvider,
-  id: "glm",
-  name: "智谱GLM",
-  description: "智谱AI GLM系列，支持 glm-4、glm-4-flash、glm-z1 等模型"
+  ...kimiProvider,
+  id: "kimi",
+  name: "Kimi",
+  description: "Moonshot Kimi，支持 moonshot-v1-8k、moonshot-v1-32k 等模型"
 }
 
 window.LlmManager.registerProvider(provider)
 
-export const GlmProvider = {
-  id: "glm",
-  name: "智谱GLM",
-  GLM_STORAGE_KEY,
-  GLM_API_KEY_STORAGE_KEY,
-  defaultGlmSettings,
-  normalizeGlmSettings,
-  isGlmThinkingModel,
+export const KimiProvider = {
+  id: "kimi",
+  name: "Kimi",
+  KIMI_STORAGE_KEY,
+  KIMI_API_KEY_STORAGE_KEY,
+  defaultKimiSettings,
+  normalizeKimiSettings,
   getSettings: function () {
     return provider.loadSettings()
   },
@@ -156,5 +132,5 @@ export const GlmProvider = {
     return provider.testConnection(overrideSettings)
   }
 }
-// 兼容层：保持 window.GlmProvider 全局变量可用
-window.GlmProvider = GlmProvider
+// 兼容层：保持 window.KimiProvider 全局变量可用
+window.KimiProvider = KimiProvider

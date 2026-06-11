@@ -1,6 +1,6 @@
 /**
- * @file llm/scene-llm.js
- * @module llm/scene-llm
+ * @file llm/core/scene-llm.js
+ * @module llm/core/scene-llm
  * @description 场景 LLM 桥接器。采用 IIFE 模式，挂载到 window.MobaoSceneLlm。
  *              是 AI 决策系统与 LLM 后端之间的核心桥梁，负责构建 prompt、调用 LLM、
  *              解析响应、执行工具、纠错重试、记录遥测数据等完整流程。

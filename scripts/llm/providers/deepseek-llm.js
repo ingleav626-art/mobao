@@ -1,6 +1,6 @@
 /**
- * @file llm/deepseek-llm.js
- * @module llm/deepseek-llm
+ * @file llm/providers/deepseek-llm.js
+ * @module llm/providers/deepseek-llm
  * @description DeepSeek LLM 客户端（旧版独立实现）。采用 IIFE 模式，挂载到 window.DeepSeekLLM。
  *              提供完整的 DeepSeek API 调用、设置管理、Token 监控和日志功能。
  *              注意：新架构中 Provider 逻辑已迁移至 llm-manager.js + deepseek-provider.js，
