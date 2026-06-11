@@ -33,12 +33,12 @@
  *
  * @exports BiddingMixin - 出价流程 Mixin，混入 Phaser Scene
  */
-const { delay } = window.MobaoUtils
-const { GAME_SETTINGS } = window.MobaoSettings
-const { formatBidRevealNumber } = window.MobaoUtils
+const { delay } = (window as any).MobaoUtils
+const { GAME_SETTINGS } = (window as any).MobaoSettings
+const { formatBidRevealNumber } = (window as any).MobaoUtils
 
-export const BiddingMixin = {
-  setPlayerBidReady(playerId, ready) {
+export const BiddingMixin: Record<string, any> = {
+  setPlayerBidReady(playerId: string, ready: boolean): void {
     this.roundBidReadyState[playerId] = Boolean(ready)
     const cardEl = document.getElementById(`playerCard-${playerId}`)
     if (cardEl) {
@@ -46,7 +46,7 @@ export const BiddingMixin = {
     }
   },
 
-  areAllPlayersBidReady() {
+  areAllPlayersBidReady(): boolean {
     return this.players.every((player) => Boolean(this.roundBidReadyState[player.id]))
   },
 
@@ -71,7 +71,7 @@ export const BiddingMixin = {
     // indicator 由 processAiDecisions 中的 Promise.all 完成后隐藏
   },
 
-  waitUntilResumed() {
+  waitUntilResumed(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.roundPaused) {
         resolve()
@@ -92,7 +92,7 @@ export const BiddingMixin = {
     })
   },
 
-  openBidKeypad() {
+  openBidKeypad(): void {
     if (this.settled || this.roundResolving || this.playerBidSubmitted) {
       return
     }
@@ -108,19 +108,19 @@ export const BiddingMixin = {
     }
   },
 
-  closeBidKeypad() {
+  closeBidKeypad(): void {
     this.dom.bidKeypad.classList.add("hidden")
     if (this.input) {
       this.input.enabled = true
     }
   },
 
-  syncBidKeypadScreen() {
+  syncBidKeypadScreen(): void {
     this.dom.keypadScreen.textContent = this.keypadValue
     this.updateKeypadDirectHint()
   },
 
-  updateKeypadDirectHint() {
+  updateKeypadDirectHint(): void {
     if (!this.dom.keypadDirectHint) return
     if (this.round >= GAME_SETTINGS.maxRounds || this.settled) {
       this.dom.keypadDirectHint.classList.add("hidden")
@@ -142,7 +142,7 @@ export const BiddingMixin = {
     }
   },
 
-  handleBidKeyInput(key) {
+  handleBidKeyInput(key: string): void {
     if (key === "clear") {
       this.keypadValue = "0"
       this.syncBidKeypadScreen()
@@ -168,20 +168,20 @@ export const BiddingMixin = {
     this.syncBidKeypadScreen()
   },
 
-  showGameConfirm(message, onConfirm, onCancel) {
+  showGameConfirm(message: string, onConfirm: () => void, onCancel?: () => void): void {
     this.dom.gameConfirmMsg.textContent = message
     this._gameConfirmCallback = onConfirm || null
     this._gameCancelCallback = onCancel || null
     this.dom.gameConfirmOverlay.classList.remove("hidden")
   },
 
-  hideGameConfirm() {
+  hideGameConfirm(): void {
     this.dom.gameConfirmOverlay.classList.add("hidden")
     this._gameConfirmCallback = null
     this._gameCancelCallback = null
   },
 
-  async resolveRoundBids(reason = "manual", forceSettle = false) {
+  async resolveRoundBids(reason: string = "manual", forceSettle: boolean = false): Promise<void> {
     console.log(
       `[resolveRoundBids] reason=${reason}, forceSettle=${forceSettle}, settled=${this.settled}, roundResolving=${this.roundResolving}, round=${this.round}, isLanMode=${this.isLanMode}`
     )
@@ -196,8 +196,8 @@ export const BiddingMixin = {
     this.roundResolving = true
     this.stopRoundTimer()
 
-    if (window.AudioUI) {
-      AudioUI.stopCountdown()
+    if ((window as any).AudioUI) {
+      ; (window as any).AudioUI.stopCountdown()
     }
 
     try {
@@ -248,8 +248,8 @@ export const BiddingMixin = {
       await delay(GAME_SETTINGS.postRevealWaitMs)
 
       // 回合过渡动画：出价揭示后切换到下一回合
-      if (window.MobaoAnimations) {
-        await MobaoAnimations.roundTransition({
+      if ((window as any).MobaoAnimations) {
+        await (window as any).MobaoAnimations.roundTransition({
           text: "第 " + (this.round + 1) + " 回合"
         })
       }
@@ -270,7 +270,7 @@ export const BiddingMixin = {
     }
   },
 
-  buildRoundBids() {
+  buildRoundBids(): Array<{ playerId: string; bid: number }> {
     const clueRate =
       this.items.length === 0 ? 0 : this.items.filter((item) => this.hasAnyInfo(item)).length / this.items.length
     const lastRoundBids = this.getLastRoundBidMap()
@@ -331,7 +331,7 @@ export const BiddingMixin = {
     })
   },
 
-  getLastRoundBidMap() {
+  getLastRoundBidMap(): Record<string, number> {
     const map = {}
     this.players.forEach((player) => {
       const history = this.playerRoundHistory[player.id] || []
@@ -343,20 +343,20 @@ export const BiddingMixin = {
     return map
   },
 
-  async revealRoundBidsSequential(roundBids) {
+  async revealRoundBidsSequential(roundBids: Array<{ playerId: string; bid: number }>): Promise<void> {
     for (let i = 0; i < this.players.length; i += 1) {
       const player = this.players[i]
       const bidInfo = roundBids.find((entry) => entry.playerId === player.id)
       this.setPlayerBidDisplay(player.id, bidInfo.bid, i + 1)
       this.writeLog(`${player.name} 本轮出价：${bidInfo.bid}`)
-      if (window.AudioUI) {
-        AudioUI.playReveal()
+      if ((window as any).AudioUI) {
+        ; (window as any).AudioUI.playReveal()
       }
       await delay(GAME_SETTINGS.bidRevealIntervalMs)
     }
   },
 
-  setPlayerBidDisplay(playerId, bid, order) {
+  setPlayerBidDisplay(playerId: string, bid: number, order: number): void {
     const bidEl = document.getElementById(`bid-${playerId}`)
     const cardEl = document.getElementById(`playerCard-${playerId}`)
     if (bidEl) {
@@ -375,7 +375,7 @@ export const BiddingMixin = {
     }
   },
 
-  playerBid() {
+  playerBid(): void {
     this.closeItemDrawer()
 
     if (this.settled) {
@@ -428,7 +428,7 @@ export const BiddingMixin = {
     }
   },
 
-  settleCurrentRun() {
+  settleCurrentRun(): void {
     if (this.isLanMode && !this.lanIsHost) return
     if (this.settled) {
       this.writeLog("本局已结算，请重新开局。")
@@ -438,7 +438,7 @@ export const BiddingMixin = {
     this.resolveRoundBids("manual", true)
   },
 
-  showSettleOverlay(html) {
+  showSettleOverlay(html: string): void {
     this.dom.settleCard.innerHTML = html
     this.dom.settleOverlay.classList.remove("hidden")
 
@@ -453,6 +453,6 @@ export const BiddingMixin = {
   }
 }
 
-// 兼容层：保持 window.MobaoBidding 全局变量可用
-window.MobaoBidding = window.MobaoBidding || {}
-window.MobaoBidding.BiddingMixin = BiddingMixin
+  // 兼容层：保持 window.MobaoBidding 全局变量可用
+  ; (window as any).MobaoBidding = (window as any).MobaoBidding || {}
+  ; (window as any).MobaoBidding.BiddingMixin = BiddingMixin

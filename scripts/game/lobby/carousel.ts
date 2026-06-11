@@ -22,15 +22,15 @@
  *
  * @exports CarouselMixin - 轮播组件 Mixin，混入 Phaser Scene
  */
-export const LobbyCarouselMixin = {
-  renderCarousel() {
+export const LobbyCarouselMixin: Record<string, any> = {
+  renderCarousel(): void {
     const track = document.getElementById("carouselTrack")
-    if (!track || !window.MobaoMapProfiles) {
+    if (!track || !(window as any).MobaoMapProfiles) {
       return
     }
 
-    const profiles = window.MobaoMapProfiles.getAllProfiles()
-    const selectedId = window.MobaoMapProfiles.getSelectedProfileId()
+    const profiles = (window as any).MobaoMapProfiles.getAllProfiles()
+    const selectedId = (window as any).MobaoMapProfiles.getSelectedProfileId()
 
     track.innerHTML = profiles
       .map((p) => {
@@ -48,7 +48,7 @@ export const LobbyCarouselMixin = {
     track.querySelectorAll(".lobby-map-card").forEach((card) => {
       card.addEventListener("click", () => {
         const id = card.getAttribute("data-map-id")
-        window.MobaoMapProfiles.setSelectedProfileId(id)
+          ; (window as any).MobaoMapProfiles.setSelectedProfileId(id)
         track.querySelectorAll(".lobby-map-card").forEach((c) => c.classList.remove("selected"))
         card.classList.add("selected")
         this.renderMapDetail()
@@ -60,8 +60,8 @@ export const LobbyCarouselMixin = {
     this.bindCarouselTouch()
   },
 
-  bindCarouselTouch() {
-    const wrap = document.querySelector(".carousel-track-wrap")
+  bindCarouselTouch(): void {
+    const wrap = document.querySelector(".carousel-track-wrap") as any
     if (!wrap || wrap._touchBound) return
     wrap._touchBound = true
 
@@ -71,7 +71,7 @@ export const LobbyCarouselMixin = {
 
     wrap.addEventListener(
       "touchstart",
-      (e) => {
+      (e: TouchEvent) => {
         startX = e.touches[0].clientX
         startY = e.touches[0].clientY
         dragging = true
@@ -81,7 +81,7 @@ export const LobbyCarouselMixin = {
 
     wrap.addEventListener(
       "touchend",
-      (e) => {
+      (e: TouchEvent) => {
         if (!dragging) return
         dragging = false
         const dx = e.changedTouches[0].clientX - startX
@@ -94,7 +94,7 @@ export const LobbyCarouselMixin = {
     )
   },
 
-  carouselScroll(direction) {
+  carouselScroll(direction: number): void {
     const track = document.getElementById("carouselTrack")
     if (!track) return
     const cards = track.querySelectorAll(".lobby-map-card")
@@ -103,7 +103,7 @@ export const LobbyCarouselMixin = {
     this.updateCarouselPosition()
   },
 
-  updateCarouselPosition() {
+  updateCarouselPosition(): void {
     const track = document.getElementById("carouselTrack")
     const leftBtn = document.getElementById("carouselLeftBtn")
     const rightBtn = document.getElementById("carouselRightBtn")
@@ -114,15 +114,15 @@ export const LobbyCarouselMixin = {
 
     const cards = track.querySelectorAll(".lobby-map-card")
     const maxOffset = Math.max(0, cards.length - 3)
-    if (leftBtn) leftBtn.disabled = this._carouselOffset <= 0
-    if (rightBtn) rightBtn.disabled = this._carouselOffset >= maxOffset
+    if (leftBtn) (leftBtn as HTMLButtonElement).disabled = this._carouselOffset <= 0
+    if (rightBtn) (rightBtn as HTMLButtonElement).disabled = this._carouselOffset >= maxOffset
   },
 
-  renderMapDetail() {
+  renderMapDetail(): void {
     const detail = document.getElementById("lobbyMapDetail")
-    if (!detail || !window.MobaoMapProfiles) return
+    if (!detail || !(window as any).MobaoMapProfiles) return
 
-    const profile = window.MobaoMapProfiles.getProfile(window.MobaoMapProfiles.getSelectedProfileId())
+    const profile = (window as any).MobaoMapProfiles.getProfile((window as any).MobaoMapProfiles.getSelectedProfileId())
     if (!profile) return
 
     const p = profile.params
@@ -133,10 +133,11 @@ export const LobbyCarouselMixin = {
       }
       return thresholds[thresholds.length - 1][1]
     }
-    const totalQ = Object.values(p.qualityWeights || {}).reduce((s, v) => s + v, 0) || 1
+    const qw: Record<string, number> = p.qualityWeights || {}
+    const totalQ = Object.values(qw).reduce((s: number, v: number) => s + v, 0) || 1
     const highQ =
-      ((p.qualityWeights.fine || 0) + (p.qualityWeights.rare || 0) + (p.qualityWeights.legendary || 0)) / totalQ
-    const lowQ = (p.qualityWeights.poor || 0) / totalQ
+      ((qw.fine || 0) + (qw.rare || 0) + (qw.legendary || 0)) / totalQ
+    const lowQ = (qw.poor || 0) / totalQ
     const takeRatio = p.directTakeRatio || 0.2
     const rounds = p.maxRounds || 5
 
@@ -167,8 +168,8 @@ export const LobbyCarouselMixin = {
       [7, "多"]
     ])
 
-    const qualityLines = Object.entries(p.qualityWeights || {})
-      .map(([k, v]) => {
+    const qualityLines = Object.entries(qw)
+      .map(([k, v]: [string, number]) => {
         const pct = Math.round((v / totalQ) * 100)
         const lv = toLevel(pct, [
           [8, "低"],
@@ -211,14 +212,14 @@ export const LobbyCarouselMixin = {
         const atBottom = detail.scrollHeight - detail.scrollTop <= detail.clientHeight + 4
         hint.style.display = atBottom ? "none" : ""
       }
-      detail.removeEventListener("scroll", detail._mapDetailScrollHandler)
-      detail._mapDetailScrollHandler = checkScroll
+      detail.removeEventListener("scroll", (detail as any)._mapDetailScrollHandler)
+        ; (detail as any)._mapDetailScrollHandler = checkScroll
       detail.addEventListener("scroll", checkScroll)
       requestAnimationFrame(checkScroll)
     }
   }
 }
 
-// 兼容层：保持 window.MobaoLobby 全局变量可用
-window.MobaoLobby = window.MobaoLobby || {}
-window.MobaoLobby.CarouselMixin = LobbyCarouselMixin
+  // 兼容层：保持 window.MobaoLobby 全局变量可用
+  ; (window as any).MobaoLobby = (window as any).MobaoLobby || {}
+  ; (window as any).MobaoLobby.CarouselMixin = LobbyCarouselMixin
