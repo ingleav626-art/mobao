@@ -10,6 +10,10 @@ declare var GAME_SETTINGS: {
   maxRounds: number
   roundSeconds: number
   actionsPerRound: number
+  bidStep: number
+  directTakeRatio: number
+  postRevealWaitMs: number
+  bidRevealIntervalMs: number
 }
 
 declare var SKILL_DEFS: Array<{ id: string; name: string; description: string; maxPerRound: number }>
@@ -32,6 +36,7 @@ declare var CharacterSystem: {
   getQualityBonus(): number
   getOutlineSortStrategy(): string
   applyPassiveEffect(params: { profit: number }): { profit: number; bonus?: number; label?: string }
+  resetForNewGame(): void
 }
 
 declare var Overlay: Record<string, any>
@@ -54,6 +59,49 @@ declare var ArtifactData: {
   QUALITY_CONFIG: Record<string, { label: string; color: number; glow: number; weight: number }>
 }
 
+declare var MobaoConstants: {
+  DEFAULT_START_MONEY: number
+  GRID_ROWS: number
+  GRID_COLS: number
+}
+
+declare var MobaoMapProfiles: {
+  getSelectedProfileId(): string
+  setSelectedProfileId(id: string): void
+  getProfile(id: string): { name: string; params: Record<string, any> } | null
+}
+
+declare var CharacterData: {
+  CHARACTERS: Array<{ id: string; name: string; avatarLabel?: string }>
+}
+
+declare class LanBridge {
+  ws: { url: string; readyState: number } | null
+  playerId: string
+  roomCode: string
+  connected: boolean
+  static isNative(): boolean
+  static startNativeServer(): boolean
+  static getLocalServerUrl(): string | null
+  static getNativeServerUrl(): string | null
+  static getNativeWiFiIP(): string | null
+  static discoverRoomsNative(): Array<{ serverIp: string; rooms: any[] }> | null
+  connect(url: string, name: string): Promise<void>
+  disconnect(): void
+  createRoom(options: Record<string, any>): void
+  joinRoom(code: string, password?: string): void
+  reconnect(url: string, roomCode: string, playerId: string): Promise<any>
+  send(data: Record<string, any>): void
+  sendFullSync(playerId: string, data: Record<string, any>): void
+  requestFullSync(): void
+  on(event: string, handler: (data: any) => void): void
+  broadcastRoundResult(round: number, bids: any[], reason: string): void
+  broadcastRoundStart(round: number, maxRounds: number, currentBid: number, roundSeconds: number): void
+  broadcastSettle(data: Record<string, any>): void
+  broadcastSettleFinal(wallets: Record<string, number>, profitDetails: any[]): void
+  togglePause(paused: boolean, timeLeft: number): void
+}
+
 // ==================== Window 属性 ====================
 
 interface Window {
@@ -67,14 +115,27 @@ interface Window {
   MobaoAppState: {
     load(): Record<string, any>
     recordGameFinished(won: boolean, profit: number): void
+    patch(data: Record<string, any>): void
   }
   MobaoSettings: {
     savePlayerMoney(money: number): void
+    GAME_SETTINGS: typeof GAME_SETTINGS
   }
+  MobaoConstants: typeof MobaoConstants
+  MobaoMapProfiles: typeof MobaoMapProfiles
+  CharacterData: typeof CharacterData
   CharacterSystem: typeof CharacterSystem
   ArtifactData: typeof ArtifactData
   AudioUI: Record<string, any>
   AudioManager: Record<string, any>
+  LanBridge: typeof LanBridge
+  NativeBridge: {
+    isNative(): boolean
+    setGameRunning(running: boolean): void
+  } | undefined
+  MobaoLan: Record<string, any>
+  onNativeServerError: ((msg: string) => void) | null
+  onNativeServerStarted: ((ip: string, port: number) => void) | null
   Deps: Record<string, any>
   initDeps: (bridges: Record<string, any>) => void
 }
