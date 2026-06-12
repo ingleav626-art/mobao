@@ -38,6 +38,7 @@ declare var CharacterSystem: {
   applyPassiveEffect(params: { profit: number }): { profit: number; bonus?: number; label?: string }
   resetForNewGame(): void
   getActiveCharacter(): { id: string; name: string; skillId: string; skillName: string; passive?: any } | null
+  selectCharacter(id: string): void
 }
 
 declare var Overlay: Record<string, any>
