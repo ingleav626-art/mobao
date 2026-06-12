@@ -140,6 +140,7 @@ interface Window {
     patch(data: Record<string, any>): void
   }
   MobaoSettings: {
+    loadPlayerMoney(): number
     savePlayerMoney(money: number): void
     GAME_SETTINGS: typeof GAME_SETTINGS
   }

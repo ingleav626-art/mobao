@@ -1,5 +1,5 @@
 /**
- * @file lobby/index.js
+ * @file lobby/index.ts
  * @module lobby/index
  * @description 大厅主页面 Mixin。管理大厅的页面导航、子页面切换、
  *              单机/联机模式入口、玩家初始化、游戏启动、以及大厅与游戏场景的切换。
@@ -8,27 +8,13 @@
  * 核心职责：
  *   - bindLobbyEvents(): 绑定大厅所有按钮事件（单机/联机/设置/商店/战绩/收藏等）
  *   - 页面导航：showLobbyMain / showLobbySubPage / goToCharacterSelect
- *     支持子页面切换动画（lobby-subpage-entering）
  *   - 大厅↔游戏切换：enterLobby / exitLobby / enterLanRoom
- *     enterLobby: 清理游戏场景、重置玩家、显示大厅、暂停 Phaser 游戏循环
- *     exitLobby: 隐藏大厅、显示游戏区、唤醒 Phaser 游戏循环、播放游戏BGM
- *     enterLanRoom: 从结算页返回联机房间
  *   - 单机游戏启动：startSoloGame → applyMapProfile → exitLobby → startNewRun
  *   - 地图配置应用：applyMapProfile() 将选中地图参数写入 GAME_SETTINGS
  *   - 玩家初始化：initPlayersUI() 设置4个玩家槽位（p1~p4）、LLM开关、头像
  *   - 玩家头像：updatePlayerAvatar() 支持角色头像和文字回退
  *   - 金额显示：updateLobbyMoneyDisplay() 同步所有页面的金额显示
  *   - 场景清理：cleanupGameScene() 销毁 Phaser 图层和 tween
- *
- * 子页面结构：
- *   lobbyMain → 大厅主页（单机/联机入口）
- *   lobbySoloSetup → 单机设置（地图轮播+开始游戏）
- *   lobbyOnlinePlaceholder → 联机页面（连接/房间）
- *   lobbyCharacterSelect → 角色选择页
- *
- * 联机状态管理：
- *   isLanMode, lanIsHost, lanPlayers, lanAiPlayers, lanHostWallets,
- *   lanHostBids, lanAiLlmEnabled, lanIdToSlotId, slotIdToLanId, lanMySlotId
  *
  * @requires MobaoSettings    - 设置（loadPlayerMoney, GAME_SETTINGS）
  * @requires MobaoAppState    - 全局状态（appMode, gameSource）
@@ -40,7 +26,7 @@
  * @requires AudioManager     - 音频管理（BGM切换）
  * @requires LanBridge        - 联机通信桥
  *
- * @exports IndexMixin - 大厅主页面 Mixin，混入 Phaser Scene
+ * @exports LobbyIndexMixin - 大厅主页面 Mixin，混入 Phaser Scene
  */
 import { Deps } from '../core/deps.js'
 
@@ -62,62 +48,62 @@ export const LobbyIndexMixin = {
     const carouselRightBtn = document.getElementById("carouselRightBtn")
 
     if (soloBtn) {
-      soloBtn.addEventListener("click", () => this.showLobbySubPage("soloSetup"))
+      soloBtn.addEventListener("click", () => (this as any).showLobbySubPage("soloSetup"))
     }
     if (onlineBtn) {
-      onlineBtn.addEventListener("click", () => this.showLobbySubPage("onlinePlaceholder"))
+      onlineBtn.addEventListener("click", () => (this as any).showLobbySubPage("onlinePlaceholder"))
     }
     if (lobbySettingsBtn) {
-      lobbySettingsBtn.addEventListener("click", () => this.openSettingsOverlay())
+      lobbySettingsBtn.addEventListener("click", () => (this as any).openSettingsOverlay())
     }
     if (lobbyCollectionBtn) {
-      lobbyCollectionBtn.addEventListener("click", () => this.openCollectionOverlay())
+      lobbyCollectionBtn.addEventListener("click", () => (this as any).openCollectionOverlay())
     }
     if (lobbyBattleRecordBtn) {
-      lobbyBattleRecordBtn.addEventListener("click", () => this.openBattleRecordPanel())
+      lobbyBattleRecordBtn.addEventListener("click", () => (this as any).openBattleRecordPanel())
     }
     if (lobbyShopBtn) {
-      lobbyShopBtn.addEventListener("click", () => this.openShopOverlay())
+      lobbyShopBtn.addEventListener("click", () => (this as any).openShopOverlay())
     }
     if (lobbySoloBackBtn) {
-      lobbySoloBackBtn.addEventListener("click", () => this.showLobbyMain())
+      lobbySoloBackBtn.addEventListener("click", () => (this as any).showLobbyMain())
     }
     if (lobbySoloShopBtn) {
-      lobbySoloShopBtn.addEventListener("click", () => this.openShopOverlay())
+      lobbySoloShopBtn.addEventListener("click", () => (this as any).openShopOverlay())
     }
     if (lobbyOnlineBackBtn) {
       lobbyOnlineBackBtn.addEventListener("click", () => {
         const roomPanel = document.getElementById("lobbyOnlineRoom")
         const isInRoom = roomPanel && !roomPanel.classList.contains("hidden")
         if (isInRoom) {
-          this.showGameConfirm("确定要离开房间吗？", () => {
-            if (this.lanBridge) {
-              this.lanBridge.leaveRoom()
-              this.lanBridge.disconnect()
+          ; (this as any).showGameConfirm("确定要离开房间吗？", () => {
+            if ((this as any).lanBridge) {
+              ; (this as any).lanBridge.leaveRoom()
+                ; (this as any).lanBridge.disconnect()
             }
-            this.showLobbyMain()
+            ; (this as any).showLobbyMain()
           })
         } else {
-          this.showLobbyMain()
+          ; (this as any).showLobbyMain()
         }
       })
     }
     if (lobbyStartGameBtn) {
-      lobbyStartGameBtn.addEventListener("click", () => this.goToCharacterSelect())
+      lobbyStartGameBtn.addEventListener("click", () => (this as any).goToCharacterSelect())
     }
     if (carouselLeftBtn) {
-      carouselLeftBtn.addEventListener("click", () => this.carouselScroll(-1))
+      carouselLeftBtn.addEventListener("click", () => (this as any).carouselScroll(-1))
     }
     if (carouselRightBtn) {
-      carouselRightBtn.addEventListener("click", () => this.carouselScroll(1))
+      carouselRightBtn.addEventListener("click", () => (this as any).carouselScroll(1))
     }
 
-    this._carouselOffset = 0
-    this.renderCarousel()
-    this.initLanLobby()
+    ; (this as any)._carouselOffset = 0
+      ; (this as any).renderCarousel()
+      ; (this as any).initLanLobby()
   },
 
-  showLobbyMain(skipAnimation) {
+  showLobbyMain(skipAnimation?: boolean) {
     const main = document.getElementById("lobbyMain")
     const soloSetup = document.getElementById("lobbySoloSetup")
     const onlinePlaceholder = document.getElementById("lobbyOnlinePlaceholder")
@@ -139,11 +125,11 @@ export const LobbyIndexMixin = {
         )
       }
     }
-    this.isLanMode = false
-    this.lanIsHost = false
+    ; (this as any).isLanMode = false
+      ; (this as any).lanIsHost = false
   },
 
-  showLobbySubPage(page) {
+  showLobbySubPage(page: string) {
     const main = document.getElementById("lobbyMain")
     const soloSetup = document.getElementById("lobbySoloSetup")
     const onlinePlaceholder = document.getElementById("lobbyOnlinePlaceholder")
@@ -153,7 +139,7 @@ export const LobbyIndexMixin = {
     if (onlinePlaceholder) onlinePlaceholder.classList.add("hidden")
     if (characterSelect) characterSelect.classList.add("hidden")
 
-    function animatePageIn(el) {
+    function animatePageIn(el: HTMLElement | null) {
       if (!el) return
       el.classList.remove("hidden")
       el.classList.add("lobby-subpage-entering")
@@ -169,8 +155,8 @@ export const LobbyIndexMixin = {
 
     if (page === "soloSetup") {
       animatePageIn(soloSetup)
-      this.renderCarousel()
-      this.renderMapDetail()
+        ; (this as any).renderCarousel()
+        ; (this as any).renderMapDetail()
       this.updateLobbyMoneyDisplay()
     } else if (page === "onlinePlaceholder") {
       animatePageIn(onlinePlaceholder)
@@ -178,7 +164,7 @@ export const LobbyIndexMixin = {
       const roomPanel = document.getElementById("lobbyOnlineRoom")
       const connectPanel = document.getElementById("lobbyOnlineConnect")
       const isInRoom =
-        this.lanBridge && this.lanBridge.roomCode && roomPanel && !roomPanel.classList.contains("hidden")
+        (this as any).lanBridge && (this as any).lanBridge.roomCode && roomPanel && !roomPanel.classList.contains("hidden")
 
       if (!isInRoom) {
         if (roomPanel) roomPanel.classList.add("hidden")
@@ -191,34 +177,34 @@ export const LobbyIndexMixin = {
         ;[onlineMoney, onlineMoneyOuter].forEach((el) => {
           if (!el) return
           const textEl = el.querySelector(".hud-icon") ? el.lastChild : el
-          if (textEl && textEl.nodeType === 3) textEl.textContent = " " + this.playerMoney.toLocaleString()
+          if (textEl && textEl.nodeType === 3) textEl.textContent = " " + (this as any).playerMoney.toLocaleString()
           else
-            el.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${this.playerMoney.toLocaleString()}`
+            el.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${(this as any).playerMoney.toLocaleString()}`
         })
     } else if (page === "characterSelect") {
-      this.showCharacterSelectPageWithMap()
+      ; (this as any).showCharacterSelectPageWithMap()
     }
   },
 
   goToCharacterSelect() {
-    this.showLobbySubPage("characterSelect")
+    ; (this as any).showLobbySubPage("characterSelect")
   },
 
   showCharacterSelectPageWithMap() {
-    let mapProfile = null
+    let mapProfile: { name?: string; params?: Record<string, any> } | null = null
     if (window.MobaoMapProfiles) {
       mapProfile = window.MobaoMapProfiles.getProfile(window.MobaoMapProfiles.getSelectedProfileId())
     }
-    if (this.showCharacterSelectPage) {
-      this.showCharacterSelectPage(mapProfile)
+    if ((this as any).showCharacterSelectPage) {
+      ; (this as any).showCharacterSelectPage(mapProfile)
     } else {
       console.warn("[Lobby] CharacterSelectMixin not loaded, falling back to start game")
-      this.startSoloGame()
+        ; (this as any).startSoloGame()
     }
   },
 
   updateLobbyMoneyDisplay() {
-    const money = window.MobaoShopBridge ? window.MobaoShopBridge.getPlayerMoney() : loadPlayerMoney()
+    const money: number = window.MobaoShopBridge ? window.MobaoShopBridge.getPlayerMoney() : loadPlayerMoney()
     const mainMoney = document.getElementById("lobbyMainMoney")
     const soloMoney = document.getElementById("lobbySoloMoney")
     if (mainMoney) {
@@ -236,26 +222,26 @@ export const LobbyIndexMixin = {
   },
 
   cleanupGameScene() {
-    this.stopRoundTimer()
-    if (this.itemLayer) {
-      this.itemLayer.destroy(true)
-      this.itemLayer = null
+    ; (this as any).stopRoundTimer()
+    if ((this as any).itemLayer) {
+      ; (this as any).itemLayer.destroy(true)
+        ; (this as any).itemLayer = null
     }
-    if (this.gridLayer) {
-      this.gridLayer.destroy()
-      this.gridLayer = null
+    if ((this as any).gridLayer) {
+      ; (this as any).gridLayer.destroy()
+        ; (this as any).gridLayer = null
     }
-    if (this.revealCellLayer) {
-      this.revealCellLayer.destroy()
-      this.revealCellLayer = null
+    if ((this as any).revealCellLayer) {
+      ; (this as any).revealCellLayer.destroy()
+        ; (this as any).revealCellLayer = null
     }
-    if (this.activeSettlementSpinner) {
-      this.activeSettlementSpinner.destroy()
-      this.activeSettlementSpinner = null
+    if ((this as any).activeSettlementSpinner) {
+      ; (this as any).activeSettlementSpinner.destroy()
+        ; (this as any).activeSettlementSpinner = null
     }
-    this.tweens.killAll()
-    this.items = []
-    this.time.removeAllEvents()
+    ; (this as any).tweens.killAll()
+      ; (this as any).items = []
+      ; (this as any).time.removeAllEvents()
   },
 
   enterLobby() {
@@ -277,32 +263,30 @@ export const LobbyIndexMixin = {
         { once: true }
       )
     }
-    if (this.game && this.game.loop) {
-      this.game.loop.sleep()
+    if ((this as any).game && (this as any).game.loop) {
+      ; (this as any).game.loop.sleep()
     }
-    this.isLanMode = false
-    this.lanIsHost = false
-    this.lanPlayers = []
-    this.lanAiPlayers = []
-    this.lanHostWallets = {}
-    this.lanHostBids = {}
-    this.lanAiLlmEnabled = false
-    this.lanIdToSlotId = {}
-    this.slotIdToLanId = {}
-    this.lanMySlotId = null
-    // 重置AI LLM状态，避免被联机模式污染，然后从localStorage加载单机模式的状态
-    this.aiLlmPlayerEnabled = {}
-    this.players = [
-      { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
-      { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
-      { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
-      { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
-    ]
-    // 从localStorage加载单机模式的AI LLM开关状态
+    ; (this as any).isLanMode = false
+      ; (this as any).lanIsHost = false
+      ; (this as any).lanPlayers = []
+      ; (this as any).lanAiPlayers = []
+      ; (this as any).lanHostWallets = {}
+      ; (this as any).lanHostBids = {}
+      ; (this as any).lanAiLlmEnabled = false
+      ; (this as any).lanIdToSlotId = {}
+      ; (this as any).slotIdToLanId = {}
+      ; (this as any).lanMySlotId = null
+      ; (this as any).aiLlmPlayerEnabled = {}
+      ; (this as any).players = [
+        { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
+        { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
+        { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
+        { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
+      ]
     if (Deps.LLM_BRIDGE && Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches) {
-      this.aiLlmPlayerEnabled = Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players)
+      ; (this as any).aiLlmPlayerEnabled = Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches((this as any).players)
     }
-    this.initPlayersUI()
+    ; (this as any).initPlayersUI()
     this.showLobbyMain(true)
     this.updateLobbyMoneyDisplay()
     window.MobaoAppState.patch({ appMode: "lobby", gameSource: null })
@@ -326,8 +310,8 @@ export const LobbyIndexMixin = {
     const gameArea = document.getElementById("gameArea")
     if (lobbyPage) lobbyPage.classList.remove("hidden")
     if (gameArea) gameArea.classList.add("hidden")
-    if (this.game && this.game.loop) {
-      this.game.loop.sleep()
+    if ((this as any).game && (this as any).game.loop) {
+      ; (this as any).game.loop.sleep()
     }
     const connectPanel = document.getElementById("lobbyOnlineConnect")
     const roomPanel = document.getElementById("lobbyOnlineRoom")
@@ -337,26 +321,25 @@ export const LobbyIndexMixin = {
     if (roomPanel) roomPanel.classList.remove("hidden")
     if (createPanel) createPanel.classList.add("hidden")
     if (joinPanel) joinPanel.classList.add("hidden")
-    this.exitSettlementPage()
+      ; (this as any).exitSettlementPage()
     this.updateLobbyMoneyDisplay()
     window.MobaoAppState.patch({ appMode: "lobby", gameSource: null })
     if (typeof AudioManager !== "undefined") {
       AudioManager.stopBgm()
       AudioManager.playBgm("lobby")
     }
-    // 房主返回房间时，通知客机也返回房间
-    if (this.isLanMode && this.lanIsHost && this.lanBridge) {
-      const sent = this.lanBridge.send({ type: "room:return" })
+    if ((this as any).isLanMode && (this as any).lanIsHost && (this as any).lanBridge) {
+      const sent = (this as any).lanBridge.send({ type: "room:return" })
       if (!sent) {
-        this.writeLog("连接已断开，无法通知客机返回房间")
+        ; (this as any).writeLog("连接已断开，无法通知客机返回房间")
       }
     }
   },
 
   exitLobby() {
-    this._stopLive2dLoop()
-    const videoA = document.getElementById("overlayLive2dVideoA")
-    const videoB = document.getElementById("overlayLive2dVideoB")
+    ; (this as any)._stopLive2dLoop()
+    const videoA = document.getElementById("overlayLive2dVideoA") as HTMLVideoElement | null
+    const videoB = document.getElementById("overlayLive2dVideoB") as HTMLVideoElement | null
     if (videoA) {
       videoA.pause()
       videoA.src = ""
@@ -388,7 +371,7 @@ export const LobbyIndexMixin = {
       setTimeout(function () {
         const allCards = ["p1", "p2", "p3", "p4"]
           .map((id) => document.getElementById(`playerCard-${id}`))
-          .filter((el) => el && !el.classList.contains("player-card-hidden"))
+          .filter((el): el is HTMLElement => el !== null && !el.classList.contains("player-card-hidden"))
         if (allCards.length > 0) {
           MobaoAnimations.staggerEnter(allCards, {
             staggerDelay: 80,
@@ -399,8 +382,8 @@ export const LobbyIndexMixin = {
       }, 100)
     }
 
-    if (this.game && this.game.loop) {
-      this.game.loop.wake()
+    if ((this as any).game && (this as any).game.loop) {
+      ; (this as any).game.loop.wake()
     }
     if (typeof AudioManager !== "undefined") {
       AudioManager.stopBgm()
@@ -412,7 +395,7 @@ export const LobbyIndexMixin = {
     window.MobaoAppState.patch({ appMode: "game", gameSource: "solo" })
     this.applyMapProfile()
     this.exitLobby()
-    this.startNewRun()
+      ; (this as any).startNewRun()
   },
 
   applyMapProfile() {
@@ -430,12 +413,12 @@ export const LobbyIndexMixin = {
     if (Number.isFinite(p.directTakeRatio)) {
       GAME_SETTINGS.directTakeRatio = p.directTakeRatio
     }
-    this._mapQualityWeights = p.qualityWeights || null
-    this._mapCategoryWeights = p.categoryWeights || null
+    ; (this as any)._mapQualityWeights = p.qualityWeights || null
+      ; (this as any)._mapCategoryWeights = p.categoryWeights || null
   },
 
   initPlayersUI() {
-    const activeIds = new Set(this.players.map((p) => p.id))
+    const activeIds = new Set((this as any).players.map((p: any) => p.id))
       ;["p1", "p2", "p3", "p4"].forEach((slotId) => {
         const cardEl = document.getElementById(`playerCard-${slotId}`)
         if (!cardEl) return
@@ -451,7 +434,7 @@ export const LobbyIndexMixin = {
     const personalPanel = document.getElementById("personalPanel")
     const publicPanel = document.getElementById("publicPanel")
     if (leftSide && rightSide) {
-      const playerCount = this.players.length
+      const playerCount = (this as any).players.length
       const leftSlots = playerCount <= 2 ? ["p1"] : ["p1", "p2"]
       const rightSlots = playerCount <= 1 ? [] : playerCount <= 2 ? ["p2"] : playerCount <= 3 ? ["p3"] : ["p3", "p4"]
 
@@ -468,7 +451,7 @@ export const LobbyIndexMixin = {
       if (publicPanel) rightSide.appendChild(publicPanel)
     }
 
-    this.players.forEach((player) => {
+    ; (this as any).players.forEach((player: any) => {
       const nameEl = document.getElementById(`name-${player.id}`)
       const avatarEl = document.getElementById(`avatar-${player.id}`)
       const cardEl = document.getElementById(`playerCard-${player.id}`)
@@ -476,14 +459,14 @@ export const LobbyIndexMixin = {
         nameEl.textContent = player.name
       }
       if (avatarEl) {
-        this.updatePlayerAvatar(player.id, avatarEl)
+        ; (this as any).updatePlayerAvatar(player.id, avatarEl)
       }
 
       if (cardEl) {
         const metaEl = cardEl.querySelector(".meta")
         if (metaEl && player.isAI) {
           const toggleId = `llm-switch-${player.id}`
-          let switchEl = document.getElementById(toggleId)
+          let switchEl = document.getElementById(toggleId) as HTMLInputElement | null
           if (!switchEl) {
             const label = document.createElement("label")
             label.className = "llm-player-switch"
@@ -493,13 +476,13 @@ export const LobbyIndexMixin = {
             const input = document.createElement("input")
             input.type = "checkbox"
             input.id = toggleId
-            input.checked = this.isAiLlmEnabledForPlayer(player.id)
+            input.checked = (this as any).isAiLlmEnabledForPlayer(player.id)
             input.addEventListener("change", () => {
-              this.aiLlmPlayerEnabled[player.id] = Boolean(input.checked)
-              Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches(this.aiLlmPlayerEnabled)
-              this.writeLog(
-                `${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`
-              )
+              ; (this as any).aiLlmPlayerEnabled[player.id] = Boolean(input.checked)
+              Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches((this as any).aiLlmPlayerEnabled)
+                ; (this as any).writeLog(
+                  `${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`
+                )
             })
 
             const text = document.createElement("span")
@@ -511,8 +494,8 @@ export const LobbyIndexMixin = {
             switchEl = input
           }
 
-          switchEl.checked = this.isAiLlmEnabledForPlayer(player.id)
-          if (this.isLanMode) {
+          switchEl.checked = (this as any).isAiLlmEnabledForPlayer(player.id)
+          if ((this as any).isLanMode) {
             switchEl.disabled = true
             const labelEl = switchEl.closest(".llm-player-switch")
             if (labelEl) labelEl.classList.add("llm-switch-disabled")
@@ -521,144 +504,54 @@ export const LobbyIndexMixin = {
             const labelEl = switchEl.closest(".llm-player-switch")
             if (labelEl) labelEl.classList.remove("llm-switch-disabled")
           }
-        } else if (metaEl && !player.isAI) {
-          const existingLabel = metaEl.querySelector(".llm-player-switch")
-          if (existingLabel) existingLabel.remove()
-        }
-
-        let historyEl = document.getElementById(`history-${player.id}`)
-        if (!historyEl) {
-          const history = document.createElement("div")
-          history.id = `history-${player.id}`
-          history.className = "player-history"
-          historyEl = history
-        }
-
-        if (historyEl.parentElement !== cardEl) {
-          cardEl.appendChild(historyEl)
         }
       }
-
-      this.playerHistoryPanels[player.id] = document.getElementById(`history-${player.id}`)
     })
-
-    this.refreshPlayerHistoryUI()
-    this.updatePlayerCharNames()
   },
 
-  updatePlayerAvatar(playerId, avatarEl) {
-    const player = this.players.find((p) => p.id === playerId)
-    if (!player || !avatarEl) {
-      return
-    }
-
-    let avatarSrc = null
-    let fallbackText = player.avatar || "玩家"
+  updatePlayerAvatar(playerId: string, avatarEl: HTMLElement) {
+    const player = (this as any).players.find((p: any) => p.id === playerId)
+    if (!player) return
 
     if (player.isHuman) {
       const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter()
-      if (char && char.avatar) {
-        avatarSrc = char.avatar
-        fallbackText = char.name ? char.name.charAt(0) : "你"
-      }
-    } else {
-      const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[playerId]
-      if (charAssign) {
-        const charDef = window.CharacterData && window.CharacterData.getCharacterById(charAssign.characterId)
-        if (charDef && charDef.avatar) {
-          avatarSrc = charDef.avatar
-        }
-        fallbackText = charAssign.characterName ? charAssign.characterName.charAt(0) : "AI"
+      if (char && (char as any).avatar) {
+        avatarEl.innerHTML = `<img src="${(char as any).avatar}" alt="${char.name}" class="avatar-img">`
+        return
       }
     }
 
-    if (avatarSrc) {
-      avatarEl.innerHTML = `<img src="${avatarSrc}" alt="${fallbackText}" class="avatar-img" onerror="this.style.display='none';this.parentElement.textContent='${fallbackText}';">`
-    } else {
-      avatarEl.textContent = fallbackText
-    }
-  },
-
-  initPreviewFilterOptions() {
-    const categories = [...new Set(window.ArtifactData.ARTIFACT_LIBRARY.map((item) => item.category))]
-    const options = ['<option value="all">全部品类</option>']
-      .concat(categories.map((category) => `<option value="${category}">${category}</option>`))
-      .join("")
-
-    this.dom.previewCategorySelect.innerHTML = options
-    this.dom.bidInput.step = "1"
-    this.dom.bidInput.min = "0"
-  },
-
-  renderShopContent() {
-    if (typeof window.MobaoShopPage !== "undefined") {
-      window.MobaoShopPage.init({
-        onPurchase: (result) => {
-          if (result && result.ok) {
-            this.playerMoney = result.newMoney
-            this.syncItemManagerFromShop()
-            this.updateLobbyMoneyDisplay()
-          }
-        }
-      })
-      window.MobaoShopPage.updateMoneyDisplay()
-      window.MobaoShopPage.renderAllItems()
-      window.MobaoShopPage.renderInventory()
-    }
-  },
-
-  syncItemManagerFromShop() {
-    if (!window.MobaoShopBridge) return
-    const bridge = window.MobaoShopBridge
-    const inv = bridge.getFullInventory()
-
-    // 从 localStorage 读取携带道具列表
-    // undefined = 从未选择过（兼容旧流程，显示全部）
-    // Set = 已选择过（可能为空，表示不携带任何道具）
-    let carryIds
-    try {
-      const raw = window.localStorage.getItem("mobao_carry_items_v1")
-      if (raw !== null) {
-        const parsed = JSON.parse(raw)
-        if (Array.isArray(parsed)) {
-          carryIds = new Set(parsed.filter((i) => i && i.id).map((i) => i.id))
-        }
+    if ((this as any).aiCharacterAssignments && (this as any).aiCharacterAssignments[playerId]) {
+      const assign = (this as any).aiCharacterAssignments[playerId]
+      const charData = (window as any).CharacterData.getCharacterById(assign.characterId)
+      if (charData && charData.avatar) {
+        avatarEl.innerHTML = `<img src="${charData.avatar}" alt="${charData.name}" class="avatar-img">`
+        return
       }
-    } catch (_e) { }
+    }
 
-    this.itemManager.items.forEach((item) => {
-      const storageKey = bridge.getItemStorageKey(item.id)
-      const shopCount = inv[storageKey] || 0
+    avatarEl.textContent = player.avatar || player.name.charAt(0)
+  },
 
-      if (carryIds instanceof Set) {
-        // 已选择过携带道具：未携带的设为0，携带的用库存数
-        item.count = carryIds.has(item.id) ? shopCount : 0
-      } else {
-        // 从未选择过（兼容旧流程）：同步库存数
-        item.count = shopCount
-      }
-    })
+  isAiLlmEnabledForPlayer(playerId: string): boolean {
+    return Boolean((this as any).aiLlmPlayerEnabled && (this as any).aiLlmPlayerEnabled[playerId])
   },
 
   openCollectionOverlay() {
     const overlay = document.getElementById("collectionOverlay")
     const panel = document.getElementById("collectionPanel")
-    if (!overlay) return
+    if (!overlay || !panel) return
 
+    overlay.classList.remove("hidden")
     this.initCollectionPanel()
 
-    if (window.MobaoAnimations) {
-      window.MobaoAnimations.animateOverlayOpen(overlay, panel)
-    } else {
-      overlay.classList.remove("hidden")
+    const closeBtn = document.getElementById("collectionCloseBtn")
+    if (closeBtn && !(closeBtn as any)._boundClose) {
+      ; (closeBtn as any)._boundClose = true
+      closeBtn.addEventListener("click", () => this.closeCollectionOverlay())
     }
-
-    if (!overlay._collectionBound) {
-      overlay._collectionBound = true
-      const closeBtn = document.getElementById("collectionCloseBtn")
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => this.closeCollectionOverlay())
-      }
+    if (!(overlay as any)._boundOverlayClose) {
+      ; (overlay as any)._boundOverlayClose = true
       overlay.addEventListener("click", (e) => {
         if (e.target === overlay) this.closeCollectionOverlay()
       })
@@ -671,13 +564,13 @@ export const LobbyIndexMixin = {
     if (!overlay) return
 
     if (window.MobaoAnimations) {
-      window.MobaoAnimations.animateOverlayClose(overlay, panel)
+      ; (window.MobaoAnimations as any).animateOverlayClose(overlay, panel)
     } else {
       overlay.classList.add("hidden")
     }
   },
 
-  _destroyCustomSelect(originalSelect) {
+  _destroyCustomSelect(originalSelect: HTMLSelectElement) {
     const container = originalSelect.nextElementSibling
     if (container && container.classList.contains("custom-select-container")) {
       container.remove()
@@ -686,7 +579,7 @@ export const LobbyIndexMixin = {
     originalSelect.style.display = ""
   },
 
-  _rebuildCustomSelect(originalSelect) {
+  _rebuildCustomSelect(originalSelect: HTMLSelectElement) {
     this._destroyCustomSelect(originalSelect)
     if (window.MobileHandler && (window.MobileHandler.isMobile || window.MobileHandler.isTouch)) {
       window.MobileHandler.convertToCustomSelect(originalSelect)
@@ -694,16 +587,16 @@ export const LobbyIndexMixin = {
   },
 
   initCollectionPanel() {
-    const categorySelect = document.getElementById("collectionCategoryFilter")
-    const qualitySelect = document.getElementById("collectionQualityFilter")
-    const searchInput = document.getElementById("collectionSearchInput")
+    const categorySelect = document.getElementById("collectionCategoryFilter") as HTMLSelectElement | null
+    const qualitySelect = document.getElementById("collectionQualityFilter") as HTMLSelectElement | null
+    const searchInput = document.getElementById("collectionSearchInput") as HTMLInputElement | null
 
     if (categorySelect) {
       const categories = this.getCollectionCategories()
       categorySelect.innerHTML =
         '<option value="all">全部品类</option>' + categories.map((c) => `<option value="${c}">${c}</option>`).join("")
-      if (!categorySelect._initialized) {
-        categorySelect._initialized = true
+      if (!(categorySelect as any)._initialized) {
+        ; (categorySelect as any)._initialized = true
         categorySelect.addEventListener("change", () => this.renderCollectionGrid())
       }
       this._rebuildCustomSelect(categorySelect)
@@ -714,22 +607,22 @@ export const LobbyIndexMixin = {
       qualitySelect.innerHTML =
         '<option value="all">全部品质</option>' +
         qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join("")
-      if (!qualitySelect._initialized) {
-        qualitySelect._initialized = true
+      if (!(qualitySelect as any)._initialized) {
+        ; (qualitySelect as any)._initialized = true
         qualitySelect.addEventListener("change", () => this.renderCollectionGrid())
       }
       this._rebuildCustomSelect(qualitySelect)
     }
 
-    if (searchInput && !searchInput._initialized) {
-      searchInput._initialized = true
+    if (searchInput && !(searchInput as any)._initialized) {
+      ; (searchInput as any)._initialized = true
       searchInput.addEventListener("input", () => this.renderCollectionGrid())
     }
 
-    const sortSelect = document.getElementById("collectionSortFilter")
+    const sortSelect = document.getElementById("collectionSortFilter") as HTMLSelectElement | null
     if (sortSelect) {
-      if (!sortSelect._initialized) {
-        sortSelect._initialized = true
+      if (!(sortSelect as any)._initialized) {
+        ; (sortSelect as any)._initialized = true
         sortSelect.addEventListener("change", () => this.renderCollectionGrid())
       }
       this._rebuildCustomSelect(sortSelect)
@@ -738,9 +631,9 @@ export const LobbyIndexMixin = {
     this.renderCollectionGrid()
   },
 
-  getCollectionCategories() {
+  getCollectionCategories(): string[] {
     const artifacts = window.ArtifactData.ARTIFACT_LIBRARY || []
-    const categories = new Set()
+    const categories = new Set<string>()
     artifacts.forEach((a) => {
       if (a.category) categories.add(a.category)
     })
@@ -752,10 +645,10 @@ export const LobbyIndexMixin = {
     const stats = document.getElementById("collectionStats")
     if (!grid) return
 
-    const categoryFilter = document.getElementById("collectionCategoryFilter")?.value || "all"
-    const qualityFilter = document.getElementById("collectionQualityFilter")?.value || "all"
-    const searchText = document.getElementById("collectionSearchInput")?.value?.toLowerCase() || ""
-    const sortValue = document.getElementById("collectionSortFilter")?.value || "default"
+    const categoryFilter = (document.getElementById("collectionCategoryFilter") as HTMLSelectElement | null)?.value || "all"
+    const qualityFilter = (document.getElementById("collectionQualityFilter") as HTMLSelectElement | null)?.value || "all"
+    const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value?.toLowerCase() || ""
+    const sortValue = (document.getElementById("collectionSortFilter") as HTMLSelectElement | null)?.value || "default"
 
     let artifacts = window.ArtifactData.ARTIFACT_LIBRARY || []
 
@@ -767,7 +660,7 @@ export const LobbyIndexMixin = {
     }
     if (searchText) {
       artifacts = artifacts.filter(
-        (a) => a.name.toLowerCase().includes(searchText) || a.key.toLowerCase().includes(searchText)
+        (a) => a.name.toLowerCase().includes(searchText) || (a as any).key.toLowerCase().includes(searchText)
       )
     }
 
@@ -795,17 +688,17 @@ export const LobbyIndexMixin = {
       stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`
     }
 
-    const rgbHex = window.MobaoUtils.rgbHex
+    const rgbHex = (window.MobaoUtils as any).rgbHex
 
     grid.innerHTML = artifacts
       .map((artifact) => {
         const quality = window.ArtifactData.QUALITY_CONFIG[artifact.qualityKey]
         const qualityLabel = quality ? quality.label : "未知"
         const qualityColor = quality ? rgbHex(quality.color) : "#9f9f9f"
-        const imgSrc = `assets/images/artifacts/thumbs/${artifact.key}.png`
+        const imgSrc = `assets/images/artifacts/thumbs/${(artifact as any).key}.png`
 
         return `
-          <article class="collection-item" data-key="${artifact.key}">
+          <article class="collection-item" data-key="${(artifact as any).key}">
             <div class="collection-thumb" style="background: ${qualityColor}44;">
               <img src="${imgSrc}" alt="${artifact.name}" onerror="this.style.display='none'"/>
             </div>
@@ -827,7 +720,7 @@ export const LobbyIndexMixin = {
   },
 
   updatePlayerCharNames() {
-    this.players.forEach((player) => {
+    ; (this as any).players.forEach((player: any) => {
       const avatarEl = document.getElementById(`avatar-${player.id}`)
       if (!avatarEl) return
       let charName = ""
@@ -835,15 +728,14 @@ export const LobbyIndexMixin = {
         const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter()
         if (char && char.name) charName = char.name
       } else {
-        const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[player.id]
+        const charAssign = (this as any).aiCharacterAssignments && (this as any).aiCharacterAssignments[player.id]
         if (charAssign && charAssign.characterName) charName = charAssign.characterName
       }
-      // 确保 avatar 被包在 .avatar-wrap 里
       let wrap = avatarEl.parentElement
       if (!wrap || !wrap.classList.contains("avatar-wrap")) {
         wrap = document.createElement("div")
         wrap.className = "avatar-wrap"
-        avatarEl.parentElement.insertBefore(wrap, avatarEl)
+        avatarEl.parentElement!.insertBefore(wrap, avatarEl)
         wrap.appendChild(avatarEl)
       }
       let nameTag = wrap.querySelector(".avatar-char-name")
@@ -853,11 +745,7 @@ export const LobbyIndexMixin = {
         wrap.appendChild(nameTag)
       }
       nameTag.textContent = charName
-      nameTag.style.display = charName ? "" : "none"
+        ; (nameTag as HTMLElement).style.display = charName ? "" : "none"
     })
   }
 }
-
-// 兼容层：保持 window.MobaoLobby 全局变量可用
-window.MobaoLobby = window.MobaoLobby || {}
-window.MobaoLobby.IndexMixin = LobbyIndexMixin
