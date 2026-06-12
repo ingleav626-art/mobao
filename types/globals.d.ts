@@ -37,16 +37,17 @@ declare var CharacterSystem: {
   getOutlineSortStrategy(): string
   applyPassiveEffect(params: { profit: number }): { profit: number; bonus?: number; label?: string }
   resetForNewGame(): void
+  getActiveCharacter(): { id: string; name: string; skillId: string; skillName: string; passive?: any } | null
 }
 
 declare var Overlay: Record<string, any>
 
-declare var ItemSystem: {
-  ITEM_DEFS: Array<{ id: string; name: string; description: string }>
+declare var SkillSystem: {
+  SKILL_DEFS: Array<{ id: string; name: string; description: string; maxPerRound: number; execute?: Function }>
 }
 
-declare var SkillSystem: {
-  SKILL_DEFS: Array<{ id: string; name: string; description: string; maxPerRound: number }>
+declare var ItemSystem: {
+  ITEM_DEFS: Array<{ id: string; name: string; description: string; initialCount?: number; execute?: Function }>
 }
 
 declare var MobileHandler: Record<string, any>
@@ -57,6 +58,8 @@ declare var LlmManager: Record<string, any>
 
 declare var ArtifactData: {
   QUALITY_CONFIG: Record<string, { label: string; color: number; glow: number; weight: number }>
+  ARTIFACT_LIBRARY: Array<{ basePrice: number; name: string; category: string; qualityKey: string; w: number; h: number; id?: string }>
+  toSizeTag(w: number, h: number): string
 }
 
 declare var MobaoConstants: {
@@ -64,6 +67,20 @@ declare var MobaoConstants: {
   GRID_ROWS: number
   GRID_COLS: number
 }
+
+declare var MobaoUtils: {
+  createEmptyAiPrivateIntelPool(): any
+  clamp(val: number, min: number, max: number): number
+  formatTrackIndex(idx: number): string
+  shuffle<T>(arr: T[]): T[]
+  formatCompactNumber(val: number): string
+  compactOneLine(obj: any, maxLen: number): string
+  toCellKey(x: number, y: number): string
+  fromCellKey(key: string): { x: number; y: number }
+  sizeTagToCellCount(tag: string): number
+}
+
+declare var MobaoAi: Record<string, any>
 
 declare var MobaoMapProfiles: {
   getSelectedProfileId(): string
@@ -126,6 +143,8 @@ interface Window {
   CharacterData: typeof CharacterData
   CharacterSystem: typeof CharacterSystem
   ArtifactData: typeof ArtifactData
+  MobaoUtils: typeof MobaoUtils
+  MobaoAi: typeof MobaoAi
   AudioUI: Record<string, any>
   AudioManager: Record<string, any>
   LanBridge: typeof LanBridge
