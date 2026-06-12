@@ -67,6 +67,12 @@ declare var MobaoConstants: {
   DEFAULT_START_MONEY: number
   GRID_ROWS: number
   GRID_COLS: number
+  CELL_SIZE: number
+  MARGIN: number
+  CANVAS_NATIVE_HEIGHT: number
+  MAX_WAREHOUSE_CELLS: number
+  ARTIFACT_COUNT_RANGE: { min: number; max: number }
+  WAREHOUSE_OCCUPANCY_RATIO_RANGE: { min: number; max: number }
   SETTINGS_FIELDS: string[]
 }
 
@@ -80,6 +86,8 @@ declare var MobaoUtils: {
   toCellKey(x: number, y: number): string
   fromCellKey(key: string): { x: number; y: number }
   sizeTagToCellCount(tag: string): number
+  rgbHex(color: number): string
+  qualityPulseDuration(qualityKey: string): number
 }
 
 declare var MobaoAi: Record<string, any>

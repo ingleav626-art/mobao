@@ -1,54 +1,36 @@
 /**
- * @file warehouse/index.js
+ * @file warehouse/index.ts
  * @module warehouse
  * @description 仓库核心系统。管理仓库网格的绘制、藏品生成与放置、揭示机制、
  *              候选预览等完整仓库逻辑。由三个 Mixin 组成，混入 Phaser Scene。
  *
  * 三个 Mixin：
  *
- * WarehouseCoreMixin（L19-L371）- 仓库核心：
- *   - preloadArtifactImages(): 预加载藏品缩略图（assets/images/artifacts/thumbs/）
- *   - drawUnknownWarehouse(): 绘制空白仓库网格（12×25×64px）
- *   - drawGridLines(): 智能网格线（已揭示区域不画内部分割线）
+ * WarehouseCoreMixin - 仓库核心：
+ *   - preloadArtifactImages(): 预加载藏品缩略图
+ *   - drawUnknownWarehouse(): 绘制空白仓库网格
+ *   - drawGridLines(): 智能网格线
  *   - guardWarehouseCapacity(): 容量上限检查
- *   - spawnRandomItems(): 随机生成藏品（按占用率38%~88%，数量50~300）
- *   - setupWarehouseAuction(): 初始化拍卖参数（真实价值/AI最高出价/起始出价）
- *   - renderItem(item): 渲染单个藏品（轮廓/边框/品质标记/点击区域）
- *   - onArtifactClicked(item, pointer): 藏品点击处理（候选预览/结算查看）
+ *   - spawnRandomItems(): 随机生成藏品
+ *   - setupWarehouseAuction(): 初始化拍卖参数
+ *   - renderItem(item): 渲染单个藏品
+ *   - onArtifactClicked(item, pointer): 藏品点击处理
  *   - rebuildWarehouseCellIndex(): 重建格子→藏品索引
  *   - placeItem / findFirstEmptySlot / isInBoundsCell / isWarehouseCellOccupied
  *
- * WarehouseRevealMixin（L373-L1095）- 揭示系统：
- *   - revealOutlineBatch(count, category, ...): 批量轮廓揭示
- *   - revealQualityBatch(count, category, ...): 批量品质揭示
- *   - revealArtifactFully(item): 完全揭示单件藏品（轮廓+品质+精确）
- *   - revealArtifactFullyBatch({ count, sortStrategy, ... }): 批量完全揭示
- *   - playFullRevealEffect(item): 完全揭示特效（外环扩散+内爆+边框淡入+图片弹入）
- *   - revealOutline / revealQualityCell / revealCell: 单件揭示基础方法
- *   - pickRevealTargets({ mode, count, category, ... }): 揭示目标选择（支持品类筛选/排序策略/回退）
- *   - renderQualityVisual(item): 品质视觉渲染（颜色边框+品质格+缩略图）
- *   - showRevealScrollHintsForTargets / refreshRevealScrollHints: 揭示位置滚动提示
+ * WarehouseRevealMixin - 揭示系统：
+ *   - revealOutlineBatch / revealQualityBatch / revealArtifactFully / revealArtifactFullyBatch
+ *   - playFullRevealEffect / playOutlineRevealEffect / playQualityRevealEffect
+ *   - pickRevealTargets / renderQualityVisual / revealOutline / revealQualityCell / revealCell
+ *   - showRevealScrollHintsForTargets / refreshRevealScrollHints / hideRevealScrollHints
+ *   - pickBottomCellFromTargets / clearQualityVisual / syncQualityMarkersForOutlinedItem
  *
- * WarehousePreviewMixin（L1096-L1303）- 候选预览：
- *   - positionPreview / applyPreviewPosition: 预览弹窗定位（自动避免溢出）
- *   - renderPreviewCandidates(item): 渲染候选藏品列表（支持品类筛选/排序）
- *   - hidePreview / repositionPreview: 关闭和重新定位
- *   - setupPreviewTouchScroll: 触摸滚动支持
- *
- * 仓库网格参数（来自 MobaoConstants）：
- *   GRID_COLS=12, GRID_ROWS=25, CELL_SIZE=64, MARGIN=0
- *   CANVAS_NATIVE_HEIGHT=1600, MAX_WAREHOUSE_CELLS=300
- *
- * 藏品揭示状态（item.revealed）：
- *   { outline: boolean, qualityCell: {x,y}|null, exact: boolean }
- *
- * @requires MobaoConstants  - 常量（网格参数、容量范围）
- * @requires MobaoUtils      - 工具函数（shuffle, clamp, toCellKey, rgbHex, qualityPulseDuration）
- * @requires ArtifactData    - 藏品数据（ARTIFACT_LIBRARY, toSizeTag）
- * @requires Phaser          - 游戏引擎
+ * WarehousePreviewMixin - 候选预览：
+ *   - positionPreview / applyPreviewPosition / repositionPreview / hidePreview
+ *   - setupPreviewTouchScroll / isPointOnSettlementLockedItem
+ *   - renderPreviewCandidates / renderSettlementItemPreview
  *
  * @exports window.MobaoWarehouse - 仓库 Mixin 集合
- *   { WarehouseCoreMixin, WarehouseRevealMixin, WarehousePreviewMixin }
  */
 const {
   GRID_COLS,
@@ -70,11 +52,11 @@ export const WarehouseCoreMixin = {
     if (!ARTIFACT_LIBRARY || !Array.isArray(ARTIFACT_LIBRARY)) {
       return
     }
-    const toLoad = []
-    ARTIFACT_LIBRARY.forEach((artifact) => {
+    const toLoad: string[] = []
+    ARTIFACT_LIBRARY.forEach((artifact: any) => {
       const textureKey = `artifact-${artifact.key}`
-      if (!this.textures.exists(textureKey)) {
-        this.load.image(textureKey, ARTIFACT_IMAGE_BASE_PATH + artifact.key + ".png")
+      if (!(this as any).textures.exists(textureKey)) {
+        ;(this as any).load.image(textureKey, ARTIFACT_IMAGE_BASE_PATH + artifact.key + ".png")
         toLoad.push(artifact.key)
       }
     })
@@ -86,67 +68,67 @@ export const WarehouseCoreMixin = {
 
     console.log(`[藏品图片] 开始加载 ${toLoad.length} 张图片:`, toLoad)
 
-    this.load.on("progress", (value) => {
+    ;(this as any).load.on("progress", (value: number) => {
       console.log(`[藏品图片] 加载进度: ${Math.round(value * 100)}%`)
     })
 
-    this.load.on("complete", () => {
+    ;(this as any).load.on("complete", () => {
       console.log("[藏品图片] 全部加载完成")
-      ARTIFACT_LIBRARY.forEach((artifact) => {
+      ARTIFACT_LIBRARY.forEach((artifact: any) => {
         const textureKey = `artifact-${artifact.key}`
-        const texture = this.textures.get(textureKey)
+        const texture = (this as any).textures.get(textureKey)
         if (texture && texture.frames) {
           texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
         }
       })
     })
 
-    this.load.on("load", (file) => {
+    ;(this as any).load.on("load", (file: any) => {
       console.log(`[藏品图片] 已加载: ${file.key}`)
     })
 
-    this.load.on("loaderror", (file) => {
+    ;(this as any).load.on("loaderror", (file: any) => {
       console.warn(`[藏品图片] 加载失败: ${file.key}`, file.src)
     })
 
-    this.load.start()
+    ;(this as any).load.start()
   },
 
   drawUnknownWarehouse() {
-    if (this.gridLayer) {
-      this.gridLayer.destroy()
+    if ((this as any).gridLayer) {
+      ;(this as any).gridLayer.destroy()
     }
-    if (this.revealCellLayer) {
-      this.revealCellLayer.destroy()
+    if ((this as any).revealCellLayer) {
+      ;(this as any).revealCellLayer.destroy()
     }
 
-    this.gridLayer = this.add.graphics()
+    ;(this as any).gridLayer = (this as any).add.graphics()
 
     for (let col = 1; col < GRID_COLS; col++) {
       const x = MARGIN + col * CELL_SIZE
-      this.gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
-      this.gridLayer.lineBetween(x, MARGIN, x, MARGIN + GRID_ROWS * CELL_SIZE)
+      ;(this as any).gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
+      ;(this as any).gridLayer.lineBetween(x, MARGIN, x, MARGIN + GRID_ROWS * CELL_SIZE)
     }
     for (let row = 1; row < GRID_ROWS; row++) {
       const y = MARGIN + row * CELL_SIZE
-      this.gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
-      this.gridLayer.lineBetween(MARGIN, y, MARGIN + GRID_COLS * CELL_SIZE, y)
+      ;(this as any).gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
+      ;(this as any).gridLayer.lineBetween(MARGIN, y, MARGIN + GRID_COLS * CELL_SIZE, y)
     }
 
-    this.revealCellLayer = this.add.graphics()
-    this.revealedCells = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
+    ;(this as any).revealCellLayer = (this as any).add.graphics()
+    ;(this as any).revealedCells = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
 
-    this.time.delayedCall(100, () => {
+    ;(this as any).time.delayedCall(100, () => {
       this.preloadArtifactImages()
     })
   },
 
   drawGridLines() {
-    if (!this.gridLayer) return
-    this.gridLayer.clear()
+    if (!(this as any).gridLayer) return
+    ;(this as any).gridLayer.clear()
 
     const occupied = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
-    for (const item of this.items) {
+    for (const item of (this as any).items) {
       if (!item.revealed || !item.revealed.outline) continue
       for (let r = item.y; r < item.y + item.h; r++) {
         for (let c = item.x; c < item.x + item.w; c++) {
@@ -165,8 +147,8 @@ export const WarehouseCoreMixin = {
         if (!leftOccupied || !rightOccupied) {
           const y1 = MARGIN + row * CELL_SIZE
           const y2 = MARGIN + (row + 1) * CELL_SIZE
-          this.gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
-          this.gridLayer.lineBetween(x, y1, x, y2)
+          ;(this as any).gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
+          ;(this as any).gridLayer.lineBetween(x, y1, x, y2)
         }
       }
     }
@@ -179,8 +161,8 @@ export const WarehouseCoreMixin = {
         if (!topOccupied || !bottomOccupied) {
           const x1 = MARGIN + col * CELL_SIZE
           const x2 = MARGIN + (col + 1) * CELL_SIZE
-          this.gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
-          this.gridLayer.lineBetween(x1, y, x2, y)
+          ;(this as any).gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
+          ;(this as any).gridLayer.lineBetween(x1, y, x2, y)
         }
       }
     }
@@ -196,12 +178,12 @@ export const WarehouseCoreMixin = {
   },
 
   spawnRandomItems() {
-    if (this.itemLayer) {
-      this.itemLayer.destroy(true)
+    if ((this as any).itemLayer) {
+      ;(this as any).itemLayer.destroy(true)
     }
 
-    this.itemLayer = this.add.container(0, 0)
-    this.items = []
+    ;(this as any).itemLayer = (this as any).add.container(0, 0)
+    ;(this as any).items = []
 
     const occupancy = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
     const capacity = GRID_COLS * GRID_ROWS
@@ -212,21 +194,21 @@ export const WarehouseCoreMixin = {
     const desiredCount = Phaser.Math.Between(ARTIFACT_COUNT_RANGE.min, ARTIFACT_COUNT_RANGE.max)
 
     let attempts = 0
-    while (this.items.length < desiredCount && attempts < 520 && occupiedCellsCount < targetOccupiedCells) {
+    while ((this as any).items.length < desiredCount && attempts < 520 && occupiedCellsCount < targetOccupiedCells) {
       attempts += 1
       const slot = this.findFirstEmptySlot(occupancy)
       if (!slot) {
         break
       }
 
-      const item = this.artifactManager.createRandomArtifactForSlot({
+      const item = (this as any).artifactManager.createRandomArtifactForSlot({
         col: slot.col,
         row: slot.row,
         gridCols: GRID_COLS,
         gridRows: GRID_ROWS,
         occupancy,
-        categoryWeights: this._mapCategoryWeights || undefined,
-        qualityWeights: this._mapQualityWeights || undefined
+        categoryWeights: (this as any)._mapCategoryWeights || undefined,
+        qualityWeights: (this as any)._mapQualityWeights || undefined
       })
 
       if (!item) {
@@ -243,21 +225,21 @@ export const WarehouseCoreMixin = {
 
       this.placeItem(item, slot, occupancy)
       this.renderItem(item)
-      this.items.push(item)
+      ;(this as any).items.push(item)
       occupiedCellsCount += item.w * item.h
     }
   },
 
   setupWarehouseAuction() {
-    this.warehouseTrueValue = this.items.reduce((sum, item) => sum + item.trueValue, 0)
+    ;(this as any).warehouseTrueValue = (this as any).items.reduce((sum: number, item: any) => sum + item.trueValue, 0)
     const aiRatio = Phaser.Math.FloatBetween(0.9, 1.12)
-    this.aiMaxBid = Math.round(this.warehouseTrueValue * aiRatio)
-    this.currentBid = Math.max(1000, Math.round((this.warehouseTrueValue * 0.18) / 100) * 100)
-    this.dom.bidInput.value = this.round <= 1 ? "" : "0"
-    this.dom.bidInput.placeholder = this.round <= 1 ? "点击出价" : ""
+    ;(this as any).aiMaxBid = Math.round((this as any).warehouseTrueValue * aiRatio)
+    ;(this as any).currentBid = Math.max(1000, Math.round(((this as any).warehouseTrueValue * 0.18) / 100) * 100)
+    ;(this as any).dom.bidInput.value = (this as any).round <= 1 ? "" : "0"
+    ;(this as any).dom.bidInput.placeholder = (this as any).round <= 1 ? "点击出价" : ""
   },
 
-  findFirstEmptySlot(occupancy) {
+  findFirstEmptySlot(occupancy: boolean[][]): { col: number; row: number } | null {
     for (let row = 0; row < GRID_ROWS; row += 1) {
       for (let col = 0; col < GRID_COLS; col += 1) {
         if (!occupancy[row][col]) {
@@ -268,7 +250,7 @@ export const WarehouseCoreMixin = {
     return null
   },
 
-  placeItem(item, slot, occupancy) {
+  placeItem(item: any, slot: { col: number; row: number }, occupancy: boolean[][]) {
     item.x = slot.col
     item.y = slot.row
 
@@ -280,60 +262,60 @@ export const WarehouseCoreMixin = {
   },
 
   rebuildWarehouseCellIndex() {
-    this.warehouseCellIndex = {}
-    this.items.forEach((item) => {
+    ;(this as any).warehouseCellIndex = {}
+    ;(this as any).items.forEach((item: any) => {
       for (let y = item.y; y < item.y + item.h; y += 1) {
         for (let x = item.x; x < item.x + item.w; x += 1) {
-          this.warehouseCellIndex[toCellKey(x, y)] = item.id
+          ;(this as any).warehouseCellIndex[toCellKey(x, y)] = item.id
         }
       }
     })
   },
 
-  isInBoundsCell(x, y) {
+  isInBoundsCell(x: number, y: number): boolean {
     return x >= 0 && x < GRID_COLS && y >= 0 && y < GRID_ROWS
   },
 
-  isWarehouseCellOccupied(x, y) {
+  isWarehouseCellOccupied(x: number, y: number): boolean {
     if (!this.isInBoundsCell(x, y)) {
       return false
     }
-    return Boolean(this.warehouseCellIndex[toCellKey(x, y)])
+    return Boolean((this as any).warehouseCellIndex[toCellKey(x, y)])
   },
 
-  renderItem(item) {
+  renderItem(item: any) {
     const pixelX = Math.round(MARGIN + item.x * CELL_SIZE)
     const pixelY = Math.round(MARGIN + item.y * CELL_SIZE)
     const width = item.w * CELL_SIZE
     const height = item.h * CELL_SIZE
 
-    const silhouette = this.add.rectangle(pixelX, pixelY, width, height, 0xe5d7bd, 0)
+    const silhouette = (this as any).add.rectangle(pixelX, pixelY, width, height, 0xe5d7bd, 0)
     silhouette.setOrigin(0, 0)
 
-    const border = this.add.rectangle(pixelX, pixelY, width, height)
+    const border = (this as any).add.rectangle(pixelX, pixelY, width, height)
     border.setOrigin(0, 0)
     border.setStrokeStyle(3, item.quality.color, 0)
 
-    const qualityMarkers = this.add.container(0, 0)
-    const clickZone = this.add.zone(pixelX, pixelY, width, height).setOrigin(0, 0)
+    const qualityMarkers = (this as any).add.container(0, 0)
+    const clickZone = (this as any).add.zone(pixelX, pixelY, width, height).setOrigin(0, 0)
     clickZone.setInteractive({ useHandCursor: false })
 
     clickZone.on("pointerover", () => {
       if (this.hasAnyInfo(item)) {
-        this.input.setDefaultCursor("pointer")
+        ;(this as any).input.setDefaultCursor("pointer")
       } else {
-        this.input.setDefaultCursor("default")
+        ;(this as any).input.setDefaultCursor("default")
       }
     })
 
     clickZone.on("pointerout", () => {
-      this.input.setDefaultCursor("default")
+      ;(this as any).input.setDefaultCursor("default")
     })
 
     const TAP_THRESHOLD = 15
     const TAP_TIME_THRESHOLD = 250
 
-    clickZone.on("pointerup", (pointer) => {
+    clickZone.on("pointerup", (pointer: any) => {
       const dx = Math.abs(pointer.x - pointer.downX)
       const dy = Math.abs(pointer.y - pointer.downY)
       const dt = pointer.upTime - pointer.downTime
@@ -353,34 +335,34 @@ export const WarehouseCoreMixin = {
       qualityGlowTween: null
     }
 
-    this.itemLayer.add([silhouette, border, qualityMarkers, clickZone])
+    ;(this as any).itemLayer.add([silhouette, border, qualityMarkers, clickZone])
   },
 
-  onArtifactClicked(item, pointer) {
+  onArtifactClicked(item: any, pointer: any) {
     if (
-      !this.dom.bidKeypad.classList.contains("hidden") ||
-      (this.dom.itemDrawer && !this.dom.itemDrawer.classList.contains("hidden"))
+      !(this as any).dom.bidKeypad.classList.contains("hidden") ||
+      ((this as any).dom.itemDrawer && !(this as any).dom.itemDrawer.classList.contains("hidden"))
     ) {
       return
     }
 
-    if (this.isSettlementPageActive()) {
+    if ((this as any).isSettlementPageActive()) {
       if (!item.revealed.outline) {
         return
       }
-      this.selectedItem = item
+      ;(this as any).selectedItem = item
       this.positionPreview(pointer.x, pointer.y)
       this.renderSettlementItemPreview(item)
-      this.writeLog(`结算查看：${item.name}（价值 ${item.trueValue}）`)
+      ;(this as any).writeLog(`结算查看：${item.name}（价值 ${item.trueValue}）`)
       return
     }
 
-    if (this.settled || this.roundResolving) {
+    if ((this as any).settled || (this as any).roundResolving) {
       return
     }
 
     if (!this.hasAnyInfo(item)) {
-      this.writeLog("该藏品尚无任何线索，无法进行候选预览。")
+      ;(this as any).writeLog("该藏品尚无任何线索，无法进行候选预览。")
       return
     }
 
@@ -389,28 +371,28 @@ export const WarehouseCoreMixin = {
       const clickCellY = Math.floor((pointer.y - MARGIN) / CELL_SIZE)
       const qc = item.revealed.qualityCell
       if (clickCellX !== qc.x || clickCellY !== qc.y) {
-        this.writeLog("只能点击已揭示的品质格来预览候选。")
+        ;(this as any).writeLog("只能点击已揭示的品质格来预览候选。")
         return
       }
     }
 
-    this.selectedItem = item
+    ;(this as any).selectedItem = item
 
-    this.dom.previewCategorySelect.value = "all"
+    ;(this as any).dom.previewCategorySelect.value = "all"
     this.positionPreview(pointer.x, pointer.y)
     this.renderPreviewCandidates(item)
 
     const info = this.getItemKnownText(item)
-    this.writeLog(`已打开候选预览：${info}。当前出价作用于整仓，不是单件。`)
-    this.updateHud()
+    ;(this as any).writeLog(`已打开候选预览：${info}。当前出价作用于整仓，不是单件。`)
+    ;(this as any).updateHud()
   },
 
-  hasAnyInfo(item) {
+  hasAnyInfo(item: any): boolean {
     return item.revealed.outline || Boolean(item.revealed.qualityCell)
   },
 
-  getItemKnownText(item) {
-    const segments = []
+  getItemKnownText(item: any): string {
+    const segments: string[] = []
     if (item.revealed.qualityCell) {
       segments.push(`品质=${item.quality.label}`)
     }
@@ -425,13 +407,13 @@ export const WarehouseCoreMixin = {
 }
 
 export const WarehouseRevealMixin = {
-  revealOutlineBatch(count, category, allowCategoryFallback, sortStrategy) {
+  revealOutlineBatch(count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string | null) {
     const targets = this.pickRevealTargets({ mode: "outline", count, category, allowCategoryFallback, sortStrategy })
     if (targets.length === 0) {
       return { ok: false, revealed: 0, message: "没有可揭示轮廓的目标。" }
     }
 
-    targets.forEach((item) => this.revealOutline(item))
+    targets.forEach((item: any) => this.revealOutline(item))
     this.showRevealScrollHintsForTargets(targets, "轮廓揭示位置不在当前可视区")
     const bottomCell = this.pickBottomCellFromTargets(targets)
     return {
@@ -441,18 +423,18 @@ export const WarehouseRevealMixin = {
     }
   },
 
-  revealQualityBatch(count, category, allowCategoryFallback, sortStrategy) {
+  revealQualityBatch(count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string | null) {
     const targets = this.pickRevealTargets({ mode: "quality", count, category, allowCategoryFallback, sortStrategy })
     if (targets.length === 0) {
       return { ok: false, revealed: 0, message: "没有可揭示品质格的目标。" }
     }
 
-    targets.forEach((item) => this.revealQualityCell(item))
+    targets.forEach((item: any) => this.revealQualityCell(item))
     this.showRevealScrollHintsForTargets(targets, "品质揭示位置不在当前可视区")
     return { ok: true, revealed: targets.length }
   },
 
-  revealArtifactFully(item, options = {}) {
+  revealArtifactFully(item: any, options: any = {}) {
     if (!item || !item.revealed) {
       return { ok: false, message: "无效的藏品目标。" }
     }
@@ -466,7 +448,7 @@ export const WarehouseRevealMixin = {
     }
 
     if (!item.revealed.qualityCell) {
-      const cells = []
+      const cells: { x: number; y: number }[] = []
       for (let y = item.y; y < item.y + item.h; y += 1) {
         for (let x = item.x; x < item.x + item.w; x += 1) {
           cells.push({ x, y })
@@ -490,27 +472,27 @@ export const WarehouseRevealMixin = {
     return { ok: true, item, message: `完全揭示：${item.name}（${item.quality.label}）` }
   },
 
-  revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback }) {
-    const unrevealed = this.items.filter((item) => !item.revealed.exact)
+  revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback }: { count: number; sortStrategy: string | null; category: string | null; allowCategoryFallback: boolean }) {
+    const unrevealed = (this as any).items.filter((item: any) => !item.revealed.exact)
 
-    const sortByArea = (arr, strategy) => {
+    const sortByArea = (arr: any[], strategy: string | null) => {
       const shuffled = shuffle(arr)
       if (strategy === "smallestFirst") {
-        return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
+        return shuffled.sort((a: any, b: any) => a.w * a.h - b.w * b.h)
       } else if (strategy === "largestFirst") {
-        return shuffled.sort((a, b) => b.w * b.h - a.w * a.h)
+        return shuffled.sort((a: any, b: any) => b.w * b.h - a.w * a.h)
       }
       return shuffled
     }
 
-    let pool
+    let pool: any[]
     if (category) {
-      const primary = unrevealed.filter((item) => item.category === category)
+      const primary = unrevealed.filter((item: any) => item.category === category)
       pool = sortByArea(primary, sortStrategy)
 
       if (pool.length < count && allowCategoryFallback) {
-        const existedIds = new Set(pool.map((item) => item.id))
-        const fallback = unrevealed.filter((item) => !existedIds.has(item.id))
+        const existedIds = new Set(pool.map((item: any) => item.id))
+        const fallback = unrevealed.filter((item: any) => !existedIds.has(item.id))
         pool = pool.concat(sortByArea(fallback, sortStrategy))
       }
     } else {
@@ -522,8 +504,8 @@ export const WarehouseRevealMixin = {
       return { ok: false, revealed: 0, message: "没有可完全揭示的藏品。" }
     }
 
-    const results = []
-    targets.forEach((item) => {
+    const results: any[] = []
+    targets.forEach((item: any) => {
       const result = this.revealArtifactFully(item)
       if (result.ok) {
         results.push(result)
@@ -535,12 +517,12 @@ export const WarehouseRevealMixin = {
     return {
       ok: true,
       revealed: results.length,
-      items: results.map((r) => r.item),
+      items: results.map((r: any) => r.item),
       bottomCell
     }
   },
 
-  playFullRevealEffect(item) {
+  playFullRevealEffect(item: any) {
     const pixelX = MARGIN + item.x * CELL_SIZE
     const pixelY = MARGIN + item.y * CELL_SIZE
     const width = item.w * CELL_SIZE
@@ -548,13 +530,13 @@ export const WarehouseRevealMixin = {
     const cx = pixelX + width / 2
     const cy = pixelY + height / 2
 
-    if (this.dom && this.dom.gameRoot) {
-      this.dom.gameRoot.classList.remove("reveal-flash")
-      void this.dom.gameRoot.offsetWidth
-      this.dom.gameRoot.classList.add("reveal-flash")
+    if ((this as any).dom && (this as any).dom.gameRoot) {
+      ;(this as any).dom.gameRoot.classList.remove("reveal-flash")
+      void (this as any).dom.gameRoot.offsetWidth
+      ;(this as any).dom.gameRoot.classList.add("reveal-flash")
       setTimeout(() => {
-        if (this.dom && this.dom.gameRoot) {
-          this.dom.gameRoot.classList.remove("reveal-flash")
+        if ((this as any).dom && (this as any).dom.gameRoot) {
+          ;(this as any).dom.gameRoot.classList.remove("reveal-flash")
         }
       }, 600)
     }
@@ -562,10 +544,10 @@ export const WarehouseRevealMixin = {
     const qualityColor = item.quality.color
     const glowColor = item.quality.glow
 
-    const outerRing = this.add.rectangle(cx, cy, width * 1.6, height * 1.6, glowColor, 0.5)
+    const outerRing = (this as any).add.rectangle(cx, cy, width * 1.6, height * 1.6, glowColor, 0.5)
     outerRing.setOrigin(0.5, 0.5)
     outerRing.setAlpha(0)
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: outerRing,
       scaleX: { from: 0.5, to: 1.8 },
       scaleY: { from: 0.5, to: 1.8 },
@@ -575,10 +557,10 @@ export const WarehouseRevealMixin = {
       onComplete: () => outerRing.destroy()
     })
 
-    const innerBurst = this.add.rectangle(cx, cy, width, height, qualityColor, 0.6)
+    const innerBurst = (this as any).add.rectangle(cx, cy, width, height, qualityColor, 0.6)
     innerBurst.setOrigin(0.5, 0.5)
     innerBurst.setAlpha(0)
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: innerBurst,
       scaleX: { from: 0.6, to: 1.2 },
       scaleY: { from: 0.6, to: 1.2 },
@@ -591,7 +573,7 @@ export const WarehouseRevealMixin = {
     if (item.view && item.view.border) {
       const border = item.view.border
       border.setAlpha(0)
-      this.tweens.add({
+      ;(this as any).tweens.add({
         targets: border,
         alpha: { from: 0, to: 1 },
         duration: 250,
@@ -604,7 +586,7 @@ export const WarehouseRevealMixin = {
       const baseScale = img.scaleX
       img.setAlpha(0)
       img.setScale(baseScale * 0.7)
-      this.tweens.add({
+      ;(this as any).tweens.add({
         targets: img,
         alpha: 1,
         scaleX: baseScale * 1.15,
@@ -612,7 +594,7 @@ export const WarehouseRevealMixin = {
         duration: 350,
         ease: "Back.easeOut",
         onComplete: () => {
-          this.tweens.add({
+          ;(this as any).tweens.add({
             targets: img,
             scaleX: baseScale,
             scaleY: baseScale,
@@ -624,7 +606,7 @@ export const WarehouseRevealMixin = {
     }
   },
 
-  pickBottomCellFromTargets(targets) {
+  pickBottomCellFromTargets(targets: any[]): { x: number; y: number; col: number; row: number } | null {
     const list = Array.isArray(targets) ? targets : []
     if (list.length === 0) {
       return null
@@ -633,7 +615,7 @@ export const WarehouseRevealMixin = {
     let selected = list[0]
     let maxBottomY = selected.y + selected.h - 1
 
-    list.forEach((item) => {
+    list.forEach((item: any) => {
       const bottomY = item.y + item.h - 1
       if (bottomY > maxBottomY) {
         selected = item
@@ -652,49 +634,49 @@ export const WarehouseRevealMixin = {
   },
 
   hideRevealScrollHints() {
-    if (this.dom.revealHintUp) {
-      this.dom.revealHintUp.classList.add("hidden")
+    if ((this as any).dom.revealHintUp) {
+      ;(this as any).dom.revealHintUp.classList.add("hidden")
     }
-    if (this.dom.revealHintDown) {
-      this.dom.revealHintDown.classList.add("hidden")
+    if ((this as any).dom.revealHintDown) {
+      ;(this as any).dom.revealHintDown.classList.add("hidden")
     }
-    this.pendingRevealHintTargets = null
-    this.pendingRevealHintText = ""
-    this.pendingRevealHintSeenIds = null
+    ;(this as any).pendingRevealHintTargets = null
+    ;(this as any).pendingRevealHintText = ""
+    ;(this as any).pendingRevealHintSeenIds = null
   },
 
-  showRevealScrollHintsForTargets(targets, message) {
+  showRevealScrollHintsForTargets(targets: any[], message: string) {
     if (!targets || targets.length === 0) {
       return
     }
 
-    this.pendingRevealHintTargets = targets
-    this.pendingRevealHintText = message
-    this.pendingRevealHintSeenIds = new Set()
+    ;(this as any).pendingRevealHintTargets = targets
+    ;(this as any).pendingRevealHintText = message
+    ;(this as any).pendingRevealHintSeenIds = new Set()
     this.refreshRevealScrollHints()
   },
 
   refreshRevealScrollHints() {
-    if (!this.dom.gameRoot || !this.pendingRevealHintTargets || this.pendingRevealHintTargets.length === 0) {
+    if (!(this as any).dom.gameRoot || !(this as any).pendingRevealHintTargets || (this as any).pendingRevealHintTargets.length === 0) {
       return
     }
 
-    const canvasEl = this.dom.gameRoot.querySelector("canvas")
-    const canvasRenderHeight = canvasEl ? canvasEl.getBoundingClientRect().height : this.dom.gameRoot.scrollHeight
+    const canvasEl = (this as any).dom.gameRoot.querySelector("canvas")
+    const canvasRenderHeight = canvasEl ? canvasEl.getBoundingClientRect().height : (this as any).dom.gameRoot.scrollHeight
     const scaleRatio = canvasRenderHeight > 0 ? canvasRenderHeight / CANVAS_NATIVE_HEIGHT : 1
 
-    const viewportTop = this.dom.gameRoot.scrollTop
-    const viewportBottom = viewportTop + this.dom.gameRoot.clientHeight
+    const viewportTop = (this as any).dom.gameRoot.scrollTop
+    const viewportBottom = viewportTop + (this as any).dom.gameRoot.clientHeight
 
-    this.pendingRevealHintTargets.forEach((item) => {
+    ;(this as any).pendingRevealHintTargets.forEach((item: any) => {
       const top = (MARGIN + item.y * CELL_SIZE) * scaleRatio
       const bottom = (MARGIN + (item.y + item.h) * CELL_SIZE) * scaleRatio
       if (top < viewportBottom && bottom > viewportTop) {
-        this.pendingRevealHintSeenIds.add(item.id)
+        ;(this as any).pendingRevealHintSeenIds.add(item.id)
       }
     })
 
-    if (this.pendingRevealHintSeenIds.size >= this.pendingRevealHintTargets.length) {
+    if ((this as any).pendingRevealHintSeenIds.size >= (this as any).pendingRevealHintTargets.length) {
       this.hideRevealScrollHints()
       return
     }
@@ -702,8 +684,8 @@ export const WarehouseRevealMixin = {
     let hasAbove = false
     let hasBelow = false
 
-    this.pendingRevealHintTargets.forEach((item) => {
-      if (this.pendingRevealHintSeenIds.has(item.id)) {
+    ;(this as any).pendingRevealHintTargets.forEach((item: any) => {
+      if ((this as any).pendingRevealHintSeenIds.has(item.id)) {
         return
       }
       const top = (MARGIN + item.y * CELL_SIZE) * scaleRatio
@@ -716,15 +698,15 @@ export const WarehouseRevealMixin = {
     })
 
     const baseTop = viewportTop + 8
-    if (this.dom.revealHintUp) {
-      this.dom.revealHintUp.style.top = `${baseTop}px`
-      this.dom.revealHintUp.textContent = `${this.pendingRevealHintText}（上方）`
-      this.dom.revealHintUp.classList.toggle("hidden", !hasAbove)
+    if ((this as any).dom.revealHintUp) {
+      ;(this as any).dom.revealHintUp.style.top = `${baseTop}px`
+      ;(this as any).dom.revealHintUp.textContent = `${(this as any).pendingRevealHintText}（上方）`
+      ;(this as any).dom.revealHintUp.classList.toggle("hidden", !hasAbove)
     }
-    if (this.dom.revealHintDown) {
-      this.dom.revealHintDown.style.top = `${baseTop + 36}px`
-      this.dom.revealHintDown.textContent = `${this.pendingRevealHintText}（下方）`
-      this.dom.revealHintDown.classList.toggle("hidden", !hasBelow)
+    if ((this as any).dom.revealHintDown) {
+      ;(this as any).dom.revealHintDown.style.top = `${baseTop + 36}px`
+      ;(this as any).dom.revealHintDown.textContent = `${(this as any).pendingRevealHintText}（下方）`
+      ;(this as any).dom.revealHintDown.classList.toggle("hidden", !hasBelow)
     }
 
     if (!hasAbove && !hasBelow) {
@@ -732,8 +714,8 @@ export const WarehouseRevealMixin = {
     }
   },
 
-  pickRevealTargets({ mode, count, category, allowCategoryFallback, sortStrategy }) {
-    const primary = this.items.filter((item) => {
+  pickRevealTargets({ mode, count, category, allowCategoryFallback, sortStrategy }: { mode: string; count: number; category: string | null; allowCategoryFallback: boolean; sortStrategy: string | null }): any[] {
+    const primary = (this as any).items.filter((item: any) => {
       if (category && item.category !== category) {
         return false
       }
@@ -743,12 +725,12 @@ export const WarehouseRevealMixin = {
       return !item.revealed.qualityCell
     })
 
-    const sortByArea = (arr, strategy) => {
+    const sortByArea = (arr: any[], strategy: string | null) => {
       const shuffled = shuffle(arr)
       if (strategy === "smallestFirst") {
-        return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
+        return shuffled.sort((a: any, b: any) => a.w * a.h - b.w * b.h)
       } else if (strategy === "largestFirst") {
-        return shuffled.sort((a, b) => b.w * b.h - a.w * a.h)
+        return shuffled.sort((a: any, b: any) => b.w * b.h - a.w * a.h)
       }
       return shuffled
     }
@@ -757,8 +739,8 @@ export const WarehouseRevealMixin = {
 
     let selected = pool.slice(0, count)
     if (selected.length < count && allowCategoryFallback && category) {
-      const existedIds = new Set(selected.map((item) => item.id))
-      const fallback = this.items.filter((item) => {
+      const existedIds = new Set(selected.map((item: any) => item.id))
+      const fallback = (this as any).items.filter((item: any) => {
         if (existedIds.has(item.id)) {
           return false
         }
@@ -774,7 +756,7 @@ export const WarehouseRevealMixin = {
     return selected
   },
 
-  revealOutline(item, options = {}) {
+  revealOutline(item: any, options: any = {}) {
     if (item.revealed.outline) {
       return
     }
@@ -786,7 +768,7 @@ export const WarehouseRevealMixin = {
     if (item.revealed.qualityCell && !item.view.borderPulseStarted) {
       item.view.borderPulseStarted = true
       border.setStrokeStyle(3, item.quality.color, 1)
-      this.tweens.add({
+      ;(this as any).tweens.add({
         targets: border,
         alpha: { from: 1, to: 0.35 },
         duration: qualityPulseDuration(item.qualityKey),
@@ -814,12 +796,12 @@ export const WarehouseRevealMixin = {
     }
   },
 
-  revealQualityCell(item, options = {}) {
+  revealQualityCell(item: any, options: any = {}) {
     if (item.revealed.qualityCell) {
       return
     }
 
-    const cells = []
+    const cells: { x: number; y: number }[] = []
     for (let y = item.y; y < item.y + item.h; y += 1) {
       for (let x = item.x; x < item.x + item.w; x += 1) {
         cells.push({ x, y })
@@ -840,7 +822,7 @@ export const WarehouseRevealMixin = {
     }
   },
 
-  playOutlineRevealEffect(item) {
+  playOutlineRevealEffect(item: any) {
     const { border } = item.view
     const pixelX = MARGIN + item.x * CELL_SIZE
     const pixelY = MARGIN + item.y * CELL_SIZE
@@ -849,30 +831,30 @@ export const WarehouseRevealMixin = {
     const cx = pixelX + width / 2
     const cy = pixelY + height / 2
 
-    if (this.dom && this.dom.gameRoot) {
-      this.dom.gameRoot.classList.remove("reveal-flash")
-      void this.dom.gameRoot.offsetWidth
-      this.dom.gameRoot.classList.add("reveal-flash")
+    if ((this as any).dom && (this as any).dom.gameRoot) {
+      ;(this as any).dom.gameRoot.classList.remove("reveal-flash")
+      void (this as any).dom.gameRoot.offsetWidth
+      ;(this as any).dom.gameRoot.classList.add("reveal-flash")
       setTimeout(() => {
-        if (this.dom && this.dom.gameRoot) {
-          this.dom.gameRoot.classList.remove("reveal-flash")
+        if ((this as any).dom && (this as any).dom.gameRoot) {
+          ;(this as any).dom.gameRoot.classList.remove("reveal-flash")
         }
       }, 600)
     }
 
     border.setAlpha(0)
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: border,
       alpha: { from: 0, to: 1 },
       duration: 180,
       ease: "Sine.easeOut"
     })
 
-    const pulseRing = this.add.rectangle(cx, cy, width, height)
+    const pulseRing = (this as any).add.rectangle(cx, cy, width, height)
     pulseRing.setOrigin(0.5, 0.5)
     pulseRing.setStrokeStyle(3, 0xc8b08a, 0.8)
     pulseRing.setAlpha(0)
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: pulseRing,
       scaleX: { from: 0.85, to: 1.08 },
       scaleY: { from: 0.85, to: 1.08 },
@@ -882,10 +864,10 @@ export const WarehouseRevealMixin = {
       onComplete: () => pulseRing.destroy()
     })
 
-    const flashOverlay = this.add.rectangle(cx, cy, width, height, 0xffffff, 0.5)
+    const flashOverlay = (this as any).add.rectangle(cx, cy, width, height, 0xffffff, 0.5)
     flashOverlay.setOrigin(0.5, 0.5)
     flashOverlay.setAlpha(0)
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: flashOverlay,
       scaleX: { from: 0.8, to: 1.05 },
       scaleY: { from: 0.8, to: 1.05 },
@@ -895,12 +877,12 @@ export const WarehouseRevealMixin = {
       onComplete: () => flashOverlay.destroy()
     })
 
-    const lightSweep = this.add.graphics()
+    const lightSweep = (this as any).add.graphics()
     lightSweep.setAlpha(0)
     lightSweep.fillStyle(0xffffff, 0.35)
     lightSweep.fillRect(pixelX, pixelY, width, height)
     lightSweep.setBlendMode(Phaser.BlendModes.ADD)
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: lightSweep,
       alpha: { from: 0.7, to: 0 },
       duration: 500,
@@ -909,10 +891,10 @@ export const WarehouseRevealMixin = {
     })
   },
 
-  playQualityRevealEffect(item) {
+  playQualityRevealEffect(item: any) {
     const qualityColor = item.quality.color
     const hasOutline = item.revealed.outline
-    let pixelX, pixelY, areaW, areaH
+    let pixelX: number, pixelY: number, areaW: number, areaH: number
 
     if (hasOutline) {
       pixelX = MARGIN + item.x * CELL_SIZE
@@ -929,22 +911,22 @@ export const WarehouseRevealMixin = {
     const cx = pixelX + areaW / 2
     const cy = pixelY + areaH / 2
 
-    if (this.dom && this.dom.gameRoot) {
-      this.dom.gameRoot.classList.remove("quality-reveal-flash")
-      void this.dom.gameRoot.offsetWidth
-      this.dom.gameRoot.classList.add("quality-reveal-flash")
+    if ((this as any).dom && (this as any).dom.gameRoot) {
+      ;(this as any).dom.gameRoot.classList.remove("quality-reveal-flash")
+      void (this as any).dom.gameRoot.offsetWidth
+      ;(this as any).dom.gameRoot.classList.add("quality-reveal-flash")
       setTimeout(() => {
-        if (this.dom && this.dom.gameRoot) {
-          this.dom.gameRoot.classList.remove("quality-reveal-flash")
+        if ((this as any).dom && (this as any).dom.gameRoot) {
+          ;(this as any).dom.gameRoot.classList.remove("quality-reveal-flash")
         }
       }, 700)
     }
 
     const burstSize = Math.max(areaW, areaH) * 0.7
-    const burstRing = this.add.rectangle(cx, cy, burstSize, burstSize, qualityColor, 0.7)
+    const burstRing = (this as any).add.rectangle(cx, cy, burstSize, burstSize, qualityColor, 0.7)
     burstRing.setOrigin(0.5, 0.5)
     burstRing.setAlpha(0)
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: burstRing,
       scaleX: { from: 0.3, to: 1.3 },
       scaleY: { from: 0.3, to: 1.3 },
@@ -954,10 +936,10 @@ export const WarehouseRevealMixin = {
       onComplete: () => burstRing.destroy()
     })
 
-    const qualityFlash = this.add.rectangle(cx, cy, areaW, areaH, qualityColor, 0.5)
+    const qualityFlash = (this as any).add.rectangle(cx, cy, areaW, areaH, qualityColor, 0.5)
     qualityFlash.setOrigin(0.5, 0.5)
     qualityFlash.setAlpha(0)
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: qualityFlash,
       scaleX: { from: 0.8, to: 1.08 },
       scaleY: { from: 0.8, to: 1.08 },
@@ -974,21 +956,21 @@ export const WarehouseRevealMixin = {
       img.setAlpha(0)
       img.setScale(baseScale * 0.85)
 
-      this.tweens.add({
+      ;(this as any).tweens.add({
         targets: img,
         alpha: 1,
         duration: 300,
         ease: "Sine.easeIn"
       })
 
-      this.tweens.add({
+      ;(this as any).tweens.add({
         targets: img,
         scaleX: baseScale * 1.1,
         scaleY: baseScale * 1.1,
         duration: 200,
         ease: "Sine.easeOut",
         onComplete: () => {
-          this.tweens.add({
+          ;(this as any).tweens.add({
             targets: img,
             scaleX: baseScale,
             scaleY: baseScale,
@@ -1000,7 +982,7 @@ export const WarehouseRevealMixin = {
     }
   },
 
-  clearQualityVisual(item, keepImage = false) {
+  clearQualityVisual(item: any, keepImage: boolean = false) {
     if (!item.view) {
       return
     }
@@ -1021,7 +1003,7 @@ export const WarehouseRevealMixin = {
     }
   },
 
-  renderQualityVisual(item, options = {}) {
+  renderQualityVisual(item: any, options: any = {}) {
     if (!item.revealed.qualityCell) {
       return
     }
@@ -1033,10 +1015,10 @@ export const WarehouseRevealMixin = {
 
     this.clearQualityVisual(item, hasExistingImage)
 
-    let markerX
-    let markerY
-    let markerW
-    let markerH
+    let markerX: number
+    let markerY: number
+    let markerW: number
+    let markerH: number
 
     if (item.revealed.outline && item.w * item.h > 1) {
       markerX = MARGIN + item.x * CELL_SIZE
@@ -1051,9 +1033,9 @@ export const WarehouseRevealMixin = {
     }
 
     const isFullyRevealed = item.revealed.exact === true
-    const shouldShowArtifactImage = (isFullyRevealed || this.isSettlementRevealMode) && item.key
+    const shouldShowArtifactImage = (isFullyRevealed || (this as any).isSettlementRevealMode) && item.key
     const textureKey = `artifact-${item.key}`
-    const hasArtifactImage = shouldShowArtifactImage && this.textures.exists(textureKey)
+    const hasArtifactImage = shouldShowArtifactImage && (this as any).textures.exists(textureKey)
     const skipImage = options.settlementSkipImage === true
 
     if (hasArtifactImage && !skipImage) {
@@ -1065,7 +1047,7 @@ export const WarehouseRevealMixin = {
           artifactImage.setScale(existingScale.x, existingScale.y)
         }
       } else {
-        const artifactImage = this.add.image(markerX + markerW / 2, markerY + markerH / 2, textureKey)
+        const artifactImage = (this as any).add.image(markerX + markerW / 2, markerY + markerH / 2, textureKey)
         artifactImage.setOrigin(0.5, 0.5)
         artifactImage.setDisplaySize(markerW, markerH)
         item.view.qualityMarkers.add(artifactImage)
@@ -1073,7 +1055,7 @@ export const WarehouseRevealMixin = {
       }
     }
 
-    const marker = this.add.rectangle(
+    const marker = (this as any).add.rectangle(
       markerX + markerW / 2,
       markerY + markerH / 2,
       markerW,
@@ -1087,14 +1069,14 @@ export const WarehouseRevealMixin = {
 
     item.view.qualityMarkers.add(marker)
 
-    this.tweens.add({
+    ;(this as any).tweens.add({
       targets: marker,
       scaleX: { from: 0, to: 1.15 },
       scaleY: { from: 0, to: 1.15 },
       duration: 250,
       ease: "Back.easeOut",
       onComplete: () => {
-        this.tweens.add({
+        ;(this as any).tweens.add({
           targets: marker,
           scaleX: 1,
           scaleY: 1,
@@ -1104,7 +1086,7 @@ export const WarehouseRevealMixin = {
       }
     })
 
-    item.view.qualityGlowTween = this.tweens.add({
+    item.view.qualityGlowTween = (this as any).tweens.add({
       targets: marker,
       alpha: { from: hasArtifactImage ? 0.35 : 0.45, to: hasArtifactImage ? 0.55 : 0.7 },
       duration: qualityPulseDuration(item.qualityKey),
@@ -1116,7 +1098,7 @@ export const WarehouseRevealMixin = {
     if (item.revealed.outline && !item.view.borderPulseStarted) {
       item.view.border.setStrokeStyle(3, item.quality.color, 1)
       item.view.borderPulseStarted = true
-      this.tweens.add({
+      ;(this as any).tweens.add({
         targets: item.view.border,
         alpha: { from: 1, to: 0.35 },
         duration: qualityPulseDuration(item.qualityKey),
@@ -1127,7 +1109,7 @@ export const WarehouseRevealMixin = {
     }
   },
 
-  syncQualityMarkersForOutlinedItem(item, options = {}) {
+  syncQualityMarkersForOutlinedItem(item: any, options: any = {}) {
     if (!item.revealed.outline || !item.revealed.qualityCell || item.view.qualitySynced) {
       return
     }
@@ -1141,33 +1123,33 @@ export const WarehouseRevealMixin = {
     })
   },
 
-  revealCell(col, row) {
-    if (this.revealedCells[row][col]) {
+  revealCell(col: number, row: number) {
+    if ((this as any).revealedCells[row][col]) {
       return
     }
 
-    this.revealedCells[row][col] = true
+    ;(this as any).revealedCells[row][col] = true
     const x = MARGIN + col * CELL_SIZE
     const y = MARGIN + row * CELL_SIZE
 
-    this.revealCellLayer.fillStyle(0xf1e6cc, 0.2)
-    this.revealCellLayer.fillRect(x, y, CELL_SIZE, CELL_SIZE)
+    ;(this as any).revealCellLayer.fillStyle(0xf1e6cc, 0.2)
+    ;(this as any).revealCellLayer.fillRect(x, y, CELL_SIZE, CELL_SIZE)
   }
 }
 
 export const WarehousePreviewMixin = {
-  positionPreview(canvasX, canvasY) {
-    this.previewAnchor = { x: canvasX, y: canvasY }
-    const pop = this.dom.previewPopover
+  positionPreview(canvasX: number, canvasY: number) {
+    ;(this as any).previewAnchor = { x: canvasX, y: canvasY }
+    const pop = (this as any).dom.previewPopover
     pop.classList.remove("hidden")
-    this.previewOpenTick = Date.now()
+    ;(this as any).previewOpenTick = Date.now()
 
     this.applyPreviewPosition()
   },
 
   applyPreviewPosition() {
-    const pop = this.dom.previewPopover
-    if (pop.classList.contains("hidden") || !this.previewAnchor) {
+    const pop = (this as any).dom.previewPopover
+    if (pop.classList.contains("hidden") || !(this as any).previewAnchor) {
       return
     }
 
@@ -1179,10 +1161,10 @@ export const WarehousePreviewMixin = {
       return
     }
 
-    const canvasX = this.previewAnchor.x
-    const canvasY = this.previewAnchor.y
+    const canvasX = (this as any).previewAnchor.x
+    const canvasY = (this as any).previewAnchor.y
 
-    const root = this.dom.gameRoot
+    const root = (this as any).dom.gameRoot
     const pad = 10
     const maxPopoverHeight = Math.min(320, Math.max(180, root.clientHeight - pad * 2))
     pop.style.maxHeight = `${Math.round(maxPopoverHeight)}px`
@@ -1200,7 +1182,6 @@ export const WarehousePreviewMixin = {
     const upSpace = canvasY - viewTop - pad
 
     let left = rightSpace >= popWidth || rightSpace >= leftSpace ? canvasX + 18 : canvasX - popWidth - 18
-
     let top = downSpace >= popHeight || downSpace >= upSpace ? canvasY + 18 : canvasY - popHeight - 18
 
     left = clamp(left, viewLeft + pad, Math.max(viewLeft + pad, viewRight - popWidth - pad))
@@ -1211,7 +1192,7 @@ export const WarehousePreviewMixin = {
   },
 
   repositionPreview() {
-    if (this.dom.previewPopover.classList.contains("hidden")) {
+    if ((this as any).dom.previewPopover.classList.contains("hidden")) {
       return
     }
 
@@ -1221,54 +1202,52 @@ export const WarehousePreviewMixin = {
   },
 
   hidePreview() {
-    if (this.dom.previewFilterRow) {
-      this.dom.previewFilterRow.style.display = "flex"
+    if ((this as any).dom.previewFilterRow) {
+      ;(this as any).dom.previewFilterRow.style.display = "flex"
     }
-    this.dom.previewPopover.classList.add("hidden")
-    this.dom.previewList.innerHTML = ""
-    this.dom.previewHint.textContent = ""
-    this.input.setDefaultCursor("default")
+    ;(this as any).dom.previewPopover.classList.add("hidden")
+    ;(this as any).dom.previewList.innerHTML = ""
+    ;(this as any).dom.previewHint.textContent = ""
+    ;(this as any).input.setDefaultCursor("default")
   },
 
   setupPreviewTouchScroll() {
-    const pop = this.dom.previewPopover
+    const pop = (this as any).dom.previewPopover
     if (!pop) return
     let isDraggingToClose = false
     let dragStartY = 0
 
     pop.addEventListener(
       "touchstart",
-      (e) => {
+      (e: TouchEvent) => {
         if (e.touches.length === 1) {
           dragStartY = e.touches[0].clientY
           isDraggingToClose = pop.scrollTop <= 0
         }
       },
-      { passive: true }
+      { passive: true } as EventListenerOptions
     )
 
     pop.addEventListener(
       "touchmove",
-      (e) => {
+      (e: TouchEvent) => {
         if (e.touches.length !== 1) return
         const currentY = e.touches[0].clientY
         if (isDraggingToClose && currentY - dragStartY > 60) {
           this.hidePreview()
           return
         }
-        // 不使用 e.preventDefault() 和手动 scrollTop，
-        // 让 CSS overflow-y: auto + -webkit-overflow-scrolling: touch 原生滚动
       },
-      { passive: true }
+      { passive: true } as EventListenerOptions
     )
   },
 
-  isPointOnSettlementLockedItem(x, y) {
-    if (!this.items || this.items.length === 0) {
+  isPointOnSettlementLockedItem(x: number, y: number): boolean {
+    if (!(this as any).items || (this as any).items.length === 0) {
       return false
     }
 
-    return this.items.some((item) => {
+    return (this as any).items.some((item: any) => {
       if (!item.revealed || (!item.revealed.qualityCell && !item.revealed.exact)) {
         return false
       }
@@ -1281,18 +1260,18 @@ export const WarehousePreviewMixin = {
     })
   },
 
-  renderPreviewCandidates(item) {
-    if (this.dom.previewFilterRow) {
-      this.dom.previewFilterRow.style.display = "flex"
+  renderPreviewCandidates(item: any) {
+    if ((this as any).dom.previewFilterRow) {
+      ;(this as any).dom.previewFilterRow.style.display = "flex"
     }
-    this.dom.previewTitle.style.display = ""
-    this.dom.previewHint.style.display = ""
+    ;(this as any).dom.previewTitle.style.display = ""
+    ;(this as any).dom.previewHint.style.display = ""
     const qualityKey = item.revealed.qualityCell ? item.qualityKey : null
     const sizeTag = item.revealed.outline ? toSizeTag(item.w, item.h) : null
-    const selectedCategory = this.dom.previewCategorySelect.value
+    const selectedCategory = (this as any).dom.previewCategorySelect.value
     const category = selectedCategory === "all" ? null : selectedCategory
 
-    const candidates = this.artifactManager.getCandidatesByRevealState({
+    const candidates = (this as any).artifactManager.getCandidatesByRevealState({
       qualityKey,
       sizeTag,
       category
@@ -1302,18 +1281,18 @@ export const WarehousePreviewMixin = {
       item.revealed.exact = true
     }
 
-    const libStats = this.artifactManager.getLibraryStats()
-    this.dom.previewTitle.textContent = `可能藏品预览（候选 ${candidates.length}/${libStats.total}）`
-    this.dom.previewHint.textContent = `已知线索：${this.getItemKnownText(item)}；藏品库总数 ${libStats.total} 件；若仅有品质线索，候选会接近全库；默认按估算价从高到低。`
+    const libStats = (this as any).artifactManager.getLibraryStats()
+    ;(this as any).dom.previewTitle.textContent = `可能藏品预览（候选 ${candidates.length}/${libStats.total}）`
+    ;(this as any).dom.previewHint.textContent = `已知线索：${this.getItemKnownText(item)}；藏品库总数 ${libStats.total} 件；若仅有品质线索，候选会接近全库；默认按估算价从高到低。`
 
     if (candidates.length === 0) {
-      this.dom.previewList.innerHTML = '<div class="preview-item">无符合候选</div>'
+      ;(this as any).dom.previewList.innerHTML = '<div class="preview-item">无符合候选</div>'
       return
     }
 
-    const sorted = [...candidates].sort((a, b) => b.expectedPrice - a.expectedPrice)
+    const sorted = [...candidates].sort((a: any, b: any) => b.expectedPrice - a.expectedPrice)
     const html = sorted
-      .map((candidate) => {
+      .map((candidate: any) => {
         const candidateQuality = window.ArtifactData.QUALITY_CONFIG[candidate.qualityKey]
         const qualityText = candidateQuality ? candidateQuality.label : "未知"
         const sizeText = candidate.previewSizeTag || "未知"
@@ -1323,20 +1302,20 @@ export const WarehousePreviewMixin = {
       })
       .join("")
 
-    this.dom.previewList.innerHTML = html
+    ;(this as any).dom.previewList.innerHTML = html
     this.repositionPreview()
   },
 
-  renderSettlementItemPreview(item) {
-    if (this.dom.previewFilterRow) {
-      this.dom.previewFilterRow.style.display = "none"
+  renderSettlementItemPreview(item: any) {
+    if ((this as any).dom.previewFilterRow) {
+      ;(this as any).dom.previewFilterRow.style.display = "none"
     }
-    this.dom.previewTitle.style.display = "none"
-    this.dom.previewHint.style.display = "none"
+    ;(this as any).dom.previewTitle.style.display = "none"
+    ;(this as any).dom.previewHint.style.display = "none"
     const imgSrc = `assets/images/artifacts/thumbs/${item.key}.png`
     const qualityColor = rgbHex(item.quality.color)
     const qualityLabel = item.quality.label || "未知"
-    this.dom.previewList.innerHTML = [
+    ;(this as any).dom.previewList.innerHTML = [
       '<article class="preview-item settlement-detail">',
       `<div class="preview-thumb" style="background: ${qualityColor}44;"><img src="${imgSrc}" alt="${item.name}" onerror="this.style.display='none'"/></div>`,
       '<div class="settlement-detail-content">',
@@ -1353,7 +1332,7 @@ export const WarehousePreviewMixin = {
 }
 
 // 兼容层：保持 window.MobaoWarehouse 全局变量可用
-window.MobaoWarehouse = {
+;(window as any).MobaoWarehouse = {
   WarehouseCoreMixin,
   WarehouseRevealMixin,
   WarehousePreviewMixin

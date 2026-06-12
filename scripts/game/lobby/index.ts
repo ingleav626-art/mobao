@@ -504,9 +504,29 @@ export const LobbyIndexMixin = {
             const labelEl = switchEl.closest(".llm-player-switch")
             if (labelEl) labelEl.classList.remove("llm-switch-disabled")
           }
+        } else if (metaEl && !player.isAI) {
+          const existingLabel = metaEl.querySelector(".llm-player-switch")
+          if (existingLabel) existingLabel.remove()
+        }
+
+        let historyEl = document.getElementById(`history-${player.id}`)
+        if (!historyEl) {
+          const history = document.createElement("div")
+          history.id = `history-${player.id}`
+          history.className = "player-history"
+          historyEl = history
+        }
+
+        if (historyEl.parentElement !== cardEl) {
+          cardEl.appendChild(historyEl)
         }
       }
+
+      ; (this as any).playerHistoryPanels[player.id] = document.getElementById(`history-${player.id}`)
     })
+
+      ; (this as any).refreshPlayerHistoryUI()
+      ; (this as any).updatePlayerCharNames()
   },
 
   updatePlayerAvatar(playerId: string, avatarEl: HTMLElement) {
@@ -535,6 +555,62 @@ export const LobbyIndexMixin = {
 
   isAiLlmEnabledForPlayer(playerId: string): boolean {
     return Boolean((this as any).aiLlmPlayerEnabled && (this as any).aiLlmPlayerEnabled[playerId])
+  },
+
+  initPreviewFilterOptions() {
+    const categories = [...new Set(window.ArtifactData.ARTIFACT_LIBRARY.map((item: any) => item.category))]
+    const options = ['<option value="all">全部品类</option>']
+      .concat(categories.map((category: string) => `<option value="${category}">${category}</option>`))
+      .join("")
+
+      ; (this as any).dom.previewCategorySelect.innerHTML = options
+      ; (this as any).dom.bidInput.step = "1"
+      ; (this as any).dom.bidInput.min = "0"
+  },
+
+  renderShopContent() {
+    if (typeof window.MobaoShopPage !== "undefined") {
+      window.MobaoShopPage.init({
+        onPurchase: (result: any) => {
+          if (result && result.ok) {
+            ; (this as any).playerMoney = result.newMoney
+              ; (this as any).syncItemManagerFromShop()
+            this.updateLobbyMoneyDisplay()
+          }
+        }
+      })
+      window.MobaoShopPage.updateMoneyDisplay()
+      window.MobaoShopPage.renderAllItems()
+      window.MobaoShopPage.renderInventory()
+    }
+  },
+
+  syncItemManagerFromShop() {
+    if (!window.MobaoShopBridge) return
+    const bridge = window.MobaoShopBridge
+    const inv = bridge.getFullInventory()
+
+    let carryIds: Set<string> | undefined
+    try {
+      const raw = window.localStorage.getItem("mobao_carry_items_v1")
+      if (raw !== null) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          carryIds = new Set(parsed.filter((i: any) => i && i.id).map((i: any) => i.id))
+        }
+      }
+    } catch (_e) { /* ignore */ }
+
+    ; (this as any).itemManager.items.forEach((item: any) => {
+      const storageKey = bridge.getItemStorageKey(item.id)
+      const shopCount = inv[storageKey] || 0
+
+      if (carryIds instanceof Set) {
+        item.count = carryIds.has(item.id) ? shopCount : 0
+      } else {
+        item.count = shopCount
+      }
+    })
   },
 
   openCollectionOverlay() {
@@ -749,3 +825,7 @@ export const LobbyIndexMixin = {
     })
   }
 }
+
+  // 兼容层：保持 window.MobaoLobby 全局变量可用
+  ; (window as any).MobaoLobby = (window as any).MobaoLobby || {}
+  ; (window as any).MobaoLobby.IndexMixin = LobbyIndexMixin
