@@ -1,6 +1,6 @@
 /**
- * @file intel.js
- * @module ai/intel
+ * @file game/ai/intel.js
+ * @module game/ai/intel
  * @description AI情报系统 Mixin。管理AI玩家的私有情报池，包括线索揭示、品质鉴定、
  *              信号统计、高价值追踪和资源管理。是AI"看到什么"的核心模块。
  *
@@ -55,6 +55,10 @@ const { GAME_SETTINGS } = window.MobaoSettings
 const { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } = window.ArtifactData
 
 export const AiIntelMixin = {
+  /**
+   * 构建规则AI可调用的揭示上下文，委托给场景的批量揭示方法
+   * @returns {{ revealOutline: Function, revealQuality: Function, revealAll: Function }}
+   */
   buildSkillContext() {
     return {
       revealOutline: ({ count, category, allowCategoryFallback = false, sortStrategy }) =>
@@ -66,6 +70,18 @@ export const AiIntelMixin = {
     }
   },
 
+  /**
+   * 初始化AI情报系统，为每个AI玩家创建私有情报池、分配角色和初始资源
+   *
+   * 执行步骤：
+   * 1. 初始化全局状态容器（aiPrivateIntel/aiResourceState/aiRoundEffects 等）
+   * 2. 为每个AI玩家创建空情报池
+   * 3. 随机分配角色，根据角色技能初始化技能资源
+   * 4. 随机分配4个道具作为初始道具资源
+   * 5. 刷新所有玩家头像显示
+   *
+   * @returns {void}
+   */
   initAiIntelSystems() {
     this.aiPrivateIntel = {}
     this.aiResourceState = {}
@@ -147,6 +163,11 @@ export const AiIntelMixin = {
     })
   },
 
+  /**
+   * 每轮重置AI技能资源（道具不重置，仅技能恢复满额）
+   * 同时清空回合效果、上次动作记录和LLM计划
+   * @returns {void}
+   */
   resetAiRoundResources() {
     const aiPlayers = this.players.filter((player) => !player.isHuman)
     aiPlayers.forEach((player) => {
@@ -173,6 +194,11 @@ export const AiIntelMixin = {
     this.aiLlmRoundPlans = {}
   },
 
+  /**
+   * 确保AI玩家拥有私有情报池，不存在则创建空池
+   * @param {string|number} playerId - AI玩家ID
+   * @returns {Object} 私有情报池对象
+   */
   ensureAiPrivateIntel(playerId) {
     if (this.aiPrivateIntel[playerId]) {
       return this.aiPrivateIntel[playerId]
@@ -183,6 +209,21 @@ export const AiIntelMixin = {
     return pool
   },
 
+  /**
+   * 计算AI玩家的情报摘要，用于出价决策和LLM prompt
+   *
+   * 核心指标计算：
+   * - clueRate: 线索率 = (轮廓数×0.65 + 品质数) / 总藏品数，轮廓权重较低因为信息量少
+   * - qualityRate: 品质率 = 品质数 / 总藏品数
+   * - uncertainty: 不确定性 = 0.88 - clueRate×0.48 - qualityRate×0.2 + spreadRatio×0.35 - edgeBias×0.08
+   *   基准0.88，线索和品质降低不确定性，价格分散度增加不确定性，边缘差降低不确定性
+   *
+   * @param {string|number} playerId - AI玩家ID
+   * @returns {{ clueCount: number, outlineCount: number, qualityCount: number,
+   *              clueRate: number, qualityRate: number, uncertainty: number,
+   *              signalCount: number, meanEstimate: number, spreadRatio: number,
+   *              upperEdge: number, lowerEdge: number, std: number, iqr: number }}
+   */
   getAiIntelSummary(playerId) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const total = Math.max(1, this.items.length)
@@ -231,6 +272,10 @@ export const AiIntelMixin = {
     }
   },
 
+  /**
+   * 构建所有AI玩家的情报快照（playerId → IntelSummary 映射）
+   * @returns {Object<string, IntelSummary>}
+   */
   buildAiIntelSnapshot() {
     const map = {}
     this.players
@@ -241,6 +286,11 @@ export const AiIntelMixin = {
     return map
   },
 
+  /**
+   * 获取AI玩家的资源快照（技能和道具的深拷贝）
+   * @param {string|number} playerId - AI玩家ID
+   * @returns {{ skills: Object<string,number>, items: Object<string,number> }}
+   */
   getAiResourceSnapshot(playerId) {
     const resourceState = this.aiResourceState[playerId]
     if (!resourceState) {
@@ -256,6 +306,11 @@ export const AiIntelMixin = {
     }
   },
 
+  /**
+   * 构建LLM可调用的揭示上下文，与 buildSkillContext 类似但绑定到指定AI玩家
+   * @param {string|number} playerId - AI玩家ID
+   * @returns {{ revealOutline: Function, revealQuality: Function, revealAll: Function }}
+   */
   buildAiPrivateRevealContext(playerId) {
     return {
       revealOutline: ({ count, category, allowCategoryFallback = false, sortStrategy }) =>
@@ -351,6 +406,15 @@ export const AiIntelMixin = {
     }
   },
 
+  /**
+   * 为AI玩家构建单条私有信号，包含藏品信息和采样单元格
+   * outline模式：记录品类、尺寸标签，标记所有占用格和边界邻居
+   * quality模式：记录品质键，标记采样格和8邻居
+   * @param {string|number} playerId - AI玩家ID
+   * @param {Object} item - 藏品对象
+   * @param {"outline"|"quality"} mode - 揭示模式
+   * @returns {Object} 信号对象 { itemId, round, mode, category?, sizeTag?, qualityKey?, sampleCell? }
+   */
   buildAiPrivateSignal(playerId, item, mode) {
     const cell = this.pickRandomItemCell(item)
     const baseSignal = {
@@ -423,6 +487,13 @@ export const AiIntelMixin = {
     return item.qualityKey === "legendary" || (Number(item.basePrice) || 0) >= threshold
   },
 
+  /**
+   * 确保高价值藏品被追踪，若未追踪则创建新追踪条目
+   * 追踪ID格式为"红一/红二/..."，用于AI决策时引用
+   * @param {string|number} playerId - AI玩家ID
+   * @param {Object} item - 藏品对象
+   * @returns {{ trackId: string, created: boolean }|null} 非高价值返回null
+   */
   ensureAiHighValueTrack(playerId, item) {
     if (!this.isHighValueArtifact(item)) {
       return null
@@ -450,6 +521,14 @@ export const AiIntelMixin = {
     return { trackId, created: false }
   },
 
+  /**
+   * 更新AI玩家对某件藏品的知识记录，并在高价值追踪中更新揭示等级
+   * @param {string|number} playerId - AI玩家ID
+   * @param {Object} item - 藏品对象
+   * @param {Object} signal - 本次揭示的信号
+   * @param {"outline"|"quality"} mode - 揭示模式
+   * @returns {Object} 更新后的知识对象，可能包含 trackUpdate
+   */
   updateAiItemKnowledge(playerId, item, signal, mode) {
     const intel = this.ensureAiItemKnowledge(playerId, item.id)
     intel.revealCount += 1
@@ -515,6 +594,26 @@ export const AiIntelMixin = {
     return intel
   },
 
+  /**
+   * 为AI玩家批量揭示私有情报（轮廓或品质）
+   *
+   * 流程：
+   * 1. 调用 pickPrivateRevealTargets 选择揭示目标
+   * 2. 为每个目标构建私有信号（buildAiPrivateSignal）
+   * 3. 更新情报池（knownOutlineIds/knownQualityIds/signalHistory）
+   * 4. 更新物品知识和高价值追踪
+   * 5. 计算信号统计（本次 + 累计）
+   * 6. 信号历史超过160条时截断保留最近160条
+   *
+   * @param {string|number} playerId - AI玩家ID
+   * @param {"outline"|"quality"} mode - 揭示模式：outline=轮廓线索，quality=品质鉴定
+   * @param {number} count - 揭示数量
+   * @param {string} [category] - 可选，限定品类
+   * @param {boolean} [allowCategoryFallback=false] - 品类不足时是否回退到其他品类
+   * @param {string} [sortStrategy] - 排序策略（smallestFirst/largestFirst）
+   * @returns {{ ok: boolean, revealed: number, signals: Array, signalStats: Object,
+   *              trackUpdates: Array, bottomCell: Object|null, message?: string }}
+   */
   revealPrivateIntelBatch(playerId, mode, count, category, allowCategoryFallback = false, sortStrategy) {
     const targets = this.pickPrivateRevealTargets({
       playerId,
@@ -576,6 +675,16 @@ export const AiIntelMixin = {
     }
   },
 
+  /**
+   * 为AI玩家完全揭示藏品（同时获得轮廓+品质信息）
+   * @param {string|number} playerId - AI玩家ID
+   * @param {Object} options
+   * @param {number} options.count - 揭示数量
+   * @param {string} [options.sortStrategy] - 排序策略
+   * @param {string} [options.category] - 限定品类
+   * @param {boolean} [options.allowCategoryFallback] - 品类不足时是否回退
+   * @returns {{ ok: boolean, revealed: number, signals: Array, trackUpdates: Array, message?: string }}
+   */
   revealPrivateIntelFully(playerId, { count, sortStrategy, category, allowCategoryFallback }) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const unrevealed = this.items.filter(
@@ -660,6 +769,23 @@ export const AiIntelMixin = {
     }
   },
 
+  /**
+   * 选择私有揭示目标，根据品类、排序策略和已揭示状态筛选
+   *
+   * 选择优先级：
+   * 1. 未揭示过的藏品优先（完全未知 > 半已知）
+   * 2. 品类匹配优先，allowCategoryFallback 时回退
+   * 3. sortStrategy 控制大小排序
+   *
+   * @param {Object} params
+   * @param {string|number} params.playerId - AI玩家ID
+   * @param {"outline"|"quality"} params.mode - 揭示模式
+   * @param {number} params.count - 揭示数量
+   * @param {string} [params.category] - 限定品类
+   * @param {boolean} [params.allowCategoryFallback=false] - 品类不足时是否回退
+   * @param {string} [params.sortStrategy] - 排序策略
+   * @returns {Array<Object>} 选中的藏品对象数组
+   */
   pickPrivateRevealTargets({ playerId, mode, count, category, allowCategoryFallback = false, sortStrategy }) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const knownSet = mode === "outline" ? pool.knownOutlineIds : pool.knownQualityIds
@@ -816,6 +942,11 @@ export const AiIntelMixin = {
     }
   },
 
+  /**
+   * 构建高价值追踪的候选预览，根据已揭示信息缩小候选范围
+   * @param {Object} revealState - 已知信息 { qualityKey, category, sizeTag }
+   * @returns {{ total: number, truncated: boolean, list: Array }}
+   */
   buildTrackCandidatePreview(revealState) {
     let candidates = this.artifactManager.getCandidatesByRevealState(revealState)
     if (!candidates || candidates.length === 0) {
@@ -1416,6 +1547,11 @@ export const AiIntelMixin = {
     console.log(`[processSingleAiIntelAction] ${player.id}-${startTime} END, elapsed: ${Date.now() - startTime}ms`)
   },
 
+  /**
+   * 格式化AI情报动作为公开日志行（显示在公共信息面板）
+   * @param {Object} entry - 动作记录 { playerName, actionId, actionType, revealed, signalStats, effectTag, detail }
+   * @returns {string} 格式化的日志文本
+   */
   formatAiIntelActionPublicLine(entry) {
     const info = this.getItemInfo(entry.actionId)
     const revealText = entry.revealed > 0 ? `私有线索+${entry.revealed}` : "未命中"
@@ -1429,6 +1565,11 @@ export const AiIntelMixin = {
     return `${entry.playerName} 使用${info.label}（${revealText}${statsText}${tag}${detail}）`
   },
 
+  /**
+   * 检查当前是否可以使用情报动作（技能/道具）
+   * 已结算、回合结算中、暂停、超时、已提交出价时均不可使用
+   * @returns {boolean}
+   */
   canUseIntelActions() {
     if (this.settled || this.roundResolving) {
       return false
