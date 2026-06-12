@@ -48,7 +48,7 @@ declare var SkillSystem: {
 }
 
 declare var ItemSystem: {
-  ITEM_DEFS: Array<{ id: string; name: string; description: string; initialCount?: number; execute?: Function }>
+  ITEM_DEFS: Array<{ id: string; name: string; description: string; initialCount?: number; maxPerRound?: number; execute?: Function }>
 }
 
 declare var MobileHandler: Record<string, any>
@@ -67,6 +67,7 @@ declare var MobaoConstants: {
   DEFAULT_START_MONEY: number
   GRID_ROWS: number
   GRID_COLS: number
+  SETTINGS_FIELDS: string[]
 }
 
 declare var MobaoUtils: {
@@ -142,6 +143,9 @@ interface Window {
   MobaoSettings: {
     loadPlayerMoney(): number
     savePlayerMoney(money: number): void
+    saveGameSettings(settings: Record<string, any>): void
+    normalizeGameSettings(draft: Record<string, any>, base: Record<string, any>): Record<string, number>
+    defaultGameSettings: Record<string, any>
     GAME_SETTINGS: typeof GAME_SETTINGS
   }
   MobaoConstants: typeof MobaoConstants
@@ -151,6 +155,7 @@ interface Window {
   ArtifactData: typeof ArtifactData
   MobaoUtils: typeof MobaoUtils
   MobaoAi: typeof MobaoAi
+  MobaoLlm: Record<string, any>
   AudioUI: Record<string, any>
   AudioManager: Record<string, any>
   LanBridge: typeof LanBridge

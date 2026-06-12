@@ -1,41 +1,16 @@
 /**
- * @file ui/overlay.js
+ * @file ui/overlay.ts
  * @module ui/overlay
  * @description 弹窗与覆盖层管理 Mixin。管理游戏内所有弹窗、覆盖层、设置面板、
  *              确认对话框、信息弹窗等 UI 组件的显示/隐藏和交互逻辑。
  *
  * 核心职责：
  *   - 信息弹窗：showInfoPopup / hideInfoPopup
- *     显示藏品/玩家详细信息，支持动画开关
  *   - 玩家信息气泡：showPlayerInfoPopover / hidePlayerInfoPopover
- *     跟随鼠标位置显示，自动避免溢出视口
  *   - 道具/技能详情：showItemDetailPopup / showCharacterInfoPopup
- *     从 ItemSystem/SkillSystem/CharacterData 读取定义并格式化展示
  *   - 设置覆盖层：openSettingsOverlay / closeSettingsOverlay
- *     游戏参数设置 + LLM 设置，含未保存保护（修改后关闭需确认）
- *     联机模式下 LLM 设置组禁用，返回按钮文本根据模式变化
- *     fillSettingsForm / readSettingsForm / saveSettingsFromOverlay
  *   - 联机重开投票：showLanRestartVoteDialog / showLanRestartWaitingDialog / showLanRestartDeclinedDialog
- *     房主发起重开 → 等待确认 → 同意/拒绝流程
  *   - 确认对话框：showGameConfirm / hideGameConfirm
- *     通用确认/取消弹窗，支持自定义按钮文本
- *
- * 设置系统细节：
- *   - SETTINGS_FIELDS 定义所有可配置字段
- *   - normalizeGameSettings 确保所有值在合法范围内
- *   - LLM 设置支持多 Provider（DeepSeek / 独立模型），通过 getLlmProvider() 路由
- *   - 保存时同步更新 GAME_SETTINGS、LLM_SETTINGS、bidInput 等
- *   - multiGameMemoryEnabled 切换时自动推送/停止 AI 上下文
- *
- * @requires MobaoUtils       - 工具函数（clamp）
- * @requires MobaoSettings    - 设置（GAME_SETTINGS, saveGameSettings, normalizeGameSettings）
- * @requires MobaoConstants   - 常量（DEFAULT_START_MONEY, SETTINGS_FIELDS）
- * @requires MobaoAnimations  - 动画系统（animateOverlayOpen/Close）
- * @requires MobaoLlm         - LLM 设置（LLM_SETTINGS, saveDeepSeekSettings, maskApiKey）
- * @requires ItemSystem       - 道具定义
- * @requires SkillSystem      - 技能定义
- * @requires CharacterSystem  - 角色系统
- * @requires CharacterData    - 角色数据
  *
  * @exports UiOverlayMixin - 弹窗与覆盖层 Mixin，混入 Phaser Scene
  */
@@ -44,32 +19,32 @@ const { GAME_SETTINGS, saveGameSettings, normalizeGameSettings, defaultGameSetti
 const { DEFAULT_START_MONEY, SETTINGS_FIELDS } = window.MobaoConstants
 
 export const UiOverlayMixin = {
-  showInfoPopup(title, sourceScrollEl) {
-    this.dom.infoPopupTitle.textContent = title
+  showInfoPopup(title: string, sourceScrollEl: HTMLElement | null) {
+    ; (this as any).dom.infoPopupTitle.textContent = title
     if (sourceScrollEl) {
-      this.dom.infoPopupContent.innerHTML = sourceScrollEl.innerHTML
+      ; (this as any).dom.infoPopupContent.innerHTML = sourceScrollEl.innerHTML
     } else {
-      this.dom.infoPopupContent.innerHTML = ""
+      ; (this as any).dom.infoPopupContent.innerHTML = ""
     }
     if (window.MobaoAnimations) {
-      window.MobaoAnimations.animateOverlayOpen(
-        this.dom.infoPopupOverlay,
-        this.dom.infoPopupOverlay.querySelector(".info-popup-box")
+      ; (window.MobaoAnimations as any).animateOverlayOpen(
+        (this as any).dom.infoPopupOverlay,
+        (this as any).dom.infoPopupOverlay.querySelector(".info-popup-box")
       )
     } else {
-      this.dom.infoPopupOverlay.classList.remove("hidden")
+      ; (this as any).dom.infoPopupOverlay.classList.remove("hidden")
     }
   },
 
   hideInfoPopup() {
     if (window.MobaoAnimations) {
-      window.MobaoAnimations.animateOverlayClose(this.dom.infoPopupOverlay)
+      ; (window.MobaoAnimations as any).animateOverlayClose((this as any).dom.infoPopupOverlay)
     } else {
-      this.dom.infoPopupOverlay.classList.add("hidden")
+      ; (this as any).dom.infoPopupOverlay.classList.add("hidden")
     }
   },
 
-  showPlayerInfoPopover(title, content, x, y) {
+  showPlayerInfoPopover(title: string, content: string, x: number, y: number) {
     const popover = document.getElementById("playerInfoPopover")
     const titleEl = document.getElementById("playerInfoPopoverTitle")
     const contentEl = document.getElementById("playerInfoPopoverContent")
@@ -91,7 +66,7 @@ export const UiOverlayMixin = {
     this.positionPlayerInfoPopover(x, y)
   },
 
-  positionPlayerInfoPopover(x, y) {
+  positionPlayerInfoPopover(x: number, y: number) {
     const popover = document.getElementById("playerInfoPopover")
     if (!popover) {
       return
@@ -121,15 +96,15 @@ export const UiOverlayMixin = {
     }
   },
 
-  showItemDetailPopup(itemId, itemName, x, y) {
+  showItemDetailPopup(itemId: string, itemName: string | null, x: number, y: number) {
     const itemDefs = (window.ItemSystem && window.ItemSystem.ITEM_DEFS) || []
     const skillDefs = (window.SkillSystem && window.SkillSystem.SKILL_DEFS) || []
-    const itemDef = itemDefs.find((item) => item.id === itemId)
-    const skillDef = skillDefs.find((skill) => skill.id === itemId)
+    const itemDef = itemDefs.find((item: any) => item.id === itemId)
+    const skillDef = skillDefs.find((skill: any) => skill.id === itemId)
 
     if (itemDef) {
       const title = itemName || itemDef.name || "道具详情"
-      const content = [
+      const htmlContent = [
         `<p><strong>名称：</strong>${itemDef.name || itemId}</p>`,
         `<p><strong>效果：</strong>${itemDef.description || "未知效果"}</p>`,
         itemDef.initialCount !== undefined ? `<p><strong>初始数量：</strong>${itemDef.initialCount}</p>` : "",
@@ -137,17 +112,17 @@ export const UiOverlayMixin = {
       ]
         .filter(Boolean)
         .join("")
-      this.showPlayerInfoPopover(title, content, x, y)
+      this.showPlayerInfoPopover(title, htmlContent, x, y)
     } else if (skillDef) {
       const title = itemName || skillDef.name || "技能详情"
-      const content = [
+      const htmlContent = [
         `<p><strong>名称：</strong>${skillDef.name || itemId}</p>`,
         `<p><strong>效果：</strong>${skillDef.description || "未知效果"}</p>`,
         skillDef.maxPerRound !== undefined ? `<p><strong>每轮上限：</strong>${skillDef.maxPerRound}</p>` : ""
       ]
         .filter(Boolean)
         .join("")
-      this.showPlayerInfoPopover(title, content, x, y)
+      this.showPlayerInfoPopover(title, htmlContent, x, y)
     }
   },
 
@@ -155,28 +130,28 @@ export const UiOverlayMixin = {
     this.hidePlayerInfoPopover()
   },
 
-  showCharacterInfoPopup(playerId, x, y) {
-    const player = this.players.find((p) => p.id === playerId)
+  showCharacterInfoPopup(playerId: string, x: number, y: number) {
+    const player = (this as any).players.find((p: any) => p.id === playerId)
     if (!player) {
       return
     }
 
-    let characterInfo = null
+    let characterInfo: { name: string; desc: string; skillName: string; skillDesc: string; passive: any } | null = null
     if (player.isHuman) {
       const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter()
       if (char) {
         characterInfo = {
           name: char.name,
-          desc: char.desc,
+          desc: (char as any).desc,
           skillName: char.skillName,
-          skillDesc: char.skillDesc,
+          skillDesc: (char as any).skillDesc,
           passive: char.passive
         }
       }
     } else {
-      const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[playerId]
+      const charAssign = (this as any).aiCharacterAssignments && (this as any).aiCharacterAssignments[playerId]
       if (charAssign) {
-        const charDef = window.CharacterData && window.CharacterData.getCharacterById(charAssign.characterId)
+        const charDef = (window as any).CharacterData && (window as any).CharacterData.getCharacterById(charAssign.characterId)
         characterInfo = {
           name: charAssign.characterName,
           desc: charDef ? charDef.desc : "",
@@ -194,7 +169,7 @@ export const UiOverlayMixin = {
 
     const title = characterInfo.name || "角色信息"
     const passiveText = characterInfo.passive && characterInfo.passive.label ? characterInfo.passive.label : "无"
-    const content = [
+    const htmlContent = [
       `<p><strong>角色：</strong>${characterInfo.name}</p>`,
       characterInfo.desc ? `<p><strong>描述：</strong>${characterInfo.desc}</p>` : "",
       `<p><strong>技能：</strong>${characterInfo.skillName || "无"}</p>`,
@@ -203,7 +178,7 @@ export const UiOverlayMixin = {
     ]
       .filter(Boolean)
       .join("")
-    this.showPlayerInfoPopover(title, content, x, y)
+    this.showPlayerInfoPopover(title, htmlContent, x, y)
   },
 
   hideCharacterInfoPopup() {
@@ -211,31 +186,30 @@ export const UiOverlayMixin = {
   },
 
   openSettingsOverlay() {
-    this.closeBidKeypad()
-    this.closeItemDrawer()
+    ; (this as any).closeBidKeypad()
+      ; (this as any).closeItemDrawer()
     this.hideInfoPopup()
-    this.fillSettingsForm(GAME_SETTINGS)
-    this.fillLlmSettingsForm(this.getLlmSettings())
-    this.setSettingsStatus("设置保存在本地浏览器中。", false)
+      ; (this as any).fillSettingsForm(GAME_SETTINGS)
+      ; (this as any).fillLlmSettingsForm((this as any).getLlmSettings())
+      ; (this as any).setSettingsStatus("设置保存在本地浏览器中。", false)
 
-    // 保存初始设置值，用于离开保护（使用表单读取的值，确保一致性）
-    this._settingsInitialValues = JSON.stringify({
-      game: this.readSettingsForm(),
-      llm: this.readLlmSettingsForm()
-    })
+      ; (this as any)._settingsInitialValues = JSON.stringify({
+        game: (this as any).readSettingsForm(),
+        llm: (this as any).readLlmSettingsForm()
+      })
 
     const llmGroup = document.getElementById("llmSettingsGroup")
     if (llmGroup) {
-      if (this.isLanMode) {
+      if ((this as any).isLanMode) {
         llmGroup.classList.add("settings-group-disabled")
         const inputs = llmGroup.querySelectorAll("input, button")
-        inputs.forEach((el) => {
+        inputs.forEach((el: any) => {
           el.disabled = true
         })
       } else {
         llmGroup.classList.remove("settings-group-disabled")
         const inputs = llmGroup.querySelectorAll("input, button")
-        inputs.forEach((el) => {
+        inputs.forEach((el: any) => {
           el.disabled = false
         })
       }
@@ -247,8 +221,8 @@ export const UiOverlayMixin = {
       if (isLobbyVisible) {
         returnLobbyBtn.classList.add("hidden")
       } else {
-        if (this.isLanMode) {
-          if (this.lanIsHost) {
+        if ((this as any).isLanMode) {
+          if ((this as any).lanIsHost) {
             returnLobbyBtn.textContent = "返回房间"
             returnLobbyBtn.classList.remove("hidden")
           } else {
@@ -261,22 +235,20 @@ export const UiOverlayMixin = {
       }
     }
     if (window.MobaoAnimations) {
-      window.MobaoAnimations.animateOverlayOpen(this.dom.settingsOverlay, this.dom.settingsPanel)
+      ; (window.MobaoAnimations as any).animateOverlayOpen((this as any).dom.settingsOverlay, (this as any).dom.settingsPanel)
     } else {
-      this.dom.settingsOverlay.classList.remove("hidden")
+      ; (this as any).dom.settingsOverlay.classList.remove("hidden")
     }
   },
 
-  closeSettingsOverlay(keepStatus = false, forceClose = false) {
-    // 检查是否有未保存的设置
-    if (!forceClose && this._settingsInitialValues) {
+  closeSettingsOverlay(keepStatus: boolean = false, forceClose: boolean = false) {
+    if (!forceClose && (this as any)._settingsInitialValues) {
       const currentValues = JSON.stringify({
-        game: this.readSettingsForm(),
-        llm: this.readLlmSettingsForm()
+        game: (this as any).readSettingsForm(),
+        llm: (this as any).readLlmSettingsForm()
       })
 
-      if (currentValues !== this._settingsInitialValues) {
-        // 临时修改确认按钮文本
+      if (currentValues !== (this as any)._settingsInitialValues) {
         const okBtn = document.getElementById("gameConfirmOkBtn")
         const cancelBtn = document.getElementById("gameConfirmCancelBtn")
         const originalOkText = okBtn ? okBtn.textContent : ""
@@ -284,69 +256,65 @@ export const UiOverlayMixin = {
         if (okBtn) okBtn.textContent = "保存"
         if (cancelBtn) cancelBtn.textContent = "不保存"
 
-        this.showGameConfirm(
-          "设置已修改，是否保存？",
-          () => {
-            // 恢复按钮文本
-            if (okBtn) okBtn.textContent = originalOkText
-            if (cancelBtn) cancelBtn.textContent = originalCancelText
-
-            this.saveSettingsFromOverlay()
-            this._settingsInitialValues = null
-            this.closeSettingsOverlay(keepStatus, true)
-          },
-          () => {
-            // 恢复按钮文本
-            if (okBtn) okBtn.textContent = originalOkText
-            if (cancelBtn) cancelBtn.textContent = originalCancelText
-
-            this._settingsInitialValues = null
-            this.closeSettingsOverlay(keepStatus, true)
-          }
-        )
+          ; (this as any).showGameConfirm(
+            "设置已修改，是否保存？",
+            () => {
+              if (okBtn) okBtn.textContent = originalOkText
+              if (cancelBtn) cancelBtn.textContent = originalCancelText
+                ; (this as any).saveSettingsFromOverlay()
+                ; (this as any)._settingsInitialValues = null
+              this.closeSettingsOverlay(keepStatus, true)
+            },
+            () => {
+              if (okBtn) okBtn.textContent = originalOkText
+              if (cancelBtn) cancelBtn.textContent = originalCancelText
+                ; (this as any)._settingsInitialValues = null
+              this.closeSettingsOverlay(keepStatus, true)
+            }
+          )
         return
       }
     }
 
-    this._settingsInitialValues = null
+    ; (this as any)._settingsInitialValues = null
 
     if (window.MobaoAnimations) {
-      window.MobaoAnimations.animateOverlayClose(
-        this.dom.settingsOverlay,
-        this.dom.settingsPanel,
+      ; (window.MobaoAnimations as any).animateOverlayClose(
+        (this as any).dom.settingsOverlay,
+        (this as any).dom.settingsPanel,
         function () {
           if (!keepStatus) {
-            this.setSettingsStatus("设置保存在本地浏览器中。", false)
+            ; (this as any).setSettingsStatus("设置保存在本地浏览器中。", false)
           }
         }.bind(this)
       )
     } else {
-      this.dom.settingsOverlay.classList.add("hidden")
+      ; (this as any).dom.settingsOverlay.classList.add("hidden")
       if (!keepStatus) {
-        this.setSettingsStatus("设置保存在本地浏览器中。", false)
+        ; (this as any).setSettingsStatus("设置保存在本地浏览器中。", false)
       }
     }
   },
 
-  isSettingsOverlayOpen() {
-    return !this.dom.settingsOverlay.classList.contains("hidden")
+  isSettingsOverlayOpen(): boolean {
+    return !(this as any).dom.settingsOverlay.classList.contains("hidden")
   },
 
-  settingsInputId(field) {
+  settingsInputId(field: string): string {
     return `setting-${field}`
   },
 
-  fillSettingsForm(values) {
-    SETTINGS_FIELDS.forEach((field) => {
+  fillSettingsForm(values: Record<string, any>) {
+    SETTINGS_FIELDS.forEach((field: string) => {
       const input = document.getElementById(this.settingsInputId(field))
       if (!input) {
         return
       }
-      input.value = String(values[field])
+      ; (input as HTMLInputElement).value = String(values[field])
     })
-    const roundSecondsInput = document.getElementById("setting-roundSeconds")
-    const roundSecondsDecrease = document.getElementById("roundSecondsDecrease")
-    const roundSecondsIncrease = document.getElementById("roundSecondsIncrease")
+    const roundSecondsInput = document.getElementById("setting-roundSeconds") as HTMLInputElement | null
+    const roundSecondsDecrease = document.getElementById("roundSecondsDecrease") as HTMLButtonElement | null
+    const roundSecondsIncrease = document.getElementById("roundSecondsIncrease") as HTMLButtonElement | null
     if (roundSecondsInput) {
       const value = Number(roundSecondsInput.value) || 60
       if (roundSecondsDecrease) {
@@ -356,9 +324,9 @@ export const UiOverlayMixin = {
         roundSecondsIncrease.disabled = value >= 180
       }
     }
-    const settlementSpeedInput = document.getElementById("setting-settlementSpeedMultiplier")
-    const settlementSpeedDecrease = document.getElementById("settlementSpeedDecrease")
-    const settlementSpeedIncrease = document.getElementById("settlementSpeedIncrease")
+    const settlementSpeedInput = document.getElementById("setting-settlementSpeedMultiplier") as HTMLInputElement | null
+    const settlementSpeedDecrease = document.getElementById("settlementSpeedDecrease") as HTMLButtonElement | null
+    const settlementSpeedIncrease = document.getElementById("settlementSpeedIncrease") as HTMLButtonElement | null
     if (settlementSpeedInput) {
       const value = Number(settlementSpeedInput.value) || 1
       if (settlementSpeedDecrease) {
@@ -368,9 +336,9 @@ export const UiOverlayMixin = {
         settlementSpeedIncrease.disabled = value >= 3
       }
     }
-    const musicVolumeInput = document.getElementById("setting-musicVolume")
+    const musicVolumeInput = document.getElementById("setting-musicVolume") as HTMLInputElement | null
     const musicVolumeValue = document.getElementById("musicVolumeValue")
-    const musicVolumeIconImg = document.getElementById("musicVolumeIconImg")
+    const musicVolumeIconImg = document.getElementById("musicVolumeIconImg") as HTMLImageElement | null
     if (musicVolumeInput && musicVolumeValue) {
       musicVolumeValue.textContent = `${musicVolumeInput.value}%`
       if (musicVolumeIconImg) {
@@ -381,9 +349,9 @@ export const UiOverlayMixin = {
         musicVolumeIconImg.classList.toggle("muted", isMuted)
       }
     }
-    const sfxVolumeInput = document.getElementById("setting-sfxVolume")
+    const sfxVolumeInput = document.getElementById("setting-sfxVolume") as HTMLInputElement | null
     const sfxVolumeValue = document.getElementById("sfxVolumeValue")
-    const sfxVolumeIconImg = document.getElementById("sfxVolumeIconImg")
+    const sfxVolumeIconImg = document.getElementById("sfxVolumeIconImg") as HTMLImageElement | null
     if (sfxVolumeInput && sfxVolumeValue) {
       sfxVolumeValue.textContent = `${sfxVolumeInput.value}%`
       if (sfxVolumeIconImg) {
@@ -396,35 +364,35 @@ export const UiOverlayMixin = {
     }
   },
 
-  readSettingsForm() {
-    const draft = {}
-    SETTINGS_FIELDS.forEach((field) => {
+  readSettingsForm(): Record<string, number> {
+    const draft: Record<string, number> = {}
+    SETTINGS_FIELDS.forEach((field: string) => {
       const input = document.getElementById(this.settingsInputId(field))
-      draft[field] = input ? Number(input.value) : GAME_SETTINGS[field]
+      draft[field] = input ? Number((input as HTMLInputElement).value) : GAME_SETTINGS[field]
     })
     return normalizeGameSettings(draft, GAME_SETTINGS)
   },
 
-  setSettingsStatus(text, saved) {
-    this.dom.settingsStatusText.textContent = text
-    this.dom.settingsStatusText.classList.toggle("settings-note-saved", Boolean(saved))
+  setSettingsStatus(text: string, saved: boolean) {
+    ; (this as any).dom.settingsStatusText.textContent = text
+      ; (this as any).dom.settingsStatusText.classList.toggle("settings-note-saved", Boolean(saved))
   },
 
   saveSettingsFromOverlay() {
-    const { LLM_SETTINGS, saveDeepSeekSettings, maskApiKey } = window.MobaoLlm || {}
-    const next = this.readSettingsForm()
+    const { LLM_SETTINGS, saveDeepSeekSettings, maskApiKey } = (window as any).MobaoLlm || {}
+    const next = (this as any).readSettingsForm()
     Object.assign(GAME_SETTINGS, next)
     saveGameSettings(GAME_SETTINGS)
 
-    if (!this.isLanMode) {
+    if (!(this as any).isLanMode) {
       const oldMultiGameMemoryEnabled = Boolean(LLM_SETTINGS.multiGameMemoryEnabled)
-      const llmNext = this.readLlmSettingsForm()
+      const llmNext = (this as any).readLlmSettingsForm()
       console.log("[saveSettingsFromOverlay] llmNext:", {
         independentModelEnabled: llmNext.independentModelEnabled,
         enabled: llmNext.enabled,
         apiKey: llmNext.apiKey ? "(已设置)" : "(空)"
       })
-      const llmProvider = this.getLlmProvider()
+      const llmProvider = (this as any).getLlmProvider()
       console.log("[saveSettingsFromOverlay] llmProvider:", llmProvider ? llmProvider.id : null)
       if (llmProvider && llmProvider.saveSettings) {
         llmProvider.saveSettings(llmNext)
@@ -440,40 +408,39 @@ export const UiOverlayMixin = {
         LLM_SETTINGS.independentModelEnabled
       )
       if (oldMultiGameMemoryEnabled && !LLM_SETTINGS.multiGameMemoryEnabled) {
-        this.writeLog("已关闭多局AI上下文：仅停止发送，不删除记忆。")
+        ; (this as any).writeLog("已关闭多局AI上下文：仅停止发送，不删除记忆。")
       }
       if (!oldMultiGameMemoryEnabled && LLM_SETTINGS.multiGameMemoryEnabled) {
-        this.pushRunStartContextToAi()
-        this.writeLog("已启用多局AI上下文：后续会在同一会话中连续学习。")
+        ; (this as any).pushRunStartContextToAi()
+          ; (this as any).writeLog("已启用多局AI上下文：后续会在同一会话中连续学习。")
       }
     }
 
-    // 清除初始值记录，避免关闭时再次弹窗
-    this._settingsInitialValues = null
+    ; (this as any)._settingsInitialValues = null
 
-    this.dom.bidInput.step = "1"
-    this.dom.bidInput.min = "0"
-    const normalizedBid = Math.max(0, Math.round(Number(this.dom.bidInput.value) || 0))
-    this.dom.bidInput.value = String(normalizedBid)
+      ; (this as any).dom.bidInput.step = "1"
+      ; (this as any).dom.bidInput.min = "0"
+    const normalizedBid = Math.max(0, Math.round(Number((this as any).dom.bidInput.value) || 0))
+      ; (this as any).dom.bidInput.value = String(normalizedBid)
 
-    this.round = clamp(this.round, 1, GAME_SETTINGS.maxRounds)
-    this.roundTimeLeft = Math.min(this.roundTimeLeft, GAME_SETTINGS.roundSeconds)
-    this.actionsLeft = Math.min(this.actionsLeft, GAME_SETTINGS.actionsPerRound)
-    this.updateHud()
+      ; (this as any).round = clamp((this as any).round, 1, GAME_SETTINGS.maxRounds)
+      ; (this as any).roundTimeLeft = Math.min((this as any).roundTimeLeft, GAME_SETTINGS.roundSeconds)
+      ; (this as any).actionsLeft = Math.min((this as any).actionsLeft, GAME_SETTINGS.actionsPerRound)
+      ; (this as any).updateHud()
 
-    this.setSettingsStatus("设置已保存并立即生效。", true)
+      ; (this as any).setSettingsStatus("设置已保存并立即生效。", true)
     const modelName = (LLM_SETTINGS && LLM_SETTINGS.model) || "大模型"
-    this.setLlmSettingsStatus(
-      LLM_SETTINGS.apiKey
-        ? `${modelName}配置已保存：${maskApiKey(LLM_SETTINGS.apiKey)}`
-        : `${modelName}配置已保存，但尚未填写 API Key。`,
-      LLM_SETTINGS.apiKey ? "success" : "normal"
-    )
-    this.writeLog(`设置已应用：对局参数生效；${modelName} ${LLM_SETTINGS.enabled ? "已启用" : "未启用"}。`)
+      ; (this as any).setLlmSettingsStatus(
+        LLM_SETTINGS.apiKey
+          ? `${modelName}配置已保存：${maskApiKey(LLM_SETTINGS.apiKey)}`
+          : `${modelName}配置已保存，但尚未填写 API Key。`,
+        LLM_SETTINGS.apiKey ? "success" : "normal"
+      )
+      ; (this as any).writeLog(`设置已应用：对局参数生效；${modelName} ${LLM_SETTINGS.enabled ? "已启用" : "未启用"}。`)
     this.closeSettingsOverlay(true)
   },
 
-  showLanRestartVoteDialog(hostName) {
+  showLanRestartVoteDialog(hostName: string) {
     const existing = document.getElementById("lanRestartVoteDialog")
     if (existing) existing.remove()
     const overlay = document.createElement("div")
@@ -494,15 +461,15 @@ export const UiOverlayMixin = {
       "</div>"
     overlay.appendChild(box)
     document.body.appendChild(overlay)
-    document.getElementById("lanRestartAccept").addEventListener("click", () => {
+    document.getElementById("lanRestartAccept")!.addEventListener("click", () => {
       overlay.remove()
-      this.lanBridge.send({ type: "game:restart-accept" })
-      this.writeLog("已同意重开，等待其他玩家确认...")
+        ; (this as any).lanBridge.send({ type: "game:restart-accept" })
+        ; (this as any).writeLog("已同意重开，等待其他玩家确认...")
     })
-    document.getElementById("lanRestartDecline").addEventListener("click", () => {
+    document.getElementById("lanRestartDecline")!.addEventListener("click", () => {
       overlay.remove()
-      this.lanBridge.send({ type: "game:restart-decline" })
-      this.writeLog("已拒绝重开请求")
+        ; (this as any).lanBridge.send({ type: "game:restart-decline" })
+        ; (this as any).writeLog("已拒绝重开请求")
     })
   },
 
@@ -530,10 +497,10 @@ export const UiOverlayMixin = {
       '<div style="margin-top:16px;"><span class="lan-waiting-spinner"></span></div>'
     overlay.appendChild(box)
     document.body.appendChild(overlay)
-    this.writeLog("已向所有玩家发送重开请求，等待确认...")
+      ; (this as any).writeLog("已向所有玩家发送重开请求，等待确认...")
   },
 
-  showLanRestartDeclinedDialog(declinerName) {
+  showLanRestartDeclinedDialog(declinerName: string) {
     this.removeLanRestartDialog()
     const overlay = document.createElement("div")
     overlay.id = "lanRestartDeclinedDialog"
@@ -550,14 +517,13 @@ export const UiOverlayMixin = {
       '<button id="lanRestartDeclinedClose" style="margin-top:16px;padding:8px 24px;border-radius:6px;border:1px solid #8a4a3a;background:rgba(180,60,40,0.15);color:#e07060;cursor:pointer;font-size:14px;">确定</button>'
     overlay.appendChild(box)
     document.body.appendChild(overlay)
-    document.getElementById("lanRestartDeclinedClose").addEventListener("click", () => {
+    document.getElementById("lanRestartDeclinedClose")!.addEventListener("click", () => {
       overlay.remove()
     })
   },
 
   showLanPauseOverlay() {
-    // 只在游戏场景显示暂停弹窗
-    if (!this.isLanMode || this.settled || !this.dom.hud) return
+    if (!(this as any).isLanMode || (this as any).settled || !(this as any).dom.hud) return
     let overlay = document.getElementById("lanPauseOverlay")
     if (overlay) return
     overlay = document.createElement("div")
@@ -573,15 +539,15 @@ export const UiOverlayMixin = {
     box.appendChild(title)
     const hint = document.createElement("div")
     hint.style.cssText = "color:#a09070;margin-bottom:16px;"
-    hint.textContent = this.isLanMode && this.lanIsHost ? "点击下方按钮继续游戏" : "等待主机继续游戏..."
+    hint.textContent = (this as any).isLanMode && (this as any).lanIsHost ? "点击下方按钮继续游戏" : "等待主机继续游戏..."
     box.appendChild(hint)
-    if (this.isLanMode && this.lanIsHost) {
+    if ((this as any).isLanMode && (this as any).lanIsHost) {
       const resumeBtn = document.createElement("button")
       resumeBtn.style.cssText =
         "padding:10px 28px;border-radius:6px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:15px;font-weight:bold;"
       resumeBtn.textContent = "结束暂停"
       resumeBtn.addEventListener("click", () => {
-        this.toggleRoundPause()
+        ; (this as any).toggleRoundPause()
       })
       box.appendChild(resumeBtn)
     }
@@ -595,9 +561,9 @@ export const UiOverlayMixin = {
   },
 
   hideSettleOverlay() {
-    const overlayEl = this.dom.settleOverlay
+    const overlayEl = (this as any).dom.settleOverlay
     if (typeof MobaoAnimations !== "undefined") {
-      MobaoAnimations.animateOverlayClose(overlayEl, null, function () {
+      ; (MobaoAnimations as any).animateOverlayClose(overlayEl, null, function () {
         overlayEl.classList.add("hidden")
         overlayEl.style.animation = ""
         overlayEl.style.opacity = ""
@@ -608,28 +574,28 @@ export const UiOverlayMixin = {
   },
 
   openAiLogicPanel() {
-    if (!this.dom.aiLogicOverlay) {
+    if (!(this as any).dom.aiLogicOverlay) {
       return
     }
-    this.renderAiLogicPanel()
-    if (typeof this.renderAiThoughtLog === "function") {
-      this.renderAiThoughtLog()
+    ; (this as any).renderAiLogicPanel()
+    if (typeof (this as any).renderAiThoughtLog === "function") {
+      ; (this as any).renderAiThoughtLog()
     }
     if (window.MobaoAnimations) {
-      window.MobaoAnimations.animateOverlayOpen(this.dom.aiLogicOverlay, this.dom.aiLogicPanel)
+      ; (window.MobaoAnimations as any).animateOverlayOpen((this as any).dom.aiLogicOverlay, (this as any).dom.aiLogicPanel)
     } else {
-      this.dom.aiLogicOverlay.classList.remove("hidden")
+      ; (this as any).dom.aiLogicOverlay.classList.remove("hidden")
     }
   },
 
   closeAiLogicPanel() {
-    if (!this.dom.aiLogicOverlay) {
+    if (!(this as any).dom.aiLogicOverlay) {
       return
     }
     if (window.MobaoAnimations) {
-      window.MobaoAnimations.animateOverlayClose(this.dom.aiLogicOverlay, this.dom.aiLogicPanel)
+      ; (window.MobaoAnimations as any).animateOverlayClose((this as any).dom.aiLogicOverlay, (this as any).dom.aiLogicPanel)
     } else {
-      this.dom.aiLogicOverlay.classList.add("hidden")
+      ; (this as any).dom.aiLogicOverlay.classList.add("hidden")
     }
   },
 
@@ -637,9 +603,9 @@ export const UiOverlayMixin = {
     if (typeof window.MobaoShopPage !== "undefined") {
       window.MobaoShopPage.init({
         onPurchase: () => {
-          this.updateLobbyMoneyDisplay()
-          if (!document.getElementById("gameArea").classList.contains("hidden")) {
-            this.updateHud()
+          ; (this as any).updateLobbyMoneyDisplay()
+          if (!document.getElementById("gameArea")!.classList.contains("hidden")) {
+            ; (this as any).updateHud()
           }
         }
       })
@@ -651,9 +617,9 @@ export const UiOverlayMixin = {
     if (typeof window.MobaoShopPage !== "undefined") {
       window.MobaoShopPage.close()
     }
-    this.updateLobbyMoneyDisplay()
-    if (!document.getElementById("gameArea").classList.contains("hidden")) {
-      this.updateHud()
+    ; (this as any).updateLobbyMoneyDisplay()
+    if (!document.getElementById("gameArea")!.classList.contains("hidden")) {
+      ; (this as any).updateHud()
     }
   },
 
@@ -661,20 +627,20 @@ export const UiOverlayMixin = {
     const overlay = document.getElementById("collectionOverlay")
     if (!overlay) return
     if (typeof MobaoAnimations !== "undefined") {
-      MobaoAnimations.animateOverlayOpen(overlay)
+      ; (MobaoAnimations as any).animateOverlayOpen(overlay)
     } else {
       overlay.classList.remove("hidden")
     }
-    this.initCollectionPanel()
+    ; (this as any).initCollectionPanel()
 
     const closeBtn = document.getElementById("collectionCloseBtn")
-    if (closeBtn && !closeBtn._collectionBound) {
-      closeBtn._collectionBound = true
-      closeBtn.addEventListener("click", () => this.closeCollectionOverlay())
+    if (closeBtn && !(closeBtn as any)._collectionBound) {
+      ; (closeBtn as any)._collectionBound = true
+      closeBtn.addEventListener("click", () => (this as any).closeCollectionOverlay())
     }
 
     overlay.onclick = (e) => {
-      if (e.target === overlay) this.closeCollectionOverlay()
+      if (e.target === overlay) (this as any).closeCollectionOverlay()
     }
   },
 
@@ -682,7 +648,7 @@ export const UiOverlayMixin = {
     const overlay = document.getElementById("collectionOverlay")
     if (!overlay) return
     if (typeof MobaoAnimations !== "undefined") {
-      MobaoAnimations.animateOverlayClose(overlay, null, function () {
+      ; (MobaoAnimations as any).animateOverlayClose(overlay, null, function () {
         overlay.classList.add("hidden")
         overlay.style.animation = ""
         overlay.style.opacity = ""
@@ -693,39 +659,39 @@ export const UiOverlayMixin = {
   },
 
   initCollectionPanel() {
-    const categorySelect = document.getElementById("collectionCategoryFilter")
-    const qualitySelect = document.getElementById("collectionQualityFilter")
-    const searchInput = document.getElementById("collectionSearchInput")
+    const categorySelect = document.getElementById("collectionCategoryFilter") as HTMLSelectElement | null
+    const qualitySelect = document.getElementById("collectionQualityFilter") as HTMLSelectElement | null
+    const searchInput = document.getElementById("collectionSearchInput") as HTMLInputElement | null
 
-    if (categorySelect && !categorySelect._initialized) {
-      categorySelect._initialized = true
-      const categories = this.getCollectionCategories()
+    if (categorySelect && !(categorySelect as any)._initialized) {
+      ; (categorySelect as any)._initialized = true
+      const categories = (this as any).getCollectionCategories()
       categorySelect.innerHTML =
-        '<option value="all">全部品类</option>' + categories.map((c) => `<option value="${c}">${c}</option>`).join("")
-      categorySelect.addEventListener("change", () => this.renderCollectionGrid())
+        '<option value="all">全部品类</option>' + categories.map((c: string) => `<option value="${c}">${c}</option>`).join("")
+      categorySelect.addEventListener("change", () => (this as any).renderCollectionGrid())
     }
 
-    if (qualitySelect && !qualitySelect._initialized) {
-      qualitySelect._initialized = true
+    if (qualitySelect && !(qualitySelect as any)._initialized) {
+      ; (qualitySelect as any)._initialized = true
       const qualities = Object.entries(window.ArtifactData.QUALITY_CONFIG)
       qualitySelect.innerHTML =
         '<option value="all">全部品质</option>' +
         qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join("")
-      qualitySelect.addEventListener("change", () => this.renderCollectionGrid())
+      qualitySelect.addEventListener("change", () => (this as any).renderCollectionGrid())
     }
 
-    if (searchInput && !searchInput._initialized) {
-      searchInput._initialized = true
-      searchInput.addEventListener("input", () => this.renderCollectionGrid())
+    if (searchInput && !(searchInput as any)._initialized) {
+      ; (searchInput as any)._initialized = true
+      searchInput.addEventListener("input", () => (this as any).renderCollectionGrid())
     }
 
-    this.renderCollectionGrid()
+    ; (this as any).renderCollectionGrid()
   },
 
-  getCollectionCategories() {
+  getCollectionCategories(): string[] {
     const artifacts = window.ArtifactData.ARTIFACT_LIBRARY || []
-    const categories = new Set()
-    artifacts.forEach((a) => {
+    const categories = new Set<string>()
+    artifacts.forEach((a: any) => {
       if (a.category) categories.add(a.category)
     })
     return Array.from(categories).sort()
@@ -736,21 +702,21 @@ export const UiOverlayMixin = {
     const stats = document.getElementById("collectionStats")
     if (!grid) return
 
-    const categoryFilter = document.getElementById("collectionCategoryFilter")?.value || "all"
-    const qualityFilter = document.getElementById("collectionQualityFilter")?.value || "all"
-    const searchText = document.getElementById("collectionSearchInput")?.value?.toLowerCase() || ""
+    const categoryFilter = (document.getElementById("collectionCategoryFilter") as HTMLSelectElement | null)?.value || "all"
+    const qualityFilter = (document.getElementById("collectionQualityFilter") as HTMLSelectElement | null)?.value || "all"
+    const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value?.toLowerCase() || ""
 
     let artifacts = window.ArtifactData.ARTIFACT_LIBRARY || []
 
     if (categoryFilter !== "all") {
-      artifacts = artifacts.filter((a) => a.category === categoryFilter)
+      artifacts = artifacts.filter((a: any) => a.category === categoryFilter)
     }
     if (qualityFilter !== "all") {
-      artifacts = artifacts.filter((a) => a.qualityKey === qualityFilter)
+      artifacts = artifacts.filter((a: any) => a.qualityKey === qualityFilter)
     }
     if (searchText) {
       artifacts = artifacts.filter(
-        (a) => a.name.toLowerCase().includes(searchText) || a.key.toLowerCase().includes(searchText)
+        (a: any) => a.name.toLowerCase().includes(searchText) || a.key.toLowerCase().includes(searchText)
       )
     }
 
@@ -759,10 +725,10 @@ export const UiOverlayMixin = {
       stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`
     }
 
-    const rgbHex = window.MobaoUtils.rgbHex
+    const rgbHex = (window.MobaoUtils as any).rgbHex
 
     grid.innerHTML = artifacts
-      .map((artifact) => {
+      .map((artifact: any) => {
         const quality = window.ArtifactData.QUALITY_CONFIG[artifact.qualityKey]
         const qualityLabel = quality ? quality.label : "未知"
         const qualityColor = quality ? rgbHex(quality.color) : "#9f9f9f"
@@ -792,7 +758,7 @@ export const UiOverlayMixin = {
 
   AI_MODEL_CONFIGS_STORAGE_KEY: "mobao_ai_model_configs_v1",
 
-  loadAiModelConfigs() {
+  loadAiModelConfigs(): Record<string, string | null> {
     try {
       const stored = localStorage.getItem(this.AI_MODEL_CONFIGS_STORAGE_KEY)
       if (stored) {
@@ -804,7 +770,7 @@ export const UiOverlayMixin = {
     return { ai1: null, ai2: null, ai3: null }
   },
 
-  saveAiModelConfigs(configs) {
+  saveAiModelConfigs(configs: Record<string, string | null>) {
     try {
       localStorage.setItem(this.AI_MODEL_CONFIGS_STORAGE_KEY, JSON.stringify(configs))
     } catch (e) {
@@ -830,14 +796,14 @@ export const UiOverlayMixin = {
     const aiModelConfigs = this.loadAiModelConfigs()
     const providers = window.LlmManager ? window.LlmManager.listProviders() : []
     const activeProviderId = window.LlmManager ? window.LlmManager.getActiveProviderId() : "deepseek"
-    const currentSettings =
-      typeof this.getLlmSettings === "function"
-        ? this.getLlmSettings()
-        : (window.MobaoLlm && window.MobaoLlm.LLM_SETTINGS) || {}
+    const currentSettings: Record<string, any> =
+      typeof (this as any).getLlmSettings === "function"
+        ? (this as any).getLlmSettings()
+        : (window.MobaoLlm && (window.MobaoLlm as any).LLM_SETTINGS) || {}
     const currentModel = currentSettings.model || "未配置"
     const currentEndpoint = currentSettings.endpoint || "未配置"
     const hasCurrentApiKey = !!(currentSettings.apiKey && currentSettings.apiKey.trim())
-    const activeProvider = providers.find((p) => p.id === activeProviderId)
+    const activeProvider = providers.find((p: any) => p.id === activeProviderId)
     const activeProviderName = activeProvider ? activeProvider.name : activeProviderId
     let html = `
         <div style="margin-bottom:12px;padding:8px;background:#fff9f0;border:1px solid #d6ba8d;border-radius:6px;">
@@ -847,7 +813,7 @@ export const UiOverlayMixin = {
           <div style="font-size:11px;color:${hasCurrentApiKey ? "#2a7a2a" : "#a04040"};">API Key: ${hasCurrentApiKey ? "已配置" : "未配置"}</div>
         </div>
       `
-    const providerOptions = providers.map((p) => `<option value="${p.id}">${p.name}</option>`).join("")
+    const providerOptions = providers.map((p: any) => `<option value="${p.id}">${p.name}</option>`).join("")
       ;["ai1", "ai2", "ai3"].forEach((aiId, i) => {
         const selectedProviderId = aiModelConfigs[aiId] || ""
         const selectValue = selectedProviderId || ""
@@ -865,7 +831,7 @@ export const UiOverlayMixin = {
       })
     contentEl.innerHTML = html
       ;["ai1", "ai2", "ai3"].forEach((aiId) => {
-        const select = document.getElementById(`aiModelProvider-${aiId}`)
+        const select = document.getElementById(`aiModelProvider-${aiId}`) as HTMLSelectElement | null
         if (select) {
           select.value = aiModelConfigs[aiId] || ""
         }
@@ -873,19 +839,19 @@ export const UiOverlayMixin = {
   },
 
   saveAiModelConfigFromForm() {
-    const configs = {}
+    const configs: Record<string, string> = {}
       ;["ai1", "ai2", "ai3"].forEach((aiId) => {
-        const select = document.getElementById(`aiModelProvider-${aiId}`)
+        const select = document.getElementById(`aiModelProvider-${aiId}`) as HTMLSelectElement | null
         if (select) {
           configs[aiId] = select.value || ""
         }
       })
-    this.saveAiModelConfigs(configs)
+    this.saveAiModelConfigs(configs as any)
     this.closeAiModelConfigOverlay()
-    this.writeLog("AI模型配置已保存。")
+      ; (this as any).writeLog("AI模型配置已保存。")
   },
 
-  getAiModelConfig(aiIndex) {
+  getAiModelConfig(aiIndex: number): Record<string, any> | null {
     const aiId = `ai${aiIndex + 1}`
     const aiModelConfigs = this.loadAiModelConfigs()
     const providerId = aiModelConfigs[aiId]
@@ -919,6 +885,6 @@ export const UiOverlayMixin = {
   }
 }
 
-// 兼容层：保持 window.MobaoUi 全局变量可用
-window.MobaoUi = window.MobaoUi || {}
-window.MobaoUi.OverlayMixin = UiOverlayMixin
+  // 兼容层：保持 window.MobaoUi 全局变量可用
+  ; (window as any).MobaoUi = (window as any).MobaoUi || {}
+  ; (window as any).MobaoUi.OverlayMixin = UiOverlayMixin
