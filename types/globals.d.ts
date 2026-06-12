@@ -86,10 +86,14 @@ declare var MobaoMapProfiles: {
   getSelectedProfileId(): string
   setSelectedProfileId(id: string): void
   getProfile(id: string): { name: string; params: Record<string, any> } | null
+  getAllProfiles(): Array<{ id: string; name: string; icon?: string; desc?: string; params: Record<string, any> }>
 }
 
 declare var CharacterData: {
-  CHARACTERS: Array<{ id: string; name: string; avatarLabel?: string }>
+  CHARACTERS: Array<{ id: string; name: string; avatarLabel?: string; skillId?: string; skillName?: string }>
+  getCharacterById(id: string): { id: string; name: string; skillId?: string; skillName?: string } | null
+  getUnlockedCharacters(): Array<{ id: string; name: string }>
+  getSelectedCharacter(): { id: string; name: string } | null
 }
 
 declare class LanBridge {
@@ -153,6 +157,7 @@ interface Window {
     setGameRunning(running: boolean): void
   } | undefined
   MobaoLan: Record<string, any>
+  MobaoShopPage: Record<string, any> | undefined
   onNativeServerError: ((msg: string) => void) | null
   onNativeServerStarted: ((ip: string, port: number) => void) | null
   Deps: Record<string, any>
