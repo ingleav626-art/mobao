@@ -239,6 +239,9 @@ export interface LlmBridgeMethods {
   requestAiLlmPlan(player: object, options?: LlmRequestOptions): Promise<LlmPlan | null>
   buildAiToolResultSummary(result: object, actionType: string, actionId: string): string
   requestAiLlmFollowupBid(player: object, currentPlan: object, toolSummary: string): Promise<LlmPlan | null>
+  requestAiLlmErrorCorrection(player: object, currentPlan: object, errorInfo: object, correctionHistory: object[], previousMessages: object[]): Promise<LlmPlan | null>
+  prepareAiLlmRoundPlans(): void
+  processAiDecisions(): void
 
   captureAiDecisionTelemetry(roundBids: object[]): void
 }

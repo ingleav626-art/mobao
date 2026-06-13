@@ -109,4 +109,7 @@ declare var Phaser: {
   Math: typeof Phaser.Math
   Textures: typeof Phaser.Textures
   BlendModes: typeof Phaser.BlendModes
+  Scene: typeof Phaser.Scene
+  Game: new (config: any) => any
+  AUTO: number
 }

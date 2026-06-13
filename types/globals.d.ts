@@ -27,6 +27,11 @@ declare var MobaoAnimations: {
   scrollToNumber(el: Element, num: number, opts?: Record<string, any>): void
   togglePauseVisual(el: Element, paused: boolean, timer: Element): void
   animateProfit(el: Element, val: number): void
+  bindAllButtonEffects(selector: string): void
+  bindRipple(el: Element): void
+  bindPressScale(el: Element): void
+  pulse(el: Element, style?: string, opts?: Record<string, any>): void
+  stopPulse(el: Element): void
 }
 
 // AudioManager 和 AudioUI 已在 TS 文件中定义，不再需要全局声明
@@ -39,6 +44,9 @@ declare var CharacterSystem: {
   resetForNewGame(): void
   getActiveCharacter(): { id: string; name: string; skillId: string; skillName: string; passive?: any } | null
   selectCharacter(id: string): void
+  getDisplayName(playerId?: string): string
+  getAvatarLabel(playerId?: string): string
+  getActiveSkillId(): string | null
 }
 
 declare var Overlay: Record<string, any>
@@ -170,6 +178,8 @@ interface Window {
   NativeBridge: {
     isNative(): boolean
     setGameRunning(running: boolean): void
+    shareFile?(data: string, fileName?: string, title?: string): boolean | void
+    openFileImport?(options?: Record<string, any>): void
   } | undefined
   MobaoLan: Record<string, any>
   MobaoShopPage: Record<string, any> | undefined
@@ -177,4 +187,17 @@ interface Window {
   onNativeServerStarted: ((ip: string, port: number) => void) | null
   Deps: Record<string, any>
   initDeps: (bridges: Record<string, any>) => void
+  MobaoContextBuilder: Record<string, any>
+  MobaoSceneLlm: Record<string, any>
+  MobaoWarehouse: Record<string, any>
+  MobaoLobby: Record<string, any>
+  MobaoBidding: Record<string, any>
+  WarehouseScene: any
+  __onFileImportResult: ((data: string) => void) | null
+  __onFileImportError: ((msg: string) => void) | null
+  AuctionAI: Record<string, any>
+  DeepSeekLLM: Record<string, any>
+  DeepSeekProvider: Record<string, any>
+  MobaoUi: Record<string, any>
+  LLM_BRIDGE: Record<string, any>
 }

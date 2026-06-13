@@ -36,6 +36,10 @@ export interface Artifact extends ArtifactDef {
   x: number                 // 列坐标
   y: number                 // 行坐标
   revealed: ArtifactRevealState  // 揭示状态
+  trueValue: number         // 揭示价值（运行时计算）
+  expectedPrice: number     // 估算价格（运行时计算）
+  previewSizeTag: string    // 预览尺寸标签（运行时）
+  view: ArtifactView        // 渲染视图对象（运行时）
 }
 
 /** 藏品揭示状态 */
@@ -43,6 +47,18 @@ export interface ArtifactRevealState {
   outline: boolean                          // 轮廓是否揭示
   qualityCell: { x: number; y: number } | null  // 品质格坐标
   exact: boolean                            // 是否完全揭示
+}
+
+/** 藏品渲染视图 */
+export interface ArtifactView {
+  silhouette: Phaser.GameObjects.Rectangle
+  border: Phaser.GameObjects.Rectangle
+  qualityMarkers: Phaser.GameObjects.Container
+  clickZone: Phaser.GameObjects.Rectangle
+  artifactImage: Phaser.GameObjects.Image | null
+  borderPulseStarted: boolean
+  qualitySynced: boolean
+  qualityGlowTween: Phaser.Tweens.Tween | null
 }
 
 /** 候选藏品（用于信号分析时的中间状态） */
