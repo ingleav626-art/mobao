@@ -572,14 +572,39 @@
               <input type="checkbox" id="setting-llmEnabled" />
             </label>
             <p class="settings-group-sub">开启后AI玩家使用大模型决策，否则使用规则AI。</p>
-            <label>启用多局AI上下文
+            <label style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">启用多局AI上下文
               <input type="checkbox" id="setting-llmMultiGameMemoryEnabled" />
+              <span id="contextLengthInline" class="hidden" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;">
+                最长上下文（局）：
+                <button type="button" class="stepper-btn" id="contextLengthDecrease">-</button>
+                <input type="number" id="setting-contextLength" min="2" max="20" step="1" value="5" class="stepper-input" readonly />
+                <button type="button" class="stepper-btn" id="contextLengthIncrease">+</button>
+              </span>
             </label>
-            <p class="settings-group-sub">开启后AI保留跨局记忆（历史结果与反思），越玩越聪明。关闭仅停止发送，不删除记忆。</p>
+            <p class="settings-group-sub">开启后AI保留跨局历史记录，越玩越聪明。关闭仅停止发送，不删除记录。</p>
+            <div id="summaryConfig" class="hidden">
+              <div class="settings-stepper-row">
+                <span class="stepper-label">总结间隔（局）：</span>
+                <button type="button" class="stepper-btn" id="summaryIntervalDecrease">-</button>
+                <input type="number" id="setting-summaryInterval" min="0" max="50" step="1" value="0" class="stepper-input" readonly />
+                <button type="button" class="stepper-btn" id="summaryIntervalIncrease">+</button>
+              </div>
+              <p class="settings-group-sub">总结间隔为0表示不自动总结。设为5则每5局触发一次AI总结。</p>
+            </div>
             <label>启用局后AI反思
               <input type="checkbox" id="setting-llmReflectionEnabled" />
             </label>
-            <p class="settings-group-sub">每局结算后AI自动反思决策优劣（需多局上下文开启），反思结果写入跨局记忆。</p>
+            <p class="settings-group-sub">每局结算后AI自动反思决策优劣，反思结果写入跨局记忆。</p>
+            <div id="reflectionScopeConfig" class="hidden">
+              <p class="settings-group-sub">反思范围：</p>
+              <label style="margin-left:12px;">
+                <input type="radio" name="reflectionScope" value="current" checked /> 仅本局
+              </label>
+              <label style="margin-left:12px;">
+                <input type="radio" name="reflectionScope" value="full" /> 全部上下文
+              </label>
+              <p class="settings-group-sub">仅本局：反思时只看当前对局表现。全部上下文：反思时同时参考历史记录。</p>
+            </div>
             <label>启用思考模式
               <input type="checkbox" id="setting-llmThinkingEnabled" />
             </label>
@@ -865,6 +890,8 @@
   <script type="module" src="./scripts/game/ai/intel.ts"></script>
   <script type="module" src="./scripts/game/ai/memory.ts"></script>
   <script type="module" src="./scripts/game/ai/reflection.ts"></script>
+  <script type="module" src="./scripts/game/ai/game-history.ts"></script>
+  <script type="module" src="./scripts/game/ai/summarizer.ts"></script>
   <script type="module" src="./scripts/game/ai/decision.ts"></script>
   <script type="module" src="./scripts/game/ai/context-builder.ts"></script>
   <script type="module" src="./scripts/game/core/round-manager.ts"></script>
@@ -879,7 +906,7 @@
   <script type="module" src="./scripts/game/lobby/character-select.ts"></script>
   <script type="module" src="./scripts/game/lobby/index.ts"></script>
   <script type="module" src="./scripts/game/lan/index.ts"></script>
-  <script type="module" src="./scripts/game/main.js"></script>
+  <script type="module" src="./scripts/game/main.ts"></script>
   <script type="module" src="./scripts/mobile/mobile-handler.ts"></script>
 </body>
 

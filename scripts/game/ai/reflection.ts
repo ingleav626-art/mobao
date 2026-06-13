@@ -142,7 +142,7 @@ export const AiReflectionMixin: Record<string, any> = {
         `- 策略建议(${strategies.length}/${MAX_ENTRIES}): ${strategyList || "无"}`,
         `- 经验教训(${lessons.length}/${MAX_ENTRIES}): ${lessonList || "无"}`,
         statsInfo ? `\n${statsInfo}` : ""
-      ].join("\n")
+      ]
 
       try {
         const llmProvider = this.getLlmProvider()
@@ -153,6 +153,16 @@ export const AiReflectionMixin: Record<string, any> = {
           return { playerId: player.id, reflection: null, error: "无LLM Provider" }
         }
         let settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null
+        const reflectionScope = (settings && settings.reflectionScope) || "current"
+        if (reflectionScope === "full" && (window as any).MobaoGameHistory) {
+          const historyContext = (window as any).MobaoGameHistory.buildReflectionContext(
+            player.id, "full", null, this.isLanMode
+          )
+          if (historyContext) {
+            reflectionPrompt.push("", historyContext)
+          }
+        }
+        const reflectionPromptText = reflectionPrompt.join("\n")
         const independentReflectionEnabled =
           settings && settings.independentReflectionEnabled !== undefined
             ? settings.independentReflectionEnabled
@@ -200,7 +210,7 @@ export const AiReflectionMixin: Record<string, any> = {
         const playerCache = this.aiConversationCache && this.aiConversationCache[player.id]
         let messages
         if (playerCache && Array.isArray(playerCache) && playerCache.length > 0) {
-          messages = [...playerCache, { role: "user", content: reflectionPrompt }]
+          messages = [...playerCache, { role: "user", content: reflectionPromptText }]
           console.log("[triggerAiReflection] using cached conversation, messages count:", messages.length)
         } else {
           messages = [
@@ -208,7 +218,7 @@ export const AiReflectionMixin: Record<string, any> = {
               role: "system",
               content: `你是仓库摸宝竞拍AI玩家${player.name}(${player.id})，正在对本局自己的表现进行反思总结。只反思你自己的出价和决策，不要混淆其他玩家的行为。`
             },
-            { role: "user", content: reflectionPrompt }
+            { role: "user", content: reflectionPromptText }
           ]
           console.log("[triggerAiReflection] no cache, using simple prompt")
         }

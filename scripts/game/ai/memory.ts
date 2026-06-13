@@ -36,6 +36,7 @@
  */
 const { AI_MEMORY_STORAGE_KEY } = (window as any).MobaoConstants
 const { formatBidRevealNumber } = (window as any).MobaoUtils
+const MobaoGameHistory = (window as any).MobaoGameHistory
 
 export const AiMemoryMixin: Record<string, any> = {
   getAiMemoryStorageKey(): string {
@@ -224,6 +225,19 @@ export const AiMemoryMixin: Record<string, any> = {
 
   getAiConversationMessages(playerId: string): Array<Record<string, string>> {
     const messages = []
+    const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null
+    const useMultiGame = Boolean(settings && settings.multiGameMemoryEnabled)
+    const contextLength = (settings && settings.contextLength) || 5
+
+    if (useMultiGame && MobaoGameHistory) {
+      const historyMessages = MobaoGameHistory.buildContextMessages(
+        playerId,
+        contextLength,
+        this.isLanMode
+      )
+      messages.push(...historyMessages)
+    }
+
     const crossMemory = this.ensureAiCrossGameMemory(playerId)
     const stats = crossMemory.stats || {}
     const lessons = crossMemory.lessons || []
@@ -490,6 +504,47 @@ export const AiMemoryMixin: Record<string, any> = {
         }
         this.updateLastAiRoundResult(p.id, resultText)
       })
+
+    if (MobaoGameHistory) {
+      const aiDecisions: Array<{ round: number; bid: number | null; skill: string; item: string; thought: string; result: string }> = []
+      this.players.filter((p) => !p.isHuman).forEach((p) => {
+        const bucket = this.aiConversationByPlayer[p.id] || []
+        bucket.forEach((entry) => {
+          aiDecisions.push({
+            round: entry.round || 0,
+            bid: entry.bid,
+            skill: entry.skill || "无",
+            item: entry.item || "无",
+            thought: entry.thought || "",
+            result: entry.result || ""
+          })
+        })
+      })
+      const qualityCounts = this.getQualityCounts()
+      const record = {
+        run: this.runSerial || 0,
+        winnerId,
+        winnerName,
+        winnerBid,
+        totalValue,
+        winnerProfit,
+        reasonText,
+        dividendTicket: mechanism !== "none" ? { mechanism, dividendPerPlayer: dividendAmt, ticketPerPlayer: ticketAmt } : null,
+        qualityCounts,
+        totalItems: this.items.length,
+        totalCells: this.getTotalOccupiedCells(),
+        roundBids: [],
+        reflection: null,
+        aiDecisions,
+        timestamp: Date.now()
+      }
+      const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null
+      const maxRecords = (settings && settings.contextLength) || 5
+      this.players.filter((p) => !p.isHuman).forEach((p) => {
+        MobaoGameHistory.append(p.id, record, maxRecords, this.isLanMode)
+      })
+    }
+
     this.saveAiMemoryToStorage()
   },
 

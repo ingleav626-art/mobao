@@ -1,5 +1,50 @@
+import type {
+  Player,
+  Artifact,
+  QualityLevel,
+  QualityConfig,
+  GameSettings,
+  SkillDef,
+  ItemDef,
+  ArtifactRevealState,
+  RevealContext,
+  RevealResult,
+  PassiveEffect,
+  DepsContainer,
+} from "../../types/game"
+import type {
+  BidContext,
+  BidDecision,
+  Personality,
+  AiPrivateIntel,
+  IntelSummary,
+  ToolEffect,
+  ActionCandidate,
+  CrossGameMemory,
+  ReflectionResult,
+  ConversationMessage,
+} from "../../types/ai"
+import type {
+  LlmBridge,
+  LlmBridgeMethods,
+  LlmDecision,
+  LlmPlan,
+  LlmSettings,
+  LlmRoundPayload,
+  LlmTelemetry,
+  LlmErrorInfo,
+} from "../../types/llm"
+import type {
+  Room,
+  LanPlayer,
+  BidsPerPlayer,
+  BidWinner,
+  BidSubmitMessage,
+  RoomMessage,
+} from "../../types/lan"
+
 /**
- * @file main.js
+ * @file main.ts
  * @module main
  * @description 游戏入口与主场景。创建 Phaser.Game 实例，定义 WarehouseScene 主场景类，
  *              并通过 Object.assign 将所有 Mixin 混入场景原型。是整个游戏的核心组装文件。
@@ -52,7 +97,7 @@
  *   Lan: IndexMixin
  *
  * Phaser 配置（L2903-L2922）：
- *   画布尺寸: MARGIN*2 + GRID_COLS*CELL_SIZE × MARGIN*2 + GRID_ROWS*CELL_SIZE
+ *   画布尺寸: MARGIN*2 + _GRID_COLS*CELL_SIZE × MARGIN*2 + _GRID_ROWS*CELL_SIZE
  *   透明背景, 分辨率上限 devicePixelRatio 2, 场景: [WarehouseScene]
  *
  * @requires Phaser                - 游戏引擎
@@ -92,8 +137,8 @@ if (!window.MobaoWarehouse) {
 }
 
 const {
-  GRID_COLS,
-  GRID_ROWS,
+  GRID_COLS: _GRID_COLS,
+  GRID_ROWS: _GRID_ROWS,
   CELL_SIZE,
   MARGIN,
   CANVAS_NATIVE_HEIGHT,
@@ -110,7 +155,7 @@ const {
   QUALITY_COLORS,
   QUALITY_ORDER,
   QUALITY_LABELS
-} = window.MobaoConstants
+}: any = window.MobaoConstants
 
 const {
   shuffle,
@@ -139,7 +184,7 @@ const {
   qualityPulseDuration,
   settlementRevealDelayByQuality,
   settlementSearchDurationByQuality
-} = window.MobaoUtils
+}: any = window.MobaoUtils
 
 const {
   defaultGameSettings,
@@ -149,8 +194,8 @@ const {
   saveGameSettings,
   loadPlayerMoney,
   savePlayerMoney,
-  GAME_SETTINGS
-} = window.MobaoSettings
+  GAME_SETTINGS: _GAME_SETTINGS
+}: any = window.MobaoSettings
 
 if (!window.ArtifactData) {
   throw new Error("ArtifactData not found: 请先加载 scripts/game/artifacts.js")
@@ -192,10 +237,10 @@ if (!window.MobaoBidding) {
   throw new Error("MobaoBidding not found: 请先加载 scripts/game/bidding/index.js")
 }
 
-const { ArtifactManager, ARTIFACT_LIBRARY, QUALITY_CONFIG, toSizeTag, estimatePriceByQuality } = window.ArtifactData
-const { SkillManager, SKILL_DEFS } = window.SkillSystem
-const { ItemManager, ITEM_DEFS } = window.ItemSystem
-const { AuctionAiEngine } = window.AuctionAI
+const { ArtifactManager, ARTIFACT_LIBRARY: _ARTIFACT_LIBRARY, QUALITY_CONFIG: _QUALITY_CONFIG, toSizeTag, estimatePriceByQuality }: any = window.ArtifactData
+const { SkillManager, SKILL_DEFS: _SKILL_DEFS }: any = window.SkillSystem
+const { ItemManager, ITEM_DEFS: _ITEM_DEFS }: any = window.ItemSystem
+const { AuctionAiEngine }: any = window.AuctionAI
 const {
   DeepSeekClient,
   defaultDeepSeekSettings,
@@ -203,7 +248,7 @@ const {
   saveDeepSeekSettings,
   normalizeDeepSeekSettings,
   maskApiKey
-} = window.DeepSeekLLM || {}
+}: any = window.DeepSeekLLM || {}
 const LLM_SETTINGS = loadDeepSeekSettings ? loadDeepSeekSettings() : {}
 window.MobaoLlm = {
   LLM_SETTINGS,
@@ -212,12 +257,12 @@ window.MobaoLlm = {
   defaultDeepSeekSettings,
   loadDeepSeekSettings
 }
-const LLM_BRIDGE = window.MobaoSceneLlm.createSceneLlmBridge({
+const LLM_BRIDGE: LlmBridge = window.MobaoSceneLlm.createSceneLlmBridge({
   AI_LLM_SWITCH_STORAGE_KEY,
   LLM_SETTINGS,
-  GAME_SETTINGS,
-  SKILL_DEFS,
-  ITEM_DEFS,
+  GAME_SETTINGS: _GAME_SETTINGS,
+  SKILL_DEFS: _SKILL_DEFS,
+  ITEM_DEFS: _ITEM_DEFS,
   normalizeDeepSeekSettings,
   maskApiKey,
   saveDeepSeekSettings,
@@ -230,15 +275,15 @@ const LLM_BRIDGE = window.MobaoSceneLlm.createSceneLlmBridge({
   formatBidRevealNumber
 })
 window.LLM_BRIDGE = LLM_BRIDGE
-const BATTLE_RECORD_BRIDGE = window.MobaoBattleRecordBridge.createBattleRecordBridge({
+const BATTLE_RECORD_BRIDGE: { methods: Record<string, (...args: unknown[]) => unknown>; loadBattleRecords: () => unknown[] } = window.MobaoBattleRecordBridge.createBattleRecordBridge({
   BATTLE_RECORD_STORAGE_KEY,
-  GRID_COLS,
-  GRID_ROWS,
+  GRID_COLS: _GRID_COLS,
+  GRID_ROWS: _GRID_ROWS,
   clamp,
   escapeHtml,
   formatBidRevealNumber
 })
-const SETTLEMENT_BRIDGE = window.MobaoSettlementBridge.createSettlementBridge({
+const SETTLEMENT_BRIDGE: { methods: Record<string, (...args: unknown[]) => unknown> } = window.MobaoSettlementBridge.createSettlementBridge({
   MARGIN,
   CELL_SIZE,
   delay,
@@ -250,7 +295,205 @@ const SETTLEMENT_BRIDGE = window.MobaoSettlementBridge.createSettlementBridge({
 // 注册到 Deps 容器，其他模块通过 import { Deps } from '../core/deps.js' 获取
 window.initDeps({ LLM_BRIDGE, BATTLE_RECORD_BRIDGE, SETTLEMENT_BRIDGE })
 
-class WarehouseScene extends Phaser.Scene {
+// Mixin 方法声明：这些方法通过 Object.assign 从各 Mixin 混入 WarehouseScene.prototype
+// 声明为 interface 让 TS 识别，运行时由 Mixin 提供
+interface WarehouseMixinMethods {
+  // Warehouse Mixin
+  syncItemManagerFromShop(): void
+  guardWarehouseCapacity(): void
+  drawUnknownWarehouse(): void
+  spawnRandomItems(): void
+  setupWarehouseAuction(): void
+  rebuildWarehouseCellIndex(): void
+  hidePreview(): void
+  hideRevealScrollHints(): void
+  hideSettleOverlay(): void
+  refreshRevealScrollHints(): void
+  hasAnyInfo(item: Artifact): boolean
+  renderPreviewCandidates(item: Artifact): void
+  setupPreviewTouchScroll(): void
+  isPointOnSettlementLockedItem(x: number, y: number): boolean
+
+  // AI Mixin
+  initAiWallets(): void
+  initAiIntelSystems(): void
+  resetAiWallets(): void
+  isAiMultiGameMemoryEnabled(): boolean
+  resetAiConversations(): void
+  pushRunStartContextToAi(): void
+  restoreAiMemoryFromStorage(): void
+  clearAiMemoryStorage(): void
+  exportAiMemoryToJson(): string
+  importAiMemoryFromJson(json: string): { ok: boolean; error?: string }
+  showAiMemoryExportDialog(): void
+  removeAiMemoryExportDialog(): void
+  showAiMemoryImportDialog(): void
+  removeAiMemoryImportDialog(): void
+  downloadAiMemoryFallback(jsonData: string, fileName: string): void
+
+  // Round Manager Mixin
+  startRound(): void
+  stopRoundTimer(): void
+  toggleRoundPause(): void
+  resolveRoundBids(reason: string): void
+  beginRunTracking(): void
+
+  // Skill/Item Manager Mixin
+  useItem(itemId: string): void
+  useSkill(skillId: string): void
+  handleBidKeyInput(key: string): void
+  openBidKeypad(): void
+  closeBidKeypad(): void
+  renderItemDrawer(): void
+  toggleItemDrawer(): void
+  closeItemDrawer(): void
+  getItemInfo(itemId: string): ItemDef | null
+
+  // Settlement Manager Mixin
+  settleCurrentRun(): void
+  proceedToNewRun(): void
+  shouldShowReflectionUI(): boolean
+  showReflectionPendingDialog(): void
+  showReflectionPendingDialogForBack(): void
+
+  // UI Mixin
+  openSettingsOverlay(): void
+  closeSettingsOverlay(restore: boolean): void
+  isSettingsOverlayOpen(): boolean
+  fillSettingsForm(settings: GameSettings): void
+  saveSettingsFromOverlay(): void
+  setSettingsStatus(text: string, state: "ok" | "error" | "loading" | ""): void
+  openShopOverlay(): void
+  openAiLogicPanel(): void
+  closeAiLogicPanel(): void
+  openAiMemoryPanel(): void
+  closeAiMemoryPanel(): void
+  openAiModelConfigOverlay(): void
+  closeAiModelConfigOverlay(): void
+  saveAiModelConfigFromForm(): void
+  showGameConfirm(msg: string, onOk: () => void, onCancel?: () => void): void
+  hideGameConfirm(): void
+  showInfoPopup(title: string, scrollEl: HTMLElement | null): void
+  hideInfoPopup(): void
+  showItemDetailPopup(itemId: string, label: string, x: number, y: number): void
+  showCharacterInfoPopup(playerId: string, x: number, y: number): void
+  hidePlayerInfoPopover(): void
+  updateSidePanels(skillState: Record<string, unknown>, itemState: Record<string, unknown>, clueCount: number, occupiedCells: number, capacity: number, bidState: string): void
+
+  // Lobby Mixin
+  enterLobby(): void
+  enterLanRoom(): void
+  bindLobbyEvents(): void
+  initPlayersUI(): void
+  initPreviewFilterOptions(): void
+  showLanRestartWaitingDialog(): void
+
+  // Lan Mixin
+  onLanBackground(): void
+  onLanForeground(): void
+
+  // History
+  resetPlayerHistoryState(): void
+  writeLog(msg: string): void
+}
+
+// Phaser.Scene 类型桥接：extends 子句不支持 as，用中间类绕过
+const _PhaserScene: any = (Phaser as any).Scene
+class WarehouseScene extends _PhaserScene {
+  gridLayer: any
+  revealCellLayer: any
+  itemLayer: any
+  items: Artifact[]
+  revealedCells: any[]
+  artifactManager: any
+  skillManager: any
+  itemManager: any
+  aiEngine: any
+  deepSeekTesting: boolean
+  round: number
+  actionsLeft: number
+  roundTimeLeft: number
+  playerMoney: number
+  selectedItem: Artifact | null
+  currentBid: number
+  bidLeader: string
+  secondHighestBid: number
+  aiMaxBid: number
+  aiWallets: Record<string, number>
+  warehouseTrueValue: number
+  warehouseCellIndex: Record<string, Artifact | null>
+  settled: boolean
+  isLanMode: boolean
+  lanBridge: any
+  lanIsHost: boolean
+  lanMySlotId: string
+  lanIdToSlotId: Record<string, string>
+  slotIdToLanId: Record<string, string>
+  lanReconnecting: boolean
+  lanLastServerUrl: string | null
+  lanLastRoomCode: string | null
+  lanLastPlayerId: string | null
+  lanReconnectAttempts: number
+  lanMaxReconnectAttempts: number
+  previewOpenTick: number
+  roundTimerId: any
+  roundPaused: boolean
+  roundResolving: boolean
+  playerBidSubmitted: boolean
+  playerRoundBid: number
+  isSettlementRevealMode: boolean
+  settlementRevealRunning: boolean
+  settlementRevealSkipRequested: boolean
+  settlementSession: { runToken: number | string; phase: string } | null
+  settlementRunToken: number | string
+  activeSettlementSpinner: any
+  moneySettledRunToken: string | null
+  _edgeFlashActive: boolean
+  _lastDisplayedMoney: number | null
+  players: Player[]
+  playerRoundHistory: Record<string, any>
+  playerUsageHistory: Record<string, any>
+  currentRoundUsage: Record<string, any>
+  playerHistoryPanels: Record<string, any>
+  aiPrivateIntel: Record<string, AiPrivateIntel>
+  aiResourceState: Record<string, any>
+  aiRoundEffects: Record<string, any>
+  lastAiIntelActions: any[]
+  aiLlmRoundPlans: Record<string, LlmPlan | null>
+  aiLlmPlayerEnabled: Record<string, boolean>
+  aiFoldState: Record<string, any>
+  lastAiDecisionTelemetry: { mode: string; round: number; entries: LlmTelemetry[] } | null
+  llmEverUsedThisRun: boolean
+  aiReflectionState: string
+  aiConversationByPlayer: Record<string, ConversationMessage[]>
+  aiCrossGameMemory: Record<string, CrossGameMemory[]>
+  aiReflectionPending: Record<string, any>
+  runSerial: number
+  runLogHistory: any[]
+  currentRunLog: any
+  highValuePriceThreshold: number | null
+  battleRecords: any[]
+  battleRecordReplayActive: boolean
+  battleRecordReplayRecordId: string | null
+  battleRecordLogView: any
+  roundBidReadyState: Record<string, any>
+  aiRoundDecisionPromise: Promise<any> | null
+  pendingNextRunAiSummary: string
+  privateIntelEntries: any[]
+  publicInfoEntries: any[]
+  currentPublicEvent: any
+  dom: Record<string, HTMLElement | null>
+  _hudRoundText: HTMLElement | null
+  _hudTimerText: HTMLElement | null
+  _hudMoneyText: HTMLElement | null
+  _timerSpan: HTMLElement | null
+  keypadValue: string
+  _activeSkillId: string | null
+  _gameConfirmCallback: (() => void) | null
+  _gameCancelCallback: (() => void) | null
+  lanAiPlayers: (LanPlayer & { llm?: boolean })[]
+  lanAiLlmEnabled: boolean
+
   constructor() {
     super("warehouse")
     this.gridLayer = null
@@ -267,8 +510,8 @@ class WarehouseScene extends Phaser.Scene {
     this.deepSeekTesting = false
 
     this.round = 1
-    this.actionsLeft = GAME_SETTINGS.actionsPerRound
-    this.roundTimeLeft = GAME_SETTINGS.roundSeconds
+    this.actionsLeft = _GAME_SETTINGS.actionsPerRound
+    this.roundTimeLeft = _GAME_SETTINGS.roundSeconds
 
     this.playerMoney = loadPlayerMoney()
     this.selectedItem = null
@@ -601,7 +844,7 @@ class WarehouseScene extends Phaser.Scene {
     MobaoAnimations.bindAllButtonEffects(selector)
 
     // 2. 标记已初始化的按钮避免重复绑定
-    document.querySelectorAll(selector).forEach(function (btn) {
+    document.querySelectorAll(selector).forEach(function (btn: any) {
       if (btn && !btn.dataset.rippleInited) {
         btn.dataset.rippleInited = "1"
       }
@@ -609,7 +852,7 @@ class WarehouseScene extends Phaser.Scene {
 
     // 3. 单独处理未在通用选择器中的元素
     const extraBtns = document.querySelectorAll('[data-btn-effect="ripple"]')
-    extraBtns.forEach(function (btn) {
+    extraBtns.forEach(function (btn: any) {
       if (btn && !btn.dataset.rippleInited) {
         MobaoAnimations.bindRipple(btn)
         MobaoAnimations.bindPressScale(btn)
@@ -639,9 +882,9 @@ class WarehouseScene extends Phaser.Scene {
     this.dom.openSettingsBtn.addEventListener("click", () => {
       this.openSettingsOverlay()
     })
-    const roundSecondsInput = document.getElementById("setting-roundSeconds")
-    const roundSecondsDecrease = document.getElementById("roundSecondsDecrease")
-    const roundSecondsIncrease = document.getElementById("roundSecondsIncrease")
+    const roundSecondsInput: any = document.getElementById("setting-roundSeconds")
+    const roundSecondsDecrease: any = document.getElementById("roundSecondsDecrease")
+    const roundSecondsIncrease: any = document.getElementById("roundSecondsIncrease")
     function updateRoundSecondsUI(value) {
       if (roundSecondsInput) {
         roundSecondsInput.value = value
@@ -667,9 +910,9 @@ class WarehouseScene extends Phaser.Scene {
         updateRoundSecondsUI(value)
       })
     }
-    const settlementSpeedInput = document.getElementById("setting-settlementSpeedMultiplier")
-    const settlementSpeedDecrease = document.getElementById("settlementSpeedDecrease")
-    const settlementSpeedIncrease = document.getElementById("settlementSpeedIncrease")
+    const settlementSpeedInput: any = document.getElementById("setting-settlementSpeedMultiplier")
+    const settlementSpeedDecrease: any = document.getElementById("settlementSpeedDecrease")
+    const settlementSpeedIncrease: any = document.getElementById("settlementSpeedIncrease")
     function updateSettlementSpeedUI(value) {
       if (settlementSpeedInput) {
         settlementSpeedInput.value = value
@@ -695,10 +938,71 @@ class WarehouseScene extends Phaser.Scene {
         updateSettlementSpeedUI(value)
       })
     }
-    const musicVolumeSlider = document.getElementById("setting-musicVolume")
-    const musicVolumeValue = document.getElementById("musicVolumeValue")
-    const musicVolumeIcon = document.getElementById("musicVolumeIcon")
-    const musicVolumeIconImg = document.getElementById("musicVolumeIconImg")
+    const contextLengthInput: any = document.getElementById("setting-contextLength")
+    const contextLengthDecrease: any = document.getElementById("contextLengthDecrease")
+    const contextLengthIncrease: any = document.getElementById("contextLengthIncrease")
+    const contextLengthConfig: any = document.getElementById("contextLengthConfig")
+    function updateContextLengthUI(value) {
+      if (contextLengthInput) contextLengthInput.value = value
+      if (contextLengthDecrease) contextLengthDecrease.disabled = value <= 2
+      if (contextLengthIncrease) contextLengthIncrease.disabled = value >= 20
+    }
+    if (contextLengthDecrease && contextLengthInput) {
+      contextLengthDecrease.addEventListener("click", () => {
+        let value = Number(contextLengthInput.value) || 5
+        value = Math.max(2, value - 1)
+        updateContextLengthUI(value)
+      })
+    }
+    if (contextLengthIncrease && contextLengthInput) {
+      contextLengthIncrease.addEventListener("click", () => {
+        let value = Number(contextLengthInput.value) || 5
+        value = Math.min(20, value + 1)
+        updateContextLengthUI(value)
+      })
+    }
+    const summaryIntervalInput: any = document.getElementById("setting-summaryInterval")
+    const summaryIntervalDecrease: any = document.getElementById("summaryIntervalDecrease")
+    const summaryIntervalIncrease: any = document.getElementById("summaryIntervalIncrease")
+    function updateSummaryIntervalUI(value) {
+      if (summaryIntervalInput) summaryIntervalInput.value = value
+      if (summaryIntervalDecrease) summaryIntervalDecrease.disabled = value <= 0
+      if (summaryIntervalIncrease) summaryIntervalIncrease.disabled = value >= 50
+    }
+    if (summaryIntervalDecrease && summaryIntervalInput) {
+      summaryIntervalDecrease.addEventListener("click", () => {
+        let value = Number(summaryIntervalInput.value) || 0
+        value = Math.max(0, value - 1)
+        updateSummaryIntervalUI(value)
+      })
+    }
+    if (summaryIntervalIncrease && summaryIntervalInput) {
+      summaryIntervalIncrease.addEventListener("click", () => {
+        let value = Number(summaryIntervalInput.value) || 0
+        value = Math.min(50, value + 1)
+        updateSummaryIntervalUI(value)
+      })
+    }
+    const multiGameMemoryCb: any = document.getElementById("setting-llmMultiGameMemoryEnabled")
+    const contextLengthInline: any = document.getElementById("contextLengthInline")
+    const summaryConfig: any = document.getElementById("summaryConfig")
+    if (multiGameMemoryCb) {
+      multiGameMemoryCb.addEventListener("change", () => {
+        if (contextLengthInline) contextLengthInline.classList.toggle("hidden", !multiGameMemoryCb.checked)
+        if (summaryConfig) summaryConfig.classList.toggle("hidden", !multiGameMemoryCb.checked)
+      })
+    }
+    const reflectionCb: any = document.getElementById("setting-llmReflectionEnabled")
+    const reflectionScopeConfig: any = document.getElementById("reflectionScopeConfig")
+    if (reflectionCb && reflectionScopeConfig) {
+      reflectionCb.addEventListener("change", () => {
+        reflectionScopeConfig.classList.toggle("hidden", !reflectionCb.checked)
+      })
+    }
+    const musicVolumeSlider: any = document.getElementById("setting-musicVolume")
+    const musicVolumeValue: any = document.getElementById("musicVolumeValue")
+    const musicVolumeIcon: any = document.getElementById("musicVolumeIcon")
+    const musicVolumeIconImg: any = document.getElementById("musicVolumeIconImg")
     let musicVolumeBeforeMute = 70
     if (musicVolumeSlider && musicVolumeValue) {
       musicVolumeSlider.addEventListener("input", () => {
@@ -724,10 +1028,10 @@ class WarehouseScene extends Phaser.Scene {
         updateVolumeIcon(musicVolumeSlider.value, musicVolumeIconImg)
       })
     }
-    const sfxVolumeSlider = document.getElementById("setting-sfxVolume")
-    const sfxVolumeValue = document.getElementById("sfxVolumeValue")
-    const sfxVolumeIcon = document.getElementById("sfxVolumeIcon")
-    const sfxVolumeIconImg = document.getElementById("sfxVolumeIconImg")
+    const sfxVolumeSlider: any = document.getElementById("setting-sfxVolume")
+    const sfxVolumeValue: any = document.getElementById("sfxVolumeValue")
+    const sfxVolumeIcon: any = document.getElementById("sfxVolumeIcon")
+    const sfxVolumeIconImg: any = document.getElementById("sfxVolumeIconImg")
     let sfxVolumeBeforeMute = 80
     if (sfxVolumeSlider && sfxVolumeValue) {
       sfxVolumeSlider.addEventListener("input", () => {
@@ -1024,7 +1328,7 @@ class WarehouseScene extends Phaser.Scene {
       document.getElementById("exportShareBtn").addEventListener("click", () => {
         if (window.NativeBridge && window.NativeBridge.shareFile) {
           const base64Data = btoa(unescape(encodeURIComponent(jsonData)))
-          const success = window.NativeBridge.shareFile(base64Data, fileName, "AI记忆导出")
+          const success: any = window.NativeBridge.shareFile(base64Data, fileName, "AI记忆导出")
           if (success) {
             if (this.dom.aiMemoryStatusText) {
               this.dom.aiMemoryStatusText.textContent = "已导出"
@@ -1155,7 +1459,7 @@ class WarehouseScene extends Phaser.Scene {
       overlay.appendChild(box)
       document.body.appendChild(overlay)
 
-      const textarea = document.getElementById("importJsonTextarea")
+      const textarea: any = document.getElementById("importJsonTextarea")
       const pasteArea = document.getElementById("importPasteArea")
       const confirmBtn = document.getElementById("importPasteConfirmBtn")
       const fileBtn = document.getElementById("importFileBtn")
@@ -1180,7 +1484,7 @@ class WarehouseScene extends Phaser.Scene {
       // HTML file input 导入
       if (fileInput) {
         fileInput.addEventListener("change", (e) => {
-          const file = e.target.files && e.target.files[0]
+          const file = (e.target as any).files && (e.target as any).files[0]
           if (!file) return
           showStatus("正在读取文件...", "loading")
           const reader = new FileReader()
@@ -1300,7 +1604,7 @@ class WarehouseScene extends Phaser.Scene {
     }
     if (this.dom.settingLlmIndependentModelEnabled) {
       this.dom.settingLlmIndependentModelEnabled.addEventListener("change", () => {
-        const checked = this.dom.settingLlmIndependentModelEnabled.checked
+        const checked = (this.dom.settingLlmIndependentModelEnabled as HTMLInputElement).checked
         if (this.dom.independentModelConfig) {
           this.dom.independentModelConfig.classList.toggle("hidden", !checked)
         }
@@ -1491,7 +1795,7 @@ class WarehouseScene extends Phaser.Scene {
       event.preventDefault()
     })
 
-    this.dom.bidInput.readOnly = true
+      ; (this.dom.bidInput as HTMLInputElement).readOnly = true
     this.dom.bidInput.addEventListener("keydown", (event) => event.preventDefault())
     this.dom.bidInput.addEventListener("click", () => this.openBidKeypad())
     this.dom.bidInput.addEventListener("focus", () => this.openBidKeypad())
@@ -1515,19 +1819,19 @@ class WarehouseScene extends Phaser.Scene {
       this.handleBidKeyInput(key)
     })
 
-    this.input.keyboard.on("keydown-R", () => {
-      if (this.isLanMode) return
-      this.startNewRun()
-    })
-    this.input.keyboard.on("keydown-N", () => {
-      if (this.isLanMode && !this.lanIsHost) return
-      this.resolveRoundBids("manual")
-    })
-    this.input.keyboard.on("keydown-B", () => this.openBidKeypad())
-    this.input.keyboard.on("keydown-P", () => {
-      if (this.isLanMode && !this.lanIsHost) return
-      this.toggleRoundPause()
-    })
+      ; (this.input as any).keyboard.on("keydown-R", () => {
+        if (this.isLanMode) return
+        this.startNewRun()
+      })
+      ; (this.input as any).keyboard.on("keydown-N", () => {
+        if (this.isLanMode && !this.lanIsHost) return
+        this.resolveRoundBids("manual")
+      })
+      ; (this.input as any).keyboard.on("keydown-B", () => this.openBidKeypad())
+      ; (this.input as any).keyboard.on("keydown-P", () => {
+        if (this.isLanMode && !this.lanIsHost) return
+        this.toggleRoundPause()
+      })
 
     this.dom.gameConfirmCancelBtn.addEventListener("click", (event) => {
       event.stopPropagation()
@@ -1623,7 +1927,7 @@ class WarehouseScene extends Phaser.Scene {
       publicPanel.addEventListener("click", () => this.showInfoPopup("公共信息区", this.dom.publicInfoScroll))
     }
 
-    this.input.on("pointerdown", (pointer) => {
+    ; (this.input as any).on("pointerdown", (pointer: any) => {
       if (!this.settlementRevealRunning || !this.isSettlementPageActive()) {
         return
       }
@@ -1768,8 +2072,8 @@ class WarehouseScene extends Phaser.Scene {
     }
 
     this.round = 1
-    this.actionsLeft = GAME_SETTINGS.actionsPerRound
-    this.roundTimeLeft = GAME_SETTINGS.roundSeconds
+    this.actionsLeft = _GAME_SETTINGS.actionsPerRound
+    this.roundTimeLeft = _GAME_SETTINGS.roundSeconds
     this.roundResolving = false
     this.playerBidSubmitted = false
     this.playerRoundBid = 0
@@ -1799,7 +2103,7 @@ class WarehouseScene extends Phaser.Scene {
     this.spawnRandomItems()
 
     if (window.PublicEventSystem && this.items.length > 0) {
-      this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent(this.items, GRID_COLS, GRID_ROWS)
+      this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent(this.items, _GRID_COLS, _GRID_ROWS)
       this.publicInfoEntries.push({
         source: this.currentPublicEvent.category,
         text: this.currentPublicEvent.text
@@ -1844,7 +2148,7 @@ class WarehouseScene extends Phaser.Scene {
     return BATTLE_RECORD_BRIDGE.methods.buildWarehouseSnapshotForRecord.call(this)
   }
 
-  saveBattleRecord(result) {
+  saveBattleRecord(result: { won: boolean; profit: number; bidAmount: number; trueValue: number; round: number }) {
     return BATTLE_RECORD_BRIDGE.methods.saveBattleRecord.call(this, result)
   }
 
@@ -1852,11 +2156,11 @@ class WarehouseScene extends Phaser.Scene {
     return BATTLE_RECORD_BRIDGE.methods.renderBattleRecordPanel.call(this)
   }
 
-  openBattleRecordReplay(recordId) {
+  openBattleRecordReplay(recordId: string) {
     return BATTLE_RECORD_BRIDGE.methods.openBattleRecordReplay.call(this, recordId)
   }
 
-  openBattleRecordLogs(recordId, page = 1) {
+  openBattleRecordLogs(recordId: string, page: number = 1) {
     return BATTLE_RECORD_BRIDGE.methods.openBattleRecordLogs.call(this, recordId, page)
   }
 
@@ -1864,11 +2168,11 @@ class WarehouseScene extends Phaser.Scene {
     return BATTLE_RECORD_BRIDGE.methods.closeBattleRecordLogs.call(this)
   }
 
-  deleteBattleRecord(recordId) {
+  deleteBattleRecord(recordId: string) {
     return BATTLE_RECORD_BRIDGE.methods.deleteBattleRecord.call(this, recordId)
   }
 
-  restoreWarehouseFromBattleRecord(record) {
+  restoreWarehouseFromBattleRecord(record: { id: string; data: Record<string, unknown> }) {
     return BATTLE_RECORD_BRIDGE.methods.restoreWarehouseFromBattleRecord.call(this, record)
   }
 
@@ -1941,7 +2245,7 @@ class WarehouseScene extends Phaser.Scene {
     this.dom.aiLogicContent.textContent = lines.join("\n")
   }
 
-  renderAiLogicPanelForLlm(telemetry) {
+  renderAiLogicPanelForLlm(telemetry: { mode: string; round: number; entries: LlmTelemetry[] }) {
     return LLM_BRIDGE.methods.renderAiLogicPanelForLlm.call(this, telemetry)
   }
 
@@ -1949,7 +2253,7 @@ class WarehouseScene extends Phaser.Scene {
     return LLM_BRIDGE.methods.showAiConversationMessages.call(this)
   }
 
-  fillLlmSettingsForm(values) {
+  fillLlmSettingsForm(values: LlmSettings) {
     return LLM_BRIDGE.methods.fillLlmSettingsForm.call(this, values)
   }
 
@@ -1957,7 +2261,7 @@ class WarehouseScene extends Phaser.Scene {
     return LLM_BRIDGE.methods.readLlmSettingsForm.call(this)
   }
 
-  setLlmSettingsStatus(text, state) {
+  setLlmSettingsStatus(text: string, state: "ok" | "error" | "loading" | "") {
     return LLM_BRIDGE.methods.setLlmSettingsStatus.call(this, text, state)
   }
 
@@ -1965,7 +2269,7 @@ class WarehouseScene extends Phaser.Scene {
     return LLM_BRIDGE.methods.testDeepSeekConnectionFromOverlay.call(this)
   }
 
-  scrollElementByWheel(element, deltaY) {
+  scrollElementByWheel(element: HTMLElement | null, deltaY: number) {
     if (!element) {
       return false
     }
@@ -1984,14 +2288,14 @@ class WarehouseScene extends Phaser.Scene {
     return window.MobaoContextBuilder.buildBidHistorySnapshot(this.round, this.players, this.playerRoundHistory)
   }
 
-  buildPublicEventSnapshot(options = {}) {
+  buildPublicEventSnapshot(options: Record<string, unknown> = {}) {
     return window.MobaoContextBuilder.buildPublicEventSnapshot(
       this.players, this.playerUsageHistory, this.currentRoundUsage, this.round,
       this.getActionDefById.bind(this), this.currentPublicEvent, options
     )
   }
 
-  buildRoundPublicStateTable(viewerId) {
+  buildRoundPublicStateTable(viewerId: string) {
     return window.MobaoContextBuilder.buildRoundPublicStateTable(
       this.round, this.players, this.playerRoundHistory,
       this.currentRoundUsage, this.playerUsageHistory, viewerId
@@ -2002,34 +2306,34 @@ class WarehouseScene extends Phaser.Scene {
     return window.MobaoContextBuilder.buildQualityPriceRangeTableCompact()
   }
 
-  buildCatalogSummary(options = {}) {
+  buildCatalogSummary(options: Record<string, unknown> = {}) {
     return window.MobaoContextBuilder.buildCatalogSummary(options)
   }
 
-  buildQualityPriceGuide(options = {}) {
+  buildQualityPriceGuide(options: Record<string, unknown> = {}) {
     return window.MobaoContextBuilder.buildQualityPriceGuide(options)
   }
 
-  getActionDefById(actionId) {
+  getActionDefById(actionId: string) {
     return window.MobaoContextBuilder.getActionDefById(actionId)
   }
 
-  buildOtherPlayersPublicInfo(viewerId, options = {}) {
+  buildOtherPlayersPublicInfo(viewerId: string, options: Record<string, unknown> = {}) {
     return window.MobaoContextBuilder.buildOtherPlayersPublicInfo(
       this.players, this.aiEngine, this.playerUsageHistory,
       this.getActionDefById.bind(this), viewerId, options
     )
   }
 
-  buildAiLlmRoundPayload(player) {
+  buildAiLlmRoundPayload(player: Player) {
     return LLM_BRIDGE.methods.buildAiLlmRoundPayload.call(this, player)
   }
 
-  buildAiFollowupRoundPayload(player, currentPlan, toolSummary) {
+  buildAiFollowupRoundPayload(player: Player, currentPlan: LlmPlan, toolSummary: string) {
     return LLM_BRIDGE.methods.buildAiFollowupRoundPayload.call(this, player, currentPlan, toolSummary)
   }
 
-  buildAiIncrementalPayload(player) {
+  buildAiIncrementalPayload(player: Player) {
     return LLM_BRIDGE.methods.buildAiIncrementalPayload.call(this, player)
   }
 
@@ -2037,55 +2341,55 @@ class WarehouseScene extends Phaser.Scene {
     return LLM_BRIDGE.methods.canUseLlmDecision.call(this)
   }
 
-  isAiLlmEnabledForPlayer(playerId) {
+  isAiLlmEnabledForPlayer(playerId: string) {
     return LLM_BRIDGE.methods.isAiLlmEnabledForPlayer.call(this, playerId)
   }
 
-  canUseLlmDecisionForPlayer(playerId) {
+  canUseLlmDecisionForPlayer(playerId: string) {
     return LLM_BRIDGE.methods.canUseLlmDecisionForPlayer.call(this, playerId)
   }
 
-  getAiModelConfigForPlayer(playerId) {
+  getAiModelConfigForPlayer(playerId: string) {
     return LLM_BRIDGE.methods.getAiModelConfigForPlayer.call(this, playerId)
   }
 
-  getAiIndexFromPlayerId(playerId) {
+  getAiIndexFromPlayerId(playerId: string) {
     return LLM_BRIDGE.methods.getAiIndexFromPlayerId.call(this, playerId)
   }
 
-  buildAiDecisionUserPrompt(payload, extraBlocks = [], options = {}) {
+  buildAiDecisionUserPrompt(payload: LlmRoundPayload, extraBlocks: string[] = [], options: Record<string, unknown> = {}) {
     return LLM_BRIDGE.methods.buildAiDecisionUserPrompt.call(this, payload, extraBlocks, options)
   }
 
-  extractAiDecisionObject(content) {
+  extractAiDecisionObject(content: string) {
     return LLM_BRIDGE.methods.extractAiDecisionObject.call(this, content)
   }
 
-  resolveActionPick(rawText, type, availableIds) {
+  resolveActionPick(rawText: string, type: string, availableIds: string[]) {
     return LLM_BRIDGE.methods.resolveActionPick.call(this, rawText, type, availableIds)
   }
 
-  normalizeAiLlmPlan(playerId, decision, rawContent, options = {}) {
+  normalizeAiLlmPlan(playerId: string, decision: LlmDecision, rawContent: string, options: Record<string, unknown> = {}) {
     return LLM_BRIDGE.methods.normalizeAiLlmPlan.call(this, playerId, decision, rawContent, options)
   }
 
-  buildAiDecisionMessages(payload, options = {}) {
+  buildAiDecisionMessages(payload: LlmRoundPayload, options: Record<string, unknown> = {}) {
     return LLM_BRIDGE.methods.buildAiDecisionMessages.call(this, payload, options)
   }
 
-  async requestAiLlmPlan(player, options = {}) {
+  async requestAiLlmPlan(player: Player, options: Record<string, unknown> = {}) {
     return LLM_BRIDGE.methods.requestAiLlmPlan.call(this, player, options)
   }
 
-  buildAiToolResultSummary(result, actionType, actionId) {
+  buildAiToolResultSummary(result: RevealResult, actionType: string, actionId: string) {
     return LLM_BRIDGE.methods.buildAiToolResultSummary.call(this, result, actionType, actionId)
   }
 
-  async requestAiLlmFollowupBid(player, currentPlan, toolSummary) {
+  async requestAiLlmFollowupBid(player: Player, currentPlan: LlmPlan, toolSummary: string) {
     return LLM_BRIDGE.methods.requestAiLlmFollowupBid.call(this, player, currentPlan, toolSummary)
   }
 
-  async requestAiLlmErrorCorrection(player, currentPlan, errorInfo, correctionHistory, previousMessages) {
+  async requestAiLlmErrorCorrection(player: Player, currentPlan: LlmPlan, errorInfo: LlmErrorInfo, correctionHistory: LlmDecision[], previousMessages: ConversationMessage[]) {
     return LLM_BRIDGE.methods.requestAiLlmErrorCorrection.call(
       this,
       player,
@@ -2100,7 +2404,7 @@ class WarehouseScene extends Phaser.Scene {
     return LLM_BRIDGE.methods.prepareAiLlmRoundPlans.call(this)
   }
 
-  captureAiDecisionTelemetry(roundBids) {
+  captureAiDecisionTelemetry(roundBids: BidsPerPlayer[]) {
     return LLM_BRIDGE.methods.captureAiDecisionTelemetry.call(this, roundBids)
   }
 
@@ -2108,7 +2412,7 @@ class WarehouseScene extends Phaser.Scene {
     return LLM_BRIDGE.methods.processAiDecisions.call(this)
   }
 
-  toWorldPointFromRootEvent(event) {
+  toWorldPointFromRootEvent(event: MouseEvent): { x: number; y: number } | null {
     if (!this.dom.gameRoot) {
       return null
     }
@@ -2119,7 +2423,7 @@ class WarehouseScene extends Phaser.Scene {
     return { x, y }
   }
 
-  markRoundRanking(sorted) {
+  markRoundRanking(sorted: BidsPerPlayer[]) {
     const firstId = sorted[0]?.playerId
     const secondId = sorted[1]?.playerId
 
@@ -2142,29 +2446,29 @@ class WarehouseScene extends Phaser.Scene {
     const lockedIntel =
       this.settled || this.roundResolving || this.roundPaused || this.playerBidSubmitted || this.roundTimeLeft <= 0
     if (this.dom.itemOutlineBtn) {
-      this.dom.itemOutlineBtn.disabled = lockedIntel
+      ; (this.dom.itemOutlineBtn as HTMLButtonElement).disabled = lockedIntel
     }
     if (this.dom.itemQualityBtn) {
-      this.dom.itemQualityBtn.disabled = lockedIntel
+      ; (this.dom.itemQualityBtn as HTMLButtonElement).disabled = lockedIntel
     }
     if (this.dom.itemDrawerToggleBtn) {
-      this.dom.itemDrawerToggleBtn.disabled = lockedIntel
+      ; (this.dom.itemDrawerToggleBtn as HTMLButtonElement).disabled = lockedIntel
       if (lockedIntel) {
         this.closeItemDrawer()
       }
     }
 
     const lockedBid = this.settled || this.roundResolving || this.roundPaused || this.playerBidSubmitted
-    this.dom.skillBtn.disabled = lockedIntel
-    this.dom.bidInput.disabled = lockedBid
+      ; (this.dom.skillBtn as HTMLButtonElement).disabled = lockedIntel
+      ; (this.dom.bidInput as HTMLInputElement).disabled = lockedBid
     if (lockedBid) {
       this.closeBidKeypad()
     }
 
-    this.dom.nextRoundBtn.disabled = this.settled || this.roundResolving || this.roundPaused
-    this.dom.settleBtn.disabled = this.settled || this.roundResolving || this.roundPaused
+    ; (this.dom.nextRoundBtn as HTMLButtonElement).disabled = this.settled || this.roundResolving || this.roundPaused
+      ; (this.dom.settleBtn as HTMLButtonElement).disabled = this.settled || this.roundResolving || this.roundPaused
     if (this.dom.pauseRoundBtn) {
-      this.dom.pauseRoundBtn.disabled = this.settled || this.roundResolving
+      ; (this.dom.pauseRoundBtn as HTMLButtonElement).disabled = this.settled || this.roundResolving
       if (this.isLanMode && !this.lanIsHost) {
         this.dom.pauseRoundBtn.style.display = "none"
       } else {
@@ -2188,15 +2492,15 @@ class WarehouseScene extends Phaser.Scene {
     return SETTLEMENT_BRIDGE.methods.isSettlementPageActive.call(this)
   }
 
-  async playSettlementRevealStep(item) {
+  async playSettlementRevealStep(item: any) {
     return SETTLEMENT_BRIDGE.methods.playSettlementRevealStep.call(this, item)
   }
 
-  async playSettlementSearchEffect(item, runToken) {
+  async playSettlementSearchEffect(item: any, runToken: any) {
     return SETTLEMENT_BRIDGE.methods.playSettlementSearchEffect.call(this, item, runToken)
   }
 
-  enterSettlementPage(winnerPlayer, winnerBid, reasonText) {
+  enterSettlementPage(winnerPlayer: any, winnerBid: number, reasonText: string) {
     return SETTLEMENT_BRIDGE.methods.enterSettlementPage.call(this, winnerPlayer, winnerBid, reasonText)
   }
 
@@ -2208,23 +2512,23 @@ class WarehouseScene extends Phaser.Scene {
     return SETTLEMENT_BRIDGE.methods.cancelSettlementReveal.call(this)
   }
 
-  setSettlementProgress(text, progress) {
+  setSettlementProgress(text: string, progress: number) {
     return SETTLEMENT_BRIDGE.methods.setSettlementProgress.call(this, text, progress)
   }
 
-  updateSettlementPanelMetrics(revealedValue, winnerProfit) {
+  updateSettlementPanelMetrics(revealedValue: number, winnerProfit: number) {
     return SETTLEMENT_BRIDGE.methods.updateSettlementPanelMetrics.call(this, revealedValue, winnerProfit)
   }
 
-  showSelfProfit(selfProfit, label) {
+  showSelfProfit(selfProfit: number, label: string) {
     return SETTLEMENT_BRIDGE.methods.showSelfProfit.call(this, selfProfit, label)
   }
 
-  playSettlementFinalEffect(winnerProfit) {
+  playSettlementFinalEffect(winnerProfit: number) {
     return SETTLEMENT_BRIDGE.methods.playSettlementFinalEffect.call(this, winnerProfit)
   }
 
-  triggerSettlementFinalAnimation(winnerProfit, isSelfWinner) {
+  triggerSettlementFinalAnimation(winnerProfit: number, isSelfWinner: boolean) {
     return SETTLEMENT_BRIDGE.methods.triggerSettlementFinalAnimation.call(this, winnerProfit, isSelfWinner)
   }
 
@@ -2234,7 +2538,7 @@ class WarehouseScene extends Phaser.Scene {
 
     const clueCount = this.items.filter((item) => this.hasAnyInfo(item)).length
     const occupiedCells = this.items.reduce((sum, item) => sum + item.w * item.h, 0)
-    const capacity = GRID_COLS * GRID_ROWS
+    const capacity = _GRID_COLS * _GRID_ROWS
     const bidState = this.playerBidSubmitted ? `玩家本轮已出价: ${this.playerRoundBid}` : "玩家本轮未出价"
     const timerText = this.roundPaused ? `已暂停 ${this.roundTimeLeft}s` : `倒计时 ${this.roundTimeLeft}s`
 
@@ -2242,7 +2546,7 @@ class WarehouseScene extends Phaser.Scene {
     const hudTimerText = this._hudTimerText
     const hudMoneyText = this._hudMoneyText
 
-    if (hudRoundText) hudRoundText.textContent = `第 ${this.round}/${GAME_SETTINGS.maxRounds} 回合`
+    if (hudRoundText) hudRoundText.textContent = `第 ${this.round}/${_GAME_SETTINGS.maxRounds} 回合`
     if (hudTimerText) {
       if (!this._timerSpan) {
         this._timerSpan = document.createElement("span")
@@ -2366,10 +2670,10 @@ Object.assign(WarehouseScene.prototype, window.MobaoSkillItemManager)
 Object.assign(WarehouseScene.prototype, window.MobaoSettlementManager)
 
 const config = {
-  type: Phaser.AUTO,
+  type: (Phaser as any).AUTO,
   parent: "game-root",
-  width: MARGIN * 2 + GRID_COLS * CELL_SIZE,
-  height: MARGIN * 2 + GRID_ROWS * CELL_SIZE,
+  width: MARGIN * 2 + _GRID_COLS * CELL_SIZE,
+  height: MARGIN * 2 + _GRID_ROWS * CELL_SIZE,
   backgroundColor: "transparent",
   transparent: true,
   pixelArt: false,
@@ -2384,4 +2688,4 @@ const config = {
   scene: [WarehouseScene]
 }
 
-new Phaser.Game(config)
+new (Phaser as any).Game(config)

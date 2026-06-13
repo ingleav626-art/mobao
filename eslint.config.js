@@ -46,7 +46,9 @@ export default [
         CharacterSystem: "readonly",
         SkillSystem: "readonly",
         ItemSystem: "readonly",
-        AuctionAI: "readonly"
+        AuctionAI: "readonly",
+        MobaoGameHistory: "readonly",
+        MobaoSummarizer: "readonly"
       }
     },
     rules: {

@@ -116,6 +116,11 @@ interface UiElements {
   reflectionCheckbox: HTMLElement | null
   thinkingCheckbox: HTMLElement | null
   independentModelCheckbox: HTMLElement | null
+  contextLengthInline: HTMLElement | null
+  contextLengthInput: HTMLInputElement | null
+  summaryConfig: HTMLElement | null
+  summaryIntervalInput: HTMLInputElement | null
+  reflectionScopeConfig: HTMLElement | null
   testBtn: HTMLElement | null
   statusText: HTMLElement | null
   addProviderBtn: HTMLElement | null
@@ -146,6 +151,11 @@ function getElements(): UiElements {
     reflectionCheckbox: document.getElementById("setting-llmReflectionEnabled"),
     thinkingCheckbox: document.getElementById("setting-llmThinkingEnabled"),
     independentModelCheckbox: document.getElementById("setting-llmIndependentModelEnabled"),
+    contextLengthInline: document.getElementById("contextLengthInline"),
+    contextLengthInput: document.getElementById("setting-contextLength") as HTMLInputElement | null,
+    summaryConfig: document.getElementById("summaryConfig"),
+    summaryIntervalInput: document.getElementById("setting-summaryInterval") as HTMLInputElement | null,
+    reflectionScopeConfig: document.getElementById("reflectionScopeConfig"),
     testBtn: document.getElementById("settingsTestLlmBtn"),
     statusText: document.getElementById("settingsLlmStatusText"),
     addProviderBtn: document.getElementById("addCustomProviderBtn"),

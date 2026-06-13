@@ -37,8 +37,15 @@ const fs = require('fs')
 const path = require('path')
 
 // ─── 输出系统：同时写文件 + 终端 ───
-const RESULT_FILE = path.join(__dirname, 'compare-result.txt')
+const RESULT_DIR = __dirname
+let _resultFile = ''
 let _outputBuffer = []
+
+function setResultFile(basePath) {
+  // 按基准文件名生成结果文件名：compare-result-<basename>.txt
+  const name = path.basename(basePath, path.extname(basePath))
+  _resultFile = path.join(RESULT_DIR, 'compare-result-' + name + '.txt')
+}
 
 function out(text) {
   _outputBuffer.push(text)
@@ -46,11 +53,11 @@ function out(text) {
 
 function flushOutput() {
   const content = _outputBuffer.join('\n')
-  fs.writeFileSync(RESULT_FILE, content, 'utf8')
+  fs.writeFileSync(_resultFile, content, 'utf8')
   // 终端只输出汇总（最后 20 行）
   const lines = content.split('\n')
   const summaryStart = Math.max(0, lines.length - 20)
-  console.log('(完整结果已写入 ' + RESULT_FILE + ')')
+  console.log('(完整结果已写入 ' + _resultFile + ')')
   console.log(lines.slice(summaryStart).join('\n'))
 }
 
@@ -999,6 +1006,7 @@ function main() {
 
   // 批量模式
   if (args.batch.length > 0) {
+    setResultFile('batch')
     out('批量对比模式: ' + args.batch.length + ' 对文件')
     out('═══════════════════════════════════════')
 
@@ -1049,9 +1057,11 @@ function main() {
   if (!args.base || args.targets.length === 0) {
     console.log('用法: node compare.js --base <基准文件> --target <目标文件> [选项]')
     console.log('批量: node compare.js --batch @batch-list.txt [选项]')
-    console.log('结果输出到: ' + RESULT_FILE)
+    console.log('结果输出到: tools/compare-result-<基准文件名>.txt')
     process.exit(1)
   }
+
+  setResultFile(args.base)
 
   const options = {
     names: args.names,

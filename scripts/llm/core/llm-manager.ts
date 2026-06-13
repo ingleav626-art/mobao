@@ -718,10 +718,10 @@ function createOpenAICompatibleProvider(config: any): any {
           ; (window as any).__llmProxyResolvers = llmProxyResolvers
 
         if (!(window as any).__llmProxyCallback) {
-          ; (window as any).__llmProxyCallback = function (reqId: string, b64Result: string) {
-            const entry = llmProxyResolvers.get(reqId)
+          ; (window as any).__llmProxyCallback = function (requestId: string, b64Result: string) {
+            const entry = llmProxyResolvers.get(requestId)
             if (entry) {
-              llmProxyResolvers.delete(reqId)
+              llmProxyResolvers.delete(requestId)
               try {
                 let decoded = atob(b64Result)
                 if (typeof TextDecoder !== "undefined") {
@@ -990,6 +990,9 @@ export const LlmManager = {
           enabled: false,
           multiGameMemoryEnabled: false,
           reflectionEnabled: false,
+          contextLength: 5,
+          summaryInterval: 0,
+          reflectionScope: "current",
           thinkingEnabled: false,
           thinkingParams: "",
           endpoint: config.endpoint || "",
@@ -1006,6 +1009,9 @@ export const LlmManager = {
           enabled: false,
           multiGameMemoryEnabled: false,
           reflectionEnabled: false,
+          contextLength: 5,
+          summaryInterval: 0,
+          reflectionScope: "current",
           thinkingEnabled: false,
           independentModelEnabled: false,
           thinkingParams: "",
@@ -1032,6 +1038,9 @@ export const LlmManager = {
           enabled: Boolean(input.enabled),
           multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
           reflectionEnabled: Boolean(input.reflectionEnabled),
+          contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
+          summaryInterval: Math.max(0, Math.min(50, Math.round(Number(input.summaryInterval) || 0))),
+          reflectionScope: input.reflectionScope === "full" ? "full" : "current",
           thinkingEnabled: Boolean(input.thinkingEnabled),
           independentModelEnabled: Boolean(input.independentModelEnabled),
           thinkingParams:
@@ -1106,6 +1115,9 @@ export const LlmManager = {
               enabled: false,
               multiGameMemoryEnabled: false,
               reflectionEnabled: false,
+              contextLength: 5,
+              summaryInterval: 0,
+              reflectionScope: "current",
               thinkingEnabled: false,
               thinkingParams: "",
               endpoint: "",
@@ -1122,6 +1134,9 @@ export const LlmManager = {
               enabled: false,
               multiGameMemoryEnabled: false,
               reflectionEnabled: false,
+              contextLength: 5,
+              summaryInterval: 0,
+              reflectionScope: "current",
               thinkingEnabled: false,
               thinkingParams: "",
               endpoint: "",
@@ -1147,6 +1162,9 @@ export const LlmManager = {
               enabled: Boolean(input.enabled),
               multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
               reflectionEnabled: Boolean(input.reflectionEnabled),
+              contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
+              summaryInterval: Math.max(0, Math.min(50, Math.round(Number(input.summaryInterval) || 0))),
+              reflectionScope: input.reflectionScope === "full" ? "full" : "current",
               thinkingEnabled: Boolean(input.thinkingEnabled),
               thinkingParams:
                 typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,

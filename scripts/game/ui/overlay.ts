@@ -44,15 +44,15 @@ export const UiOverlayMixin = {
     }
   },
 
-  showPlayerInfoPopover(title: string, content: string, x: number, y: number) {
+  showPlayerInfoPopover(title: string, htmlContent: string, x: number, y: number) {
     const popover = document.getElementById("playerInfoPopover")
     const titleEl = document.getElementById("playerInfoPopoverTitle")
-    const contentEl = document.getElementById("playerInfoPopoverContent")
-    if (!popover || !titleEl || !contentEl) {
+    const htmlContentEl = document.getElementById("playerInfoPopoverContent")
+    if (!popover || !titleEl || !htmlContentEl) {
       return
     }
     titleEl.textContent = title
-    contentEl.innerHTML = content
+    htmlContentEl.innerHTML = htmlContent
     popover.classList.remove("hidden")
     popover.classList.add("popup-content-enter")
     popover.addEventListener(
@@ -798,8 +798,8 @@ export const UiOverlayMixin = {
   },
 
   renderAiModelConfigContent() {
-    const contentEl = document.getElementById("aiModelConfigContent")
-    if (!contentEl) return
+    const htmlContentEl = document.getElementById("aiModelConfigContent")
+    if (!htmlContentEl) return
     const aiModelConfigs = this.loadAiModelConfigs()
     const providers = window.LlmManager ? window.LlmManager.listProviders() : []
     const activeProviderId = window.LlmManager ? window.LlmManager.getActiveProviderId() : "deepseek"
@@ -836,7 +836,7 @@ export const UiOverlayMixin = {
           </div>
         `
       })
-    contentEl.innerHTML = html
+    htmlContentEl.innerHTML = html
       ;["ai1", "ai2", "ai3"].forEach((aiId) => {
         const select = document.getElementById(`aiModelProvider-${aiId}`) as HTMLSelectElement | null
         if (select) {

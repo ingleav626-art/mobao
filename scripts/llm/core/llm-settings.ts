@@ -84,6 +84,43 @@ export function createLlmSettingsModule(deps: any) {
           thinkingModeParams.classList.add("hidden")
         }
       }
+      const contextLengthInline = document.getElementById("contextLengthInline")
+      if (contextLengthInline) {
+        if (this.dom.settingLlmMultiGameMemoryEnabled && this.dom.settingLlmMultiGameMemoryEnabled.checked) {
+          contextLengthInline.classList.remove("hidden")
+        } else {
+          contextLengthInline.classList.add("hidden")
+        }
+      }
+      const summaryConfig = document.getElementById("summaryConfig")
+      if (summaryConfig) {
+        if (this.dom.settingLlmMultiGameMemoryEnabled && this.dom.settingLlmMultiGameMemoryEnabled.checked) {
+          summaryConfig.classList.remove("hidden")
+        } else {
+          summaryConfig.classList.add("hidden")
+        }
+      }
+      const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null
+      if (contextLengthInput) {
+        contextLengthInput.value = String(source.contextLength || 5)
+      }
+      const summaryIntervalInput = document.getElementById("setting-summaryInterval") as HTMLInputElement | null
+      if (summaryIntervalInput) {
+        summaryIntervalInput.value = String(source.summaryInterval || 0)
+      }
+      const reflectionScopeConfig = document.getElementById("reflectionScopeConfig")
+      if (reflectionScopeConfig) {
+        if (this.dom.settingLlmReflectionEnabled && this.dom.settingLlmReflectionEnabled.checked) {
+          reflectionScopeConfig.classList.remove("hidden")
+        } else {
+          reflectionScopeConfig.classList.add("hidden")
+        }
+      }
+      const reflectionScope = source.reflectionScope || "current"
+      const scopeRadios = document.querySelectorAll('input[name="reflectionScope"]') as NodeListOf<HTMLInputElement>
+      scopeRadios.forEach((radio) => {
+        radio.checked = radio.value === reflectionScope
+      })
       const independentModelCheckbox =
         this.dom.settingLlmIndependentModelEnabled || document.getElementById("setting-llmIndependentModelEnabled") as HTMLInputElement | null
       console.log("[fillLlmSettingsForm] independentModelCheckbox:", independentModelCheckbox ? "found" : "not found")
@@ -136,13 +173,10 @@ export function createLlmSettingsModule(deps: any) {
       const endpointInput = document.getElementById("setting-llmEndpoint") as HTMLInputElement | null
       const independentModelCheckbox =
         this.dom.settingLlmIndependentModelEnabled || document.getElementById("setting-llmIndependentModelEnabled") as HTMLInputElement | null
-      console.log(
-        "[readLlmSettingsForm] independentModelCheckbox:",
-        independentModelCheckbox ? "found" : "not found",
-        "checked:",
-        independentModelCheckbox ? independentModelCheckbox.checked : "N/A"
-      )
       const independentReflectionCheckbox = document.getElementById("setting-llmIndependentReflectionEnabled") as HTMLInputElement | null
+      const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null
+      const summaryIntervalInput = document.getElementById("setting-summaryInterval") as HTMLInputElement | null
+      const scopeRadio = document.querySelector('input[name="reflectionScope"]:checked') as HTMLInputElement | null
 
       return {
         enabled: this.dom.settingLlmEnabled ? this.dom.settingLlmEnabled.checked : currentSettings.enabled,
@@ -174,7 +208,14 @@ export function createLlmSettingsModule(deps: any) {
           ? independentReflectionCheckbox.checked
           : currentSettings.independentReflectionEnabled !== undefined
             ? currentSettings.independentReflectionEnabled
-            : true
+            : true,
+        contextLength: contextLengthInput
+          ? Math.max(2, Math.min(20, Math.round(Number(contextLengthInput.value) || 5)))
+          : currentSettings.contextLength || 5,
+        summaryInterval: summaryIntervalInput
+          ? Math.max(0, Math.min(50, Math.round(Number(summaryIntervalInput.value) || 0)))
+          : currentSettings.summaryInterval || 0,
+        reflectionScope: scopeRadio ? scopeRadio.value : currentSettings.reflectionScope || "current"
       }
     },
 

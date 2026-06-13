@@ -531,7 +531,7 @@ export const LobbyIndexMixin = {
 
   updatePlayerAvatar(playerId: string, avatarEl: HTMLElement) {
     const player = (this as any).players.find((p: any) => p.id === playerId)
-    if (!player) return
+    if (!player || !avatarEl) return
 
     if (player.isHuman) {
       const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter()
@@ -618,8 +618,13 @@ export const LobbyIndexMixin = {
     const panel = document.getElementById("collectionPanel")
     if (!overlay || !panel) return
 
-    overlay.classList.remove("hidden")
     this.initCollectionPanel()
+
+    if (window.MobaoAnimations) {
+      ; (window.MobaoAnimations as any).animateOverlayOpen(overlay, panel)
+    } else {
+      overlay.classList.remove("hidden")
+    }
 
     const closeBtn = document.getElementById("collectionCloseBtn")
     if (closeBtn && !(closeBtn as any)._boundClose) {

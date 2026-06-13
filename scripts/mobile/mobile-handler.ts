@@ -132,9 +132,9 @@ export const MobileHandler: {
   setupNativeKeyboardListener: function () {
     var self = this
 
-    ;(window as any).__onKeyboardChange = function (height: number) {
-      self.handleKeyboardHeightChange(parseInt(String(height)) || 0)
-    }
+      ; (window as any).__onKeyboardChange = function (height: number) {
+        self.handleKeyboardHeightChange(parseInt(String(height)) || 0)
+      }
 
     document.addEventListener("keyboardchange", function (e) {
       var detail = (e as CustomEvent).detail
@@ -391,7 +391,7 @@ export const MobileHandler: {
             e.stopPropagation()
 
             setTimeout(function () {
-              ;(target as HTMLInputElement).blur()
+              ; (target as HTMLInputElement).blur()
               self.showFixedInput(target as HTMLInputElement)
             }, 10)
           }
@@ -631,7 +631,7 @@ export const MobileHandler: {
         })
         var nextIdx = e.key === "ArrowDown" ? currentIdx + 1 : currentIdx - 1
         if (nextIdx >= 0 && nextIdx < opts.length) {
-          ;(opts[nextIdx] as HTMLElement).click()
+          ; (opts[nextIdx] as HTMLElement).click()
         }
       }
     })
@@ -809,4 +809,4 @@ if (document.readyState === "loading") {
   initMobileHandler()
 }
 
-;(window as any).MobileHandler = MobileHandler
+; (window as any).MobileHandler = MobileHandler
