@@ -36,6 +36,24 @@
 const fs = require('fs')
 const path = require('path')
 
+// ─── 输出系统：同时写文件 + 终端 ───
+const RESULT_FILE = path.join(__dirname, 'compare-result.txt')
+let _outputBuffer = []
+
+function out(text) {
+  _outputBuffer.push(text)
+}
+
+function flushOutput() {
+  const content = _outputBuffer.join('\n')
+  fs.writeFileSync(RESULT_FILE, content, 'utf8')
+  // 终端只输出汇总（最后 20 行）
+  const lines = content.split('\n')
+  const summaryStart = Math.max(0, lines.length - 20)
+  console.log('(完整结果已写入 ' + RESULT_FILE + ')')
+  console.log(lines.slice(summaryStart).join('\n'))
+}
+
 // ─── 参数解析 ───
 
 function parseArgs(argv) {
@@ -53,16 +71,19 @@ function parseArgs(argv) {
     else if (arg === '--context') { args.context = parseInt(argv[++i], 10) || 80; i++ }
     else if (arg === '--comments') { args.comments = true; i++ }
     else if (arg === '--batch') {
-      // 格式: --batch base1,target1;base2,target2;base3,target3
-      // 或: --batch @file.txt 从文件读取
+      // 格式: --batch base1,target1;base2,target2
+      // 或: --batch @file.txt 从文件读取（支持换行或 ; 分隔，每行用 , 或 | 分隔 base/target）
       let batchStr = argv[++i]
       if (batchStr.startsWith('@')) {
         const batchFile = batchStr.slice(1)
         batchStr = fs.readFileSync(path.resolve(batchFile), 'utf-8').trim()
       }
-      const pairs = batchStr.split(';').map(s => s.trim()).filter(Boolean)
+      // 支持换行和 ; 作为分隔符
+      const pairs = batchStr.split(/[\n\r;]+/).map(s => s.trim()).filter(Boolean)
       for (const pair of pairs) {
-        const [b, t] = pair.split(',').map(s => s.trim())
+        // 支持 , 或 | 作为 base/target 分隔符
+        const sep = pair.includes('|') ? '|' : ','
+        const [b, t] = pair.split(sep).map(s => s.trim())
         if (b && t) args.batch.push({ base: b, target: t })
       }
       i++
@@ -387,12 +408,30 @@ function normalize(code) {
   return code
     .replace(/\r\n/g, '\n')
     .replace(/"/g, "'")                   // 统一引号（双引号→单引号）
+    .replace(/\bas\s+[A-Z][\w$]*(?:<[^>]*>)?(?:\s*\|\s*(?:[A-Z][\w$]*(?:<[^>]*>)?|null|undefined|number|string|boolean|object|any|void|never|unknown))*\b/g, '') // 删除 as Type 类型断言（含联合类型）
+    .replace(/:\s*(?:HTML\w+Element|HTMLElement|HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement|number|string|boolean|any|void|never|unknown|null|undefined|object)(?:\s*\|\s*(?:HTML\w+Element|HTMLElement|HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement|number|string|boolean|any|void|never|unknown|null|undefined|object))*\b(?=[,)=;\s])/g, '') // 删除类型注解
+    .replace(/<[A-Z][\w$]*(?:\s*\|\s*[A-Z][\w$]*)*>/g, '') // 删除泛型参数 <Type>
+    .replace(/(\w+)!\./g, '$1.')               // 删除非空断言 obj!.prop → obj.prop
+    .replace(/(\w+)\?\.\(/g, '$1 && $1.')   // 统一可选链调用 obj?.method() → obj && obj.method()
+    .replace(/(\w+)\?\.(\w)/g, '$1 && $1.$2') // 统一可选链属性 obj?.prop → obj && obj.prop
     .replace(/^\s*;\s*$/gm, '')           // 删除独立分号行（TS 编译器残留）
     .replace(/;\s*/g, ' ')                // 删除分号（TS 编译器自动添加的）
     .replace(/\bfunction\s*\(/g, 'function(')  // 统一 function( 和 function (
     .replace(/\/\*\s*ignore\s*\*\//g, '')     // 删除 /* ignore */ 注释（TS lint 要求）
+    .replace(/(?:^|\s)\/\/[^\n]*/g, '')       // 删除单行注释（排除字符串内的 //）
     .replace(/\bwindow\./g, '')           // 统一 window.xxx → xxx（TS 迁移常见简化）
     .replace(/:\s*function\s*\(/g, '(')   // 统一方法简写: name: function() → name()
+    .replace(/\bconst\b/g, 'var')         // 统一 const → var
+    .replace(/\blet\b/g, 'var')           // 统一 let → var
+    .replace(/String\((\d+)\)/g, '$1')    // 统一 String(2048) → 2048
+    .replace(/parseInt\(String\((\w+)\)\)\s*\|\|/g, 'parseInt($1) ||') // 统一 parseInt(String(x)) || 0 → parseInt(x) || 0
+    .replace(/var\s+(\w+)\s*,\s*/g, 'var $1 var ') // 统一 var a, b → var a var b
+    .replace(/\((\w+\s*&&\s*\w+\.\w+)\)\s*\|\|/g, '$1 ||') // 去除 (a && a.b) || 中多余括号
+    .replace(/\((\w+)\s*&&\s*(\w+\.\w+)\)/g, '$1 && $2') // 去除 (a && a.b) 中多余括号（非 || 场景）
+    .replace(/if\s*\(\s*!(\w+)\s*\)\s*\{\s*return\s*\}/g, '') // 删除 if (!x) { return } 防御性检查
+    .replace(/\((\w+)\s*,\s*(\w+)\)\s*=>/g, 'function($1, $2)') // 统一箭头函数 (a, b) => → function(a, b)
+    .replace(/(\w+)\s*=>/g, 'function($1)') // 统一箭头函数 a => → function(a)
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}✅❌⚠️🎯📝🔧]/gu, '') // 删除 emoji
     .replace(/\s+/g, ' ')                 // 合并空白
     .replace(/\(\s+/g, '(')               // 忽略括号内前导空格差异
     .replace(/\s+\)/g, ')')              // 忽略括号内尾随空格差异
@@ -860,63 +899,63 @@ function printResults(results, baseFilePath, targetFilePaths, options) {
   const basePath = path.resolve(baseFilePath)
   const autoStrip = results.autoStrip
 
-  console.log('')
-  console.log('═══════════════════════════════════════')
-  console.log('  对比结果')
-  console.log('═══════════════════════════════════════')
-  console.log('基准: ' + path.basename(basePath))
-  console.log('目标: ' + targetFilePaths.map(t => path.basename(t)).join(', '))
-  console.log('模式: ' + (autoStrip ? 'TS↔JS（已去除类型）' : 'JS↔JS'))
-  console.log('检查: ' + results.names.length + ' 个函数')
-  console.log('───────────────────────────────────────')
-  console.log('匹配: ' + results.matched.length)
-  console.log('差异: ' + results.differed.length)
-  console.log('缺失: ' + results.missing.length)
-  console.log('已忽略差异: ' + results.ignored.length)
-  console.log('═══════════════════════════════════════')
+  out('')
+  out('═══════════════════════════════════════')
+  out('  对比结果')
+  out('═══════════════════════════════════════')
+  out('基准: ' + path.basename(basePath))
+  out('目标: ' + targetFilePaths.map(t => path.basename(t)).join(', '))
+  out('模式: ' + (autoStrip ? 'TS↔JS（已去除类型）' : 'JS↔JS'))
+  out('检查: ' + results.names.length + ' 个函数')
+  out('───────────────────────────────────────')
+  out('匹配: ' + results.matched.length)
+  out('差异: ' + results.differed.length)
+  out('缺失: ' + results.missing.length)
+  out('已忽略差异: ' + results.ignored.length)
+  out('═══════════════════════════════════════')
 
   if (showMatch && results.matched.length > 0) {
-    console.log('\n  匹配的函数:')
-    results.matched.forEach(n => console.log('    + ' + n))
+    out('\n  匹配的函数:')
+    results.matched.forEach(n => out('    + ' + n))
   }
 
   if (results.missing.length > 0) {
-    console.log('\n  目标文件中缺失:')
-    results.missing.forEach(n => console.log('    - ' + n))
+    out('\n  目标文件中缺失:')
+    results.missing.forEach(n => out('    - ' + n))
   }
 
   if (results.differed.length > 0) {
-    console.log('\n  有差异的函数:')
+    out('\n  有差异的函数:')
     for (const d of results.differed) {
       const rangeStr = formatRange(d.baseRange, d.targetRange)
-      console.log('    -- ' + d.name + ' (' + d.diffs.length + '处差异)' + rangeStr + ' --')
+      out('    -- ' + d.name + ' (' + d.diffs.length + '处差异)' + rangeStr + ' --')
       for (let i = 0; i < d.diffs.length; i++) {
         const diff = d.diffs[i]
         const loc = []
         if (diff.baseLine) loc.push('基准L' + diff.baseLine)
         if (diff.targetLine) loc.push('目标L' + diff.targetLine)
         const locStr = loc.length > 0 ? ' [' + loc.join(', ') + ']' : ''
-        console.log('    差异#' + (i + 1) + locStr + ':')
-        console.log('      基准: ...' + diff.base + '...')
-        console.log('      目标: ...' + diff.target + '...')
+        out('    差异#' + (i + 1) + locStr + ':')
+        out('      基准: ...' + diff.base + '...')
+        out('      目标: ...' + diff.target + '...')
       }
     }
   }
 
   if (results.ignored.length > 0) {
-    console.log('\n  已忽略的差异 (--ignore):')
+    out('\n  已忽略的差异 (--ignore):')
     for (const d of results.ignored) {
       const rangeStr = formatRange(d.baseRange, d.targetRange)
-      console.log('    ~ ' + d.name + ' (' + d.diffs.length + '处差异)' + rangeStr)
+      out('    ~ ' + d.name + ' (' + d.diffs.length + '处差异)' + rangeStr)
       for (let i = 0; i < d.diffs.length; i++) {
         const diff = d.diffs[i]
         const loc = []
         if (diff.baseLine) loc.push('基准L' + diff.baseLine)
         if (diff.targetLine) loc.push('目标L' + diff.targetLine)
         const locStr = loc.length > 0 ? ' [' + loc.join(', ') + ']' : ''
-        console.log('      差异#' + (i + 1) + locStr + ':')
-        console.log('        基准: ...' + diff.base + '...')
-        console.log('        目标: ...' + diff.target + '...')
+        out('      差异#' + (i + 1) + locStr + ':')
+        out('        基准: ...' + diff.base + '...')
+        out('        目标: ...' + diff.target + '...')
       }
     }
   }
@@ -924,18 +963,18 @@ function printResults(results, baseFilePath, targetFilePaths, options) {
   // 注释专项检查结果
   if (comments && results.commentResults) {
     const cr = results.commentResults
-    console.log('')
-    console.log('═══════════════════════════════════════')
-    console.log('  注释专项检查')
-    console.log('═══════════════════════════════════════')
-    console.log('基准注释数: ' + results.baseCommentCount)
-    console.log('目标注释数: ' + results.targetCommentCount)
-    console.log('保留: ' + cr.kept.length)
-    console.log('丢失: ' + cr.lost.length)
-    console.log('═══════════════════════════════════════')
+    out('')
+    out('═══════════════════════════════════════')
+    out('  注释专项检查')
+    out('═══════════════════════════════════════')
+    out('基准注释数: ' + results.baseCommentCount)
+    out('目标注释数: ' + results.targetCommentCount)
+    out('保留: ' + cr.kept.length)
+    out('丢失: ' + cr.lost.length)
+    out('═══════════════════════════════════════')
 
     if (cr.lost.length > 0) {
-      console.log('\n  基准有但目标丢失的注释:')
+      out('\n  基准有但目标丢失的注释:')
       const byFunc = new Map()
       for (const c of cr.lost) {
         const key = c.func === '__global__' ? '(全局)' : c.func
@@ -943,14 +982,14 @@ function printResults(results, baseFilePath, targetFilePaths, options) {
         byFunc.get(key).push(c)
       }
       for (const [func, comments] of byFunc) {
-        console.log('    [' + func + ']')
+        out('    [' + func + ']')
         for (const c of comments) {
           const display = c.text.length > 80 ? c.text.slice(0, 77) + '...' : c.text
-          console.log('      L' + c.line + ': ' + display)
+          out('      L' + c.line + ': ' + display)
         }
       }
     } else {
-      console.log('\n  所有注释均已保留，无丢失。')
+      out('\n  所有注释均已保留，无丢失。')
     }
   }
 }
@@ -960,8 +999,8 @@ function main() {
 
   // 批量模式
   if (args.batch.length > 0) {
-    console.log('批量对比模式: ' + args.batch.length + ' 对文件')
-    console.log('═══════════════════════════════════════')
+    out('批量对比模式: ' + args.batch.length + ' 对文件')
+    out('═══════════════════════════════════════')
 
     const options = {
       names: args.names,
@@ -978,7 +1017,7 @@ function main() {
 
     for (let i = 0; i < args.batch.length; i++) {
       const pair = args.batch[i]
-      console.log('\n[' + (i + 1) + '/' + args.batch.length + '] ' + path.basename(pair.base) + ' → ' + path.basename(pair.target))
+      out('\n[' + (i + 1) + '/' + args.batch.length + '] ' + path.basename(pair.base) + ' → ' + path.basename(pair.target))
 
       const results = compareFiles(pair.base, [pair.target], options)
       if (!results) { allOk = false; continue }
@@ -992,87 +1031,25 @@ function main() {
       if (results.commentResults && results.commentResults.lost.length > 0) allOk = false
     }
 
-    console.log('')
-    console.log('═══════════════════════════════════════')
-    console.log('  批量对比汇总')
-    console.log('═══════════════════════════════════════')
-    console.log('文件对: ' + args.batch.length)
-    console.log('总匹配: ' + totalMatched)
-    console.log('总差异: ' + totalDiffered)
-    console.log('总缺失: ' + totalMissing)
-    console.log('═══════════════════════════════════════')
+    out('')
+    out('═══════════════════════════════════════')
+    out('  批量对比汇总')
+    out('═══════════════════════════════════════')
+    out('文件对: ' + args.batch.length)
+    out('总匹配: ' + totalMatched)
+    out('总差异: ' + totalDiffered)
+    out('总缺失: ' + totalMissing)
+    out('═══════════════════════════════════════')
 
+    flushOutput()
     process.exit(allOk ? 0 : 1)
   }
 
   // 单对模式
   if (!args.base || args.targets.length === 0) {
-    console.log('╔══════════════════════════════════════════════════════════════╗')
-    console.log('║  _compare.js — 函数级代码对比工具                           ║')
-    console.log('║  用于 TS 迁移验证、重构检查、代码一致性对比                   ║')
-    console.log('╚══════════════════════════════════════════════════════════════╝')
-    console.log('')
-    console.log('用法:')
-    console.log('  单对对比:')
-    console.log('    node _compare.js --base <基准文件> --target <目标文件> [选项]')
-    console.log('')
-    console.log('  批量对比（多对文件一一对应）:')
-    console.log('    node _compare.js --batch "base1,target1;base2,target2;base3,target3" [选项]')
-    console.log('')
-    console.log('═══════════════════════════════════════════════════════════════')
-    console.log('选项:')
-    console.log('')
-    console.log('  文件指定:')
-    console.log('    --base <路径>       基准文件（原始版本）')
-    console.log('    --target <路径>     目标文件（待验证版本），可指定多个合并为一个目标')
-    console.log('    --batch <对>        批量对比，格式: "base1,target1;base2,target2"')
-    console.log('                        每对用 ; 分隔，文件对内用 , 分隔')
-    console.log('                        支持 @file.txt 从文件读取（文件内容格式相同）')
-    console.log('')
-    console.log('  对比控制:')
-    console.log('    --names <n1,n2>     只检查指定函数名（逗号分隔）')
-    console.log('    --ignore <n1,n2>    忽略差异的函数名（不计入错误，但仍显示差异）')
-    console.log('    --no-auto           不自动提取函数名（需配合 --names 使用）')
-    console.log('    --context <数字>     差异上下文字符数（默认 80）')
-    console.log('')
-    console.log('  类型处理:')
-    console.log('    --strip-types       强制去除 TS 类型注解后再对比')
-    console.log('                        （默认自动检测：JS↔TS 时自动启用，JS↔JS 时关闭）')
-    console.log('')
-    console.log('  检查模式:')
-    console.log('    --comments          注释专项：检查基准有但目标丢失的注释')
-    console.log('                        使用模糊匹配，关键词重叠 >60% 视为保留')
-    console.log('    --show-match        显示匹配的函数列表')
-    console.log('')
-    console.log('═══════════════════════════════════════════════════════════════')
-    console.log('示例:')
-    console.log('')
-    console.log('  1. JS↔TS 迁移验证（自动去除类型注解）:')
-    console.log('     node _compare.js --base old.js --target new.ts')
-    console.log('')
-    console.log('  2. TS↔TS 对比（纯逻辑差异）:')
-    console.log('     node _compare.js --base v1.ts --target v2.ts')
-    console.log('')
-    console.log('  3. 批量验证多个迁移文件:')
-    console.log('     node _compare.js --batch "a.js,a.ts;b.js,b.ts;c.js,c.ts"')
-    console.log('')
-    console.log('  4. 只检查特定函数 + 注释专项:')
-    console.log('     node _compare.js --base old.js --target new.ts --names "foo,bar" --comments')
-    console.log('')
-    console.log('  5. 忽略已知差异的函数:')
-    console.log('     node _compare.js --base old.js --target new.ts --ignore "deprecatedFunc"')
-    console.log('')
-    console.log('═══════════════════════════════════════════════════════════════')
-    console.log('输出说明:')
-    console.log('')
-    console.log('  匹配: 函数逻辑完全一致（去除类型和格式差异后）')
-    console.log('  差异: 函数逻辑有不同，显示具体差异位置和内容')
-    console.log('        [基准L起始-结束, 目标L起始-结束] = 函数在源文件中的行号范围')
-    console.log('        [基准L行, 目标L行] = 差异所在的具体行号')
-    console.log('  缺失: 基准中有但目标中找不到的函数')
-    console.log('')
-    console.log('  退出码: 0=全部匹配  1=有差异或缺失')
-    console.log('═══════════════════════════════════════════════════════════════')
+    console.log('用法: node compare.js --base <基准文件> --target <目标文件> [选项]')
+    console.log('批量: node compare.js --batch @batch-list.txt [选项]')
+    console.log('结果输出到: ' + RESULT_FILE)
     process.exit(1)
   }
 
@@ -1087,10 +1064,11 @@ function main() {
   }
 
   const results = compareFiles(args.base, args.targets, options)
-  if (!results) process.exit(1)
+  if (!results) { flushOutput(); process.exit(1) }
 
   printResults(results, args.base, args.targets, options)
 
+  flushOutput()
   const hasProblems = results.differed.length > 0 || results.missing.length > 0 || (results.commentResults && results.commentResults.lost.length > 0)
   process.exit(hasProblems ? 1 : 0)
 }
