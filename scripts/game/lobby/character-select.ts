@@ -92,7 +92,7 @@ interface SelectedCharacter {
   avatar?: string
 }
 
-const getUnlockedCharacters = (window as any).CharacterData.getUnlockedCharacters.bind((window as any).CharacterData)
+const getUnlockedCharacters = (window as unknown as Record<string, { getUnlockedCharacters(): SelectedCharacter[] }>).CharacterData.getUnlockedCharacters.bind((window as unknown as Record<string, unknown>).CharacterData)
 const CharacterSystem = window.CharacterSystem
 
 export const CharacterSelectMixin = {
@@ -120,7 +120,7 @@ export const CharacterSelectMixin = {
     const confirmBtn = document.getElementById("characterSelectConfirmBtn")
 
     if (backBtn) {
-      backBtn.addEventListener("click", () => (this as any).showLobbySubPage("soloSetup"))
+      backBtn.addEventListener("click", () => (this as { showLobbySubPage(page: string): void }).showLobbySubPage("soloSetup"))
     }
 
     if (confirmBtn) {
@@ -157,7 +157,7 @@ export const CharacterSelectMixin = {
       mapNameEl.textContent = mapProfile.name || "未知仓库"
     }
 
-    ; (this as any).hideAllLobbySubPages()
+    ; (this as { hideAllLobbySubPages(): void }).hideAllLobbySubPages()
     this.characterPageEl!.classList.remove("hidden")
     this.characterPageEl!.classList.add("lobby-subpage-entering")
     this.characterPageEl!.addEventListener(
@@ -214,7 +214,7 @@ export const CharacterSelectMixin = {
 
     listEl.innerHTML = characters
       .map(
-        (char: any) => `
+        (char: SelectedCharacter) => `
         <div class="character-card ${char.id === this.selectedCharacter?.id ? "selected" : ""}"
              data-char-id="${char.id}" tabindex="0" role="button" aria-pressed="${char.id === this.selectedCharacter?.id}">
           ${char.avatar ? `<img class="character-avatar-img" src="${char.avatar}" alt="${char.name}">` : '<div class="avatar-placeholder">👤</div>'}
@@ -567,7 +567,7 @@ export const CharacterSelectMixin = {
         this._carryItems = []
         return
       }
-      this._carryItems = parsed.filter((i: any) => i && typeof i.id === "string").slice(0, this._MAX_CARRY_ITEMS)
+      this._carryItems = parsed.filter((i: { id?: string }) => i && typeof i.id === "string").slice(0, this._MAX_CARRY_ITEMS)
     } catch (_e) {
       this._carryItems = []
     }
@@ -1230,7 +1230,7 @@ export const CharacterSelectMixin = {
   },
 
   selectCharacter(characterId: string) {
-    const char = (window as any).CharacterData.getCharacterById(characterId) as SelectedCharacter | null
+    const char = (window as unknown as Record<string, { getCharacterById(id: string): SelectedCharacter | null }>).CharacterData.getCharacterById(characterId) as SelectedCharacter | null
     if (!char) return
 
     this.selectedCharacter = char
@@ -1247,12 +1247,12 @@ export const CharacterSelectMixin = {
 
     this.renderSelectedCharacterPreview()
 
-    if (typeof (this as any).updatePlayerAvatar === "function" && (this as any).players) {
-      const humanPlayer = (this as any).players.find((p: any) => p.isHuman)
+    if (typeof (this as { updatePlayerAvatar?: Function }).updatePlayerAvatar === "function" && (this as { players?: unknown[] }).players) {
+      const humanPlayer = (this as { players: { isHuman: boolean; id: string }[] }).players.find((p: { isHuman: boolean }) => p.isHuman)
       if (humanPlayer) {
         const avatarEl = document.getElementById(`avatar-${humanPlayer.id}`)
         if (avatarEl) {
-          ; (this as any).updatePlayerAvatar(humanPlayer.id, avatarEl)
+          ; (this as { updatePlayerAvatar(id: string, el: HTMLElement): void }).updatePlayerAvatar(humanPlayer.id, avatarEl)
         }
       }
     }
@@ -1298,8 +1298,8 @@ export const CharacterSelectMixin = {
   },
 
   _doStartSoloGame() {
-    if (typeof (this as any).startSoloGame === "function") {
-      ; (this as any).startSoloGame()
+    if (typeof (this as { startSoloGame?: Function }).startSoloGame === "function") {
+      ; (this as { startSoloGame(): void }).startSoloGame()
     }
   },
 
@@ -1362,10 +1362,10 @@ export const CharacterSelectMixin = {
   },
 
   getSelectedCharacterForGame(): SelectedCharacter | null {
-    return this.selectedCharacter || ((window as any).CharacterData.getSelectedCharacter() as SelectedCharacter | null)
+    return this.selectedCharacter || ((window as unknown as Record<string, { getSelectedCharacter(): SelectedCharacter | null }>).CharacterData.getSelectedCharacter() as SelectedCharacter | null)
   }
 }
 
   // 兼容层：保持 window.MobaoLobby 全局变量可用
-  ; (window as any).MobaoLobby = (window as any).MobaoLobby || {}
-  ; (window as any).MobaoLobby.CharacterSelectMixin = CharacterSelectMixin
+  ; (window as unknown as Record<string, unknown>).MobaoLobby = (window as unknown as Record<string, unknown>).MobaoLobby || {}
+  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoLobby).CharacterSelectMixin = CharacterSelectMixin

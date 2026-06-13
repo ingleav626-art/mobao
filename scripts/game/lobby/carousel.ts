@@ -22,15 +22,15 @@
  *
  * @exports CarouselMixin - 轮播组件 Mixin，混入 Phaser Scene
  */
-export const LobbyCarouselMixin: Record<string, any> = {
+export const LobbyCarouselMixin: Record<string, unknown> = {
   renderCarousel(): void {
     const track = document.getElementById("carouselTrack")
-    if (!track || !(window as any).MobaoMapProfiles) {
+    if (!track || !(window as unknown as Record<string, unknown>).MobaoMapProfiles) {
       return
     }
 
-    const profiles = (window as any).MobaoMapProfiles.getAllProfiles()
-    const selectedId = (window as any).MobaoMapProfiles.getSelectedProfileId()
+    const profiles = (window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.getAllProfiles()
+    const selectedId = (window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.getSelectedProfileId()
 
     track.innerHTML = profiles
       .map((p) => {
@@ -48,7 +48,7 @@ export const LobbyCarouselMixin: Record<string, any> = {
     track.querySelectorAll(".lobby-map-card").forEach((card) => {
       card.addEventListener("click", () => {
         const id = card.getAttribute("data-map-id")
-          ; (window as any).MobaoMapProfiles.setSelectedProfileId(id)
+          ; (window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.setSelectedProfileId(id)
         track.querySelectorAll(".lobby-map-card").forEach((c) => c.classList.remove("selected"))
         card.classList.add("selected")
         this.renderMapDetail()
@@ -61,9 +61,9 @@ export const LobbyCarouselMixin: Record<string, any> = {
   },
 
   bindCarouselTouch(): void {
-    const wrap = document.querySelector(".carousel-track-wrap") as any
-    if (!wrap || wrap._touchBound) return
-    wrap._touchBound = true
+    const wrap = document.querySelector(".carousel-track-wrap") as HTMLElement | null
+    if (!wrap || (wrap as unknown as Record<string, unknown>)._touchBound) return
+      ; (wrap as unknown as Record<string, unknown>)._touchBound = true
 
     let startX = 0
     let startY = 0
@@ -120,12 +120,12 @@ export const LobbyCarouselMixin: Record<string, any> = {
 
   renderMapDetail(): void {
     const detail = document.getElementById("lobbyMapDetail")
-    if (!detail || !(window as any).MobaoMapProfiles) return
+    if (!detail || !(window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles) return
 
-    const profile = (window as any).MobaoMapProfiles.getProfile((window as any).MobaoMapProfiles.getSelectedProfileId())
+    const profile = (window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.getProfile((window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.getSelectedProfileId())
     if (!profile) return
 
-    const p = profile.params
+    const p = profile.params as Record<string, unknown> | undefined
     const qualityLabels = { poor: "粗品", normal: "良品", fine: "精品", rare: "珍品", legendary: "绝品" }
     const toLevel = (v, thresholds) => {
       for (let i = 0; i < thresholds.length; i++) {
@@ -133,7 +133,7 @@ export const LobbyCarouselMixin: Record<string, any> = {
       }
       return thresholds[thresholds.length - 1][1]
     }
-    const qw: Record<string, number> = p.qualityWeights || {}
+    const qw: Record<string, number> = (p?.qualityWeights as Record<string, number>) || {}
     const totalQ = Object.values(qw).reduce((s: number, v: number) => s + v, 0) || 1
     const highQ =
       ((qw.fine || 0) + (qw.rare || 0) + (qw.legendary || 0)) / totalQ
@@ -212,8 +212,8 @@ export const LobbyCarouselMixin: Record<string, any> = {
         const atBottom = detail.scrollHeight - detail.scrollTop <= detail.clientHeight + 4
         hint.style.display = atBottom ? "none" : ""
       }
-      detail.removeEventListener("scroll", (detail as any)._mapDetailScrollHandler)
-        ; (detail as any)._mapDetailScrollHandler = checkScroll
+      detail.removeEventListener("scroll", (detail as unknown as Record<string, unknown>)._mapDetailScrollHandler as EventListener)
+        ; (detail as unknown as Record<string, unknown>)._mapDetailScrollHandler = checkScroll
       detail.addEventListener("scroll", checkScroll)
       requestAnimationFrame(checkScroll)
     }
@@ -221,5 +221,5 @@ export const LobbyCarouselMixin: Record<string, any> = {
 }
 
   // 兼容层：保持 window.MobaoLobby 全局变量可用
-  ; (window as any).MobaoLobby = (window as any).MobaoLobby || {}
-  ; (window as any).MobaoLobby.CarouselMixin = LobbyCarouselMixin
+  ; (window as unknown as Record<string, unknown>).MobaoLobby = (window as unknown as Record<string, unknown>).MobaoLobby || {}
+  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoLobby).CarouselMixin = LobbyCarouselMixin
