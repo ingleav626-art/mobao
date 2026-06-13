@@ -186,6 +186,7 @@ export const UiOverlayMixin = {
   },
 
   openSettingsOverlay() {
+    // 保存初始设置值，用于离开保护（使用表单读取的值，确保一致性）
     ; (this as any).closeBidKeypad()
       ; (this as any).closeItemDrawer()
     this.hideInfoPopup()
@@ -242,6 +243,7 @@ export const UiOverlayMixin = {
   },
 
   closeSettingsOverlay(keepStatus: boolean = false, forceClose: boolean = false) {
+    // 检查是否有未保存的设置
     if (!forceClose && (this as any)._settingsInitialValues) {
       const currentValues = JSON.stringify({
         game: (this as any).readSettingsForm(),
@@ -255,10 +257,12 @@ export const UiOverlayMixin = {
         const originalCancelText = cancelBtn ? cancelBtn.textContent : ""
         if (okBtn) okBtn.textContent = "保存"
         if (cancelBtn) cancelBtn.textContent = "不保存"
+          // 临时修改确认按钮文本
 
           ; (this as any).showGameConfirm(
             "设置已修改，是否保存？",
             () => {
+              // 恢复按钮文本
               if (okBtn) okBtn.textContent = originalOkText
               if (cancelBtn) cancelBtn.textContent = originalCancelText
                 ; (this as any).saveSettingsFromOverlay()
@@ -266,6 +270,7 @@ export const UiOverlayMixin = {
               this.closeSettingsOverlay(keepStatus, true)
             },
             () => {
+              // 恢复按钮文本
               if (okBtn) okBtn.textContent = originalOkText
               if (cancelBtn) cancelBtn.textContent = originalCancelText
                 ; (this as any)._settingsInitialValues = null
@@ -276,6 +281,7 @@ export const UiOverlayMixin = {
       }
     }
 
+    // 清除初始值记录，避免关闭时再次弹窗
     ; (this as any)._settingsInitialValues = null
 
     if (window.MobaoAnimations) {
@@ -523,6 +529,7 @@ export const UiOverlayMixin = {
   },
 
   showLanPauseOverlay() {
+    // 只在游戏场景显示暂停弹窗
     if (!(this as any).isLanMode || (this as any).settled || !(this as any).dom.hud) return
     let overlay = document.getElementById("lanPauseOverlay")
     if (overlay) return

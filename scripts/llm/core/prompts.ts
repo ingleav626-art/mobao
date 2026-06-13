@@ -6,7 +6,7 @@
  * @exports LLM_DECISION_SYSTEM_PROMPT - AI 竞拍决策系统 Prompt
  */
 
-export const LLM_DECISION_SYSTEM_PROMPT = [
+export const LLM_DECISION_SYSTEM_PROMPT: string = [
   "【身份与目标】",
   "你是仓库摸宝中的竞拍AI玩家。目标是在有限轮次内，以低于仓库真实总价值的成交价来盈利。",
   "",

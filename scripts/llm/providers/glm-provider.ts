@@ -1,37 +1,22 @@
 /**
- * @file llm/providers/glm-provider.js
+ * @file llm/providers/glm-provider.ts
  * @module llm/providers/glm-provider
  * @description 智谱 GLM Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
- *
- * 默认配置：
- *   - endpoint: https://open.bigmodel.cn/api/paas/v4/chat/completions
- *   - model: glm-4-flash
- *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
- *   - 支持 thinking 模式、跨局记忆、反思
- *
- * 存储键：
- *   - 设置: mobao_glm_settings_v1
- *   - API Key: mobao_glm_api_key_v1
- *
- * @requires LlmManager - LLM 管理器（scripts/llm/core/llm-manager.js）
- *
- * @exports 通过 LlmManager.registerProvider("glm", provider) 注册，无独立导出
- * @exports GlmProvider - 智谱GLM Provider 对象
  */
 "use strict"
 
-if (!window.LlmManager) {
+if (!(window as any).LlmManager) {
   console.error("LlmManager not loaded. Please load llm-manager.js first.")
 }
 
-const { createOpenAICompatibleProvider, utils } = window.LlmManager
+const { createOpenAICompatibleProvider, utils } = (window as any).LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
 const GLM_STORAGE_KEY = "mobao_glm_settings_v1"
 const GLM_API_KEY_STORAGE_KEY = "mobao_glm_api_key_v1"
 
-function defaultGlmSettings() {
+function defaultGlmSettings(): any {
   return {
     provider: "glm",
     enabled: false,
@@ -48,7 +33,7 @@ function defaultGlmSettings() {
   }
 }
 
-function normalizeGlmSettings(source, fallback) {
+function normalizeGlmSettings(source: any, fallback?: any): any {
   const defaults = {
     ...defaultGlmSettings(),
     ...normalizeObject(fallback)
@@ -77,14 +62,14 @@ function normalizeGlmSettings(source, fallback) {
   }
 }
 
-function isGlmThinkingModel(model) {
+function isGlmThinkingModel(model: string): boolean {
   return /glm.*z1|glm.*think/i.test(model)
 }
 
-function buildRequestBody(settings, context) {
+function buildRequestBody(settings: any, context: any): any {
   const { isThinking, temperature } = context
   const isGlmThinkingModelName = isGlmThinkingModel(settings.model)
-  const body = {}
+  const body: any = {}
 
   if (isThinking && isGlmThinkingModelName) {
     body.enable_thinking = true
@@ -98,7 +83,7 @@ function buildRequestBody(settings, context) {
       if (customParams && typeof customParams === "object") {
         Object.assign(body, customParams)
       }
-    } catch (_e) { }
+    } catch (_e) { /* ignore */ }
   }
 
   return body
@@ -114,20 +99,19 @@ const glmProvider = createOpenAICompatibleProvider({
   normalizeSettings: normalizeGlmSettings,
   isThinkingModel: isGlmThinkingModel,
   buildRequestBody: buildRequestBody,
-  supportsFeature: function (feature) {
+  supportsFeature: function (feature: string): boolean {
     const supportedFeatures = ["streaming"]
     return supportedFeatures.indexOf(feature) !== -1
   }
 })
 
-const provider = {
+var provider = {
   ...glmProvider,
   id: "glm",
   name: "智谱GLM",
   description: "智谱AI GLM系列，支持 glm-4、glm-4-flash、glm-z1 等模型"
 }
-
-window.LlmManager.registerProvider(provider)
+  ; (window as any).LlmManager.registerProvider(provider)
 
 export const GlmProvider = {
   id: "glm",
@@ -137,24 +121,23 @@ export const GlmProvider = {
   defaultGlmSettings,
   normalizeGlmSettings,
   isGlmThinkingModel,
-  getSettings: function () {
+  getSettings: function (): any {
     return provider.loadSettings()
   },
-  applySettings: function (settings) {
+  applySettings: function (settings: any): any {
     return provider.saveSettings(settings)
   },
-  getLogs: function () {
+  getLogs: function (): any[] {
     return provider.getLogs()
   },
-  clearLogs: function () {
+  clearLogs: function (): void {
     provider.clearLogs()
   },
-  requestChat: function (options) {
+  requestChat: function (options: any): Promise<any> {
     return provider.requestChat(options)
   },
-  testConnection: function (overrideSettings) {
+  testConnection: function (overrideSettings?: any): Promise<any> {
     return provider.testConnection(overrideSettings)
   }
 }
-// 兼容层：保持 window.GlmProvider 全局变量可用
-window.GlmProvider = GlmProvider
+  ; (window as any).GlmProvider = GlmProvider

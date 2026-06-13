@@ -43,12 +43,32 @@ const LLM_MANAGER_STORAGE_KEY = "mobao_llm_manager_v1"
 const CUSTOM_PROVIDERS_STORAGE_KEY = "mobao_custom_providers_v1"
 const MAX_LOG_ENTRIES = 120
 
-const providers = new Map()
-let activeProviderId = null
+const providers: Map<string, any> = new Map()
+let activeProviderId: string | null = null
 
-function normalizeUsage(usage) {
+interface UsageInput {
+  prompt_cache_hit_tokens?: number
+  prompt_cache_miss_tokens?: number
+  completion_tokens?: number
+  total_tokens?: number
+  reasoning_tokens?: number
+  cached_tokens?: number
+  prompt_tokens?: number
+  prompt_tokens_details?: { cached_tokens?: number }
+}
+
+interface NormalizedUsage {
+  prompt_cache_hit_tokens: number
+  prompt_cache_miss_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  reasoning_tokens: number
+  cached_tokens: number
+}
+
+function normalizeUsage(usage: UsageInput | null | undefined): NormalizedUsage | null {
   if (!usage || typeof usage !== "object") return null
-  const result = {
+  const result: NormalizedUsage = {
     prompt_cache_hit_tokens: 0,
     prompt_cache_miss_tokens: 0,
     completion_tokens: 0,
@@ -78,7 +98,7 @@ function normalizeUsage(usage) {
   return result
 }
 
-function broadcastToTokenMonitor(result, options) {
+function broadcastToTokenMonitor(result: any, options: any): void {
   const callSource = options?._playerId ? `player:${options._playerId}` : "unknown"
   console.log(`[TokenMonitor] broadcast called from ${callSource}, ok:${result.ok}, elapsed:${result.elapsedMs}ms`)
   try {
@@ -102,7 +122,7 @@ function broadcastToTokenMonitor(result, options) {
         source: "llm-manager"
       }
     }
-    if (window.BroadcastChannel) {
+    if ((window as any).BroadcastChannel) {
       const channel = new BroadcastChannel("llm-token-monitor")
       channel.postMessage(payload)
       channel.close()
@@ -114,23 +134,23 @@ function broadcastToTokenMonitor(result, options) {
   }
 }
 
-function clamp(value, min, max) {
+function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-function toFiniteNumber(value, fallback) {
+function toFiniteNumber(value: any, fallback: number): number {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-function normalizeObject(value) {
+function normalizeObject(value: any): Record<string, any> {
   if (!value || typeof value !== "object") {
     return {}
   }
   return value
 }
 
-function parseJsonSafely(text) {
+function parseJsonSafely(text: any): any {
   if (typeof text !== "string" || text.length === 0) {
     return null
   }
@@ -141,7 +161,7 @@ function parseJsonSafely(text) {
   }
 }
 
-function compactText(value, maxLength) {
+function compactText(value: any, maxLength: number): string {
   const input = typeof value === "string" ? value.trim() : ""
   if (input.length <= maxLength) {
     return input
@@ -149,7 +169,7 @@ function compactText(value, maxLength) {
   return `${input.slice(0, maxLength)}...`
 }
 
-function maskApiKey(value) {
+function maskApiKey(value: any): string {
   const key = typeof value === "string" ? value.trim() : ""
   if (!key) {
     return "(empty)"
@@ -160,7 +180,7 @@ function maskApiKey(value) {
   return `${key.slice(0, 4)}...${key.slice(-4)}`
 }
 
-function isProxyEndpoint(endpoint) {
+function isProxyEndpoint(endpoint: any): boolean {
   const value = typeof endpoint === "string" ? endpoint.trim() : ""
   if (!value) {
     return false
@@ -176,7 +196,7 @@ function isProxyEndpoint(endpoint) {
   }
 }
 
-function extractErrorMessage(payload, fallbackStatus) {
+function extractErrorMessage(payload: any, fallbackStatus: number): string {
   if (payload && typeof payload === "object") {
     if (payload.error && typeof payload.error.message === "string") {
       return payload.error.message
@@ -188,7 +208,7 @@ function extractErrorMessage(payload, fallbackStatus) {
   return `请求失败（HTTP ${fallbackStatus}）`
 }
 
-function loadStoredApiKey(providerId) {
+function loadStoredApiKey(providerId: string): string {
   try {
     const value = window.localStorage.getItem(`mobao_${providerId}_api_key_v1`)
     return typeof value === "string" ? value.trim() : ""
@@ -197,7 +217,7 @@ function loadStoredApiKey(providerId) {
   }
 }
 
-function saveStoredApiKey(providerId, value) {
+function saveStoredApiKey(providerId: string, value: any): void {
   const normalized = typeof value === "string" ? value.trim() : ""
   try {
     if (normalized) {
@@ -208,7 +228,7 @@ function saveStoredApiKey(providerId, value) {
   } catch (_error) { }
 }
 
-function loadManagerSettings() {
+function loadManagerSettings(): any {
   try {
     const raw = window.localStorage.getItem(LLM_MANAGER_STORAGE_KEY)
     if (!raw) {
@@ -221,13 +241,13 @@ function loadManagerSettings() {
   }
 }
 
-function saveManagerSettings(settings) {
+function saveManagerSettings(settings: any): void {
   try {
     window.localStorage.setItem(LLM_MANAGER_STORAGE_KEY, JSON.stringify(settings))
   } catch (_error) { }
 }
 
-function loadCustomProviders() {
+function loadCustomProviders(): any[] {
   try {
     const raw = window.localStorage.getItem(CUSTOM_PROVIDERS_STORAGE_KEY)
     if (!raw) {
@@ -240,13 +260,13 @@ function loadCustomProviders() {
   }
 }
 
-function saveCustomProviders(list) {
+function saveCustomProviders(list: any[]): void {
   try {
     window.localStorage.setItem(CUSTOM_PROVIDERS_STORAGE_KEY, JSON.stringify(list))
   } catch (_error) { }
 }
 
-function registerProvider(provider) {
+function registerProvider(provider: any): void {
   if (!provider || typeof provider !== "object") {
     throw new Error("Provider must be an object")
   }
@@ -268,7 +288,7 @@ function registerProvider(provider) {
       },
     normalizeSettings:
       provider.normalizeSettings ||
-      function (s) {
+      function (s: any) {
         return s || {}
       },
     loadSettings:
@@ -286,7 +306,7 @@ function registerProvider(provider) {
       },
     applySettings:
       provider.applySettings ||
-      function (s) {
+      function (s: any) {
         return s
       },
     getLogs:
@@ -297,12 +317,12 @@ function registerProvider(provider) {
     clearLogs: provider.clearLogs || function () { },
     isThinkingModel:
       provider.isThinkingModel ||
-      function (model) {
+      function (model: string) {
         return false
       },
     supportsFeature:
       provider.supportsFeature ||
-      function (feature) {
+      function (feature: string) {
         return false
       }
   })
@@ -317,7 +337,7 @@ function registerProvider(provider) {
   }
 }
 
-function unregisterProvider(providerId) {
+function unregisterProvider(providerId: string): boolean {
   if (!providers.has(providerId)) {
     return false
   }
@@ -328,22 +348,22 @@ function unregisterProvider(providerId) {
   return true
 }
 
-function getProvider(providerId) {
+function getProvider(providerId?: string): any {
   if (providerId) {
     const p = providers.get(providerId) || null
     console.log("[LlmManager.getProvider] by id:", providerId, "result:", p ? p.id : null)
     return p
   }
-  const p = providers.get(activeProviderId) || null
+  const p = providers.get(activeProviderId!) || null
   console.log("[LlmManager.getProvider] activeProviderId:", activeProviderId, "result:", p ? p.id : null)
   return p
 }
 
-function getActiveProviderId() {
+function getActiveProviderId(): string | null {
   return activeProviderId
 }
 
-function setActiveProvider(providerId) {
+function setActiveProvider(providerId: string): boolean {
   console.log("[LlmManager.setActiveProvider] providerId:", providerId, "exists:", providers.has(providerId))
   if (!providers.has(providerId)) {
     return false
@@ -354,7 +374,7 @@ function setActiveProvider(providerId) {
   return true
 }
 
-function listProviders() {
+function listProviders(): Array<{ id: string; name: string; description: string }> {
   return Array.from(providers.values()).map(function (p) {
     return {
       id: p.id,
@@ -364,7 +384,7 @@ function listProviders() {
   })
 }
 
-async function defaultTestConnection(overrideSettings) {
+async function defaultTestConnection(overrideSettings?: any): Promise<any> {
   const provider = getProvider()
   if (!provider) {
     return {
@@ -391,7 +411,7 @@ async function defaultTestConnection(overrideSettings) {
   }
 }
 
-async function requestChat(options) {
+async function requestChat(options: any): Promise<any> {
   const provider = getProvider()
   if (!provider) {
     return {
@@ -404,7 +424,7 @@ async function requestChat(options) {
   return provider.requestChat(options)
 }
 
-async function testConnection(providerId, overrideSettings) {
+async function testConnection(providerId: string, overrideSettings?: any): Promise<any> {
   const provider = getProvider(providerId)
   if (!provider) {
     return {
@@ -416,16 +436,16 @@ async function testConnection(providerId, overrideSettings) {
   return provider.testConnection(overrideSettings)
 }
 
-function createBaseProvider(config) {
+function createBaseProvider(config: any): any {
   const id = config.id
   const name = config.name || id
   const description = config.description || ""
   const storageKey = config.storageKey || `mobao_${id}_settings_v1`
   const apiKeyStorageKey = config.apiKeyStorageKey || `mobao_${id}_api_key_v1`
 
-  const logs = []
+  const logs: any[] = []
 
-  function log(level, event, detail) {
+  function log(level: string, event: string, detail: any): void {
     logs.push({
       timestamp: new Date().toISOString(),
       level,
@@ -437,15 +457,15 @@ function createBaseProvider(config) {
     }
   }
 
-  function getLogs() {
+  function getLogs(): any[] {
     return logs.slice()
   }
 
-  function clearLogs() {
+  function clearLogs(): void {
     logs.length = 0
   }
 
-  function loadProviderApiKey() {
+  function loadProviderApiKey(): string {
     try {
       const value = window.localStorage.getItem(apiKeyStorageKey)
       return typeof value === "string" ? value.trim() : ""
@@ -454,7 +474,7 @@ function createBaseProvider(config) {
     }
   }
 
-  function saveProviderApiKey(value) {
+  function saveProviderApiKey(value: any): void {
     const normalized = typeof value === "string" ? value.trim() : ""
     try {
       if (normalized) {
@@ -465,7 +485,7 @@ function createBaseProvider(config) {
     } catch (_error) { }
   }
 
-  function loadSettings() {
+  function loadSettings(): any {
     const defaults = config.defaultSettings()
     try {
       const raw = window.localStorage.getItem(storageKey)
@@ -524,7 +544,7 @@ function createBaseProvider(config) {
     }
   }
 
-  function saveSettings(settings) {
+  function saveSettings(settings: any): any {
     console.log("[saveSettings] input settings:", settings)
     const normalized = config.normalizeSettings(settings, config.defaultSettings())
     console.log(
@@ -569,12 +589,12 @@ function createBaseProvider(config) {
     clearLogs,
     isThinkingModel:
       config.isThinkingModel ||
-      function (model) {
+      function (model: string) {
         return false
       },
     supportsFeature:
       config.supportsFeature ||
-      function (feature) {
+      function (feature: string) {
         return false
       },
     storageKey,
@@ -582,10 +602,10 @@ function createBaseProvider(config) {
   }
 }
 
-function createOpenAICompatibleProvider(config) {
+function createOpenAICompatibleProvider(config: any): any {
   const base = createBaseProvider(config)
 
-  async function requestChat(options) {
+  async function requestChat(options: any): Promise<any> {
     const callStartTime = Date.now()
     const callId = `${base.id}-${callStartTime}-${Math.random().toString(16).slice(2, 6)}`
     console.log(`[requestChat] ${callId} START, provider: ${base.id}, model: ${options.settings?.model || "unknown"}`)
@@ -596,8 +616,8 @@ function createOpenAICompatibleProvider(config) {
       `[requestChat] ${callId} settings merged, model: ${mergedSettings.model}, endpoint: ${mergedSettings.endpoint}, elapsed: ${Date.now() - callStartTime}ms`
     )
     const useProxyEndpoint = isProxyEndpoint(mergedSettings.endpoint)
-    const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.getServerUrl)
-    const useNativeProxy = isNativeEnv && window.NativeBridge.llmProxyAsync
+    const isNativeEnv = !!((window as any).NativeBridge && (window as any).NativeBridge.getServerUrl)
+    const useNativeProxy = isNativeEnv && (window as any).NativeBridge.llmProxyAsync
     const isLocalEndpoint = /^(https?:\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?\//i.test(
       mergedSettings.endpoint || ""
     )
@@ -623,7 +643,7 @@ function createOpenAICompatibleProvider(config) {
     const maxTokens = clamp(Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens)), 32, 102400)
 
     const isThinking = input.isThinking === true
-    const requestBody = {
+    const requestBody: any = {
       model: mergedSettings.model,
       messages,
       max_tokens: maxTokens,
@@ -649,7 +669,7 @@ function createOpenAICompatibleProvider(config) {
 
     const startedAt = Date.now()
     const requestId = `${base.id}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
-    const messageChars = messages.reduce(function (sum, msg) {
+    const messageChars = messages.reduce(function (sum: number, msg: any) {
       return sum + String(msg && msg.content ? msg.content : "").length
     }, 0)
 
@@ -678,9 +698,9 @@ function createOpenAICompatibleProvider(config) {
       }
 
       let fetchBody = Object.assign({}, requestBody)
-      let response, rawText
+      let response: any, rawText: string
 
-      if (isNativeEnv && window.NativeBridge.llmProxyAsync) {
+      if (isNativeEnv && (window as any).NativeBridge.llmProxyAsync) {
         if (mergedSettings.apiKey) {
           fetchBody.apiKey = mergedSettings.apiKey
         }
@@ -694,14 +714,14 @@ function createOpenAICompatibleProvider(config) {
           `[requestChat] ${callId} native proxy path, proxyTarget: ${fetchBody.proxyTarget || "(proxy endpoint)"}, model: ${fetchBody.model}, timeout: ${timeoutMs}ms`
         )
 
-        const llmProxyResolvers = window.__llmProxyResolvers || new Map()
-        window.__llmProxyResolvers = llmProxyResolvers
+        const llmProxyResolvers: Map<string, any> = (window as any).__llmProxyResolvers || new Map()
+          ; (window as any).__llmProxyResolvers = llmProxyResolvers
 
-        if (!window.__llmProxyCallback) {
-          window.__llmProxyCallback = function (requestId, b64Result) {
-            const entry = llmProxyResolvers.get(requestId)
+        if (!(window as any).__llmProxyCallback) {
+          ; (window as any).__llmProxyCallback = function (reqId: string, b64Result: string) {
+            const entry = llmProxyResolvers.get(reqId)
             if (entry) {
-              llmProxyResolvers.delete(requestId)
+              llmProxyResolvers.delete(reqId)
               try {
                 let decoded = atob(b64Result)
                 if (typeof TextDecoder !== "undefined") {
@@ -714,7 +734,7 @@ function createOpenAICompatibleProvider(config) {
                   const resultJson = unescape(
                     decoded
                       .split("")
-                      .map(function (c) {
+                      .map(function (c: string) {
                         return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)
                       })
                       .join("")
@@ -729,11 +749,11 @@ function createOpenAICompatibleProvider(config) {
         }
 
         const proxyResultJson = await Promise.race([
-          new Promise(function (resolve) {
+          new Promise<string>(function (resolve) {
             llmProxyResolvers.set(requestId, { resolve: resolve })
-            window.NativeBridge.llmProxyAsync(requestId, JSON.stringify(fetchBody))
+              ; (window as any).NativeBridge.llmProxyAsync(requestId, JSON.stringify(fetchBody))
           }),
-          new Promise(function (_, reject) {
+          new Promise<never>(function (_, reject) {
             setTimeout(function () {
               reject(new DOMException("The user aborted a request.", "AbortError"))
             }, timeoutMs)
@@ -762,7 +782,7 @@ function createOpenAICompatibleProvider(config) {
           console.log(`[requestChat] ${callId} ERROR body: ${rawText.slice(0, 500)}`)
         }
       } else {
-        const headers = { "Content-Type": "application/json" }
+        const headers: Record<string, string> = { "Content-Type": "application/json" }
         if (!useProxyEndpoint && mergedSettings.apiKey) {
           headers.Authorization = `Bearer ${mergedSettings.apiKey}`
         }
@@ -865,24 +885,24 @@ function createOpenAICompatibleProvider(config) {
       return successResult
     } catch (error) {
       const elapsedMs = Date.now() - startedAt
-      const timeoutError = error && error.name === "AbortError"
-      if (timeoutError && isNativeEnv && window.NativeBridge && window.NativeBridge.llmProxyCancel) {
-        window.NativeBridge.llmProxyCancel(requestId)
+      const timeoutError = error && (error as Error).name === "AbortError"
+      if (timeoutError && isNativeEnv && (window as any).NativeBridge && (window as any).NativeBridge.llmProxyCancel) {
+        ; (window as any).NativeBridge.llmProxyCancel(requestId)
       }
-      if (window.__llmProxyResolvers) {
-        window.__llmProxyResolvers.delete(requestId)
+      if ((window as any).__llmProxyResolvers) {
+        ; (window as any).__llmProxyResolvers.delete(requestId)
       }
       const message = timeoutError
         ? `请求超时（>${timeoutMs}ms）`
-        : `网络错误：${error && error.message ? error.message : "未知错误"}`
+        : `网络错误：${error && (error as Error).message ? (error as Error).message : "未知错误"}`
 
       base.log("error", "request.exception", {
         requestId,
         elapsedMs,
         timeout: timeoutError,
         message,
-        errorName: error && error.name ? error.name : "",
-        errorMessage: error && error.message ? error.message : ""
+        errorName: error && (error as Error).name ? (error as Error).name : "",
+        errorMessage: error && (error as Error).message ? (error as Error).message : ""
       })
 
       const errorResult = {
@@ -899,21 +919,21 @@ function createOpenAICompatibleProvider(config) {
           timeout: timeoutError,
           messageCount: messages.length,
           messageChars,
-          errorName: error && error.name ? error.name : "",
-          errorMessage: error && error.message ? error.message : ""
+          errorName: error && (error as Error).name ? (error as Error).name : "",
+          errorMessage: error && (error as Error).message ? (error as Error).message : ""
         }
       }
       broadcastToTokenMonitor(errorResult, input)
       return errorResult
     } finally {
       window.clearTimeout(timeoutId)
-      if (window.__llmProxyResolvers) {
-        window.__llmProxyResolvers.delete(requestId)
+      if ((window as any).__llmProxyResolvers) {
+        ; (window as any).__llmProxyResolvers.delete(requestId)
       }
     }
   }
 
-  async function testConnection(overrideSettings) {
+  async function testConnection(overrideSettings?: any): Promise<any> {
     const settings = config.normalizeSettings(overrideSettings, base.loadSettings())
     const result = await requestChat({
       settings,
@@ -953,7 +973,7 @@ export const LlmManager = {
   createOpenAICompatibleProvider,
   loadCustomProviders,
   saveCustomProviders,
-  createDynamicProvider: function (config) {
+  createDynamicProvider: function (config: any): any {
     console.log("[createDynamicProvider] config:", config)
     const providerId = config.id || `custom_${Date.now()}`
     console.log("[createDynamicProvider] providerId:", providerId)
@@ -980,7 +1000,7 @@ export const LlmManager = {
           maxTokens: 2048
         }
       },
-      normalizeSettings: function (source, fallback) {
+      normalizeSettings: function (source: any, fallback?: any) {
         const defaults = fallback || {
           provider: providerId,
           enabled: false,
@@ -1024,13 +1044,13 @@ export const LlmManager = {
           maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
         }
       },
-      isThinkingModel: function (model) {
+      isThinkingModel: function (model: string) {
         return false
       },
-      buildRequestBody: function (settings, context) {
+      buildRequestBody: function (settings: any, context: any) {
         return { temperature: context.temperature }
       },
-      supportsFeature: function (feature) {
+      supportsFeature: function (feature: string) {
         return false
       }
     })
@@ -1038,7 +1058,7 @@ export const LlmManager = {
     registerProvider(provider)
 
     const customList = loadCustomProviders()
-    const existingIndex = customList.findIndex(function (p) {
+    const existingIndex = customList.findIndex(function (p: any) {
       return p.id === providerId
     })
     const providerInfo = { id: providerId, name: config.name || providerId, description: config.description || "" }
@@ -1051,12 +1071,12 @@ export const LlmManager = {
 
     return provider
   },
-  deleteDynamicProvider: function (providerId) {
+  deleteDynamicProvider: function (providerId: string): boolean {
     if (providers.has(providerId)) {
       providers.delete(providerId)
     }
     const customList = loadCustomProviders()
-    const filtered = customList.filter(function (p) {
+    const filtered = customList.filter(function (p: any) {
       return p.id !== providerId
     })
     saveCustomProviders(filtered)
@@ -1070,9 +1090,9 @@ export const LlmManager = {
     } catch (_error) { }
     return true
   },
-  initializeCustomProviders: function () {
+  initializeCustomProviders: function (): void {
     const customList = loadCustomProviders()
-    customList.forEach(function (cfg) {
+    customList.forEach(function (cfg: any) {
       if (!providers.has(cfg.id)) {
         const provider = createOpenAICompatibleProvider({
           id: cfg.id,
@@ -1096,7 +1116,7 @@ export const LlmManager = {
               maxTokens: 2048
             }
           },
-          normalizeSettings: function (source, fallback) {
+          normalizeSettings: function (source: any, fallback?: any) {
             const defaults = fallback || {
               provider: cfg.id,
               enabled: false,
@@ -1138,13 +1158,13 @@ export const LlmManager = {
               maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
             }
           },
-          isThinkingModel: function (model) {
+          isThinkingModel: function (model: string) {
             return false
           },
-          buildRequestBody: function (settings, context) {
+          buildRequestBody: function (settings: any, context: any) {
             return { temperature: context.temperature }
           },
-          supportsFeature: function (feature) {
+          supportsFeature: function (feature: string) {
             return false
           }
         })
@@ -1178,5 +1198,4 @@ export const LlmManager = {
     saveStoredApiKey
   }
 }
-// 兼容层：保持 window.LlmManager 全局变量可用
-window.LlmManager = LlmManager
+  ; (window as any).LlmManager = LlmManager

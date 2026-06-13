@@ -11,7 +11,7 @@ test.txt
 .trae/
 .claude/
 skills-lock.json
-tools/
+tools
 
 android/.gradle/
 android/build/

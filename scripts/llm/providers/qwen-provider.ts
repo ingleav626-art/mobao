@@ -1,36 +1,22 @@
 /**
- * @file llm/providers/qwen-provider.js
+ * @file llm/providers/qwen-provider.ts
  * @module llm/providers/qwen-provider
  * @description 通义千问 Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
- *
- * 默认配置：
- *   - endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
- *   - model: qwen-turbo
- *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
- *   - 支持 thinking 模式、独立模型、跨局记忆、反思
- *
- * 存储键：
- *   - 设置: mobao_qwen_settings_v1
- *   - API Key: mobao_qwen_api_key_v1
- *
- * @requires LlmManager - LLM 管理器（scripts/llm/core/llm-manager.js）
- *
- * @exports QwenProvider - 通义千问 Provider 对象
  */
 "use strict"
 
-if (!window.LlmManager) {
+if (!(window as any).LlmManager) {
   console.error("LlmManager not loaded. Please load llm-manager.js first.")
 }
 
-const { createOpenAICompatibleProvider, utils } = window.LlmManager
+const { createOpenAICompatibleProvider, utils } = (window as any).LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
 const QWEN_STORAGE_KEY = "mobao_qwen_settings_v1"
 const QWEN_API_KEY_STORAGE_KEY = "mobao_qwen_api_key_v1"
 
-function defaultQwenSettings() {
+function defaultQwenSettings(): any {
   return {
     provider: "qwen",
     enabled: false,
@@ -49,7 +35,7 @@ function defaultQwenSettings() {
   }
 }
 
-function normalizeQwenSettings(source, fallback) {
+function normalizeQwenSettings(source: any, fallback?: any): any {
   const defaults = {
     ...defaultQwenSettings(),
     ...normalizeObject(fallback)
@@ -80,14 +66,14 @@ function normalizeQwenSettings(source, fallback) {
   }
 }
 
-function isQwenThinkingModel(model) {
+function isQwenThinkingModel(model: string): boolean {
   return /qwen.*think|qwen.*reasoning/i.test(model)
 }
 
-function buildRequestBody(settings, context) {
+function buildRequestBody(settings: any, context: any): any {
   const { isThinking, temperature } = context
   const isQwenThinkingModelName = isQwenThinkingModel(settings.model)
-  const body = {}
+  const body: any = {}
 
   if (isThinking && isQwenThinkingModelName) {
     body.enable_thinking = true
@@ -101,7 +87,7 @@ function buildRequestBody(settings, context) {
       if (customParams && typeof customParams === "object") {
         Object.assign(body, customParams)
       }
-    } catch (_e) { }
+    } catch (_e) { /* ignore */ }
   }
 
   return body
@@ -117,7 +103,7 @@ const qwenProvider = createOpenAICompatibleProvider({
   normalizeSettings: normalizeQwenSettings,
   isThinkingModel: isQwenThinkingModel,
   buildRequestBody: buildRequestBody,
-  supportsFeature: function (feature) {
+  supportsFeature: function (feature: string): boolean {
     const supportedFeatures = ["streaming", "thinking"]
     return supportedFeatures.indexOf(feature) !== -1
   }
@@ -138,25 +124,24 @@ export const QwenProvider = {
   defaultQwenSettings,
   normalizeQwenSettings,
   isQwenThinkingModel,
-  getSettings: function () {
+  getSettings: function (): any {
     return provider.loadSettings()
   },
-  applySettings: function (settings) {
+  applySettings: function (settings: any): any {
     return provider.saveSettings(settings)
   },
-  getLogs: function () {
+  getLogs: function (): any[] {
     return provider.getLogs()
   },
-  clearLogs: function () {
+  clearLogs: function (): void {
     provider.clearLogs()
   },
-  requestChat: function (options) {
+  requestChat: function (options: any): Promise<any> {
     return provider.requestChat(options)
   },
-  testConnection: function (overrideSettings) {
+  testConnection: function (overrideSettings?: any): Promise<any> {
     return provider.testConnection(overrideSettings)
   }
 }
 
-// 兼容层：保持 window.QwenProvider 全局变量可用
-window.QwenProvider = QwenProvider
+;(window as any).QwenProvider = QwenProvider

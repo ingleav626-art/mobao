@@ -1,37 +1,22 @@
 /**
- * @file llm/providers/openai-provider.js
+ * @file llm/providers/openai-provider.ts
  * @module llm/providers/openai-provider
  * @description OpenAI Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
- *
- * 默认配置：
- *   - endpoint: https://api.openai.com/v1/chat/completions
- *   - model: gpt-4o-mini
- *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
- *   - 支持 thinking 模式、独立模型、跨局记忆、反思
- *
- * 存储键：
- *   - 设置: mobao_openai_settings_v1
- *   - API Key: mobao_openai_api_key_v1
- *
- * @requires LlmManager - LLM 管理器（scripts/llm/core/llm-manager.js）
- *
- * @exports 通过 LlmManager.registerProvider("openai", provider) 注册，无独立导出
- * @exports OpenAIProvider - OpenAI Provider 对象
  */
 "use strict"
 
-if (!window.LlmManager) {
+if (!(window as any).LlmManager) {
   console.error("LlmManager not loaded. Please load llm-manager.js first.")
 }
 
-const { createOpenAICompatibleProvider, utils } = window.LlmManager
+const { createOpenAICompatibleProvider, utils } = (window as any).LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
 const OPENAI_STORAGE_KEY = "mobao_openai_settings_v1"
 const OPENAI_API_KEY_STORAGE_KEY = "mobao_openai_api_key_v1"
 
-function defaultOpenAISettings() {
+function defaultOpenAISettings(): any {
   return {
     provider: "openai",
     enabled: false,
@@ -50,7 +35,7 @@ function defaultOpenAISettings() {
   }
 }
 
-function normalizeOpenAISettings(source, fallback) {
+function normalizeOpenAISettings(source: any, fallback?: any): any {
   const defaults = {
     ...defaultOpenAISettings(),
     ...normalizeObject(fallback)
@@ -81,14 +66,14 @@ function normalizeOpenAISettings(source, fallback) {
   }
 }
 
-function isOpenAIThinkingModel(model) {
+function isOpenAIThinkingModel(model: string): boolean {
   return /o1-|o3-/i.test(model)
 }
 
-function buildRequestBody(settings, context) {
+function buildRequestBody(settings: any, context: any): any {
   const { isThinking, temperature } = context
   const isOpenAIThinkingModelName = isOpenAIThinkingModel(settings.model)
-  const body = {}
+  const body: any = {}
 
   if (isThinking && isOpenAIThinkingModelName) {
     body.reasoning_effort = "medium"
@@ -102,7 +87,7 @@ function buildRequestBody(settings, context) {
       if (customParams && typeof customParams === "object") {
         Object.assign(body, customParams)
       }
-    } catch (_e) { }
+    } catch (_e) { /* ignore */ }
   }
 
   return body
@@ -118,20 +103,19 @@ const openAIProvider = createOpenAICompatibleProvider({
   normalizeSettings: normalizeOpenAISettings,
   isThinkingModel: isOpenAIThinkingModel,
   buildRequestBody: buildRequestBody,
-  supportsFeature: function (feature) {
+  supportsFeature: function (feature: string): boolean {
     const supportedFeatures = ["streaming", "vision"]
     return supportedFeatures.indexOf(feature) !== -1
   }
 })
 
-const provider = {
+var provider = {
   ...openAIProvider,
   id: "openai",
   name: "OpenAI",
   description: "OpenAI GPT 系列模型，支持 GPT-4o、GPT-3.5 等"
 }
-
-window.LlmManager.registerProvider(provider)
+  ; (window as any).LlmManager.registerProvider(provider)
 
 export const OpenAIProvider = {
   id: "openai",
@@ -141,25 +125,24 @@ export const OpenAIProvider = {
   defaultOpenAISettings,
   normalizeOpenAISettings,
   isOpenAIThinkingModel,
-  getSettings: function () {
+  getSettings: function (): any {
     return provider.loadSettings()
   },
-  applySettings: function (settings) {
+  applySettings: function (settings: any): any {
     return provider.saveSettings(settings)
   },
-  getLogs: function () {
+  getLogs: function (): any[] {
     return provider.getLogs()
   },
-  clearLogs: function () {
+  clearLogs: function (): void {
     provider.clearLogs()
   },
-  requestChat: function (options) {
+  requestChat: function (options: any): Promise<any> {
     return provider.requestChat(options)
   },
-  testConnection: function (overrideSettings) {
+  testConnection: function (overrideSettings?: any): Promise<any> {
     return provider.testConnection(overrideSettings)
   }
 }
 
-// 兼容层：保持 window.OpenAIProvider 全局变量可用
-window.OpenAIProvider = OpenAIProvider
+  ; (window as any).OpenAIProvider = OpenAIProvider

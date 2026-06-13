@@ -1,37 +1,8 @@
 /**
- * @file llm/providers/deepseek-llm.js
+ * @file llm/providers/deepseek-llm.ts
  * @module llm/providers/deepseek-llm
  * @description DeepSeek LLM 客户端（旧版独立实现）。采用 IIFE 模式，挂载到 window.DeepSeekLLM。
  *              提供完整的 DeepSeek API 调用、设置管理、Token 监控和日志功能。
- *              注意：新架构中 Provider 逻辑已迁移至 llm-manager.js + deepseek-provider.js，
- *              此文件保留用于向后兼容和 DeepSeekClient 类。
- *
- * 核心组件：
- *   - DeepSeekClient: LLM 客户端类
- *     - chat(messages, options): 发送聊天请求（支持流式/非流式）
- *     - 支持代理请求（endpoint 以 /api/ 开头时走服务端代理）
- *     - 支持 thinking 模式（DeepSeek Reasoner）
- *     - 自动重试（最多3次，指数退避）
- *     - Token 用量标准化（normalizeUsage）
- *     - Token 监控广播（broadcastToTokenMonitor → CustomEvent）
- *
- * 设置管理：
- *   - defaultDeepSeekSettings(): 默认设置（provider/endpoint/model/apiKey/timeout/temperature等）
- *   - normalizeDeepSeekSettings(source, fallback): 规范化设置（clamp范围、endpoint校验）
- *   - loadDeepSeekSettings() / saveDeepSeekSettings(): localStorage 持久化
- *     存储键: mobao_deepseek_settings_v2, mobao_deepseek_api_key_v1
- *   - maskApiKey(key): API Key 脱敏（仅显示前4后4位）
- *
- * 日志系统：
- *   - MAX_LOG_ENTRIES=120，循环覆盖
- *   - getLog() / clearLog(): 日志查询和清理
- *
- * @requires localStorage - 设置持久化
- *
- * @exports window.DeepSeekLLM
- *   { LLM_STORAGE_KEY, defaultDeepSeekSettings, normalizeDeepSeekSettings,
- *     loadDeepSeekSettings, saveDeepSeekSettings, maskApiKey, DeepSeekClient }
- * @exports DeepSeekLLM - DeepSeek LLM 模块对象
  */
 "use strict"
 
@@ -39,12 +10,32 @@ const LLM_STORAGE_KEY = "mobao_deepseek_settings_v2"
 const LLM_API_KEY_STORAGE_KEY = "mobao_deepseek_api_key_v1"
 const MAX_LOG_ENTRIES = 120
 
-const llmProxyResolvers = window.__llmProxyResolvers || new Map()
-window.__llmProxyResolvers = llmProxyResolvers
+const llmProxyResolvers: Map<string, { resolve: (value: string) => void }> = (window as any).__llmProxyResolvers || new Map()
+;(window as any).__llmProxyResolvers = llmProxyResolvers
 
-function normalizeUsage(usage) {
+interface UsageInput {
+  prompt_cache_hit_tokens?: number
+  prompt_cache_miss_tokens?: number
+  completion_tokens?: number
+  total_tokens?: number
+  reasoning_tokens?: number
+  cached_tokens?: number
+  prompt_tokens?: number
+  prompt_tokens_details?: { cached_tokens?: number }
+}
+
+interface NormalizedUsage {
+  prompt_cache_hit_tokens: number
+  prompt_cache_miss_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  reasoning_tokens: number
+  cached_tokens: number
+}
+
+function normalizeUsage(usage: UsageInput | null | undefined): NormalizedUsage | null {
   if (!usage || typeof usage !== "object") return null
-  const result = {
+  const result: NormalizedUsage = {
     prompt_cache_hit_tokens: 0,
     prompt_cache_miss_tokens: 0,
     completion_tokens: 0,
@@ -61,7 +52,7 @@ function normalizeUsage(usage) {
     result.prompt_cache_miss_tokens = usage.prompt_cache_miss_tokens
   }
   if (typeof usage.prompt_tokens === "number") {
-    const cached = usage.prompt_tokens_details?.cached_tokens || usage.cached_tokens || 0
+    const cached = (usage.prompt_tokens_details && usage.prompt_tokens_details.cached_tokens) || usage.cached_tokens || 0
     result.prompt_cache_hit_tokens = cached
     result.prompt_cache_miss_tokens = usage.prompt_tokens - cached
   }
@@ -74,8 +65,8 @@ function normalizeUsage(usage) {
   return result
 }
 
-function broadcastToTokenMonitor(result, options) {
-  const callSource = options?._playerId ? `player:${options._playerId}` : "unknown"
+function broadcastToTokenMonitor(result: any, options: any): void {
+  const callSource = options && options._playerId ? `player:${options._playerId}` : "unknown"
   console.log(
     `[TokenMonitor-DeepSeek] broadcast called from ${callSource}, ok:${result.ok}, elapsed:${result.elapsedMs}ms`
   )
@@ -95,12 +86,12 @@ function broadcastToTokenMonitor(result, options) {
           ? normalizedUsage.prompt_cache_hit_tokens + normalizedUsage.prompt_cache_miss_tokens
           : 0,
         timestamp: Date.now(),
-        playerId: options?._playerId || null,
-        playerName: options?._playerName || null,
+        playerId: (options && options._playerId) || null,
+        playerName: (options && options._playerName) || null,
         source: "deepseek-llm"
       }
     }
-    if (window.BroadcastChannel) {
+    if ((window as any).BroadcastChannel) {
       const channel = new BroadcastChannel("llm-token-monitor")
       channel.postMessage(payload)
       channel.close()
@@ -112,8 +103,8 @@ function broadcastToTokenMonitor(result, options) {
   }
 }
 
-if (!window.__llmProxyCallback) {
-  window.__llmProxyCallback = function (requestId, b64Result) {
+if (!(window as any).__llmProxyCallback) {
+  ;(window as any).__llmProxyCallback = function (requestId: string, b64Result: string): void {
     const entry = llmProxyResolvers.get(requestId)
     if (entry) {
       llmProxyResolvers.delete(requestId)
@@ -129,7 +120,7 @@ if (!window.__llmProxyCallback) {
           var resultJson = unescape(
             decoded
               .split("")
-              .map(function (c) {
+              .map(function (c: string) {
                 return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)
               })
               .join("")
@@ -143,18 +134,18 @@ if (!window.__llmProxyCallback) {
   }
 }
 
-function llmProxyAsync(requestId, bodyJson) {
+function llmProxyAsync(requestId: string, bodyJson: string): Promise<string> {
   return new Promise(function (resolve) {
     llmProxyResolvers.set(requestId, { resolve: resolve })
-    window.NativeBridge.llmProxyAsync(requestId, bodyJson)
+    ;(window as any).NativeBridge.llmProxyAsync(requestId, bodyJson)
   })
 }
 
-function clamp(value, min, max) {
+function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-function defaultDeepSeekSettings() {
+function defaultDeepSeekSettings(): any {
   return {
     provider: "deepseek",
     enabled: false,
@@ -170,19 +161,19 @@ function defaultDeepSeekSettings() {
   }
 }
 
-function normalizeObject(value) {
+function normalizeObject(value: any): any {
   if (!value || typeof value !== "object") {
     return {}
   }
   return value
 }
 
-function toFiniteNumber(value, fallback) {
+function toFiniteNumber(value: any, fallback: number): number {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-function normalizeEndpoint(raw, fallback) {
+function normalizeEndpoint(raw: string, fallback: string): string {
   const input = typeof raw === "string" ? raw.trim() : ""
   if (!input) {
     return fallback
@@ -207,7 +198,7 @@ function normalizeEndpoint(raw, fallback) {
   }
 }
 
-function loadStoredApiKey() {
+function loadStoredApiKey(): string {
   try {
     const value = window.localStorage.getItem(LLM_API_KEY_STORAGE_KEY)
     return typeof value === "string" ? value.trim() : ""
@@ -216,7 +207,7 @@ function loadStoredApiKey() {
   }
 }
 
-function saveStoredApiKey(value) {
+function saveStoredApiKey(value: string): void {
   const normalized = typeof value === "string" ? value.trim() : ""
   try {
     if (normalized) {
@@ -229,7 +220,7 @@ function saveStoredApiKey(value) {
   }
 }
 
-function isProxyEndpoint(endpoint) {
+function isProxyEndpoint(endpoint: string): boolean {
   const value = typeof endpoint === "string" ? endpoint.trim() : ""
   if (!value) {
     return false
@@ -247,11 +238,11 @@ function isProxyEndpoint(endpoint) {
   }
 }
 
-function makeRequestId() {
+function makeRequestId(): string {
   return `ds-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
 }
 
-function normalizeDeepSeekSettings(source, fallback) {
+function normalizeDeepSeekSettings(source: any, fallback?: any): any {
   const defaults = {
     ...defaultDeepSeekSettings(),
     ...normalizeObject(fallback)
@@ -280,7 +271,7 @@ function normalizeDeepSeekSettings(source, fallback) {
   }
 }
 
-function loadDeepSeekSettings() {
+function loadDeepSeekSettings(): any {
   const defaults = defaultDeepSeekSettings()
   const raw = window.localStorage.getItem(LLM_STORAGE_KEY)
   const storedApiKey = loadStoredApiKey()
@@ -316,7 +307,7 @@ function loadDeepSeekSettings() {
   }
 }
 
-function saveDeepSeekSettings(settings) {
+function saveDeepSeekSettings(settings: any): any {
   const normalized = normalizeDeepSeekSettings(settings, defaultDeepSeekSettings())
   saveStoredApiKey(normalized.apiKey)
   const safeForLocalStorage = {
@@ -330,7 +321,7 @@ function saveDeepSeekSettings(settings) {
   }
 }
 
-function maskApiKey(value) {
+function maskApiKey(value: string): string {
   const key = typeof value === "string" ? value.trim() : ""
   if (!key) {
     return "(empty)"
@@ -341,7 +332,7 @@ function maskApiKey(value) {
   return `${key.slice(0, 4)}...${key.slice(-4)}`
 }
 
-function parseJsonSafely(text) {
+function parseJsonSafely(text: string): any {
   if (typeof text !== "string" || text.length === 0) {
     return null
   }
@@ -352,7 +343,7 @@ function parseJsonSafely(text) {
   }
 }
 
-function compactText(value, maxLength) {
+function compactText(value: string, maxLength: number): string {
   const input = typeof value === "string" ? value.trim() : ""
   if (input.length <= maxLength) {
     return input
@@ -360,7 +351,7 @@ function compactText(value, maxLength) {
   return `${input.slice(0, maxLength)}...`
 }
 
-function extractErrorMessage(payload, fallbackStatus) {
+function extractErrorMessage(payload: any, fallbackStatus: number): string {
   if (payload && typeof payload === "object") {
     if (payload.error && typeof payload.error.message === "string") {
       return payload.error.message
@@ -373,12 +364,15 @@ function extractErrorMessage(payload, fallbackStatus) {
 }
 
 class DeepSeekClient {
-  constructor(initialSettings) {
+  settings: any
+  logs: any[]
+
+  constructor(initialSettings?: any) {
     this.settings = normalizeDeepSeekSettings(initialSettings, defaultDeepSeekSettings())
     this.logs = []
   }
 
-  applySettings(nextSettings) {
+  applySettings(nextSettings: any): any {
     this.settings = normalizeDeepSeekSettings(nextSettings, this.settings)
     this.log("info", "settings.updated", {
       enabled: this.settings.enabled,
@@ -389,19 +383,19 @@ class DeepSeekClient {
     return this.getSettings()
   }
 
-  getSettings() {
+  getSettings(): any {
     return { ...this.settings }
   }
 
-  getLogs() {
+  getLogs(): any[] {
     return this.logs.slice()
   }
 
-  clearLogs() {
+  clearLogs(): void {
     this.logs = []
   }
 
-  log(level, event, detail) {
+  log(level: string, event: string, detail?: any): void {
     this.logs.push({
       timestamp: new Date().toISOString(),
       level,
@@ -413,12 +407,12 @@ class DeepSeekClient {
     }
   }
 
-  async requestChat(options) {
+  async requestChat(options: any): Promise<any> {
     const input = normalizeObject(options)
     const mergedSettings = normalizeDeepSeekSettings(input.settings, this.settings)
     const useProxyEndpoint = isProxyEndpoint(mergedSettings.endpoint)
-    var isNativeEnv = !!(window.NativeBridge && window.NativeBridge.getServerUrl)
-    var useNativeProxy = isNativeEnv && window.NativeBridge.llmProxyAsync
+    var isNativeEnv = !!((window as any).NativeBridge && (window as any).NativeBridge.getServerUrl)
+    var useNativeProxy = isNativeEnv && (window as any).NativeBridge.llmProxyAsync
     if (!mergedSettings.apiKey && !(useProxyEndpoint && !useNativeProxy)) {
       this.log("warn", "request.blocked", { reason: "missing_api_key" })
       return {
@@ -429,7 +423,7 @@ class DeepSeekClient {
       }
     }
 
-    const messages =
+    const messages: any[] =
       Array.isArray(input.messages) && input.messages.length > 0
         ? input.messages
         : [{ role: "user", content: "请回复：连接成功" }]
@@ -439,7 +433,7 @@ class DeepSeekClient {
 
     const isV4OrReasoner = /deepseek-(v4|reasoner)/i.test(mergedSettings.model)
     const userEnabledThinking = input.isThinking === true
-    const requestBody = {
+    const requestBody: any = {
       model: mergedSettings.model,
       messages,
       max_tokens: maxTokens,
@@ -471,7 +465,7 @@ class DeepSeekClient {
 
     const startedAt = Date.now()
     const requestId = makeRequestId()
-    const messageChars = messages.reduce((sum, msg) => sum + String(msg && msg.content ? msg.content : "").length, 0)
+    const messageChars = messages.reduce((sum: number, msg: any) => sum + String(msg && msg.content ? msg.content : "").length, 0)
     this.log("info", "request.start", {
       requestId,
       endpoint: mergedSettings.endpoint,
@@ -490,16 +484,17 @@ class DeepSeekClient {
     }, timeoutMs)
 
     try {
-      var fetchEndpoint = mergedSettings.endpoint
+      var fetchEndpoint: string = mergedSettings.endpoint
 
       if (fetchEndpoint && !fetchEndpoint.includes("/chat/completions")) {
         fetchEndpoint = fetchEndpoint.replace(/\/+$/, "") + "/chat/completions"
       }
 
-      var fetchBody = Object.assign({}, requestBody)
-      var response, rawText
+      var fetchBody: any = Object.assign({}, requestBody)
+      var response: { ok: boolean; status: number }
+      var rawText: string
 
-      if (isNativeEnv && window.NativeBridge.llmProxyAsync) {
+      if (isNativeEnv && (window as any).NativeBridge.llmProxyAsync) {
         if (mergedSettings.apiKey) {
           fetchBody.apiKey = mergedSettings.apiKey
         }
@@ -507,12 +502,12 @@ class DeepSeekClient {
           try {
             var u = new URL(fetchEndpoint)
             fetchBody.proxyTarget = u.origin + u.pathname
-          } catch (_) { }
+          } catch (_) { /* ignore */ }
         }
 
         var proxyResultJson = await Promise.race([
           llmProxyAsync(requestId, JSON.stringify(fetchBody)),
-          new Promise(function (_, reject) {
+          new Promise<string>((_, reject) => {
             setTimeout(function () {
               reject(new DOMException("The user aborted a request.", "AbortError"))
             }, timeoutMs)
@@ -535,7 +530,7 @@ class DeepSeekClient {
         rawText = (proxyJson && proxyJson.body) || "{}"
         response = { ok: proxyStatus >= 200 && proxyStatus < 300, status: proxyStatus }
       } else {
-        const headers = {
+        const headers: Record<string, string> = {
           "Content-Type": "application/json"
         }
         if (!useProxyEndpoint && mergedSettings.apiKey) {
@@ -621,15 +616,15 @@ class DeepSeekClient {
       return successResult
     } catch (error) {
       const elapsedMs = Date.now() - startedAt
-      const timeoutError = error && error.name === "AbortError"
-      if (timeoutError && isNativeEnv && window.NativeBridge && window.NativeBridge.llmProxyCancel) {
-        window.NativeBridge.llmProxyCancel(requestId)
+      const timeoutError = error && (error as Error).name === "AbortError"
+      if (timeoutError && isNativeEnv && (window as any).NativeBridge && (window as any).NativeBridge.llmProxyCancel) {
+        ;(window as any).NativeBridge.llmProxyCancel(requestId)
       }
       llmProxyResolvers.delete(requestId)
       const endpointLooksLegacy = /api\.deepseek\.com\/chat\/completions/i.test(mergedSettings.endpoint)
       const message = timeoutError
         ? `请求超时（>${timeoutMs}ms）`
-        : `网络错误：${error && error.message ? error.message : "未知错误"}`
+        : `网络错误：${error && (error as Error).message ? (error as Error).message : "未知错误"}`
       const hint = timeoutError
         ? "可能是并发请求偏多、网络抖动或上游处理较慢。"
         : "可能是网络不可达、浏览器拦截、DNS/TLS异常，或 endpoint 不可用。"
@@ -639,8 +634,8 @@ class DeepSeekClient {
         elapsedMs,
         timeout: timeoutError,
         message,
-        errorName: error && error.name ? error.name : "",
-        errorMessage: error && error.message ? error.message : "",
+        errorName: error && (error as Error).name ? (error as Error).name : "",
+        errorMessage: error && (error as Error).message ? (error as Error).message : "",
         endpoint: mergedSettings.endpoint,
         model: mergedSettings.model,
         timeoutMs,
@@ -662,8 +657,8 @@ class DeepSeekClient {
           timeout: timeoutError,
           messageCount: messages.length,
           messageChars,
-          errorName: error && error.name ? error.name : "",
-          errorMessage: error && error.message ? error.message : "",
+          errorName: error && (error as Error).name ? (error as Error).name : "",
+          errorMessage: error && (error as Error).message ? (error as Error).message : "",
           hint,
           endpointLooksLegacy
         }
@@ -676,7 +671,7 @@ class DeepSeekClient {
     }
   }
 
-  async testConnection(overrideSettings) {
+  async testConnection(overrideSettings?: any): Promise<any> {
     const settings = normalizeDeepSeekSettings(overrideSettings, this.settings)
     const result = await this.requestChat({
       settings,
@@ -715,5 +710,4 @@ export const DeepSeekLLM = {
   DeepSeekClient
 }
 
-// 兼容层：保持 window.DeepSeekLLM 全局变量可用
-window.DeepSeekLLM = DeepSeekLLM
+;(window as any).DeepSeekLLM = DeepSeekLLM

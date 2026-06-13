@@ -1,37 +1,22 @@
 /**
- * @file llm/providers/kimi-provider.js
+ * @file llm/providers/kimi-provider.ts
  * @module llm/providers/kimi-provider
  * @description Moonshot Kimi Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
- *
- * 默认配置：
- *   - endpoint: https://api.moonshot.cn/v1/chat/completions
- *   - model: moonshot-v1-8k
- *   - timeoutMs: 40000, temperature: 0.2, maxTokens: 2048
- *   - 支持 thinking 模式、跨局记忆、反思
- *
- * 存储键：
- *   - 设置: mobao_kimi_settings_v1
- *   - API Key: mobao_kimi_api_key_v1
- *
- * @requires LlmManager - LLM 管理器（scripts/llm/core/llm-manager.js）
- *
- * @exports 通过 LlmManager.registerProvider("kimi", provider) 注册，无独立导出
- * @exports KimiProvider - Kimi Provider 对象
  */
 "use strict"
 
-if (!window.LlmManager) {
+if (!(window as any).LlmManager) {
   console.error("LlmManager not loaded. Please load llm-manager.js first.")
 }
 
-const { createOpenAICompatibleProvider, utils } = window.LlmManager
+const { createOpenAICompatibleProvider, utils } = (window as any).LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
 const KIMI_STORAGE_KEY = "mobao_kimi_settings_v1"
 const KIMI_API_KEY_STORAGE_KEY = "mobao_kimi_api_key_v1"
 
-function defaultKimiSettings() {
+function defaultKimiSettings(): any {
   return {
     provider: "kimi",
     enabled: false,
@@ -48,7 +33,7 @@ function defaultKimiSettings() {
   }
 }
 
-function normalizeKimiSettings(source, fallback) {
+function normalizeKimiSettings(source: any, fallback?: any): any {
   const defaults = {
     ...defaultKimiSettings(),
     ...normalizeObject(fallback)
@@ -85,26 +70,25 @@ const kimiProvider = createOpenAICompatibleProvider({
   apiKeyStorageKey: KIMI_API_KEY_STORAGE_KEY,
   defaultSettings: defaultKimiSettings,
   normalizeSettings: normalizeKimiSettings,
-  isThinkingModel: function (model) {
+  isThinkingModel: function (model: string): boolean {
     return false
   },
-  buildRequestBody: function (settings, context) {
+  buildRequestBody: function (settings: any, context: any): any {
     return { temperature: context.temperature }
   },
-  supportsFeature: function (feature) {
+  supportsFeature: function (feature: string): boolean {
     const supportedFeatures = ["streaming"]
     return supportedFeatures.indexOf(feature) !== -1
   }
 })
 
-const provider = {
+var provider = {
   ...kimiProvider,
   id: "kimi",
   name: "Kimi",
   description: "Moonshot Kimi，支持 moonshot-v1-8k、moonshot-v1-32k 等模型"
 }
-
-window.LlmManager.registerProvider(provider)
+  ; (window as any).LlmManager.registerProvider(provider)
 
 export const KimiProvider = {
   id: "kimi",
@@ -113,24 +97,23 @@ export const KimiProvider = {
   KIMI_API_KEY_STORAGE_KEY,
   defaultKimiSettings,
   normalizeKimiSettings,
-  getSettings: function () {
+  getSettings: function (): any {
     return provider.loadSettings()
   },
-  applySettings: function (settings) {
+  applySettings: function (settings: any): any {
     return provider.saveSettings(settings)
   },
-  getLogs: function () {
+  getLogs: function (): any[] {
     return provider.getLogs()
   },
-  clearLogs: function () {
+  clearLogs: function (): void {
     provider.clearLogs()
   },
-  requestChat: function (options) {
+  requestChat: function (options: any): Promise<any> {
     return provider.requestChat(options)
   },
-  testConnection: function (overrideSettings) {
+  testConnection: function (overrideSettings?: any): Promise<any> {
     return provider.testConnection(overrideSettings)
   }
 }
-// 兼容层：保持 window.KimiProvider 全局变量可用
-window.KimiProvider = KimiProvider
+  ; (window as any).KimiProvider = KimiProvider

@@ -41,7 +41,17 @@
  */
 "use strict"
 
-const BUILTIN_PROVIDERS = {
+interface ProviderConfig {
+  name: string
+  description: string
+  defaultEndpoint: string
+  defaultModel: string
+  placeholder: string
+  endpointPlaceholder: string
+  builtin: boolean
+}
+
+const BUILTIN_PROVIDERS: Record<string, ProviderConfig> = {
   deepseek: {
     name: "DeepSeek",
     description: "DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型",
@@ -89,7 +99,36 @@ const BUILTIN_PROVIDERS = {
   }
 }
 
-function getElements() {
+interface UiElements {
+  providerSelect: HTMLElement | null
+  providerDesc: HTMLElement | null
+  apiKeyInput: HTMLElement | null
+  apiKeyLabel: HTMLElement | null
+  endpointInput: HTMLElement | null
+  endpointLabel: HTMLElement | null
+  modelInput: HTMLElement | null
+  maxTokensInput: HTMLElement | null
+  timeoutMsInput: HTMLElement | null
+  thinkingParamsInput: HTMLElement | null
+  thinkingParamsDiv: HTMLElement | null
+  enabledCheckbox: HTMLElement | null
+  multiGameMemoryCheckbox: HTMLElement | null
+  reflectionCheckbox: HTMLElement | null
+  thinkingCheckbox: HTMLElement | null
+  independentModelCheckbox: HTMLElement | null
+  testBtn: HTMLElement | null
+  statusText: HTMLElement | null
+  addProviderBtn: HTMLElement | null
+  deleteProviderBtn: HTMLElement | null
+  customProviderModal: HTMLElement | null
+  customProviderName: HTMLElement | null
+  customProviderEndpoint: HTMLElement | null
+  customProviderModel: HTMLElement | null
+  customProviderConfirm: HTMLElement | null
+  customProviderCancel: HTMLElement | null
+}
+
+function getElements(): UiElements {
   return {
     providerSelect: document.getElementById("setting-llmProvider"),
     providerDesc: document.getElementById("llmProviderDesc"),
@@ -120,18 +159,18 @@ function getElements() {
   }
 }
 
-function getCurrentProviderId() {
+function getCurrentProviderId(): string {
   const els = getElements()
-  return els.providerSelect ? els.providerSelect.value : "deepseek"
+  return (els.providerSelect as HTMLSelectElement | null) ? (els.providerSelect as HTMLSelectElement).value : "deepseek"
 }
 
-function getProviderConfig(providerId) {
+function getProviderConfig(providerId: string): ProviderConfig {
   if (BUILTIN_PROVIDERS[providerId]) {
     return BUILTIN_PROVIDERS[providerId]
   }
-  if (window.LlmManager) {
-    const customList = window.LlmManager.loadCustomProviders()
-    const found = customList.find(function (p) {
+  if ((window as any).LlmManager) {
+    const customList = (window as any).LlmManager.loadCustomProviders()
+    const found = customList.find(function (p: any) {
       return p.id === providerId
     })
     if (found) {
@@ -157,7 +196,7 @@ function getProviderConfig(providerId) {
   }
 }
 
-function updateUiForProvider(providerId) {
+function updateUiForProvider(providerId: string): void {
   const config = getProviderConfig(providerId)
   const els = getElements()
 
@@ -166,15 +205,15 @@ function updateUiForProvider(providerId) {
   }
 
   if (els.apiKeyInput) {
-    els.apiKeyInput.placeholder = config.placeholder
+    (els.apiKeyInput as HTMLInputElement).placeholder = config.placeholder
   }
 
   if (els.endpointInput) {
-    els.endpointInput.placeholder = config.endpointPlaceholder
+    (els.endpointInput as HTMLInputElement).placeholder = config.endpointPlaceholder
   }
 
-  if (els.modelInput && !els.modelInput.value) {
-    els.modelInput.placeholder = config.defaultModel || "model-name"
+  if (els.modelInput && !(els.modelInput as HTMLInputElement).value) {
+    (els.modelInput as HTMLInputElement).placeholder = config.defaultModel || "model-name"
   }
 
   if (els.deleteProviderBtn) {
@@ -186,11 +225,11 @@ function updateUiForProvider(providerId) {
   }
 }
 
-function refreshProviderSelect(selectValue) {
+function refreshProviderSelect(selectValue?: string): void {
   const els = getElements()
   if (!els.providerSelect) return
 
-  els.providerSelect.innerHTML = ""
+  (els.providerSelect as HTMLSelectElement).innerHTML = ""
 
   const optgroup1 = document.createElement("optgroup")
   optgroup1.label = "预定义模型"
@@ -205,58 +244,58 @@ function refreshProviderSelect(selectValue) {
 
   els.providerSelect.appendChild(optgroup1)
 
-  if (window.LlmManager) {
-    const customList = window.LlmManager.loadCustomProviders()
+  if ((window as any).LlmManager) {
+    const customList = (window as any).LlmManager.loadCustomProviders()
     if (customList.length > 0) {
       const optgroup2 = document.createElement("optgroup")
       optgroup2.label = "自定义模型"
 
-      customList.forEach(function (p) {
+      customList.forEach(function (p: any) {
         const option = document.createElement("option")
         option.value = p.id
         option.textContent = p.name
         optgroup2.appendChild(option)
       })
 
-      els.providerSelect.appendChild(optgroup2)
+      els.providerSelect!.appendChild(optgroup2)
     }
   }
 
   if (selectValue && els.providerSelect.querySelector('option[value="' + selectValue + '"]')) {
-    els.providerSelect.value = selectValue
+    (els.providerSelect as HTMLSelectElement).value = selectValue
   }
 }
 
-function loadProviderSettings(providerId) {
+function loadProviderSettings(providerId: string): void {
   console.log("[loadProviderSettings] providerId:", providerId)
-  const provider = window.LlmManager ? window.LlmManager.getProvider(providerId) : null
+  const provider = (window as any).LlmManager ? (window as any).LlmManager.getProvider(providerId) : null
   const els = getElements()
   console.log("[loadProviderSettings] provider:", provider ? provider.id : null)
 
   if (provider) {
     const settings = provider.loadSettings()
     console.log("[loadProviderSettings] settings:", settings)
-    if (els.apiKeyInput) els.apiKeyInput.value = settings.apiKey || ""
-    if (els.endpointInput) els.endpointInput.value = settings.endpoint || ""
-    if (els.modelInput) els.modelInput.value = settings.model || ""
-    if (els.maxTokensInput) els.maxTokensInput.value = settings.maxTokens || 2048
-    if (els.timeoutMsInput) els.timeoutMsInput.value = settings.timeoutMs || 40000
-    if (els.thinkingParamsInput) els.thinkingParamsInput.value = settings.thinkingParams || ""
-    if (els.enabledCheckbox) els.enabledCheckbox.checked = settings.enabled || false
-    if (els.multiGameMemoryCheckbox) els.multiGameMemoryCheckbox.checked = settings.multiGameMemoryEnabled || false
-    if (els.reflectionCheckbox) els.reflectionCheckbox.checked = settings.reflectionEnabled || false
-    if (els.thinkingCheckbox) els.thinkingCheckbox.checked = settings.thinkingEnabled || false
-    if (els.independentModelCheckbox) els.independentModelCheckbox.checked = settings.independentModelEnabled || false
+    if (els.apiKeyInput) (els.apiKeyInput as HTMLInputElement).value = settings.apiKey || ""
+    if (els.endpointInput) (els.endpointInput as HTMLInputElement).value = settings.endpoint || ""
+    if (els.modelInput) (els.modelInput as HTMLInputElement).value = settings.model || ""
+    if (els.maxTokensInput) (els.maxTokensInput as HTMLInputElement).value = settings.maxTokens || 2048
+    if (els.timeoutMsInput) (els.timeoutMsInput as HTMLInputElement).value = settings.timeoutMs || 40000
+    if (els.thinkingParamsInput) (els.thinkingParamsInput as HTMLInputElement).value = settings.thinkingParams || ""
+    if (els.enabledCheckbox) (els.enabledCheckbox as HTMLInputElement).checked = settings.enabled || false
+    if (els.multiGameMemoryCheckbox) (els.multiGameMemoryCheckbox as HTMLInputElement).checked = settings.multiGameMemoryEnabled || false
+    if (els.reflectionCheckbox) (els.reflectionCheckbox as HTMLInputElement).checked = settings.reflectionEnabled || false
+    if (els.thinkingCheckbox) (els.thinkingCheckbox as HTMLInputElement).checked = settings.thinkingEnabled || false
+    if (els.independentModelCheckbox) (els.independentModelCheckbox as HTMLInputElement).checked = settings.independentModelEnabled || false
   } else {
     console.log("[loadProviderSettings] provider not found, using defaults")
     const config = getProviderConfig(providerId)
-    if (els.apiKeyInput) els.apiKeyInput.value = ""
-    if (els.endpointInput) els.endpointInput.value = config.defaultEndpoint || ""
-    if (els.modelInput) els.modelInput.value = config.defaultModel || ""
-    if (els.maxTokensInput) els.maxTokensInput.value = 2048
-    if (els.timeoutMsInput) els.timeoutMsInput.value = 40000
-    if (els.thinkingParamsInput) els.thinkingParamsInput.value = ""
-    if (els.independentModelCheckbox) els.independentModelCheckbox.checked = false
+    if (els.apiKeyInput) (els.apiKeyInput as HTMLInputElement).value = ""
+    if (els.endpointInput) (els.endpointInput as HTMLInputElement).value = config.defaultEndpoint || ""
+    if (els.modelInput) (els.modelInput as HTMLInputElement).value = config.defaultModel || ""
+    if (els.maxTokensInput) (els.maxTokensInput as HTMLInputElement).value = String(2048)
+    if (els.timeoutMsInput) (els.timeoutMsInput as HTMLInputElement).value = String(40000)
+    if (els.thinkingParamsInput) (els.thinkingParamsInput as HTMLInputElement).value = ""
+    if (els.independentModelCheckbox) (els.independentModelCheckbox as HTMLInputElement).checked = false
   }
 
   updateThinkingParamsVisibility(els)
@@ -264,10 +303,10 @@ function loadProviderSettings(providerId) {
   updateUiForProvider(providerId)
 }
 
-function updateIndependentModelVisibility(els) {
+function updateIndependentModelVisibility(els: UiElements): void {
   const independentModelConfig = document.getElementById("independentModelConfig")
   if (independentModelConfig && els.independentModelCheckbox) {
-    if (els.independentModelCheckbox.checked) {
+    if ((els.independentModelCheckbox as HTMLInputElement).checked) {
       independentModelConfig.classList.remove("hidden")
     } else {
       independentModelConfig.classList.add("hidden")
@@ -275,9 +314,9 @@ function updateIndependentModelVisibility(els) {
   }
 }
 
-function updateThinkingParamsVisibility(els) {
+function updateThinkingParamsVisibility(els: UiElements): void {
   if (els.thinkingParamsDiv && els.thinkingCheckbox) {
-    if (els.thinkingCheckbox.checked) {
+    if ((els.thinkingCheckbox as HTMLInputElement).checked) {
       els.thinkingParamsDiv.classList.remove("hidden")
     } else {
       els.thinkingParamsDiv.classList.add("hidden")
@@ -285,27 +324,27 @@ function updateThinkingParamsVisibility(els) {
   }
 }
 
-function saveProviderSettings(providerId) {
+function saveProviderSettings(providerId: string): any {
   console.log("[saveProviderSettings] providerId:", providerId)
   const els = getElements()
   console.log(
     "[saveProviderSettings] thinkingCheckbox element:",
     els.thinkingCheckbox,
     "checked:",
-    els.thinkingCheckbox ? els.thinkingCheckbox.checked : "N/A"
+    els.thinkingCheckbox ? (els.thinkingCheckbox as HTMLInputElement).checked : "N/A"
   )
   const settings = {
-    enabled: els.enabledCheckbox ? els.enabledCheckbox.checked : false,
-    multiGameMemoryEnabled: els.multiGameMemoryCheckbox ? els.multiGameMemoryCheckbox.checked : false,
-    reflectionEnabled: els.reflectionCheckbox ? els.reflectionCheckbox.checked : false,
-    thinkingEnabled: els.thinkingCheckbox ? els.thinkingCheckbox.checked : false,
-    independentModelEnabled: els.independentModelCheckbox ? els.independentModelCheckbox.checked : false,
-    apiKey: els.apiKeyInput ? els.apiKeyInput.value.trim() : "",
-    endpoint: els.endpointInput ? els.endpointInput.value.trim() : "",
-    model: els.modelInput ? els.modelInput.value.trim() : "",
-    maxTokens: els.maxTokensInput ? parseInt(els.maxTokensInput.value, 10) || 2048 : 2048,
-    timeoutMs: els.timeoutMsInput ? parseInt(els.timeoutMsInput.value, 10) || 40000 : 40000,
-    thinkingParams: els.thinkingParamsInput ? els.thinkingParamsInput.value.trim() : ""
+    enabled: els.enabledCheckbox ? (els.enabledCheckbox as HTMLInputElement).checked : false,
+    multiGameMemoryEnabled: els.multiGameMemoryCheckbox ? (els.multiGameMemoryCheckbox as HTMLInputElement).checked : false,
+    reflectionEnabled: els.reflectionCheckbox ? (els.reflectionCheckbox as HTMLInputElement).checked : false,
+    thinkingEnabled: els.thinkingCheckbox ? (els.thinkingCheckbox as HTMLInputElement).checked : false,
+    independentModelEnabled: els.independentModelCheckbox ? (els.independentModelCheckbox as HTMLInputElement).checked : false,
+    apiKey: els.apiKeyInput ? (els.apiKeyInput as HTMLInputElement).value.trim() : "",
+    endpoint: els.endpointInput ? (els.endpointInput as HTMLInputElement).value.trim() : "",
+    model: els.modelInput ? (els.modelInput as HTMLInputElement).value.trim() : "",
+    maxTokens: els.maxTokensInput ? parseInt((els.maxTokensInput as HTMLInputElement).value, 10) || 2048 : 2048,
+    timeoutMs: els.timeoutMsInput ? parseInt((els.timeoutMsInput as HTMLInputElement).value, 10) || 40000 : 40000,
+    thinkingParams: els.thinkingParamsInput ? (els.thinkingParamsInput as HTMLInputElement).value.trim() : ""
   }
   console.log(
     "[saveProviderSettings] settings.thinkingEnabled:",
@@ -314,18 +353,18 @@ function saveProviderSettings(providerId) {
     settings.timeoutMs
   )
 
-  if (window.LlmManager) {
-    const provider = window.LlmManager.getProvider(providerId)
+  if ((window as any).LlmManager) {
+    const provider = (window as any).LlmManager.getProvider(providerId)
     if (provider) {
       provider.saveSettings(settings)
     }
-    window.LlmManager.setActiveProvider(providerId)
+    (window as any).LlmManager.setActiveProvider(providerId)
   }
 
   return settings
 }
 
-async function testConnection(providerId) {
+async function testConnection(providerId: string): Promise<any> {
   const els = getElements()
   const settings = saveProviderSettings(providerId)
   const config = getProviderConfig(providerId)
@@ -339,16 +378,16 @@ async function testConnection(providerId) {
     return { ok: false, error: "请先填写 API Key" }
   }
 
-  if (els.testBtn) els.testBtn.disabled = true
+  if (els.testBtn) (els.testBtn as HTMLButtonElement).disabled = true
   if (els.statusText) {
     els.statusText.textContent = `正在连接 ${providerName}...`
     els.statusText.className = "settings-inline-hint is-pending"
   }
 
   try {
-    let result
-    if (window.LlmManager) {
-      result = await window.LlmManager.testConnection(providerId, settings)
+    let result: any
+    if ((window as any).LlmManager) {
+      result = await (window as any).LlmManager.testConnection(providerId, settings)
     } else {
       result = { ok: false, error: "LlmManager 未加载" }
     }
@@ -367,8 +406,8 @@ async function testConnection(providerId) {
     }
     return result
   } catch (error) {
-    const message = error && error.message ? error.message : "未知异常"
-    const stack = error && error.stack ? error.stack : ""
+    const message = error && (error as Error).message ? (error as Error).message : "未知异常"
+    const stack = error && (error as Error).stack ? (error as Error).stack : ""
     console.error("[LlmUiBridge] testConnection exception", error)
     if (els.statusText) {
       els.statusText.textContent = `${providerName} 连接异常：${message}`
@@ -376,35 +415,33 @@ async function testConnection(providerId) {
     }
     return { ok: false, error: message, stack }
   } finally {
-    if (els.testBtn) els.testBtn.disabled = false
+    if (els.testBtn) (els.testBtn as HTMLButtonElement).disabled = false
   }
 }
 
-function showAddProviderModal() {
+function showAddProviderModal(): void {
   const els = getElements()
   if (els.customProviderModal) {
     els.customProviderModal.classList.remove("hidden")
     els.customProviderModal.removeAttribute("hidden")
-    if (els.customProviderName) els.customProviderName.value = ""
-    if (els.customProviderEndpoint) els.customProviderEndpoint.value = ""
-    if (els.customProviderModel) els.customProviderModel.value = ""
+    if (els.customProviderName) (els.customProviderName as HTMLInputElement).value = ""
+    if (els.customProviderEndpoint) (els.customProviderEndpoint as HTMLInputElement).value = ""
+    if (els.customProviderModel) (els.customProviderModel as HTMLInputElement).value = ""
   }
 }
 
-function hasCustomProviderInput() {
+function hasCustomProviderInput(): boolean {
   const els = getElements()
-  const name = els.customProviderName ? els.customProviderName.value.trim() : ""
-  const endpoint = els.customProviderEndpoint ? els.customProviderEndpoint.value.trim() : ""
-  const model = els.customProviderModel ? els.customProviderModel.value.trim() : ""
+  const name = els.customProviderName ? (els.customProviderName as HTMLInputElement).value.trim() : ""
+  const endpoint = els.customProviderEndpoint ? (els.customProviderEndpoint as HTMLInputElement).value.trim() : ""
+  const model = els.customProviderModel ? (els.customProviderModel as HTMLInputElement).value.trim() : ""
   return name !== "" || endpoint !== "" || model !== ""
 }
 
-function hideAddProviderModal(forceClose = false) {
+function hideAddProviderModal(forceClose = false): void {
   const els = getElements()
 
-  // 检查是否有未保存的内容
   if (!forceClose && hasCustomProviderInput()) {
-    // 临时修改确认按钮文本
     const okBtn = document.getElementById("gameConfirmOkBtn")
     const cancelBtn = document.getElementById("gameConfirmCancelBtn")
     const originalOkText = okBtn ? okBtn.textContent : ""
@@ -412,24 +449,21 @@ function hideAddProviderModal(forceClose = false) {
     if (okBtn) okBtn.textContent = "确认离开"
     if (cancelBtn) cancelBtn.textContent = "继续填写"
 
-    if (window.WarehouseScene && window.WarehouseScene.instance) {
-      window.WarehouseScene.instance.showGameConfirm(
+    if ((window as any).WarehouseScene && (window as any).WarehouseScene.instance) {
+      (window as any).WarehouseScene.instance.showGameConfirm(
         "离开后不会保存已填写的内容，是否离开？",
         () => {
-          // 恢复按钮文本
           if (okBtn) okBtn.textContent = originalOkText
           if (cancelBtn) cancelBtn.textContent = originalCancelText
 
           hideAddProviderModal(true)
         },
         () => {
-          // 恢复按钮文本
           if (okBtn) okBtn.textContent = originalOkText
           if (cancelBtn) cancelBtn.textContent = originalCancelText
         }
       )
     } else {
-      // 如果没有游戏场景，使用原生confirm
       if (confirm("离开后不会保存已填写的内容，是否离开？")) {
         hideAddProviderModal(true)
       }
@@ -443,20 +477,20 @@ function hideAddProviderModal(forceClose = false) {
   }
 }
 
-function addCustomProvider() {
+function addCustomProvider(): void {
   const els = getElements()
-  const name = els.customProviderName ? els.customProviderName.value.trim() : ""
-  const endpoint = els.customProviderEndpoint ? els.customProviderEndpoint.value.trim() : ""
-  const model = els.customProviderModel ? els.customProviderModel.value.trim() : ""
+  const name = els.customProviderName ? (els.customProviderName as HTMLInputElement).value.trim() : ""
+  const endpoint = els.customProviderEndpoint ? (els.customProviderEndpoint as HTMLInputElement).value.trim() : ""
+  const model = els.customProviderModel ? (els.customProviderModel as HTMLInputElement).value.trim() : ""
 
   if (!name) {
     alert("请输入模型名称")
     return
   }
 
-  if (window.LlmManager) {
+  if ((window as any).LlmManager) {
     try {
-      const provider = window.LlmManager.createDynamicProvider({
+      const provider = (window as any).LlmManager.createDynamicProvider({
         name: name,
         endpoint: endpoint,
         model: model,
@@ -470,16 +504,14 @@ function addCustomProvider() {
 
       const newProviderId = provider.id
 
-      // 先清除 UI 中的旧数据，避免保存错误的数据
-      if (els.apiKeyInput) els.apiKeyInput.value = ""
-      if (els.endpointInput) els.endpointInput.value = endpoint
-      if (els.modelInput) els.modelInput.value = model
-      if (els.maxTokensInput) els.maxTokensInput.value = 2048
-      if (els.enabledCheckbox) els.enabledCheckbox.checked = false
-      if (els.multiGameMemoryCheckbox) els.multiGameMemoryCheckbox.checked = false
-      if (els.reflectionCheckbox) els.reflectionCheckbox.checked = false
+      if (els.apiKeyInput) (els.apiKeyInput as HTMLInputElement).value = ""
+      if (els.endpointInput) (els.endpointInput as HTMLInputElement).value = endpoint
+      if (els.modelInput) (els.modelInput as HTMLInputElement).value = model
+      if (els.maxTokensInput) (els.maxTokensInput as HTMLInputElement).value = String(2048)
+      if (els.enabledCheckbox) (els.enabledCheckbox as HTMLInputElement).checked = false
+      if (els.multiGameMemoryCheckbox) (els.multiGameMemoryCheckbox as HTMLInputElement).checked = false
+      if (els.reflectionCheckbox) (els.reflectionCheckbox as HTMLInputElement).checked = false
 
-      // 保存用户输入的初始设置
       provider.saveSettings({
         enabled: false,
         multiGameMemoryEnabled: false,
@@ -492,40 +524,37 @@ function addCustomProvider() {
 
       refreshProviderSelect(newProviderId)
       loadProviderSettings(newProviderId)
-      window.LlmManager.setActiveProvider(newProviderId)
+        ; (window as any).LlmManager.setActiveProvider(newProviderId)
 
       hideAddProviderModal(true)
 
-      // 更新AI模型配置面板的下拉框（如果面板是打开的）
       const aiModelConfigOverlay = document.getElementById("aiModelConfigOverlay")
       if (aiModelConfigOverlay && !aiModelConfigOverlay.classList.contains("hidden")) {
         if (
-          window.WarehouseScene &&
-          window.WarehouseScene.instance &&
-          typeof window.WarehouseScene.instance.renderAiModelConfigContent === "function"
+          (window as any).WarehouseScene &&
+          (window as any).WarehouseScene.instance &&
+          typeof (window as any).WarehouseScene.instance.renderAiModelConfigContent === "function"
         ) {
-          window.WarehouseScene.instance.renderAiModelConfigContent()
+          (window as any).WarehouseScene.instance.renderAiModelConfigContent()
         }
       }
     } catch (error) {
       console.error("[LlmUiBridge] addCustomProvider error", error)
-      alert(`添加模型失败：${error.message || error}`)
+      alert(`添加模型失败：${(error as Error).message || error}`)
     }
   }
 }
 
-function deleteCurrentProvider() {
+function deleteCurrentProvider(): void {
   const providerId = getCurrentProviderId()
   const config = getProviderConfig(providerId)
   const els = getElements()
 
   if (config.builtin) {
-    if (window.WarehouseScene && window.WarehouseScene.instance) {
-      window.WarehouseScene.instance.showGameConfirm("预定义模型不能删除", null, null)
-      // 只显示确认按钮，隐藏取消按钮
+    if ((window as any).WarehouseScene && (window as any).WarehouseScene.instance) {
+      (window as any).WarehouseScene.instance.showGameConfirm("预定义模型不能删除", null, null)
       const cancelBtn = document.getElementById("gameConfirmCancelBtn")
       if (cancelBtn) cancelBtn.classList.add("hidden")
-      // 修改确认按钮文本
       const okBtn = document.getElementById("gameConfirmOkBtn")
       if (okBtn) okBtn.textContent = "知道了"
     } else {
@@ -534,36 +563,33 @@ function deleteCurrentProvider() {
     return
   }
 
-  // 使用游戏内弹窗
-  if (window.WarehouseScene && window.WarehouseScene.instance) {
-    window.WarehouseScene.instance.showGameConfirm(
+  if ((window as any).WarehouseScene && (window as any).WarehouseScene.instance) {
+    (window as any).WarehouseScene.instance.showGameConfirm(
       `确定要删除模型 "${config.name}" 吗？此操作不可恢复。`,
       () => {
-        if (window.LlmManager) {
-          window.LlmManager.deleteDynamicProvider(providerId)
+        if ((window as any).LlmManager) {
+          (window as any).LlmManager.deleteDynamicProvider(providerId)
           refreshProviderSelect("deepseek")
 
           if (els.providerSelect) {
-            els.providerSelect.value = "deepseek"
+            (els.providerSelect as HTMLSelectElement).value = "deepseek"
             loadProviderSettings("deepseek")
           }
 
-          // 更新AI模型配置面板的下拉框（如果面板是打开的）
           const aiModelConfigOverlay = document.getElementById("aiModelConfigOverlay")
           if (aiModelConfigOverlay && !aiModelConfigOverlay.classList.contains("hidden")) {
             if (
-              window.WarehouseScene &&
-              window.WarehouseScene.instance &&
-              typeof window.WarehouseScene.instance.renderAiModelConfigContent === "function"
+              (window as any).WarehouseScene &&
+              (window as any).WarehouseScene.instance &&
+              typeof (window as any).WarehouseScene.instance.renderAiModelConfigContent === "function"
             ) {
-              window.WarehouseScene.instance.renderAiModelConfigContent()
+              (window as any).WarehouseScene.instance.renderAiModelConfigContent()
             }
           }
         }
       },
       null
     )
-    // 恢复按钮文本和显示状态
     const okBtn = document.getElementById("gameConfirmOkBtn")
     const cancelBtn = document.getElementById("gameConfirmCancelBtn")
     if (okBtn) okBtn.textContent = "确认"
@@ -572,30 +598,29 @@ function deleteCurrentProvider() {
       cancelBtn.classList.remove("hidden")
     }
   } else {
-    // 如果没有游戏场景，使用原生confirm
     if (!confirm(`确定要删除模型 "${config.name}" 吗？此操作不可恢复。`)) {
       return
     }
-    if (window.LlmManager) {
-      window.LlmManager.deleteDynamicProvider(providerId)
+    if ((window as any).LlmManager) {
+      (window as any).LlmManager.deleteDynamicProvider(providerId)
       refreshProviderSelect("deepseek")
 
       if (els.providerSelect) {
-        els.providerSelect.value = "deepseek"
+        (els.providerSelect as HTMLSelectElement).value = "deepseek"
         loadProviderSettings("deepseek")
       }
     }
   }
 }
 
-function initialize() {
-  var els = getElements()
+function initialize(): void {
+  const els = getElements()
 
-  if (window.LlmManager && window.LlmManager.initializeCustomProviders) {
-    window.LlmManager.initializeCustomProviders()
+  if ((window as any).LlmManager && (window as any).LlmManager.initializeCustomProviders) {
+    (window as any).LlmManager.initializeCustomProviders()
   }
 
-  const managerSettings = window.LlmManager ? window.LlmManager.getActiveProviderId() : null
+  const managerSettings = (window as any).LlmManager ? (window as any).LlmManager.getActiveProviderId() : null
   const initialProviderId = managerSettings || "deepseek"
 
   let isInitializing = true
@@ -606,15 +631,15 @@ function initialize() {
         return
       }
 
-      const previousProviderId = window.LlmManager ? window.LlmManager.getActiveProviderId() : null
-      if (previousProviderId && previousProviderId !== this.value) {
+      const previousProviderId = (window as any).LlmManager ? (window as any).LlmManager.getActiveProviderId() : null
+      if (previousProviderId && previousProviderId !== (this as HTMLSelectElement).value) {
         saveProviderSettings(previousProviderId)
       }
 
-      const providerId = this.value
+      const providerId = (this as HTMLSelectElement).value
       loadProviderSettings(providerId)
-      if (window.LlmManager) {
-        window.LlmManager.setActiveProvider(providerId)
+      if ((window as any).LlmManager) {
+        (window as any).LlmManager.setActiveProvider(providerId)
       }
     })
   }
@@ -629,7 +654,7 @@ function initialize() {
     saveProviderSettings(providerId)
   }
 
-  var autoSaveElements = [
+  const autoSaveElements = [
     els.enabledCheckbox,
     els.multiGameMemoryCheckbox,
     els.reflectionCheckbox,
@@ -689,7 +714,7 @@ function initialize() {
     })
   }
 
-  var customProviderCancel2 = document.getElementById("customProviderCancel2")
+  const customProviderCancel2 = document.getElementById("customProviderCancel2")
   if (customProviderCancel2) {
     customProviderCancel2.addEventListener("click", function (e) {
       e.stopPropagation()
@@ -713,9 +738,9 @@ function initialize() {
   }
 }
 
-function getActiveProviderSettings() {
+function getActiveProviderSettings(): any {
   const providerId = getCurrentProviderId()
-  const provider = window.LlmManager ? window.LlmManager.getProvider(providerId) : null
+  const provider = (window as any).LlmManager ? (window as any).LlmManager.getProvider(providerId) : null
 
   if (provider) {
     return provider.loadSettings()
@@ -746,8 +771,7 @@ export const LlmUiBridge = {
   deleteCurrentProvider,
   BUILTIN_PROVIDERS
 }
-// 兼容层：保持 window.LlmUiBridge 全局变量可用
-window.LlmUiBridge = LlmUiBridge
+  ; (window as any).LlmUiBridge = LlmUiBridge
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initialize)
