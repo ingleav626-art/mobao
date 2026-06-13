@@ -1,51 +1,43 @@
 /**
- * @file mobile/mobile-handler.js
+ * @file mobile/mobile-handler.ts
  * @module mobile/handler
  * @description 移动端适配处理器。采用 IIFE + 对象字面量单例模式。
  *              解决移动端（特别是 Android WebView）的键盘遮挡、输入框定位、
  *              横竖屏切换、自定义下拉框、触觉反馈等兼容性问题。
- *
- * 核心功能：
- *   - init(): 初始化，检测设备类型并设置所有子系统
- *   - isMobile / isTouch: 设备检测（UserAgent + 触摸能力）
- *
- * 固定输入框系统（解决键盘遮挡问题）：
- *   - createFixedInputOverlay(): 创建全局固定输入覆盖层
- *     当原生 input 获焦时，拦截焦点并切换到固定输入框
- *   - showFixedInput(input) / hideFixedInput(): 显示/隐藏固定输入
- *   - setupKeyboardHandler(): 监听 focusin 事件，拦截文本输入
- *   - setupNativeKeyboardListener(): 监听 Android 原生键盘高度变化
- *     支持 AndroidKeyboard.getKeyboardHeight() 和 keyboardchange 事件
- *   - handleKeyboardHeightChange(rawHeight): 处理键盘高度变化
- *   - calculateSafeKeyboardHeight(rawHeight): 安全高度计算（防止超出屏幕）
- *   - updateInputPosition(): 根据键盘高度调整输入框位置
- *   - startPolling() / stopPolling(): 轮询键盘高度（Android 兼容）
- *   - data-no-fixed-input 属性可跳过拦截
- *
- * 横竖屏检测：
- *   - setupOrientationCheck(): 竖屏时显示 portraitOverlay 提示横屏
- *
- * 触觉反馈：
- *   - setupVibrationFeedback(): 输入删除时触发 navigator.vibrate(10)
- *
- * 自定义下拉框：
- *   - setupCustomSelects(): 将原生 select 转换为自定义下拉框
- *     MutationObserver 监听动态添加的 select
- *   - convertToCustomSelect(select): 转换单个 select
- *     支持触摸滚动区分、键盘导航、点击选择
- *   - closeAllCustomSelects(): 关闭所有打开的下拉框
- *
- * 内联样式：
- *   - addStyles(): 注入 mobile-handler-styles 样式表
- *     包含固定输入框、自定义下拉框等所有样式
- *
- * @requires AndroidKeyboard - Android 原生键盘桥接（可选，仅 Android WebView）
- *
- * @exports MobileHandler - 移动端适配处理器单例
  */
 "use strict"
 
-export const MobileHandler = {
+export const MobileHandler: {
+  isMobile: boolean
+  isTouch: boolean
+  portraitOverlay: HTMLElement | null
+  fixedInputOverlay: HTMLElement | null
+  fixedInputElement: HTMLInputElement | null
+  fixedInputContainer: HTMLElement | null
+  originalInput: HTMLInputElement | HTMLTextAreaElement | null
+  isHidingFixedInput: boolean
+  currentKeyboardHeight: number
+  screenHeight: number
+  pollIntervalId: ReturnType<typeof setInterval> | null
+  init: () => void
+  createFixedInputOverlay: () => void
+  setupNativeKeyboardListener: () => void
+  handleKeyboardHeightChange: (rawHeight: number) => void
+  calculateSafeKeyboardHeight: (rawHeight: number) => number
+  startPolling: () => void
+  stopPolling: () => void
+  updateInputPosition: () => void
+  showFixedInput: (input: HTMLInputElement | HTMLTextAreaElement) => void
+  checkAndUpdatePosition: () => void
+  resetInputPosition: () => void
+  hideFixedInput: () => void
+  setupOrientationCheck: () => void
+  setupKeyboardHandler: () => void
+  setupVibrationFeedback: () => void
+  setupCustomSelects: () => void
+  convertToCustomSelect: (originalSelect: HTMLSelectElement) => void
+  closeAllCustomSelects: () => void
+} = {
   isMobile: false,
   isTouch: false,
   portraitOverlay: null,
@@ -69,7 +61,7 @@ export const MobileHandler = {
       "isTouch:",
       this.isTouch,
       "hasAndroidKeyboard:",
-      typeof AndroidKeyboard !== "undefined",
+      typeof (window as any).AndroidKeyboard !== "undefined",
       "screenHeight:",
       this.screenHeight
     )
@@ -97,9 +89,9 @@ export const MobileHandler = {
     document.body.appendChild(overlay)
 
     this.fixedInputOverlay = overlay
-    this.fixedInputElement = overlay.querySelector("#fixedInputField")
+    this.fixedInputElement = overlay.querySelector("#fixedInputField") as HTMLInputElement | null
     this.fixedInputContainer = overlay.querySelector("#fixedInputContainer")
-    var closeBtn = overlay.querySelector("#fixedInputClose")
+    var closeBtn = overlay.querySelector("#fixedInputClose") as HTMLElement | null
 
     var self = this
 
@@ -109,44 +101,49 @@ export const MobileHandler = {
       }
     })
 
-    closeBtn.addEventListener("click", function (e) {
-      e.stopPropagation()
-      self.hideFixedInput()
-    })
-
-    this.fixedInputElement.addEventListener("input", function (e) {
-      if (self.originalInput) {
-        self.originalInput.value = e.target.value
-        self.originalInput.dispatchEvent(new Event("input", { bubbles: true }))
-      }
-    })
-
-    this.fixedInputElement.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault()
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function (e) {
+        e.stopPropagation()
         self.hideFixedInput()
-        return
-      }
-      if (self.originalInput) {
-        self.originalInput.dispatchEvent(new KeyboardEvent("keydown", { key: e.key, code: e.code, bubbles: true }))
-      }
-    })
+      })
+    }
+
+    if (this.fixedInputElement) {
+      this.fixedInputElement.addEventListener("input", function (e) {
+        if (self.originalInput) {
+          self.originalInput.value = (e.target as HTMLInputElement).value
+          self.originalInput.dispatchEvent(new Event("input", { bubbles: true }))
+        }
+      })
+
+      this.fixedInputElement.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault()
+          self.hideFixedInput()
+          return
+        }
+        if (self.originalInput) {
+          self.originalInput.dispatchEvent(new KeyboardEvent("keydown", { key: e.key, code: e.code, bubbles: true }))
+        }
+      })
+    }
   },
 
   setupNativeKeyboardListener: function () {
     var self = this
 
-    window.__onKeyboardChange = function (height) {
-      self.handleKeyboardHeightChange(parseInt(height) || 0)
+    ;(window as any).__onKeyboardChange = function (height: number) {
+      self.handleKeyboardHeightChange(parseInt(String(height)) || 0)
     }
 
     document.addEventListener("keyboardchange", function (e) {
-      var height = e.detail && e.detail.height ? parseInt(e.detail.height) : 0
+      var detail = (e as CustomEvent).detail
+      var height = detail && detail.height ? parseInt(detail.height) : 0
       self.handleKeyboardHeightChange(height)
     })
   },
 
-  handleKeyboardHeightChange: function (rawHeight) {
+  handleKeyboardHeightChange: function (rawHeight: number) {
     if (!this.fixedInputOverlay || !this.fixedInputOverlay.classList.contains("show")) {
       return
     }
@@ -162,12 +159,12 @@ export const MobileHandler = {
         "→ safe:",
         safeHeight,
         "bottom:",
-        safeHeight + (this.fixedInputContainer.offsetHeight || 80) + "px"
+        safeHeight + (this.fixedInputContainer ? this.fixedInputContainer.offsetHeight || 80 : 80) + "px"
       )
     }
   },
 
-  calculateSafeKeyboardHeight: function (rawHeight) {
+  calculateSafeKeyboardHeight: function (rawHeight: number) {
     var containerHeight = this.fixedInputContainer ? this.fixedInputContainer.offsetHeight || 80 : 80
     var minSpaceForInput = containerHeight + 30
     var maxKeyboardHeight = this.screenHeight - minSpaceForInput
@@ -192,14 +189,14 @@ export const MobileHandler = {
 
     this.stopPolling()
 
-    if (typeof AndroidKeyboard !== "undefined" && AndroidKeyboard.getKeyboardHeight) {
+    if (typeof (window as any).AndroidKeyboard !== "undefined" && (window as any).AndroidKeyboard.getKeyboardHeight) {
       this.pollIntervalId = setInterval(function () {
         if (!self.fixedInputOverlay || !self.fixedInputOverlay.classList.contains("show")) {
           self.stopPolling()
           return
         }
 
-        var rawHeight = AndroidKeyboard.getKeyboardHeight()
+        var rawHeight = (window as any).AndroidKeyboard.getKeyboardHeight()
         self.handleKeyboardHeightChange(rawHeight)
       }, 200)
     }
@@ -229,7 +226,7 @@ export const MobileHandler = {
 
       var inputTop = this.screenHeight - kbHeight - containerHeight
       console.log(
-        "[MobileHandler] ✅ positioned - bottom:",
+        "[MobileHandler] positioned - bottom:",
         bottomValue,
         "| input visible at",
         inputTop.toFixed(0),
@@ -245,7 +242,7 @@ export const MobileHandler = {
     }
   },
 
-  showFixedInput: function (input) {
+  showFixedInput: function (input: HTMLInputElement | HTMLTextAreaElement) {
     if (this.isHidingFixedInput) {
       return
     }
@@ -256,21 +253,25 @@ export const MobileHandler = {
 
     console.log("[MobileHandler] show input - value:", input.value.substring(0, 20), "screen:", this.screenHeight)
 
-    var inputType = input.type || "text"
+    if (!this.fixedInputElement) return
+
+    var inputType = (input as HTMLInputElement).type || "text"
     this.fixedInputElement.type = inputType === "number" ? "tel" : inputType
     this.fixedInputElement.value = input.value
-    this.fixedInputElement.placeholder = input.placeholder || ""
+    this.fixedInputElement.placeholder = (input as HTMLInputElement).placeholder || ""
 
-    if (input.maxLength > 0) {
-      this.fixedInputElement.maxLength = input.maxLength
+    if ((input as HTMLInputElement).maxLength > 0) {
+      this.fixedInputElement.maxLength = (input as HTMLInputElement).maxLength
     }
 
     this.resetInputPosition()
-    this.fixedInputOverlay.classList.add("show")
+    this.fixedInputOverlay!.classList.add("show")
 
     var self = this
     requestAnimationFrame(function () {
-      self.fixedInputElement.focus()
+      if (self.fixedInputElement) {
+        self.fixedInputElement.focus()
+      }
       self.startPolling()
 
       setTimeout(function () {
@@ -290,8 +291,8 @@ export const MobileHandler = {
       return
     }
 
-    if (typeof AndroidKeyboard !== "undefined") {
-      var rawHeight = AndroidKeyboard.getKeyboardHeight()
+    if (typeof (window as any).AndroidKeyboard !== "undefined") {
+      var rawHeight = (window as any).AndroidKeyboard.getKeyboardHeight()
       this.handleKeyboardHeightChange(rawHeight)
     } else {
       this.updateInputPosition()
@@ -299,6 +300,7 @@ export const MobileHandler = {
   },
 
   resetInputPosition: function () {
+    if (!this.fixedInputContainer) return
     this.fixedInputContainer.style.position = ""
     this.fixedInputContainer.style.bottom = ""
     this.fixedInputContainer.style.left = ""
@@ -312,8 +314,12 @@ export const MobileHandler = {
     console.log("[MobileHandler] hide input")
 
     this.stopPolling()
-    this.fixedInputElement.blur()
-    this.fixedInputOverlay.classList.remove("show")
+    if (this.fixedInputElement) {
+      this.fixedInputElement.blur()
+    }
+    if (this.fixedInputOverlay) {
+      this.fixedInputOverlay.classList.remove("show")
+    }
     this.resetInputPosition()
 
     var origInput = this.originalInput
@@ -363,17 +369,17 @@ export const MobileHandler = {
     document.addEventListener(
       "focusin",
       function (e) {
-        var target = e.target
+        var target = e.target as HTMLElement
         var isTextInput =
           (target.tagName === "INPUT" &&
-            (target.type === "text" ||
-              target.type === "search" ||
-              target.type === "tel" ||
-              target.type === "url" ||
-              target.type === "email" ||
-              target.type === "password" ||
-              target.type === "number" ||
-              !target.type)) ||
+            ((target as HTMLInputElement).type === "text" ||
+              (target as HTMLInputElement).type === "search" ||
+              (target as HTMLInputElement).type === "tel" ||
+              (target as HTMLInputElement).type === "url" ||
+              (target as HTMLInputElement).type === "email" ||
+              (target as HTMLInputElement).type === "password" ||
+              (target as HTMLInputElement).type === "number" ||
+              !(target as HTMLInputElement).type)) ||
           target.tagName === "TEXTAREA"
 
         if (isTextInput && !target.hasAttribute("data-no-fixed-input")) {
@@ -385,8 +391,8 @@ export const MobileHandler = {
             e.stopPropagation()
 
             setTimeout(function () {
-              target.blur()
-              self.showFixedInput(target)
+              ;(target as HTMLInputElement).blur()
+              self.showFixedInput(target as HTMLInputElement)
             }, 10)
           }
         }
@@ -400,15 +406,15 @@ export const MobileHandler = {
     if (!navigator.vibrate) return
 
     document.addEventListener("input", function (e) {
-      var target = e.target
+      var target = e.target as HTMLElement
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
-        var inputType = e.inputType
+        var inputType = (e as InputEvent).inputType
         if (
           inputType === "deleteContentBackward" ||
           inputType === "deleteContentForward" ||
           inputType === "deleteByCut"
         ) {
-          navigator.vibrate(10)
+          navigator.vibrate!(10)
         }
       }
     })
@@ -422,7 +428,7 @@ export const MobileHandler = {
     setTimeout(function () {
       var selects = document.querySelectorAll("select:not([data-custom-select])")
       selects.forEach(function (select) {
-        self.convertToCustomSelect(select)
+        self.convertToCustomSelect(select as HTMLSelectElement)
       })
     }, 500)
 
@@ -430,13 +436,13 @@ export const MobileHandler = {
       mutations.forEach(function (mutation) {
         mutation.addedNodes.forEach(function (node) {
           if (node.nodeType === 1) {
-            if (node.tagName === "SELECT" && !node.hasAttribute("data-custom-select")) {
-              self.convertToCustomSelect(node)
+            if ((node as HTMLElement).tagName === "SELECT" && !(node as HTMLElement).hasAttribute("data-custom-select")) {
+              self.convertToCustomSelect(node as HTMLSelectElement)
             }
-            if (node.querySelectorAll) {
-              var nestedSelects = node.querySelectorAll("select:not([data-custom-select])")
+            if ((node as HTMLElement).querySelectorAll) {
+              var nestedSelects = (node as HTMLElement).querySelectorAll("select:not([data-custom-select])")
               nestedSelects.forEach(function (s) {
-                self.convertToCustomSelect(s)
+                self.convertToCustomSelect(s as HTMLSelectElement)
               })
             }
           }
@@ -447,7 +453,7 @@ export const MobileHandler = {
     observer.observe(document.body, { childList: true, subtree: true })
   },
 
-  convertToCustomSelect: function (originalSelect) {
+  convertToCustomSelect: function (originalSelect: HTMLSelectElement) {
     if (originalSelect.hasAttribute("data-custom-select")) return
     if (!originalSelect.parentNode) return
 
@@ -494,13 +500,14 @@ export const MobileHandler = {
 
     if (!hasSelected && options.length > 0) {
       selectedText.textContent = options[0].textContent
-      dropdown.querySelector(".custom-select-option").classList.add("selected")
+      var firstOpt = dropdown.querySelector(".custom-select-option")
+      if (firstOpt) firstOpt.classList.add("selected")
     }
 
     container.appendChild(trigger)
     container.appendChild(dropdown)
 
-    originalSelect.parentNode.insertBefore(container, originalSelect.nextSibling)
+    originalSelect.parentNode!.insertBefore(container, originalSelect.nextSibling)
     originalSelect.style.display = "none"
 
     var self = this
@@ -558,7 +565,7 @@ export const MobileHandler = {
 
         selectedText.textContent = option.textContent
         var value = option.getAttribute("data-value")
-        originalSelect.value = value
+        originalSelect.value = value || ""
 
         originalSelect.dispatchEvent(new Event("change", { bubbles: true }))
 
@@ -590,7 +597,7 @@ export const MobileHandler = {
     })
 
     dropdown.addEventListener("click", function (e) {
-      var option = e.target.closest(".custom-select-option")
+      var option = (e.target as HTMLElement).closest(".custom-select-option")
       if (!option) return
 
       e.stopPropagation()
@@ -602,7 +609,7 @@ export const MobileHandler = {
 
       selectedText.textContent = option.textContent
       var value = option.getAttribute("data-value")
-      originalSelect.value = value
+      originalSelect.value = value || ""
 
       originalSelect.dispatchEvent(new Event("change", { bubbles: true }))
 
@@ -624,7 +631,7 @@ export const MobileHandler = {
         })
         var nextIdx = e.key === "ArrowDown" ? currentIdx + 1 : currentIdx - 1
         if (nextIdx >= 0 && nextIdx < opts.length) {
-          opts[nextIdx].click()
+          ;(opts[nextIdx] as HTMLElement).click()
         }
       }
     })
@@ -787,7 +794,7 @@ function initMobileHandler() {
   MobileHandler.init()
 
   document.addEventListener("click", function (e) {
-    var target = e.target
+    var target = e.target as HTMLElement
     var container = target.closest(".custom-select-container")
     var fixedOverlay = target.closest("#fixedInputOverlay")
     if (!container && !fixedOverlay) {
@@ -802,5 +809,4 @@ if (document.readyState === "loading") {
   initMobileHandler()
 }
 
-// 兼容层：保持 window.MobileHandler 全局变量可用
-window.MobileHandler = MobileHandler
+;(window as any).MobileHandler = MobileHandler
