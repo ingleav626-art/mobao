@@ -1,94 +1,52 @@
 /**
- * @file lan/client/lan-bridge.js
+ * @file lan/client/lan-bridge.ts
  * @module lan/bridge
  * @description 联机通信桥客户端。采用 IIFE + 构造函数模式，挂载到 window.LanBridge。
  *              封装 WebSocket 连接管理、消息收发、事件系统和原生桥接，
  *              是前端 UI 与联机服务器之间的唯一通信通道。
- *
- * 核心功能：
- *   - connect(url, playerName): 建立 WebSocket 连接
- *   - disconnect(): 断开连接
- *   - send(msg): 发送 JSON 消息
- *   - on(event, fn) / _emit(event, data): 事件订阅/发布系统
- *
- * 房间操作：
- *   - createRoom(options): 创建房间（roomName/visibility/password）
- *   - joinRoom(code, password): 加入房间
- *   - leaveRoom(): 离开房间
- *   - listRooms(): 获取房间列表
- *   - reconnect(url, roomCode, playerId): 断线重连
- *
- * 游戏操作：
- *   - startGame(options): 开始游戏（仅房主）
- *   - submitBid(bid): 提交出价
- *   - broadcastRoundStart/Result/Settle/SettleFinal: 房主广播
- *   - togglePause(paused, roundTimeLeft): 暂停/恢复
- *   - sendChat(text): 聊天消息
- *   - ping(): 心跳检测
- *
- * 消息路由（_handleMessage）：
- *   - room:* 房间事件（created/joined/player-joined/player-left/host-left/kicked/list/slot-state/reconnect*）
- *   - lan:game:* 游戏事件（init/restart-vote/restart-go/restart-cancelled/settle/settle-final）
- *   - lan:round:* 回合事件（start/bid-ack/timeout/result）
- *   - lan:bid:* 出价事件（received/all-bids-in）
- *   - lan:* 其他（warehouse-sync/ai-bids-ready/ai-item-use/player-action/pause:state/pong/full-sync/public-info）
- *   - chat/error/unknown
- *
- * 原生桥接（NativeBridge）：
- *   - isNative(): 检测是否在 Android WebView 中
- *   - getNativeServerUrl/getLocalServerUrl: 获取服务器地址
- *   - startNativeServer/stopNativeServer: 启停本地服务器
- *   - getNativeWiFiIP: 获取 WiFi IP
- *   - discoverRoomsNative/discoverRoomsHTTP: 房间发现
- *   - _getLocalSubnetIPs(): 获取本机子网 IP 列表
- *
- * @requires WebSocket - 浏览器原生 WebSocket API
- * @requires NativeBridge - Android 原生桥接（可选，仅 WebView 环境）
- *
- * @exports window.LanBridge - 联机通信桥构造函数
  */
-(function setupLanBridge(global) {
+(function setupLanBridge(global: any) {
   var TAG = "[LanBridge]";
 
-  function LanBridgeLog(level, msg) {
+  function LanBridgeLog(level: string, msg: string) {
     var prefix = TAG + "[" + new Date().toLocaleTimeString() + "][" + level + "]";
     if (level === "error") console.error(prefix, msg);
     else if (level === "warn") console.warn(prefix, msg);
     else console.log(prefix, msg);
   }
 
-  function LanBridge() {
-    this.ws = null;
+  function LanBridge(this: any) {
+    this.ws = null as WebSocket | null;
     this.connected = false;
-    this.playerId = null;
-    this.playerName = null;
-    this.roomCode = null;
+    this.playerId = null as string | null;
+    this.playerName = null as string | null;
+    this.roomCode = null as string | null;
     this.isHost = false;
-    this.players = [];
+    this.players = [] as any[];
 
-    this._listeners = {};
+    this._listeners = {} as Record<string, Function[]>;
   }
 
-  LanBridge.prototype.on = function (event, fn) {
+  LanBridge.prototype.on = function (event: string, fn: Function) {
     if (!this._listeners[event]) this._listeners[event] = [];
     this._listeners[event].push(fn);
     var self = this;
     return function () {
-      self._listeners[event] = (self._listeners[event] || []).filter(function (f) { return f !== fn; });
+      self._listeners[event] = (self._listeners[event] || []).filter(function (f: Function) { return f !== fn; });
     };
   };
 
-  LanBridge.prototype._emit = function (event, data) {
+  LanBridge.prototype._emit = function (event: string, data: any) {
     var fns = this._listeners[event] || [];
     for (var i = 0; i < fns.length; i++) {
       try { fns[i](data); } catch (e) { console.error(TAG + " handler error:", e); }
     }
   };
 
-  LanBridge.prototype.connect = function (url, playerName) {
+  LanBridge.prototype.connect = function (url: string, playerName: string) {
     var self = this;
-    return new Promise(function (resolve, reject) {
-      if (self.ws && self.ws.readyState <= 1) {
+    return new Promise<void>(function (resolve, reject) {
+      if (self.ws && (self.ws as WebSocket).readyState <= 1) {
         LanBridgeLog("warn", "Already connected");
         resolve();
         return;
@@ -99,33 +57,33 @@
 
       try {
         self.ws = new WebSocket(url);
-      } catch (e) {
+      } catch (e: any) {
         LanBridgeLog("error", "WebSocket creation failed: " + e.message);
         reject(e);
         return;
       }
 
-      self.ws.onopen = function () {
+      (self.ws as WebSocket).onopen = function () {
         self.connected = true;
         LanBridgeLog("info", "Connected");
         self._emit("ws:open", {});
         resolve();
       };
 
-      self.ws.onclose = function (evt) {
+      (self.ws as WebSocket).onclose = function (evt: CloseEvent) {
         self.connected = false;
         LanBridgeLog("warn", "Closed (code=" + evt.code + " reason=" + (evt.reason || "none") + ")");
         self._emit("ws:close", { code: evt.code, reason: evt.reason });
       };
 
-      self.ws.onerror = function () {
-        LanBridgeLog("error", "Error, readyState=" + (self.ws ? self.ws.readyState : "null"));
+      (self.ws as WebSocket).onerror = function () {
+        LanBridgeLog("error", "Error, readyState=" + (self.ws ? (self.ws as WebSocket).readyState : "null"));
         self._emit("ws:error", {});
         if (!self.connected) reject(new Error("Connection failed"));
       };
 
-      self.ws.onmessage = function (evt) {
-        var msg;
+      (self.ws as WebSocket).onmessage = function (evt: MessageEvent) {
+        var msg: any;
         try { msg = JSON.parse(evt.data); } catch (_) { return; }
         self._handleMessage(msg);
       };
@@ -133,7 +91,7 @@
   };
 
   LanBridge.prototype.disconnect = function () {
-    if (this.ws) { this.ws.close(); this.ws = null; }
+    if (this.ws) { (this.ws as WebSocket).close(); this.ws = null; }
     this.connected = false;
     this.playerId = null;
     this.roomCode = null;
@@ -141,16 +99,16 @@
     LanBridgeLog("info", "Disconnected");
   };
 
-  LanBridge.prototype.send = function (msg) {
-    if (!this.ws || this.ws.readyState !== 1) {
-      LanBridgeLog("error", "Cannot send, readyState=" + (this.ws ? this.ws.readyState : "null"));
+  LanBridge.prototype.send = function (msg: any) {
+    if (!this.ws || (this.ws as WebSocket).readyState !== 1) {
+      LanBridgeLog("error", "Cannot send, readyState=" + (this.ws ? (this.ws as WebSocket).readyState : "null"));
       return false;
     }
-    this.ws.send(JSON.stringify(msg));
+    (this.ws as WebSocket).send(JSON.stringify(msg));
     return true;
   };
 
-  LanBridge.prototype.createRoom = function (options) {
+  LanBridge.prototype.createRoom = function (options: any) {
     var opts = options || {};
     LanBridgeLog("info", "Creating room...");
     this.send({
@@ -162,9 +120,9 @@
     });
   };
 
-  LanBridge.prototype.joinRoom = function (code, password) {
+  LanBridge.prototype.joinRoom = function (code: string, password?: string) {
     LanBridgeLog("info", "Joining room " + code + "...");
-    var msg = { type: "room:join", roomCode: code, playerName: this.playerName };
+    var msg: any = { type: "room:join", roomCode: code, playerName: this.playerName };
     if (password) msg.password = password;
     this.send(msg);
   };
@@ -174,20 +132,20 @@
     this.send({ type: "room:list" });
   };
 
-  LanBridge.prototype.reconnect = function (url, roomCode, playerId) {
+  LanBridge.prototype.reconnect = function (url: string, roomCode: string, playerId: string) {
     var self = this;
-    return new Promise(function (resolve, reject) {
+    return new Promise<any>(function (resolve, reject) {
       LanBridgeLog("info", "Reconnecting to " + url + " room=" + roomCode + " pid=" + playerId + "...");
 
       try {
         self.ws = new WebSocket(url);
-      } catch (e) {
+      } catch (e: any) {
         LanBridgeLog("error", "WebSocket creation failed: " + e.message);
         reject(e);
         return;
       }
 
-      self.ws.onopen = function () {
+      (self.ws as WebSocket).onopen = function () {
         self.connected = true;
         LanBridgeLog("info", "Connected, sending reconnect...");
         self.send({
@@ -197,21 +155,21 @@
         });
       };
 
-      self.ws.onclose = function (evt) {
+      (self.ws as WebSocket).onclose = function (evt: CloseEvent) {
         self.connected = false;
         LanBridgeLog("warn", "Closed (code=" + evt.code + ")");
         self._emit("ws:close", { code: evt.code, reason: evt.reason });
         if (!self.connected) reject(new Error("Connection closed during reconnect"));
       };
 
-      self.ws.onerror = function () {
+      (self.ws as WebSocket).onerror = function () {
         LanBridgeLog("error", "Error during reconnect");
         self._emit("ws:error", {});
         if (!self.connected) reject(new Error("Reconnect failed"));
       };
 
-      self.ws.onmessage = function (evt) {
-        var msg;
+      (self.ws as WebSocket).onmessage = function (evt: MessageEvent) {
+        var msg: any;
         try { msg = JSON.parse(evt.data); } catch (_) { return; }
 
         if (msg.type === "room:reconnected") {
@@ -237,7 +195,7 @@
     this.send({ type: "game:full-sync-request" });
   };
 
-  LanBridge.prototype.sendFullSync = function (targetPlayerId, syncData) {
+  LanBridge.prototype.sendFullSync = function (targetPlayerId: string, syncData: any) {
     if (!this.isHost) return;
     this.send(Object.assign({ type: "lan:full-sync", playerId: targetPlayerId }, syncData));
   };
@@ -246,7 +204,6 @@
     this.send({ type: "room:leave" });
     this.roomCode = null;
     this.isHost = false;
-    // 清除 localStorage
     localStorage.removeItem("mobao_lan_player_id");
     localStorage.removeItem("mobao_lan_room_code");
     localStorage.removeItem("mobao_lan_player_name");
@@ -254,7 +211,7 @@
     LanBridgeLog("info", "Left room, cleared localStorage");
   };
 
-  LanBridge.prototype.startGame = function (options) {
+  LanBridge.prototype.startGame = function (options: any) {
     if (!this.isHost) { LanBridgeLog("warn", "Only host can start"); return; }
     var opts = options || {};
     this.send({
@@ -265,7 +222,7 @@
     });
   };
 
-  LanBridge.prototype.broadcastRoundStart = function (round, maxRounds, currentBid, roundSeconds) {
+  LanBridge.prototype.broadcastRoundStart = function (round: number, maxRounds: number, currentBid: number, roundSeconds: number) {
     if (!this.isHost) return;
     this.send({
       type: "lan:round:start",
@@ -276,13 +233,13 @@
     });
   };
 
-  LanBridge.prototype.submitBid = function (bid) {
+  LanBridge.prototype.submitBid = function (bid: number) {
     var amount = Math.max(0, Math.round(Number(bid) || 0));
     LanBridgeLog("info", "Submitting bid: " + amount);
     this.send({ type: "lan:bid:submit", bid: amount });
   };
 
-  LanBridge.prototype.broadcastRoundResult = function (round, bids, reason) {
+  LanBridge.prototype.broadcastRoundResult = function (round: number, bids: any[], reason?: string) {
     if (!this.isHost) return;
     this.send({
       type: "lan:round:result",
@@ -292,12 +249,12 @@
     });
   };
 
-  LanBridge.prototype.broadcastSettle = function (data) {
+  LanBridge.prototype.broadcastSettle = function (data: any) {
     if (!this.isHost) return;
     this.send(Object.assign({ type: "lan:game:settle" }, data));
   };
 
-  LanBridge.prototype.broadcastSettleFinal = function (wallets, profitDetails) {
+  LanBridge.prototype.broadcastSettleFinal = function (wallets: any, profitDetails: any) {
     if (!this.isHost) return;
     this.send({
       type: "lan:game:settle-final",
@@ -306,11 +263,11 @@
     });
   };
 
-  LanBridge.prototype.togglePause = function (paused, roundTimeLeft) {
+  LanBridge.prototype.togglePause = function (paused: boolean, roundTimeLeft?: number) {
     this.send({ type: "lan:pause:toggle", paused: !!paused, roundTimeLeft: roundTimeLeft != null ? roundTimeLeft : undefined });
   };
 
-  LanBridge.prototype.sendChat = function (text) {
+  LanBridge.prototype.sendChat = function (text: string) {
     this.send({ type: "chat", text: String(text || "").slice(0, 200) });
   };
 
@@ -318,13 +275,12 @@
     this.send({ type: "lan:ping", ts: Date.now() });
   };
 
-  LanBridge.prototype._handleMessage = function (msg) {
+  LanBridge.prototype._handleMessage = function (msg: any) {
     switch (msg.type) {
       case "room:created":
         this.playerId = msg.playerId;
         this.roomCode = msg.roomCode;
         this.isHost = true;
-        // 保存到 localStorage 用于重连
         localStorage.setItem("mobao_lan_player_id", msg.playerId);
         localStorage.setItem("mobao_lan_room_code", msg.roomCode);
         localStorage.setItem("mobao_lan_player_name", this.playerName);
@@ -338,7 +294,6 @@
         this.playerId = msg.playerId;
         this.roomCode = msg.roomCode;
         this.isHost = false;
-        // 保存到 localStorage 用于重连
         localStorage.setItem("mobao_lan_player_id", msg.playerId);
         localStorage.setItem("mobao_lan_room_code", msg.roomCode);
         localStorage.setItem("mobao_lan_player_name", this.playerName);
@@ -350,7 +305,6 @@
 
       case "room:join-failed":
         LanBridgeLog("error", "Join failed: " + msg.reason);
-        // 清除 localStorage
         localStorage.removeItem("mobao_lan_player_id");
         localStorage.removeItem("mobao_lan_room_code");
         localStorage.removeItem("mobao_lan_player_name");
@@ -367,7 +321,6 @@
         break;
 
       case "room:reconnect-failed":
-        // 清除 localStorage
         localStorage.removeItem("mobao_lan_player_id");
         localStorage.removeItem("mobao_lan_room_code");
         localStorage.removeItem("mobao_lan_player_name");
@@ -608,24 +561,24 @@
   };
 
   LanBridge.discoverRoomsHTTP = function () {
-    return new Promise(function (resolve) {
-      var results = [];
+    return new Promise<any>(function (resolve) {
+      var results: any[] = [];
       var pending = 0;
-      var ips = LanBridge._getLocalSubnetIPs();
+      var ips: string[] = LanBridge._getLocalSubnetIPs();
       if (!ips || ips.length === 0) { resolve(results); return; }
 
-      ips.forEach(function (ip) {
+      ips.forEach(function (ip: string) {
         var subnet = ip.substring(0, ip.lastIndexOf(".") + 1);
         for (var i = 1; i <= 254; i++) {
           var targetIp = subnet + i;
           if (targetIp === ip) continue;
           pending++;
-          (function (addr) {
+          (function (addr: string) {
             var controller = new AbortController();
             var timeout = setTimeout(function () { controller.abort(); }, 800);
             fetch("http://" + addr + ":9721/rooms", { signal: controller.signal, mode: "cors" })
-              .then(function (r) { return r.json(); })
-              .then(function (data) {
+              .then(function (r: Response) { return r.json(); })
+              .then(function (data: any) {
                 clearTimeout(timeout);
                 if (data && data.rooms) {
                   results.push({ serverIp: addr, serverPort: 9720, rooms: data.rooms });
@@ -655,7 +608,6 @@
     if (ws && ws !== "localhost" && ws !== "127.0.0.1" && ws.indexOf(".") > 0) {
       return [ws];
     }
-    // Try common default gateways as fallback
     return ["192.168.1.1", "192.168.0.1", "192.168.31.1", "10.0.0.1", "192.168.50.1"];
   };
 
