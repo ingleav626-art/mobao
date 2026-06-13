@@ -33,11 +33,11 @@
  *
  * @exports BiddingMixin - 出价流程 Mixin，混入 Phaser Scene
  */
-const { delay } = (window as any).MobaoUtils
-const { GAME_SETTINGS } = (window as any).MobaoSettings
-const { formatBidRevealNumber } = (window as any).MobaoUtils
+const { delay } = (window as unknown as Record<string, { delay(ms: number): Promise<void> }>).MobaoUtils
+const { GAME_SETTINGS } = (window as unknown as Record<string, { GAME_SETTINGS: { bidStep: number; maxRounds: number; directTakeRatio: number; bidRevealIntervalMs: number; postRevealWaitMs: number;[key: string]: unknown } }>).MobaoSettings
+const { formatBidRevealNumber } = (window as unknown as Record<string, { formatBidRevealNumber(v: number): string }>).MobaoUtils
 
-export const BiddingMixin: Record<string, any> = {
+export const BiddingMixin: Record<string, unknown> = {
   setPlayerBidReady(playerId: string, ready: boolean): void {
     this.roundBidReadyState[playerId] = Boolean(ready)
     const cardEl = document.getElementById(`playerCard-${playerId}`)
@@ -196,8 +196,8 @@ export const BiddingMixin: Record<string, any> = {
     this.roundResolving = true
     this.stopRoundTimer()
 
-    if ((window as any).AudioUI) {
-      ; (window as any).AudioUI.stopCountdown()
+    if ((window as unknown as Record<string, { stopCountdown(): void }>).AudioUI) {
+      ; (window as unknown as Record<string, { stopCountdown(): void }>).AudioUI.stopCountdown()
     }
 
     try {
@@ -248,8 +248,8 @@ export const BiddingMixin: Record<string, any> = {
       await delay(GAME_SETTINGS.postRevealWaitMs)
 
       // 回合过渡动画：出价揭示后切换到下一回合
-      if ((window as any).MobaoAnimations) {
-        await (window as any).MobaoAnimations.roundTransition({
+      if ((window as unknown as Record<string, { roundTransition(opts: unknown): Promise<void> }>).MobaoAnimations) {
+        await (window as unknown as Record<string, { roundTransition(opts: unknown): Promise<void> }>).MobaoAnimations.roundTransition({
           text: "第 " + (this.round + 1) + " 回合"
         })
       }
@@ -349,8 +349,8 @@ export const BiddingMixin: Record<string, any> = {
       const bidInfo = roundBids.find((entry) => entry.playerId === player.id)
       this.setPlayerBidDisplay(player.id, bidInfo.bid, i + 1)
       this.writeLog(`${player.name} 本轮出价：${bidInfo.bid}`)
-      if ((window as any).AudioUI) {
-        ; (window as any).AudioUI.playReveal()
+      if ((window as unknown as Record<string, { playReveal(): void }>).AudioUI) {
+        ; (window as unknown as Record<string, { playReveal(): void }>).AudioUI.playReveal()
       }
       await delay(GAME_SETTINGS.bidRevealIntervalMs)
     }
@@ -454,5 +454,5 @@ export const BiddingMixin: Record<string, any> = {
 }
 
   // 兼容层：保持 window.MobaoBidding 全局变量可用
-  ; (window as any).MobaoBidding = (window as any).MobaoBidding || {}
-  ; (window as any).MobaoBidding.BiddingMixin = BiddingMixin
+  ; (window as unknown as Record<string, unknown>).MobaoBidding = (window as unknown as Record<string, unknown>).MobaoBidding || {}
+  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoBidding).BiddingMixin = BiddingMixin
