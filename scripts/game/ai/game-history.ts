@@ -73,36 +73,33 @@ function trimToWindow(records: GameRecord[], maxRecords: number): GameRecord[] {
 
 function buildContextBlock(record: GameRecord): string {
   const lines: string[] = []
-  lines.push(`【第${record.run}局】`)
-  lines.push(`结果：${record.winnerName}以${record.winnerBid}中标，总值${record.totalValue}，利润${record.winnerProfit >= 0 ? "+" : ""}${record.winnerProfit}`)
+  lines.push(`${record.winnerName}以${record.winnerBid}中标，总值${record.totalValue}，利润${record.winnerProfit >= 0 ? "+" : ""}${record.winnerProfit}`)
 
   if (record.dividendTicket) {
     const dt = record.dividendTicket
     if (dt.mechanism === "dividend") {
-      lines.push(`分红触发：+${dt.dividendPerPlayer}`)
+      lines.push(`分红+${dt.dividendPerPlayer}`)
     } else if (dt.mechanism === "ticket") {
-      lines.push(`门票触发：-${dt.ticketPerPlayer}`)
+      lines.push(`门票-${dt.ticketPerPlayer}`)
     }
   }
 
   const qc = record.qualityCounts
-  lines.push(`品质分布：粗${qc.poor || 0} 良${qc.normal || 0} 精${qc.fine || 0} 珍${qc.rare || 0} 绝${qc.legendary || 0} | 藏品${record.totalItems}件 格数${record.totalCells}`)
+  lines.push(`粗${qc.poor || 0} 良${qc.normal || 0} 精${qc.fine || 0} 珍${qc.rare || 0} 绝${qc.legendary || 0} | ${record.totalItems}件 ${record.totalCells}格`)
 
   if (record.aiDecisions && record.aiDecisions.length > 0) {
-    lines.push("AI决策摘要：")
     record.aiDecisions.forEach((d) => {
-      const parts = [`轮${d.round}`]
-      if (d.bid != null) parts.push(`出价${d.bid}`)
-      if (d.skill !== "无") parts.push(`技能:${d.skill}`)
-      if (d.item !== "无") parts.push(`道具:${d.item}`)
-      if (d.thought) parts.push(`思考:${d.thought}`)
-      if (d.result) parts.push(`结果:${d.result}`)
-      lines.push(`  ${parts.join(" | ")}`)
+      const parts = [`R${d.round}`]
+      if (d.bid != null) parts.push(`${d.bid}`)
+      if (d.skill !== "无") parts.push(d.skill)
+      if (d.item !== "无") parts.push(d.item)
+      if (d.thought) parts.push(d.thought.slice(0, 60))
+      lines.push(parts.join(" "))
     })
   }
 
   if (record.reflection) {
-    lines.push(`反思：${record.reflection}`)
+    lines.push(`反思:${record.reflection}`)
   }
 
   return lines.join("\n")
@@ -145,7 +142,7 @@ export const MobaoGameHistory = {
 
     const recent = records.slice(-maxGames)
     const blocks = recent.map(buildContextBlock)
-    const content = `【跨局历史记录（最近${recent.length}局）】\n${blocks.join("\n\n")}`
+    const content = `【跨局历史】\n${blocks.join("\n---\n")}`
 
     return [{ role: "user", content }]
   },
@@ -159,7 +156,7 @@ export const MobaoGameHistory = {
     if (records.length === 0) return currentRecord ? buildContextBlock(currentRecord) : ""
 
     const blocks = records.map(buildContextBlock)
-    return `【历史记录（共${records.length}局）】\n${blocks.join("\n\n")}`
+    return blocks.join("\n---\n")
   },
 
   exportToJson(playerId: string, isLan: boolean = false): string {
@@ -174,7 +171,7 @@ export const MobaoGameHistory = {
         return { ok: false, error: "无效的JSON格式" }
       }
       const store: GameHistoryStore = {
-        records: parsed.records.filter((r: any) => r && typeof r.run === "number"),
+        records: parsed.records.filter((r: unknown) => r && typeof (r as { run?: unknown }).run === "number"),
         version: "v1"
       }
       saveStore(playerId, store, isLan)
@@ -185,4 +182,4 @@ export const MobaoGameHistory = {
   }
 }
 
-;(window as any).MobaoGameHistory = MobaoGameHistory
+  ; (window as unknown as Record<string, unknown>).MobaoGameHistory = MobaoGameHistory

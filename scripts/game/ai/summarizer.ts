@@ -18,9 +18,9 @@ export interface SummaryResult {
 }
 
 export const MobaoSummarizer = {
-  shouldSummarize(totalGamesPlayed: number, summaryInterval: number): boolean {
-    if (summaryInterval <= 0) return false
-    return totalGamesPlayed > 0 && totalGamesPlayed % summaryInterval === 0
+  shouldSummarize(totalGamesPlayed: number, contextLength: number, autoSummarizeEnabled: boolean): boolean {
+    if (!autoSummarizeEnabled || contextLength <= 0) return false
+    return totalGamesPlayed > 0 && totalGamesPlayed >= contextLength && totalGamesPlayed % contextLength === 0
   },
 
   buildSummaryPrompt(
@@ -81,4 +81,4 @@ export const MobaoSummarizer = {
   }
 }
 
-;(window as any).MobaoSummarizer = MobaoSummarizer
+;(window as unknown as Record<string, unknown>).MobaoSummarizer = MobaoSummarizer

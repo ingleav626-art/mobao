@@ -21,13 +21,13 @@
  * 混入后 scene 将获得：aiWallets, loadAiWalletsFromStorage, saveAiWalletsToStorage,
  *   resetAiWallets, initAiWallets, getAiWallet, getAiMinimumBid, normalizeAiBidValue
  */
-const { GAME_SETTINGS } = (window as any).MobaoSettings
-const { clamp, roundToStep } = (window as any).MobaoUtils
+const { GAME_SETTINGS } = (window as unknown as Record<string, { GAME_SETTINGS: { [key: string]: unknown } }>).MobaoSettings
+const { clamp, roundToStep } = (window as unknown as Record<string, { clamp(v: number, min: number, max: number): number; roundToStep(v: number, step: number): number }>).MobaoUtils
 
 export const AI_WALLET_INITIAL = 1000000
 const AI_WALLET_STORAGE_KEY = "mobao_ai_wallets_v1"
 
-export const AiWalletMixin: Record<string, any> = {
+export const AiWalletMixin: Record<string, unknown> = {
   loadAiWalletsFromStorage(): Record<string, number> {
     try {
       const raw = localStorage.getItem(AI_WALLET_STORAGE_KEY)
@@ -109,6 +109,6 @@ export const AiWalletMixin: Record<string, any> = {
 }
 
   // 兼容层：保持 window.MobaoAi 全局变量可用
-  ; (window as any).MobaoAi = (window as any).MobaoAi || {}
-  ; (window as any).MobaoAi.WalletMixin = AiWalletMixin
-  ; (window as any).MobaoAi.AI_WALLET_INITIAL = AI_WALLET_INITIAL
+  ; (window as unknown as Record<string, unknown>).MobaoAi = (window as unknown as Record<string, unknown>).MobaoAi || {}
+  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoAi).WalletMixin = AiWalletMixin
+  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoAi).AI_WALLET_INITIAL = AI_WALLET_INITIAL
