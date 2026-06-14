@@ -39,10 +39,32 @@
  *   const bridge = createBattleRecordBridge({ BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber });
  *   Object.assign(scene, bridge);
  */
-export function createBattleRecordBridge(deps: Record<string, any>): Record<string, any> {
+interface BattleRecordDeps {
+  BATTLE_RECORD_STORAGE_KEY: string
+  GRID_COLS: number
+  GRID_ROWS: number
+  clamp(v: number, min: number, max: number): number
+  escapeHtml(s: string): string
+  formatBidRevealNumber(v: number): string
+  [key: string]: unknown
+}
+
+interface BattleRecord {
+  round: number
+  playerId: string
+  playerName: string
+  bid: number
+  skill?: string
+  item?: string
+  won: boolean
+  profit?: number
+  [key: string]: unknown
+}
+
+export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string, unknown> {
   const { BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber } = deps
 
-  function loadBattleRecords(): Array<Record<string, any>> {
+  function loadBattleRecords(): BattleRecord[] {
     const raw = window.localStorage.getItem(BATTLE_RECORD_STORAGE_KEY)
     if (!raw) {
       return []
@@ -70,7 +92,7 @@ export function createBattleRecordBridge(deps: Record<string, any>): Record<stri
     }
   }
 
-  function saveBattleRecords(records: Array<Record<string, any>>): void {
+  function saveBattleRecords(records: BattleRecord[]): void {
     const list = Array.isArray(records) ? records.slice(0, 20) : []
     window.localStorage.setItem(BATTLE_RECORD_STORAGE_KEY, JSON.stringify(list))
   }
@@ -659,4 +681,4 @@ export function createBattleRecordBridge(deps: Record<string, any>): Record<stri
 // 兼容层：保持 window.MobaoBattleRecordBridge 全局变量可用
 window.MobaoBattleRecordBridge = {
   createBattleRecordBridge
-} as any
+} as unknown as typeof window.MobaoBattleRecordBridge

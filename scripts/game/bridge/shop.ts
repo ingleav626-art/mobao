@@ -274,7 +274,17 @@ function getDiscountBadge(discount: number): { type: string; label: string; colo
   return DISCOUNT_BADGES[DISCOUNT_BADGES.length - 1]
 }
 
-function generateLimitedOffers(): Array<Record<string, any>> {
+interface LimitedOffer {
+  itemId: string
+  discount: number
+  badge: { type: string; label: string; color: string; minDiscount: number; maxDiscount: number }
+  discountedPrice: number
+  originalPrice: number
+  purchased: boolean
+  [key: string]: unknown
+}
+
+function generateLimitedOffers(): LimitedOffer[] {
   const availableItems = SHOP_ITEMS.filter(function (item) {
     return item.maxDaily > 0
   })
@@ -296,7 +306,7 @@ function generateLimitedOffers(): Array<Record<string, any>> {
   })
 }
 
-function loadLimitedOffers(): Array<Record<string, any>> | null {
+function loadLimitedOffers(): LimitedOffer[] | null {
   try {
     const raw = window.localStorage.getItem(LIMITED_OFFER_KEY)
     if (!raw) return null
@@ -310,7 +320,7 @@ function loadLimitedOffers(): Array<Record<string, any>> | null {
   }
 }
 
-function saveLimitedOffers(offers: Array<Record<string, any>>): void {
+function saveLimitedOffers(offers: LimitedOffer[]): void {
   window.localStorage.setItem(
     LIMITED_OFFER_KEY,
     JSON.stringify({
@@ -320,7 +330,7 @@ function saveLimitedOffers(offers: Array<Record<string, any>>): void {
   )
 }
 
-function getLimitedOffers(): Array<Record<string, any>> {
+function getLimitedOffers(): LimitedOffer[] {
   const cached = loadLimitedOffers()
   if (cached) return cached
   const newOffers = generateLimitedOffers()
@@ -328,7 +338,7 @@ function getLimitedOffers(): Array<Record<string, any>> {
   return newOffers
 }
 
-function purchaseLimitedOffer(offerIndex: number): { ok: boolean; message: string; newMoney?: number; newInventory?: Record<string, number>; offer?: Record<string, any> } {
+function purchaseLimitedOffer(offerIndex: number): { ok: boolean; message: string; newMoney?: number; newInventory?: Record<string, number>; offer?: LimitedOffer } {
   const offers = getLimitedOffers()
   if (offerIndex < 0 || offerIndex >= offers.length) {
     return { ok: false, message: "特惠商品不存在" }
@@ -385,4 +395,4 @@ export const MobaoShopBridge = {
 }
 
 // 兼容层：保持 window.MobaoShopBridge 全局变量可用
-window.MobaoShopBridge = MobaoShopBridge as any
+window.MobaoShopBridge = MobaoShopBridge as unknown as typeof window.MobaoShopBridge

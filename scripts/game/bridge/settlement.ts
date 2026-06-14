@@ -38,7 +38,17 @@
  *   const bridge = createSettlementBridge({ MARGIN, CELL_SIZE, delay, tweenToPromise, ... });
  *   Object.assign(scene, bridge);
  */
-export function createSettlementBridge(deps: Record<string, any>): { methods: Record<string, any> } {
+interface SettlementDeps {
+  MARGIN: number
+  CELL_SIZE: number
+  delay(ms: number): Promise<void>
+  tweenToPromise(scene: unknown, targets: unknown, config: unknown): Promise<void>
+  settlementRevealDelayByQuality(qualityKey: string): number
+  settlementSearchDurationByQuality(qualityKey: string): number
+  [key: string]: unknown
+}
+
+export function createSettlementBridge(deps: SettlementDeps): { methods: Record<string, unknown> } {
   const {
     MARGIN,
     CELL_SIZE,
@@ -520,7 +530,7 @@ export function createSettlementBridge(deps: Record<string, any>): { methods: Re
       }
     },
 
-    enterSettlementPage(winnerPlayer: Record<string, any>, winnerBid: number, reasonText: string) {
+    enterSettlementPage(winnerPlayer: { id?: string; name?: string;[key: string]: unknown }, winnerBid: number, reasonText: string) {
       this.settlementSession = {
         winnerId: winnerPlayer.id,
         winnerName: winnerPlayer.name,
@@ -711,4 +721,4 @@ export function createSettlementBridge(deps: Record<string, any>): { methods: Re
 // 兼容层：保持 window.MobaoSettlementBridge 全局变量可用
 window.MobaoSettlementBridge = {
   createSettlementBridge
-} as any
+} as unknown as typeof window.MobaoSettlementBridge

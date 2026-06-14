@@ -78,9 +78,23 @@ let currentTab = "all"
 let searchQuery = ""
 let categoryFilter = "all"
 let sortFilter = "default"
-let onPurchaseCallback: ((result?: any) => void) | null = null
+type ShopBridge = {
+  getPlayerMoney(): number
+  SHOP_ITEMS: { id: string; name: string; price: number; category: string; desc: string; description: string; icon: string; dailyLimit?: number; maxDaily: number }[]
+  getRemainingDaily(id: string): number
+  getItemCount(id: string): number
+  getFullInventory(): Record<string, number>
+  getItemStorageKey(id: string): string
+  getLimitedOffers(): { itemIndex: number; discount: number; label: string; itemId: string; purchased: boolean; discountedPrice: number; originalPrice: number; badge: { type: string; label: string; color: string; minDiscount: number; maxDiscount: number } }[]
+  purchaseLimitedOffer(index: number): { ok: boolean; message: string; newMoney?: number }
+  purchaseItem(id: string): { ok: boolean; message: string; newMoney?: number }
+}
 
-function init(options?: { onPurchase?: (result?: any) => void }): void {
+const getShopBridge = () => (window as unknown as Record<string, ShopBridge>).MobaoShopBridge
+
+let onPurchaseCallback: ((result?: { ok?: boolean; message?: string; newMoney?: number }) => void) | null = null
+
+function init(options?: { onPurchase?: (result?: { ok?: boolean; message?: string; newMoney?: number }) => void }): void {
   if (options && options.onPurchase) {
     onPurchaseCallback = options.onPurchase
   }
@@ -160,8 +174,8 @@ function open(): void {
   switchTab("all")
 
   const closeBtn = document.getElementById("shopCloseBtn") as HTMLButtonElement | null
-  if (closeBtn && !(closeBtn as any)._shopBound) {
-    ; (closeBtn as any)._shopBound = true
+  if (closeBtn && !((closeBtn as unknown as Record<string, unknown>)._shopBound)) {
+    ; (closeBtn as unknown as Record<string, unknown>)._shopBound = true
     closeBtn.addEventListener("click", close)
   }
 
@@ -174,7 +188,7 @@ function close(): void {
   const overlay = document.getElementById("shopOverlay")
   if (!overlay) return
   if (typeof MobaoAnimations !== "undefined") {
-    ; (MobaoAnimations as any).animateOverlayClose(overlay, null, function () {
+    ; (MobaoAnimations as unknown as { animateOverlayClose(overlay: HTMLElement, panel: HTMLElement | null, cb: () => void): void }).animateOverlayClose(overlay, null, function () {
       overlay.classList.add("hidden")
       overlay.style.animation = ""
       overlay.style.opacity = ""
@@ -189,8 +203,8 @@ function close(): void {
 
 function updateMoneyDisplay(): void {
   const moneyEl = document.getElementById("shopMoneyDisplay")
-  if (!moneyEl || !(window as any).MobaoShopBridge) return
-  const money = (window as any).MobaoShopBridge.getPlayerMoney()
+  if (!moneyEl || !getShopBridge()) return
+  const money = getShopBridge().getPlayerMoney()
   const textEl = moneyEl.querySelector(".hud-icon") ? moneyEl.lastChild : moneyEl
   if (textEl && textEl.nodeType === 3) {
     textEl.textContent = " " + money.toLocaleString()
@@ -200,9 +214,9 @@ function updateMoneyDisplay(): void {
   }
 }
 
-function getFilteredItems(): any[] {
-  if (!(window as any).MobaoShopBridge) return []
-  const allItems = (window as any).MobaoShopBridge.SHOP_ITEMS
+function getFilteredItems(): ShopBridge["SHOP_ITEMS"] {
+  if (!getShopBridge()) return []
+  const allItems = getShopBridge().SHOP_ITEMS
 
   let filtered = allItems.filter(function (item) {
     if (
@@ -236,9 +250,9 @@ function getFilteredItems(): any[] {
 
 function renderAllItems(): void {
   const gridEl = document.getElementById("shopGrid")
-  if (!gridEl || !(window as any).MobaoShopBridge) return
+  if (!gridEl || !getShopBridge()) return
 
-  const money = (window as any).MobaoShopBridge.getPlayerMoney()
+  const money = getShopBridge().getPlayerMoney()
   const items = getFilteredItems()
 
   if (items.length === 0) {
@@ -248,8 +262,8 @@ function renderAllItems(): void {
 
   gridEl.innerHTML = items
     .map(function (item) {
-      const remaining = (window as any).MobaoShopBridge.getRemainingDaily(item.id)
-      const owned = (window as any).MobaoShopBridge.getItemCount(item.id)
+      const remaining = getShopBridge().getRemainingDaily(item.id)
+      const owned = getShopBridge().getItemCount(item.id)
       const canBuy = remaining > 0 && money >= item.price
 
       return [
@@ -283,15 +297,15 @@ function renderAllItems(): void {
 
 function renderInventory(): void {
   const gridEl = document.getElementById("shopInventoryGrid")
-  if (!gridEl || !(window as any).MobaoShopBridge) return
+  if (!gridEl || !getShopBridge()) return
 
-  const inv = (window as any).MobaoShopBridge.getFullInventory()
-  const items = (window as any).MobaoShopBridge.SHOP_ITEMS
+  const inv = getShopBridge().getFullInventory()
+  const items = getShopBridge().SHOP_ITEMS
 
   const inventoryItems = items
-    .map(function (item: any) {
-      const storageKey = (window as any).MobaoShopBridge.getItemStorageKey
-        ? (window as any).MobaoShopBridge.getItemStorageKey(item.id)
+    .map(function (item: ShopBridge["SHOP_ITEMS"][number]) {
+      const storageKey = getShopBridge().getItemStorageKey
+        ? getShopBridge().getItemStorageKey(item.id)
         : item.id.replace("item-", "").replace("-", "")
       const count = inv[storageKey] || 0
       return {
@@ -326,10 +340,10 @@ function renderInventory(): void {
 
 function renderLimitedOffers(): void {
   const panelEl = document.getElementById("shopTabLimited")
-  if (!panelEl || !(window as any).MobaoShopBridge) return
+  if (!panelEl || !getShopBridge()) return
 
-  const offers = (window as any).MobaoShopBridge.getLimitedOffers()
-  const money = (window as any).MobaoShopBridge.getPlayerMoney()
+  const offers = getShopBridge().getLimitedOffers()
+  const money = getShopBridge().getPlayerMoney()
 
   if (!offers || offers.length === 0) {
     panelEl.innerHTML = '<div class="shop-limited-placeholder"><p>今日暂无特惠商品</p></div>'
@@ -345,7 +359,7 @@ function renderLimitedOffers(): void {
   ]
 
   offers.forEach(function (offer, index) {
-    const item = (window as any).MobaoShopBridge.SHOP_ITEMS.find(function (s: any) {
+    const item = getShopBridge().SHOP_ITEMS.find(function (s: ShopBridge["SHOP_ITEMS"][number]) {
       return s.id === offer.itemId
     })
     if (!item) return
@@ -392,8 +406,8 @@ function renderLimitedOffers(): void {
 }
 
 function purchaseLimitedOffer(offerIndex: number): void {
-  if (!(window as any).MobaoShopBridge) return
-  const result = (window as any).MobaoShopBridge.purchaseLimitedOffer(offerIndex)
+  if (!getShopBridge()) return
+  const result = getShopBridge().purchaseLimitedOffer(offerIndex)
   if (result.ok) {
     updateMoneyDisplay()
     renderLimitedOffers()
@@ -409,8 +423,8 @@ function purchaseLimitedOffer(offerIndex: number): void {
 }
 
 function purchaseItem(itemId: string): void {
-  if (!(window as any).MobaoShopBridge) return
-  const result = (window as any).MobaoShopBridge.purchaseItem(itemId)
+  if (!getShopBridge()) return
+  const result = getShopBridge().purchaseItem(itemId)
   if (result.ok) {
     updateMoneyDisplay()
     renderAllItems()
@@ -437,4 +451,4 @@ export const MobaoShopPage = {
 }
 
   // 兼容层：保持 window.MobaoShopPage 全局变量可用
-  ; (window as any).MobaoShopPage = MobaoShopPage
+  ; (window as unknown as Record<string, unknown>).MobaoShopPage = MobaoShopPage
