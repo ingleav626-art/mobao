@@ -26,16 +26,46 @@
  *   buildAiDecisionPanelSnapshot, compactPanelTextForSnapshot,
  *   beginRunTracking, recordAiThoughtLogs, renderAiThoughtLog, writeLog
  */
-const { formatBidRevealNumber } = (window as any).MobaoUtils
+const { formatBidRevealNumber } = (window as unknown as Record<string, { formatBidRevealNumber(v: number): string }>).MobaoUtils
 
-export const AiDecisionMixin: Record<string, any> = {
-  buildAiDecisionPanelSnapshot(telemetry: Record<string, any>): string | null {
-    if (!telemetry || telemetry.mode !== "llm" || !Array.isArray(telemetry.entries)) {
+type RuleDecisionEntry = {
+  playerId: string
+  confidence?: number
+  archetype?: string
+  confidenceParts?: Record<string, number>
+  overheatRatio?: number
+  overheatThreshold?: number
+  intelClueRate?: number
+  intelQualityRate?: number
+  intelUncertainty?: number
+  intelSpreadRatio?: number
+  perceivedValue?: number
+  hardCap?: number
+  psychExpectedBid?: number
+  toolTag?: string
+  toolScoreBoost?: number
+  actionTag?: string
+  mistakeTag?: string
+  diversifyTag?: string
+  [key: string]: unknown
+}
+
+type DecisionEntry = {
+  playerId: string; playerName: string; controlMode: string; finalBid: number; decisionSource: string
+  correctionAttempt: number; originalError?: string; historyMessagesCount: number; crossGameMemoryCount: number
+  inGameHistoryCount: number; ruleDecision?: { confidence?: number; archetype?: string;[key: string]: unknown }
+  [key: string]: unknown
+}
+
+export const AiDecisionMixin: Record<string, unknown> = {
+  buildAiDecisionPanelSnapshot(telemetry: Record<string, unknown>): string | null {
+    if (!telemetry || (telemetry as { mode?: string }).mode !== "llm" || !Array.isArray((telemetry as { entries?: unknown[] }).entries)) {
       return null
     }
 
     const lines = []
-    lines.push(`回合 ${telemetry.round} | 决策模式：混合（大模型+规则AI）`)
+    const t = telemetry as { round: number; entries: DecisionEntry[] }
+    lines.push(`回合 ${t.round} | 决策模式：混合（大模型+规则AI）`)
     lines.push("说明：大模型接管显示完整提示词与回复；规则AI显示信心拆解与估值。")
     lines.push("")
     lines.push("-")
@@ -44,8 +74,8 @@ export const AiDecisionMixin: Record<string, any> = {
       this.aiEngine && typeof this.aiEngine.getLastDecisionLog === "function"
         ? this.aiEngine.getLastDecisionLog()
         : null
-    const ruleEntryById = new Map<string, any>(
-      ((rulePayload && rulePayload.entries) || []).map((entry: any) => [entry.playerId, entry])
+    const ruleEntryById = new Map<string, RuleDecisionEntry>(
+      ((rulePayload && (rulePayload as { entries?: unknown[] }).entries) || []).map((entry: DecisionEntry) => [entry.playerId, entry])
     )
 
     const CONTROL_MODE_LABELS = {
@@ -58,7 +88,7 @@ export const AiDecisionMixin: Record<string, any> = {
       "rule-fallback-llm-invalid": "回退原因: LLM返回无效决策(无出价)"
     }
 
-      ; (telemetry.entries || []).forEach((entry) => {
+      ; (t.entries || []).forEach((entry) => {
         const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected"
         const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback")
         lines.push(`${entry.playerName}（${entry.playerId}）| 接管状态: ${isLlm ? "大模型" : "规则AI"}`)
@@ -101,7 +131,7 @@ export const AiDecisionMixin: Record<string, any> = {
             lines.push(`  错误: ${entry.error}`)
           }
           if (entry.fallbackRuleBid !== null && entry.fallbackRuleBid !== undefined) {
-            lines.push(`  回退规则出价参考: ${formatBidRevealNumber(entry.fallbackRuleBid)}`)
+            lines.push(`  回退规则出价参考: ${formatBidRevealNumber(Number(entry.fallbackRuleBid) || 0)}`)
           }
           if (entry.systemPrompt) {
             lines.push("  [System Prompt]")
@@ -208,12 +238,13 @@ export const AiDecisionMixin: Record<string, any> = {
     this.renderAiThoughtLog()
   },
 
-  recordAiThoughtLogs(telemetry: Record<string, any>): void {
-    if (!telemetry || telemetry.mode !== "llm" || !Array.isArray(telemetry.entries) || !this.currentRunLog) {
+  recordAiThoughtLogs(telemetry: Record<string, unknown>): void {
+    const t = telemetry as { mode?: string; entries?: DecisionEntry[] }
+    if (!t || t.mode !== "llm" || !Array.isArray(t.entries) || !this.currentRunLog) {
       return
     }
 
-    telemetry.entries.forEach((entry) => {
+    t.entries!.forEach((entry) => {
       const thought = String(entry && entry.thought ? entry.thought : "").trim()
       const reasoningContent = String(entry && entry.reasoningContent ? entry.reasoningContent : "").trim()
       const historyCount = entry && entry.historyMessagesCount ? entry.historyMessagesCount : 0
@@ -270,13 +301,13 @@ export const AiDecisionMixin: Record<string, any> = {
       })
     })
 
-    if (this.currentRunLog.aiThoughtLogs.length > 80) {
-      this.currentRunLog.aiThoughtLogs = this.currentRunLog.aiThoughtLogs.slice(-80)
+    if ((this.currentRunLog as { aiThoughtLogs: unknown[] }).aiThoughtLogs.length > 80) {
+      ; (this.currentRunLog as { aiThoughtLogs: unknown[] }).aiThoughtLogs = (this.currentRunLog as { aiThoughtLogs: unknown[] }).aiThoughtLogs.slice(-80)
     }
 
     const roundNo = Math.max(1, Math.round(Number(telemetry.round) || 1))
     console.log(
-      `[recordAiThoughtLogs] roundNo=${roundNo}, telemetry.round=${telemetry.round}, entries=${telemetry.entries?.length}`
+      `[recordAiThoughtLogs] roundNo=${roundNo}, telemetry.round=${(telemetry as { round?: number }).round}, entries=${(telemetry as { entries?: unknown[] }).entries?.length}`
     )
     if (!this.currentRunLog.roundPanelTexts) {
       this.currentRunLog.roundPanelTexts = {}
@@ -355,5 +386,5 @@ export const AiDecisionMixin: Record<string, any> = {
 }
 
   // 兼容层：保持 window.MobaoAi 全局变量可用
-  ; (window as any).MobaoAi = (window as any).MobaoAi || {}
-  ; (window as any).MobaoAi.DecisionMixin = AiDecisionMixin
+  ; (window as unknown as Record<string, unknown>).MobaoAi = (window as unknown as Record<string, unknown>).MobaoAi || {}
+  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoAi).DecisionMixin = AiDecisionMixin
