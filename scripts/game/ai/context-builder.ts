@@ -22,10 +22,20 @@
  * @exports window.MobaoContextBuilder - 上下文构建器
  */
 
-const { QUALITY_CONFIG, ARTIFACT_LIBRARY } = (window as any).ArtifactData
-const { GRID_COLS, GRID_ROWS } = (window as any).MobaoConstants
+import type { Player } from "../../../types/game"
+import type { Personality } from "../../../types/ai"
 
-function buildBidHistorySnapshot(round: number, players: any[], playerRoundHistory: Record<string, any[]>): Array<Record<string, any>> {
+type ActionDef = { id: string; type: string; name: string; description: string }
+type QualityConfigEntry = { label: string;[key: string]: unknown }
+type ArtifactDataWindow = { QUALITY_CONFIG: Record<string, QualityConfigEntry>; ARTIFACT_LIBRARY: Array<{ qualityKey: string; basePrice: number;[key: string]: unknown }> }
+type ActionDefSystem = { SKILL_DEFS: ActionDef[]; ITEM_DEFS: ActionDef[] }
+
+const { QUALITY_CONFIG, ARTIFACT_LIBRARY } = (window as unknown as Record<string, ArtifactDataWindow>).ArtifactData
+const { GRID_COLS, GRID_ROWS } = (window as unknown as Record<string, { GRID_COLS: number; GRID_ROWS: number }>).MobaoConstants
+const SKILL_DEFS: ActionDef[] = (window as unknown as Record<string, ActionDefSystem>).SkillSystem.SKILL_DEFS || []
+const ITEM_DEFS: ActionDef[] = (window as unknown as Record<string, ActionDefSystem>).ItemSystem.ITEM_DEFS || []
+
+function buildBidHistorySnapshot(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>): Array<{ round: number; bids: Record<string, number> }> {
   const rounds = Array.from({ length: Math.max(0, round - 1) }, (_v, idx) => idx + 1)
   return rounds.map((roundNo) => {
     const bids = {}
@@ -41,7 +51,7 @@ function buildBidHistorySnapshot(round: number, players: any[], playerRoundHisto
   })
 }
 
-function buildPublicEventSnapshot(players: any[], playerUsageHistory: Record<string, any[]>, currentRoundUsage: Record<string, any[]>, round: number, getActionDefById: (id: string) => Record<string, any>, currentPublicEvent: Record<string, any> | null, options: Record<string, any> = {}): any[] {
+function buildPublicEventSnapshot(players: Player[], playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, currentRoundUsage: Record<string, string[]>, round: number, getActionDefByIdFn: (id: string) => ActionDef, currentPublicEvent: { category: string; id: string; text: string } | null, options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
   const compact = Boolean(options.compact)
   const viewerId = options.viewerId || ""
   const events = []
@@ -113,7 +123,7 @@ function buildPublicEventSnapshot(players: any[], playerUsageHistory: Record<str
   return events.slice(-30)
 }
 
-function buildRoundPublicStateTable(round: number, players: any[], playerRoundHistory: Record<string, any[]>, currentRoundUsage: Record<string, any[]>, playerUsageHistory: Record<string, any[]>, viewerId: string): Record<string, any> {
+function buildRoundPublicStateTable(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>, currentRoundUsage: Record<string, string[]>, playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, viewerId: string): { columns: string[]; rows: unknown[][] } {
   const bidHistory = buildBidHistorySnapshot(round, players, playerRoundHistory)
   const bidByRound = new Map(bidHistory.map((entry) => [entry.round, entry.bids || {}]))
   const actionPlayers = players.filter((player) => player.id !== viewerId)
@@ -158,7 +168,7 @@ function buildRoundPublicStateTable(round: number, players: any[], playerRoundHi
   }
 }
 
-function buildQualityPriceRangeTableCompact(): Record<string, any> {
+function buildQualityPriceRangeTableCompact(): { columns: string[]; rows: unknown[][] } {
   var columns = ["quality_key", "quality_name", "min_price", "max_price", "avg_price"]
   var rows = Object.keys(QUALITY_CONFIG).map((qualityKey) => {
     var entries = ARTIFACT_LIBRARY.filter((artifact) => artifact.qualityKey === qualityKey)
@@ -179,14 +189,14 @@ function buildQualityPriceRangeTableCompact(): Record<string, any> {
   return { columns, rows }
 }
 
-function buildCatalogSummaryInner(options: Record<string, any> = {}): Record<string, any> {
+function buildCatalogSummaryInner(options: Record<string, unknown> = {}): Record<string, unknown> {
   var compact = Boolean(options.compact)
   var prices = ARTIFACT_LIBRARY.map((entry) => Number(entry.basePrice) || 0)
     .filter((value) => value > 0)
     .sort((a, b) => a - b)
   var minPrice = prices.length > 0 ? prices[0] : 0
   var maxPrice = prices.length > 0 ? prices[prices.length - 1] : 0
-  var qualityLabels = Object.values(QUALITY_CONFIG as any).map((entry: any) => entry.label)
+  var qualityLabels = Object.values(QUALITY_CONFIG).map((entry) => entry.label)
 
   return {
     totalArtifacts: ARTIFACT_LIBRARY.length,
@@ -204,7 +214,7 @@ function buildCatalogSummaryInner(options: Record<string, any> = {}): Record<str
   }
 }
 
-function buildQualityPriceGuide(options: Record<string, any> = {}): any[] {
+function buildQualityPriceGuide(options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
   var compact = Boolean(options.compact)
   return Object.keys(QUALITY_CONFIG).map((qualityKey) => {
     var entries = ARTIFACT_LIBRARY.filter((artifact) => artifact.qualityKey === qualityKey)
@@ -228,7 +238,7 @@ function buildQualityPriceGuide(options: Record<string, any> = {}): any[] {
   })
 }
 
-function getActionDefById(actionId: string): Record<string, any> {
+function getActionDefById(actionId: string): ActionDef {
   var skill = SKILL_DEFS.find((entry) => entry.id === actionId)
   if (skill) {
     return {
@@ -257,7 +267,7 @@ function getActionDefById(actionId: string): Record<string, any> {
   }
 }
 
-function buildOtherPlayersPublicInfo(players: any[], aiEngine: any, playerUsageHistory: Record<string, any[]>, getActionDefById: (id: string) => Record<string, any>, viewerId: string, options: Record<string, any> = {}): any[] {
+function buildOtherPlayersPublicInfo(players: Player[], aiEngine: { personalityMap: Record<string, Personality> }, playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, getActionDefById: (id: string) => ActionDef, viewerId: string, options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
   var compact = Boolean(options.compact)
   return players
     .filter((player) => player.id !== viewerId)
@@ -291,7 +301,7 @@ function buildOtherPlayersPublicInfo(players: any[], aiEngine: any, playerUsageH
 }
 
 // 兼容层
-; (window as any).MobaoContextBuilder = {
+; (window as unknown as Record<string, unknown>).MobaoContextBuilder = {
   buildBidHistorySnapshot,
   buildPublicEventSnapshot,
   buildRoundPublicStateTable,
