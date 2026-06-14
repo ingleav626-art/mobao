@@ -126,11 +126,97 @@ interface IntelActionResult extends IntelActionCandidate {
   candidates: IntelActionCandidate[]
 }
 
+interface ResetContext {
+  startingBid?: number
+  itemCount?: number
+  [key: string]: unknown
+}
+
+interface BuildAIBidsContext {
+  aiPlayers: Array<{ id: string;[key: string]: unknown }>
+  clueRate: number
+  round: number
+  maxRounds: number
+  currentBid: number
+  lastRoundBids?: Record<string, number>
+  bidStep?: number
+  aiIntelMap?: Record<string, IntelSummaryInput>
+  aiToolEffectMap?: Record<string, ToolEffect>
+  [key: string]: unknown
+}
+
+interface IntelSummaryInput {
+  clueRate?: number
+  qualityRate?: number
+  uncertainty?: number
+  spreadRatio?: number
+  upperEdge?: number
+  lowerEdge?: number
+  [key: string]: unknown
+}
+
+interface ComputeSingleDecisionArgs {
+  playerId: string
+  clueRate: number
+  qualityRate: number
+  uncertainty: number
+  spreadRatio?: number
+  upperEdge?: number
+  lowerEdge?: number
+  roundProgress: number
+  currentBid: number
+  marketRef: number
+  persona: Personality
+  lastRoundBids?: Record<string, number>
+  bidStep: number
+  toolEffect: ToolEffect
+  [key: string]: unknown
+}
+
+interface ComputeConfidencePartsArgs {
+  clueRate: number
+  qualityRate: number
+  uncertainty: number
+  spreadRatio: number
+  upperEdge: number
+  lowerEdge: number
+  roundProgress: number
+  marketRef: number
+  currentBid: number
+  persona: Personality
+  toolEffect: ToolEffect
+  [key: string]: unknown
+}
+
+interface PlanIntelActionArgs {
+  playerId: string
+  round: number
+  maxRounds: number
+  persona: Personality
+  pool: Record<string, unknown>
+  roundProgress: number
+  currentBid: number
+  marketRef: number
+  toolEffect: ToolEffect
+  intelSummary?: Record<string, unknown>
+  resources?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+interface ApplyCrowdDiversityArgs {
+  aiPlayers: Array<{ id: string;[key: string]: unknown }>
+  decisionMap: Record<string, DecisionResult>
+  bidMap: Record<string, number>
+  currentBid: number
+  bidStep: number
+  [key: string]: unknown
+}
+
 export class AuctionAiEngine {
   personalityMap: Record<string, Personality>
   aiState: Map<string, AiStateEntry>
   runMeta: { startingBid: number; itemCount: number }
-  lastDecisionLog: Record<string, any> | null
+  lastDecisionLog: Record<string, unknown> | null
 
   constructor() {
     // 规则化人格参数：用于控制AI出价节奏、跟风倾向与失误概率。
@@ -198,7 +284,7 @@ export class AuctionAiEngine {
   }
 
   // 每次新拍卖开始时重置AI状态，接受一些上下文信息以便调整初始参数。
-  resetForNewRun(context: Record<string, any> = {}) {
+  resetForNewRun(context: ResetContext = {}) {
     this.aiState.clear()
     this.runMeta = {
       startingBid: Math.max(100000, Number(context.startingBid) || 100000),
@@ -208,7 +294,7 @@ export class AuctionAiEngine {
   }
 
   // 确保AI状态存在，并根据人格参数初始化锚点等信息。
-  buildAIBids(context: Record<string, any>) {
+  buildAIBids(context: BuildAIBidsContext) {
     const {
       aiPlayers, // 当前拍卖中的AI玩家列表，由主场景传入
       clueRate,
@@ -310,7 +396,7 @@ export class AuctionAiEngine {
   }
 
   // 计算单个AI玩家的出价决策，基于其人格、当前信息和市场状态，得到一个包含最终出价和相关决策信息的对象。
-  computeSingleDecision(args: Record<string, any>): DecisionResult {
+  computeSingleDecision(args: ComputeSingleDecisionArgs): DecisionResult {
     const {
       playerId,
       clueRate,
@@ -659,7 +745,7 @@ export class AuctionAiEngine {
   }
 
   //信心的计算
-  computeConfidenceParts(args: Record<string, any>): ConfidenceParts {
+  computeConfidenceParts(args: ComputeConfidencePartsArgs): ConfidenceParts {
     const {
       clueRate,
       qualityRate,
@@ -720,7 +806,7 @@ export class AuctionAiEngine {
     }
   }
 
-  planIntelAction(args: Record<string, any>): IntelActionResult {
+  planIntelAction(args: PlanIntelActionArgs): IntelActionResult {
     const { playerId, round, maxRounds, intelSummary = {}, resources = {} } = args
 
     const persona = this.personalityMap[playerId] || defaultPersona()
@@ -849,7 +935,15 @@ export class AuctionAiEngine {
     }
   }
 
-  buildToolEffect(args: Record<string, any> = {}): ToolEffect {
+  buildToolEffect(args: {
+    actionType?: string
+    actionId?: string
+    roundProgress?: number
+    intelSummary?: IntelSummaryInput
+    signalStats?: { aggregate?: IntelSummaryInput; qualitySignalRate?: number; outlineSignalRate?: number; signalCount?: number; spreadRatio?: number; upperEdge?: number; lowerEdge?: number;[key: string]: unknown } | null
+    planScore?: number
+    [key: string]: unknown
+  } = {}): ToolEffect {
     const {
       actionType = "none",
       actionId = "none",
@@ -887,7 +981,7 @@ export class AuctionAiEngine {
     const countFactor = clamp(signalCount * 0.24 + statCount / 40, 0, 1.2)
     const stability = clamp(1 - spread * 1.2, 0, 1)
 
-    const effect: Record<string, any> = {
+    const effect: Record<string, unknown> = {
       tag: actionId.includes("quality") ? "候选鉴质" : "候选拓影",
       confidenceBoost: clamp(
         (stability * 0.12 + countFactor * 0.06 + edgeSignal * 0.1 + qualitySignalRate * 0.03) * stageFactor,
@@ -915,7 +1009,7 @@ export class AuctionAiEngine {
     return normalizeToolEffect(effect)
   }
 
-  applyCrowdDiversity(args: Record<string, any>): void {
+  applyCrowdDiversity(args: ApplyCrowdDiversityArgs): void {
     const { aiPlayers, decisionMap, bidMap, currentBid, bidStep } = args
 
     const step = Math.max(10, Math.round(Number(bidStep) || 100))
@@ -1005,7 +1099,7 @@ export class AuctionAiEngine {
     return state
   }
 
-  getLastDecisionLog(): Record<string, any> | null {
+  getLastDecisionLog(): Record<string, unknown> | null {
     return this.lastDecisionLog
   }
 }
@@ -1030,9 +1124,9 @@ function defaultPersona(): Personality {
   }
 }
 
-function normalizeToolEffect(effect: Record<string, any> = {}): ToolEffect {
+function normalizeToolEffect(effect: ToolEffect | { [key: string]: unknown } = {}): ToolEffect {
   return {
-    tag: effect.tag || "",
+    tag: String(effect.tag || ""),
     confidenceBoost: clamp(Number(effect.confidenceBoost) || 0, -0.2, 0.45),
     capBoost: clamp(Number(effect.capBoost) || 0, -0.2, 0.25),
     followBoost: clamp(Number(effect.followBoost) || 0, -0.2, 0.3),
@@ -1070,6 +1164,6 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 // 兼容层：保持 window.AuctionAI 全局变量可用
-(window as any).AuctionAI = {
+(window as unknown as Record<string, unknown>).AuctionAI = {
   AuctionAiEngine
 }
