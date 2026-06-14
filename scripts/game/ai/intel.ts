@@ -93,7 +93,7 @@ export const AiIntelMixin = {
     this.aiCharacterAssignments = {}
 
     const aiPlayers = this.players.filter((player) => !player.isHuman)
-    const allCharacters = (window.CharacterData && (window.CharacterData as any).CHARACTERS) || []
+    const allCharacters = (window.CharacterData && (window.CharacterData as unknown as { CHARACTERS: Array<{ id: string; name: string; skillId: string; skillName: string; passive: boolean }> }).CHARACTERS) || []
     const allItems = [...ITEM_DEFS]
 
     aiPlayers.forEach((player) => {
@@ -691,12 +691,12 @@ export const AiIntelMixin = {
       (item) => !pool.knownOutlineIds.has(item.id) || !pool.knownQualityIds.has(item.id)
     )
 
-    const sortByArea = (arr: any[], strategy: string) => {
+    const sortByArea = (arr: Array<Record<string, unknown>>, strategy: string) => {
       const shuffled = shuffle(arr)
       if (strategy === "smallestFirst") {
-        return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
+        return shuffled.sort((a, b) => Number(a.w) * Number(a.h) - Number(b.w) * Number(b.h))
       } else if (strategy === "largestFirst") {
-        return shuffled.sort((a, b) => b.w * b.h - a.w * a.h)
+        return shuffled.sort((a, b) => Number(b.w) * Number(b.h) - Number(a.w) * Number(a.h))
       }
       return shuffled
     }
@@ -801,20 +801,20 @@ export const AiIntelMixin = {
       return isUnknown(item)
     })
 
-    const sortByArea = (arr: any[], strategy: string) => {
+    const sortByArea = (arr: Array<Record<string, unknown>>, strategy: string) => {
       const shuffled = shuffle(arr)
       if (strategy === "smallestFirst") {
-        return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
+        return shuffled.sort((a, b) => Number(a.w) * Number(a.h) - Number(b.w) * Number(b.h))
       } else if (strategy === "largestFirst") {
-        return shuffled.sort((a, b) => b.w * b.h - a.w * a.h)
+        return shuffled.sort((a, b) => Number(b.w) * Number(b.h) - Number(a.w) * Number(a.h))
       }
       return shuffled
     }
 
     let selected = sortByArea(primary, sortStrategy).slice(0, count)
     if (selected.length < count && allowCategoryFallback && category) {
-      const existed = new Set(selected.map((item: any) => item.id))
-      const fallback = this.items.filter((item: any) => !existed.has(item.id) && isUnknown(item))
+      const existed = new Set(selected.map((item: Record<string, unknown>) => item.id as string))
+      const fallback = this.items.filter((item: Record<string, unknown>) => !existed.has(item.id as string) && isUnknown(item))
       selected = selected.concat(sortByArea(fallback, sortStrategy).slice(0, count - selected.length))
     }
 
@@ -861,8 +861,8 @@ export const AiIntelMixin = {
 
   buildAiAggregateIntelBlock(playerId) {
     const pool = this.ensureAiPrivateIntel(playerId)
-    const qualityMap: Record<string, any> = {}
-    const categoryMap: Record<string, any> = {}
+    const qualityMap: Record<string, { count: number; deepestRow: number; estimatedCellCount: number; estimatedCellSamples: number; knownQualityCount: number; highQualityCount: number; qualityLabel: string; qualityKey: string }> = {}
+    const categoryMap: Record<string, { count: number; deepestRow: number; estimatedCellCount: number; estimatedCellSamples: number; knownQualityCount: number; highQualityCount: number; category: string }> = {}
 
     pool.qualitySignals.forEach((signal) => {
       if (!signal || !signal.qualityKey) {
@@ -876,7 +876,9 @@ export const AiIntelMixin = {
           count: 0,
           deepestRow: 0,
           estimatedCellCount: 0,
-          estimatedCellSamples: 0
+          estimatedCellSamples: 0,
+          knownQualityCount: 0,
+          highQualityCount: 0
         }
       }
       qualityMap[key].count += 1
@@ -900,6 +902,9 @@ export const AiIntelMixin = {
         categoryMap[key] = {
           category: key,
           count: 0,
+          deepestRow: 0,
+          estimatedCellCount: 0,
+          estimatedCellSamples: 0,
           highQualityCount: 0,
           knownQualityCount: 0
         }
