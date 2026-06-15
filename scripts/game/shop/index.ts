@@ -106,7 +106,9 @@ function bindEvents(): void {
     sidebar.querySelectorAll(".shop-nav-item").forEach(function (btn) {
       btn.addEventListener("click", function () {
         const tab = btn.getAttribute("data-shop-tab")
-        switchTab(tab)
+        if (tab) {
+          switchTab(tab)
+        }
       })
     })
   }
@@ -226,7 +228,7 @@ function getFilteredItems(): ShopItem[] {
       return false
     }
     if (categoryFilter !== "all") {
-      const category = ITEM_CATEGORIES[categoryFilter]
+      const category = (ITEM_CATEGORIES as Record<string, { name: string; items: string[] }>)[categoryFilter]
       if (category && !category.items.includes(item.id)) {
         return false
       }
@@ -289,7 +291,9 @@ function renderAllItems(): void {
   gridEl.querySelectorAll(".shop-card-buy").forEach(function (btn) {
     btn.addEventListener("click", function () {
       const itemId = btn.getAttribute("data-shop-item-id")
-      purchaseItem(itemId)
+      if (itemId) {
+        purchaseItem(itemId)
+      }
     })
   })
 }
@@ -398,8 +402,11 @@ function renderLimitedOffers(): void {
 
   panelEl.querySelectorAll(".shop-limited-buy").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      const offerIndex = parseInt(btn.getAttribute("data-offer-index"), 10)
-      purchaseLimitedOffer(offerIndex)
+      const offerIndexStr = btn.getAttribute("data-offer-index")
+      if (offerIndexStr) {
+        const offerIndex = parseInt(offerIndexStr, 10)
+        purchaseLimitedOffer(offerIndex)
+      }
     })
   })
 }
