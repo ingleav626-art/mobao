@@ -33,9 +33,10 @@
  *
  * @exports BiddingMixin - 出价流程 Mixin，混入 Phaser Scene
  */
-const { delay } = (window as unknown as Record<string, { delay(ms: number): Promise<void> }>).MobaoUtils
-const { GAME_SETTINGS } = (window as unknown as Record<string, { GAME_SETTINGS: { bidStep: number; maxRounds: number; directTakeRatio: number; bidRevealIntervalMs: number; postRevealWaitMs: number;[key: string]: unknown } }>).MobaoSettings
-const { formatBidRevealNumber } = (window as unknown as Record<string, { formatBidRevealNumber(v: number): string }>).MobaoUtils
+import { delay, formatBidRevealNumber } from "../core/utils"
+import { GAME_SETTINGS } from "../core/settings"
+import { AudioUI } from "../../audio/audio-ui"
+import { MobaoAnimations } from "../animations"
 
 export const BiddingMixin: Record<string, unknown> = {
   setPlayerBidReady(playerId: string, ready: boolean): void {
@@ -196,8 +197,8 @@ export const BiddingMixin: Record<string, unknown> = {
     this.roundResolving = true
     this.stopRoundTimer()
 
-    if ((window as unknown as Record<string, { stopCountdown(): void }>).AudioUI) {
-      ; (window as unknown as Record<string, { stopCountdown(): void }>).AudioUI.stopCountdown()
+    if (AudioUI) {
+      AudioUI.stopCountdown()
     }
 
     try {
@@ -248,8 +249,8 @@ export const BiddingMixin: Record<string, unknown> = {
       await delay(GAME_SETTINGS.postRevealWaitMs)
 
       // 回合过渡动画：出价揭示后切换到下一回合
-      if ((window as unknown as Record<string, { roundTransition(opts: unknown): Promise<void> }>).MobaoAnimations) {
-        await (window as unknown as Record<string, { roundTransition(opts: unknown): Promise<void> }>).MobaoAnimations.roundTransition({
+      if (MobaoAnimations) {
+        await MobaoAnimations.roundTransition({
           text: "第 " + (this.round + 1) + " 回合"
         })
       }
@@ -349,8 +350,8 @@ export const BiddingMixin: Record<string, unknown> = {
       const bidInfo = roundBids.find((entry) => entry.playerId === player.id)
       this.setPlayerBidDisplay(player.id, bidInfo.bid, i + 1)
       this.writeLog(`${player.name} 本轮出价：${bidInfo.bid}`)
-      if ((window as unknown as Record<string, { playReveal(): void }>).AudioUI) {
-        ; (window as unknown as Record<string, { playReveal(): void }>).AudioUI.playReveal()
+      if (AudioUI) {
+        AudioUI.playReveal()
       }
       await delay(GAME_SETTINGS.bidRevealIntervalMs)
     }
