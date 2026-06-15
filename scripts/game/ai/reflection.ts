@@ -54,8 +54,17 @@ export const AiReflectionMixin: Record<string, any> = {
     }
     this.aiReflectionState = "pending"
     this.aiReflectionStateDetail = ""
+    this.aiReflectionCompleted = 0
     this.updateReflectionStatusUI()
+
+    this._reflectionBeforeUnload = () => {
+      this.saveAiMemoryToStorage()
+    }
+    window.addEventListener("beforeunload", this._reflectionBeforeUnload)
+    const originalCrossGameMemory = this.aiCrossGameMemory
     const aiPlayers = this.players.filter((p) => !p.isHuman && this.canUseLlmDecisionForPlayer(p.id))
+    this.aiReflectionTotal = aiPlayers.length
+    this.updateReflectionStatusUI()
     console.log("[triggerAiReflection] aiPlayers count:", aiPlayers.length)
     if (aiPlayers.length === 0) {
       this.aiReflectionState = "done"
@@ -65,7 +74,9 @@ export const AiReflectionMixin: Record<string, any> = {
     const failedPlayers = []
     const timeoutPlayers = []
     const reflectionPromises = aiPlayers.map(async (player) => {
-      console.log("[triggerAiReflection] starting reflection for player:", player.id, player.name)
+      const playerName = player.name
+      const playerId = player.id
+      console.log("[triggerAiReflection] starting reflection for player:", playerId, playerName)
       const isWinner = record.winnerId === player.id
       let dividendTicketText = "无分红/门票"
       if (record.dividendTicket) {
@@ -86,7 +97,7 @@ export const AiReflectionMixin: Record<string, any> = {
 
       const praiseList = praises.map((p, i) => `${i}. ${p}`).join("; ")
       const strategyList = strategies.map((s, i) => `${i}. ${s}`).join("; ")
-      const lessonList = lessons.map((l, i) => `${l}. ${l}`).join("; ")
+      const lessonList = lessons.map((l, i) => `${i}. ${l}`).join("; ")
 
       let statsInfo = ""
       if (stats.totalGames > 0) {
@@ -113,12 +124,16 @@ export const AiReflectionMixin: Record<string, any> = {
           .join("\n")
       }
 
+      const needsSummary = this.isAiMultiGameMemoryEnabled() &&
+        typeof this.shouldGenerateSummary === "function" && this.shouldGenerateSummary()
+
       const reflectionPrompt = [
         "请根据本局表现更新经验本，返回JSON格式：",
         "{",
         '  "praises": { "add": ["新内容"], "delete": [索引号], "modify": [[索引号, "新内容"]] },',
         '  "strategies": { "add": [...], "delete": [...], "modify": [...] },',
-        '  "lessons": { "add": [...], "delete": [...], "modify": [...] }',
+        '  "lessons": { "add": [...], "delete": [...], "modify": [...] },',
+        needsSummary ? '  "summary": "将最近几局的关键经验压缩为一段50字以内的摘要"' : "",
         "}",
         "",
         "要求：",
@@ -126,6 +141,7 @@ export const AiReflectionMixin: Record<string, any> = {
         "- 如果条数已满，但又必须增加条目时思考如何优化现有经验书",
         "- 不要写本局，本次等一些很限定的词，同时不要写违反游戏规定的条例",
         "- 每一个条目的字数限制在50字",
+        needsSummary ? "- summary：将最近几局的胜率、关键教训、出价规律压缩为一段话，用于下局开局时快速回忆" : "",
         "操作说明：",
         "- add: 添加新条目，数组形式",
         "- delete: 删除条目，索引号数组（如 [0, 2] 删除第0和第2条）",
@@ -160,6 +176,14 @@ export const AiReflectionMixin: Record<string, any> = {
           )
           if (historyContext) {
             reflectionPrompt.push("", historyContext)
+          }
+        }
+        if (needsSummary && reflectionScope !== "full" && (window as any).MobaoGameHistory) {
+          const historyContext = (window as any).MobaoGameHistory.buildReflectionContext(
+            player.id, "full", null, this.isLanMode
+          )
+          if (historyContext) {
+            reflectionPrompt.push("", "【多局历史（用于总结）】", historyContext)
           }
         }
         const reflectionPromptText = reflectionPrompt.join("\n")
@@ -274,7 +298,7 @@ export const AiReflectionMixin: Record<string, any> = {
             `[triggerAiReflection] ${player.id} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`
           )
 
-          let parsedReflection = { lessons: [], strategies: [] }
+          let parsedReflection: { lessons: any[]; strategies: any[]; summary?: string } = { lessons: [], strategies: [] }
           try {
             const jsonMatch = reflectionText.match(/\{[\s\S]*\}/)
             if (jsonMatch) {
@@ -286,8 +310,27 @@ export const AiReflectionMixin: Record<string, any> = {
 
           if (this.isAiMultiGameMemoryEnabled()) {
             this.updateCrossGameMemory(player.id, record, parsedReflection)
+            if (needsSummary && parsedReflection.summary) {
+              this.pendingNextRunAiSummaryByPlayer[player.id] = parsedReflection.summary
+              if (typeof this.clearGameHistoryForPlayer === "function") {
+                this.clearGameHistoryForPlayer(player.id)
+              }
+              if (this.aiCrossGameMessagesByPlayer) {
+                this.aiCrossGameMessagesByPlayer[player.id] = []
+              }
+            }
+            if (this.aiCrossGameMemory !== originalCrossGameMemory) {
+              Object.keys(originalCrossGameMemory).forEach((pid) => {
+                if (!this.aiCrossGameMemory[pid]) {
+                  this.aiCrossGameMemory[pid] = originalCrossGameMemory[pid]
+                }
+              })
+              this.aiCrossGameMemory[player.id] = originalCrossGameMemory[player.id] || this.aiCrossGameMemory[player.id]
+            }
+            this.saveAiMemoryToStorage()
           } else {
-            this.pendingNextRunAiSummary += ` 【${player.name}反思】${reflectionText.slice(0, 200)}`
+            const existing = this.pendingNextRunAiSummaryByPlayer[player.id] || ""
+            this.pendingNextRunAiSummaryByPlayer[player.id] = existing + ` 【${player.name}反思】${reflectionText.slice(0, 200)}`
             this.saveAiMemoryToStorage()
           }
 
@@ -320,6 +363,8 @@ export const AiReflectionMixin: Record<string, any> = {
 
           return { playerId: player.id, reflection: reflectionText, cacheHitTokens, cacheMissTokens, cacheHitRate }
         }
+        this.aiReflectionCompleted++
+        this.updateReflectionStatusUI()
         if (result.code === "TIMEOUT") {
           timeoutPlayers.push({
             playerId: player.id,
@@ -359,14 +404,31 @@ export const AiReflectionMixin: Record<string, any> = {
             thinkingEnabled
           )
         }
+        this.aiReflectionCompleted++
+        this.updateReflectionStatusUI()
         return { playerId: player.id, reflection: null, error: result.error || result.code }
       } catch (err) {
         const errMsg = err && err.message ? err.message : "异常"
         failedPlayers.push({ playerId: player.id, playerName: player.name, reason: errMsg, exception: true })
         console.log("[triggerAiReflection] EXCEPTION for player:", player.id, "error:", errMsg)
+        this.aiReflectionCompleted++
+        this.updateReflectionStatusUI()
         return { playerId: player.id, reflection: null, error: errMsg }
       }
     })
+    if (this.pendingSettlementSummary && this.aiCrossGameMessagesByPlayer) {
+      this.players.filter((p) => !p.isHuman).forEach((p) => {
+        const messages = this.aiCrossGameMessagesByPlayer[p.id]
+        if (Array.isArray(messages) && messages.length > 0) {
+          const lastGame = messages[messages.length - 1]
+          if (Array.isArray(lastGame)) {
+            lastGame.push({ role: "user", content: this.pendingSettlementSummary })
+          }
+        }
+      })
+      this.pendingSettlementSummary = ""
+      this.saveAiMemoryToStorage()
+    }
     await Promise.all(reflectionPromises)
     if (timeoutPlayers.length > 0) {
       this.aiReflectionState = "timeout"
@@ -387,6 +449,10 @@ export const AiReflectionMixin: Record<string, any> = {
     } else {
       this.aiReflectionState = "done"
       this.aiReflectionStateDetail = ""
+    }
+    if (this._reflectionBeforeUnload) {
+      window.removeEventListener("beforeunload", this._reflectionBeforeUnload)
+      this._reflectionBeforeUnload = null
     }
     this.updateReflectionStatusUI()
   },
@@ -554,22 +620,26 @@ export const AiReflectionMixin: Record<string, any> = {
     }
     el.classList.remove("hidden", "is-pending", "is-done", "is-timeout", "is-error")
     const detail = this.aiReflectionStateDetail || ""
+    const needsSummary = this.isAiMultiGameMemoryEnabled() &&
+      typeof this.shouldGenerateSummary === "function" && this.shouldGenerateSummary()
+    const summaryLabel = needsSummary ? "并总结" : ""
+    const progress = this.aiReflectionTotal > 1 ? ` ${this.aiReflectionCompleted}/${this.aiReflectionTotal}` : ""
     switch (this.aiReflectionState) {
       case "pending":
         el.classList.add("is-pending")
-        el.textContent = "反思生成中..."
+        el.textContent = `反思${summaryLabel}中${progress}...`
         break
       case "done":
         el.classList.add("is-done")
-        el.textContent = "反思生成完成"
+        el.textContent = `反思${summaryLabel}完成`
         break
       case "timeout":
         el.classList.add("is-timeout")
-        el.textContent = `反思超时: ${detail}`
+        el.textContent = `反思${summaryLabel}超时: ${detail}`
         break
       case "error":
         el.classList.add("is-error")
-        el.textContent = `反思失败: ${detail}`
+        el.textContent = `反思${summaryLabel}失败: ${detail}`
         break
       default:
         el.classList.add("hidden")
@@ -579,6 +649,9 @@ export const AiReflectionMixin: Record<string, any> = {
 
   showReflectionPendingDialog() {
     this.removeReflectionPendingDialog()
+    const needsSummary = this.isAiMultiGameMemoryEnabled() &&
+      typeof this.shouldGenerateSummary === "function" && this.shouldGenerateSummary()
+    const actionLabel = needsSummary ? "反思并总结" : "反思"
     const overlay = document.createElement("div")
     overlay.id = "reflectionPendingDialog"
     overlay.style.cssText =
@@ -587,8 +660,8 @@ export const AiReflectionMixin: Record<string, any> = {
     box.style.cssText =
       "background:#2a2218;border:2px solid #d4a843;border-radius:12px;padding:24px 32px;text-align:center;color:#e0d0b0;font-size:16px;max-width:380px;"
     box.innerHTML =
-      '<div style="margin-bottom:12px;font-size:18px;font-weight:bold;">AI反思尚未完成</div>' +
-      '<div style="color:#a09070;margin-bottom:16px;">AI正在对本局表现进行反思，离开可能导致反思结果丢失。</div>' +
+      `<div style="margin-bottom:12px;font-size:18px;font-weight:bold;">AI${actionLabel}尚未完成</div>` +
+      `<div style="color:#a09070;margin-bottom:16px;">AI正在对本局表现进行${actionLabel}，已完成的结果已保存，未完成的将丢失。</div>` +
       '<div style="display:flex;gap:10px;justify-content:center;">' +
       '<button id="reflectionDialogWait" style="padding:8px 20px;border-radius:6px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;">等待完成</button>' +
       '<button id="reflectionDialogSkip" style="padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">继续游戏</button>' +
@@ -606,6 +679,9 @@ export const AiReflectionMixin: Record<string, any> = {
 
   showReflectionPendingDialogForBack() {
     this.removeReflectionPendingDialog()
+    const needsSummary = this.isAiMultiGameMemoryEnabled() &&
+      typeof this.shouldGenerateSummary === "function" && this.shouldGenerateSummary()
+    const actionLabel = needsSummary ? "反思并总结" : "反思"
     const overlay = document.createElement("div")
     overlay.id = "reflectionPendingDialog"
     overlay.style.cssText =
@@ -614,8 +690,8 @@ export const AiReflectionMixin: Record<string, any> = {
     box.style.cssText =
       "background:#2a2218;border:2px solid #d4a843;border-radius:12px;padding:24px 32px;text-align:center;color:#e0d0b0;font-size:16px;max-width:380px;"
     box.innerHTML =
-      '<div style="margin-bottom:12px;font-size:18px;font-weight:bold;">AI反思尚未完成</div>' +
-      '<div style="color:#a09070;margin-bottom:16px;">AI正在对本局表现进行反思，离开可能导致反思结果丢失。</div>' +
+      `<div style="margin-bottom:12px;font-size:18px;font-weight:bold;">AI${actionLabel}尚未完成</div>` +
+      `<div style="color:#a09070;margin-bottom:16px;">AI正在对本局表现进行${actionLabel}，已完成的结果已保存，未完成的将丢失。</div>` +
       '<div style="display:flex;gap:10px;justify-content:center;">' +
       '<button id="reflectionDialogWait" style="padding:8px 20px;border-radius:6px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:14px;">等待完成</button>' +
       '<button id="reflectionDialogSkip" style="padding:8px 20px;border-radius:6px;border:1px solid #8a6a4a;background:rgba(138,106,74,0.15);color:#a09070;cursor:pointer;font-size:14px;">直接离开</button>' +
@@ -663,7 +739,3 @@ export const AiReflectionMixin: Record<string, any> = {
     }
   }
 }
-
-  // 兼容层：保持 window.MobaoAi 全局变量可用
-  ; (window as any).MobaoAi = (window as any).MobaoAi || {}
-  ; (window as any).MobaoAi.ReflectionMixin = AiReflectionMixin

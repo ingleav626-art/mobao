@@ -38,7 +38,7 @@
  *   lastAiIntelActions, aiLlmRoundPlans, aiFoldState, aiCharacterAssignments,
  *   initAiIntelSystems, getAiIntelSummary, buildAiIntelSnapshot, 等一系列方法
  */
-const {
+import {
   createEmptyAiPrivateIntelPool,
   clamp,
   formatTrackIndex,
@@ -48,11 +48,13 @@ const {
   toCellKey,
   fromCellKey,
   sizeTagToCellCount
-} = window.MobaoUtils
-const { SKILL_DEFS } = window.SkillSystem
-const { ITEM_DEFS } = window.ItemSystem
-const { GAME_SETTINGS } = window.MobaoSettings
-const { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } = window.ArtifactData
+} from "../core/utils"
+import { SKILL_DEFS } from "../data/skills"
+import { ITEM_DEFS } from "../data/items"
+import { GAME_SETTINGS } from "../core/settings"
+import { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } from "../data/artifacts"
+import { CHARACTERS } from "../data/characters"
+import { getActiveCharacter } from "../data/character-system"
 
 export const AiIntelMixin = {
   /**
@@ -93,7 +95,7 @@ export const AiIntelMixin = {
     this.aiCharacterAssignments = {}
 
     const aiPlayers = this.players.filter((player) => !player.isHuman)
-    const allCharacters = (window.CharacterData && (window.CharacterData as unknown as { CHARACTERS: Array<{ id: string; name: string; skillId: string; skillName: string; passive: boolean }> }).CHARACTERS) || []
+    const allCharacters = CHARACTERS || []
     const allItems = [...ITEM_DEFS]
 
     aiPlayers.forEach((player) => {
@@ -141,7 +143,7 @@ export const AiIntelMixin = {
       // 更新头像下方的角色名标签
       let charName = ""
       if (player.isHuman) {
-        const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter()
+        const char = getActiveCharacter()
         if (char && char.name) charName = char.name
       } else {
         const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[player.id]
@@ -1598,7 +1600,3 @@ export const AiIntelMixin = {
     return true
   }
 }
-
-// 兼容层：保持 window.MobaoAi 全局变量可用
-window.MobaoAi = window.MobaoAi || {}
-window.MobaoAi.IntelMixin = AiIntelMixin

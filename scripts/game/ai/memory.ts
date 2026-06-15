@@ -100,7 +100,8 @@ export const AiMemoryMixin: Record<string, unknown> = {
       const data = {
         conversations: this.aiConversationByPlayer,
         crossGameMemory: this.aiCrossGameMemory,
-        pendingSummary: this.pendingNextRunAiSummary || "",
+        crossGameMessages: this.aiCrossGameMessagesByPlayer || {},
+        pendingSummaryByPlayer: this.pendingNextRunAiSummaryByPlayer || {},
         runSerial: this.runSerial || 0,
         savedAt: Date.now()
       }
@@ -183,8 +184,21 @@ export const AiMemoryMixin: Record<string, unknown> = {
         }
       })
     }
-    if (typeof stored.pendingSummary === "string") {
-      this.pendingNextRunAiSummary = stored.pendingSummary
+    if (stored.pendingSummaryByPlayer && typeof stored.pendingSummaryByPlayer === "object") {
+      this.pendingNextRunAiSummaryByPlayer = stored.pendingSummaryByPlayer
+    } else if (typeof stored.pendingSummary === "string" && stored.pendingSummary) {
+      this.players.filter((p) => !p.isHuman).forEach((p) => {
+        this.pendingNextRunAiSummaryByPlayer[p.id] = stored.pendingSummary
+      })
+    }
+    if (stored.crossGameMessages && typeof stored.crossGameMessages === "object") {
+      this.aiCrossGameMessagesByPlayer = {}
+      Object.keys(stored.crossGameMessages).forEach((playerId) => {
+        const arr = stored.crossGameMessages[playerId]
+        if (Array.isArray(arr)) {
+          this.aiCrossGameMessagesByPlayer[playerId] = arr.slice(-5)
+        }
+      })
     }
     if (typeof stored.runSerial === "number" && stored.runSerial > 0) {
       this.runSerial = stored.runSerial
@@ -230,7 +244,8 @@ export const AiMemoryMixin: Record<string, unknown> = {
   },
 
   getAiCrossGameMemoryCount(playerId: string): number {
-    return this.ensureAiCrossGameMemory(playerId).length
+    if (!MobaoGameHistory) return 0
+    return MobaoGameHistory.load(playerId, this.isLanMode).length
   },
 
   getAiInGameHistoryCount(playerId: string): number {
@@ -256,85 +271,28 @@ export const AiMemoryMixin: Record<string, unknown> = {
   getAiConversationMessages(playerId: string): Array<Record<string, string>> {
     const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null
     const useMultiGame = Boolean(settings && settings.multiGameMemoryEnabled)
-    const contextLength = (settings && settings.contextLength) || 5
 
-    const lines: string[] = []
+    if (!useMultiGame) return []
 
-    if (useMultiGame && MobaoGameHistory) {
-      const records = MobaoGameHistory.load(playerId, this.isLanMode)
-      const recent = records.slice(-contextLength)
-      if (recent.length > 0) {
-        lines.push("【跨局历史】")
-        recent.forEach((record, i) => {
-          if (i > 0) lines.push("---")
-          lines.push(`${record.winnerName}以${record.winnerBid}中标，总值${record.totalValue}，利润${record.winnerProfit >= 0 ? "+" : ""}${record.winnerProfit}`)
-          if (record.dividendTicket) {
-            const dt = record.dividendTicket
-            if (dt.mechanism === "dividend") lines.push(`分红+${dt.dividendPerPlayer}`)
-            else if (dt.mechanism === "ticket") lines.push(`门票-${dt.ticketPerPlayer}`)
+    const result: Array<Record<string, string>> = []
+
+    const playerSummary = this.pendingNextRunAiSummaryByPlayer?.[playerId]
+    if (playerSummary) {
+      result.push({ role: "user", content: `【上期总结】${playerSummary}` })
+    }
+
+    const crossGameMessages = this.aiCrossGameMessagesByPlayer?.[playerId]
+    if (Array.isArray(crossGameMessages) && crossGameMessages.length > 0) {
+      crossGameMessages.forEach((gameMessages) => {
+        gameMessages.forEach((msg) => {
+          if (msg && msg.role && msg.content) {
+            result.push({ role: msg.role, content: msg.content })
           }
-          const qc = record.qualityCounts
-          lines.push(`粗${qc.poor || 0} 良${qc.normal || 0} 精${qc.fine || 0} 珍${qc.rare || 0} 绝${qc.legendary || 0} | ${record.totalItems}件 ${record.totalCells}格`)
-          if (record.aiDecisions && record.aiDecisions.length > 0) {
-            record.aiDecisions.forEach((d) => {
-              const parts = [`R${d.round}`]
-              if (d.bid != null) parts.push(`${d.bid}`)
-              if (d.skill !== "无") parts.push(d.skill)
-              if (d.item !== "无") parts.push(d.item)
-              if (d.thought) parts.push(d.thought.slice(0, 60))
-              lines.push(parts.join(" "))
-            })
-          }
-          if (record.reflection) lines.push(`反思:${record.reflection}`)
         })
-      }
-    }
-
-    if (this.pendingNextRunAiSummary) {
-      if (lines.length > 0) lines.push("")
-      lines.push(`【上期总结】${this.pendingNextRunAiSummary}`)
-    }
-
-    const crossMemory = this.ensureAiCrossGameMemory(playerId)
-    const stats = crossMemory.stats || {}
-    const lessons = crossMemory.lessons || []
-    const strategies = crossMemory.strategies || []
-    const praises = crossMemory.praises || []
-
-    if (stats.totalGames > 0 || lessons.length > 0 || strategies.length > 0 || praises.length > 0) {
-      if (lines.length > 0) lines.push("")
-      lines.push("【经验本】")
-      if (stats.totalGames > 0) {
-        lines.push(`${stats.totalGames}局 胜率${Math.round((stats.winRate || 0) * 100)}% 均盈${Math.round(stats.avgProfit || 0)}`)
-      }
-      if (praises.length > 0) {
-        lines.push(`经验: ${praises.join("; ")}`)
-      }
-      if (strategies.length > 0) {
-        lines.push(`策略: ${strategies.join("; ")}`)
-      }
-      if (lessons.length > 0) {
-        lines.push(`教训: ${lessons.join("; ")}`)
-      }
-    }
-
-    const inGameBucket = this.aiConversationByPlayer[playerId]
-    if (Array.isArray(inGameBucket) && inGameBucket.length > 0) {
-      if (lines.length > 0) lines.push("")
-      lines.push("【本局决策】")
-      inGameBucket.forEach((entry) => {
-        const parts = [`R${entry.round || "?"}`]
-        if (entry.bid != null) parts.push(`${entry.bid}`)
-        if (entry.skill && entry.skill !== "无") parts.push(entry.skill)
-        if (entry.item && entry.item !== "无") parts.push(entry.item)
-        if (entry.thought) parts.push(entry.thought.slice(0, 60))
-        if (entry.result) parts.push(entry.result)
-        lines.push(parts.join(" "))
       })
     }
 
-    if (lines.length === 0) return []
-    return [{ role: "user", content: lines.join("\n") }]
+    return result
   },
 
   pushAiRoundSummary(playerId: string, plan: Record<string, unknown>): void {
@@ -372,15 +330,17 @@ export const AiMemoryMixin: Record<string, unknown> = {
   resetAiConversations(): void {
     this.aiConversationByPlayer = {}
     this.aiCrossGameMemory = {}
+    this.aiCrossGameMessagesByPlayer = {}
     this.aiReflectionPending = {}
-    this.pendingNextRunAiSummary = ""
+    this.pendingNextRunAiSummaryByPlayer = {}
   },
 
   clearAiMemoryStorage(): void {
     this.aiConversationByPlayer = {}
     this.aiCrossGameMemory = {}
+    this.aiCrossGameMessagesByPlayer = {}
     this.aiReflectionPending = {}
-    this.pendingNextRunAiSummary = ""
+    this.pendingNextRunAiSummaryByPlayer = {}
     this.runSerial = 0
     try {
       window.localStorage.removeItem(AI_MEMORY_STORAGE_KEY)
@@ -391,7 +351,7 @@ export const AiMemoryMixin: Record<string, unknown> = {
     const data = {
       conversations: this.aiConversationByPlayer || {},
       crossGameMemory: this.aiCrossGameMemory || {},
-      pendingSummary: this.pendingNextRunAiSummary || "",
+      pendingSummaryByPlayer: this.pendingNextRunAiSummaryByPlayer || {},
       runSerial: this.runSerial || 0,
       exportedAt: Date.now(),
       version: "v1"
@@ -494,8 +454,12 @@ export const AiMemoryMixin: Record<string, unknown> = {
           }
         })
       }
-      if (typeof parsed.pendingSummary === "string") {
-        this.pendingNextRunAiSummary = parsed.pendingSummary
+      if (parsed.pendingSummaryByPlayer && typeof parsed.pendingSummaryByPlayer === "object") {
+        this.pendingNextRunAiSummaryByPlayer = parsed.pendingSummaryByPlayer
+      } else if (typeof parsed.pendingSummary === "string" && parsed.pendingSummary) {
+        this.players.filter((p) => !p.isHuman).forEach((p) => {
+          this.pendingNextRunAiSummaryByPlayer[p.id] = parsed.pendingSummary
+        })
       }
       if (typeof parsed.runSerial === "number" && parsed.runSerial >= 0) {
         this.runSerial = parsed.runSerial
@@ -528,11 +492,11 @@ export const AiMemoryMixin: Record<string, unknown> = {
       mechanismText = `门票触发：拍下者盈利，非拍下者各被扣除盈利额的5%（-${ticketAmt}）。`
     }
 
-    this.pendingNextRunAiSummary = [
+    const summaryText = [
       `【系统事件】第 ${this.runSerial} 局已结算：${winnerName} 以 ${winnerBid} 拿下整仓（${reasonText}）。`,
       `本局揭示总值 ${totalValue}，拍下者利润 ${winnerProfit >= 0 ? "+" : ""}${winnerProfit}。`,
       mechanismText,
-      "请记录本局经验并等待下一局开始。"
+      `第 ${this.runSerial + 1} 局已经开始。`
     ]
       .filter(Boolean)
       .join(" ")
@@ -540,6 +504,7 @@ export const AiMemoryMixin: Record<string, unknown> = {
     this.players
       .filter((p) => !p.isHuman)
       .forEach((p) => {
+        this.pendingNextRunAiSummaryByPlayer[p.id] = summaryText
         const isWinner = p.id === winnerId
         let resultText = `${winnerName}以${winnerBid}中标,总值${totalValue},利润${winnerProfit >= 0 ? "+" : ""}${winnerProfit}`
         if (!isWinner && mechanism === "dividend") {
@@ -551,44 +516,56 @@ export const AiMemoryMixin: Record<string, unknown> = {
       })
 
     if (MobaoGameHistory) {
-      const aiDecisions: Array<{ round: number; bid: number | null; skill: string; item: string; thought: string; result: string }> = []
-      this.players.filter((p) => !p.isHuman).forEach((p) => {
-        const bucket = this.aiConversationByPlayer[p.id] || []
-        bucket.forEach((entry) => {
-          aiDecisions.push({
-            round: entry.round || 0,
-            bid: entry.bid,
-            skill: entry.skill || "无",
-            item: entry.item || "无",
-            thought: entry.thought || "",
-            result: entry.result || ""
-          })
-        })
-      })
       const qualityCounts = this.getQualityCounts()
-      const record = {
-        run: this.runSerial || 0,
-        winnerId,
-        winnerName,
-        winnerBid,
-        totalValue,
-        winnerProfit,
-        reasonText,
-        dividendTicket: mechanism !== "none" ? { mechanism, dividendPerPlayer: dividendAmt, ticketPerPlayer: ticketAmt } : null,
-        qualityCounts,
-        totalItems: this.items.length,
-        totalCells: this.getTotalOccupiedCells(),
-        roundBids: [],
-        reflection: null,
-        aiDecisions,
-        timestamp: Date.now()
-      }
       const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null
       const maxRecords = (settings && settings.contextLength) || 5
       this.players.filter((p) => !p.isHuman).forEach((p) => {
+        const playerDecisions = (this.aiConversationByPlayer[p.id] || []).map((entry) => ({
+          round: entry.round || 0,
+          bid: entry.bid,
+          skill: entry.skill || "无",
+          item: entry.item || "无",
+          thought: entry.thought || "",
+          result: entry.result || ""
+        }))
+        const record = {
+          run: this.runSerial || 0,
+          winnerId,
+          winnerName,
+          winnerBid,
+          totalValue,
+          winnerProfit,
+          reasonText,
+          dividendTicket: mechanism !== "none" ? { mechanism, dividendPerPlayer: dividendAmt, ticketPerPlayer: ticketAmt } : null,
+          qualityCounts,
+          totalItems: this.items.length,
+          totalCells: this.getTotalOccupiedCells(),
+          roundBids: [],
+          reflection: null,
+          aiDecisions: playerDecisions,
+          timestamp: Date.now()
+        }
         MobaoGameHistory.append(p.id, record, maxRecords, this.isLanMode)
       })
     }
+
+    if (!this.aiCrossGameMessagesByPlayer) {
+      this.aiCrossGameMessagesByPlayer = {}
+    }
+    this.players.filter((p) => !p.isHuman).forEach((p) => {
+      const cached = this.aiConversationCache && this.aiConversationCache[p.id]
+      if (Array.isArray(cached) && cached.length > 2) {
+        const gameMessages = cached.slice(2)
+        if (!this.aiCrossGameMessagesByPlayer[p.id]) {
+          this.aiCrossGameMessagesByPlayer[p.id] = []
+        }
+        this.aiCrossGameMessagesByPlayer[p.id].push(gameMessages)
+        if (this.aiCrossGameMessagesByPlayer[p.id].length > 5) {
+          this.aiCrossGameMessagesByPlayer[p.id] = this.aiCrossGameMessagesByPlayer[p.id].slice(-5)
+        }
+      }
+    })
+    this.pendingSettlementSummary = summaryText
 
     this.saveAiMemoryToStorage()
   },
@@ -638,15 +615,17 @@ export const AiMemoryMixin: Record<string, unknown> = {
     return record
   },
 
-  getAiFirstRoundExtraBlocks(): string[] {
+  getAiFirstRoundExtraBlocks(playerId?: string): string[] {
     if (!this.isAiMultiGameMemoryEnabled() || this.round !== 1) {
       return []
     }
 
     const blocks = [`【系统事件】第 ${this.runSerial} 局开始。本局仓库随机生成，技能与道具已重置。`]
 
-    if (this.pendingNextRunAiSummary) {
-      blocks.push(this.pendingNextRunAiSummary)
+    const targetId = playerId || this.players.find((p) => !p.isHuman)?.id || ""
+    const playerSummary = this.pendingNextRunAiSummaryByPlayer?.[targetId]
+    if (playerSummary) {
+      blocks.push(playerSummary)
     }
 
     if (this.currentPublicEvent) {
@@ -782,7 +761,3 @@ export const AiMemoryMixin: Record<string, unknown> = {
     }
   }
 }
-
-  // 兼容层：保持 window.MobaoAi 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoAi = (window as unknown as Record<string, unknown>).MobaoAi || {}
-  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoAi).MemoryMixin = AiMemoryMixin

@@ -1162,8 +1162,3 @@ function randomBetween(min: number, max: number): number {
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
 }
-
-// 兼容层：保持 window.AuctionAI 全局变量可用
-(window as unknown as Record<string, unknown>).AuctionAI = {
-  AuctionAiEngine
-}

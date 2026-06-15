@@ -312,13 +312,17 @@ export const AiDecisionMixin: Record<string, unknown> = {
     if (!this.currentRunLog.roundPanelTexts) {
       this.currentRunLog.roundPanelTexts = {}
     }
-    if (typeof this.buildAiDecisionPanelSnapshot === "function") {
-      const panelText = this.buildAiDecisionPanelSnapshot(telemetry)
-      console.log(`[recordAiThoughtLogs] panelText length=${panelText?.length || 0}`)
-      if (panelText) {
-        this.currentRunLog.roundPanelTexts[String(roundNo)] = panelText
+    if (typeof this.renderAiLogicPanelForLlm === "function") {
+      const tempDiv = document.createElement("div")
+      const origContent = this.dom.aiLogicContent
+      this.dom.aiLogicContent = tempDiv
+      this.renderAiLogicPanelForLlm(telemetry as { round: number; entries?: Array<Record<string, unknown>> })
+      const htmlContent = tempDiv.innerHTML
+      this.dom.aiLogicContent = origContent
+      if (htmlContent) {
+        this.currentRunLog.roundPanelTexts[String(roundNo)] = htmlContent
         console.log(
-          `[recordAiThoughtLogs] saved roundPanelTexts[${roundNo}], keys=${Object.keys(this.currentRunLog.roundPanelTexts)}`
+          `[recordAiThoughtLogs] saved roundPanelTexts[${roundNo}] as HTML, length=${htmlContent.length}`
         )
       }
     }
@@ -384,7 +388,3 @@ export const AiDecisionMixin: Record<string, unknown> = {
     this.renderAiThoughtLog()
   }
 }
-
-  // 兼容层：保持 window.MobaoAi 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoAi = (window as unknown as Record<string, unknown>).MobaoAi || {}
-  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoAi).DecisionMixin = AiDecisionMixin

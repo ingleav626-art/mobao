@@ -107,8 +107,3 @@ export const AiWalletMixin: Record<string, unknown> = {
     return Math.max(minBid, roundToStep(safe, step))
   }
 }
-
-  // 兼容层：保持 window.MobaoAi 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoAi = (window as unknown as Record<string, unknown>).MobaoAi || {}
-  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoAi).WalletMixin = AiWalletMixin
-  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoAi).AI_WALLET_INITIAL = AI_WALLET_INITIAL
