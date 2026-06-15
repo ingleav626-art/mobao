@@ -4,6 +4,10 @@
  * @description LLM Prompt 构建与决策解析模块。负责 payload 组装、prompt/messages 构建、
  *              JSON 提取、动作解析、plan 标准化、工具结果摘要。
  *              从 scene-llm.js 拆分而来。
+ *
+ * @requires llm/core/llm-error - JSON 解析工具
+ * @requires data/artifacts - 品质配置
+ * @exports createLlmPromptModule - Prompt 构建模块工厂函数
  */
 import { tryExtractDecisionJson } from './llm-error.js'
 import { QUALITY_CONFIG } from '../../game/data/artifacts'
@@ -91,40 +95,40 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
 
   const methods = {
     buildAiLlmRoundPayload(player: Player) {
-      const playerId = player.id
-      const isInitialRound = this.round <= 1
-      const compact = !isInitialRound
-      const persona = this.aiEngine.personalityMap[playerId] || null
-      const actionConstraint = this.buildAiActionConstraintBlock(playerId)
-      const resource = this.getAiResourceSnapshot(playerId)
+      const playerId = player.id;
+      const isInitialRound = (this as unknown as { round: number }).round <= 1;
+      const compact = !isInitialRound;
+      const persona = (this as unknown as { aiEngine: { personalityMap: Record<string, unknown> } }).aiEngine.personalityMap[playerId] || null;
+      const actionConstraint = (this as unknown as { buildAiActionConstraintBlock(id: string): Record<string, unknown> }).buildAiActionConstraintBlock(playerId);
+      const resource = (this as unknown as { getAiResourceSnapshot(id: string): Record<string, unknown> }).getAiResourceSnapshot(playerId);
 
-      const bidHistory = this.buildBidHistorySnapshot()
-      const publicEvents = this.buildPublicEventSnapshot({ compact, viewerId: playerId })
+      const bidHistory = (this as unknown as { buildBidHistorySnapshot(): unknown[] }).buildBidHistorySnapshot();
+      const publicEvents = (this as unknown as { buildPublicEventSnapshot(opts: { compact: boolean; viewerId: string }): unknown[] }).buildPublicEventSnapshot({ compact, viewerId: playerId });
 
-      const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[playerId]
+      const charAssign = (this as unknown as { aiCharacterAssignments: Record<string, unknown> }).aiCharacterAssignments && (this as unknown as { aiCharacterAssignments: Record<string, unknown> }).aiCharacterAssignments[playerId];
       const characterInfo = charAssign
         ? {
-          characterId: charAssign.characterId,
-          characterName: charAssign.characterName,
-          skillName: charAssign.skillName,
-          passive: charAssign.passive ? charAssign.passive.label : null
+          characterId: (charAssign as { characterId: string }).characterId,
+          characterName: (charAssign as { characterName: string }).characterName,
+          skillName: (charAssign as { skillName: string }).skillName,
+          passive: (charAssign as { passive?: { label: string } }).passive ? (charAssign as { passive: { label: string } }).passive.label : null
         }
         : null
 
-      const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number(resource.skills[entry.id] || 0) > 0).map(
+      const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number((resource as { skills: Record<string, number> }).skills[entry.id] || 0) > 0).map(
         (entry: SkillDef) => ({
           name: entry.name,
           description: entry.description,
-          remaining: Number(resource.skills[entry.id] || 0),
+          remaining: Number((resource as { skills: Record<string, number> }).skills[entry.id] || 0),
           timing: "出价前",
           resultPublic: false
         })
       )
 
-      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number(resource.items[entry.id] || 0) > 0).map((entry: ItemDef) => ({
+      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number((resource as { items: Record<string, number> }).items[entry.id] || 0) > 0).map((entry: ItemDef) => ({
         name: entry.name,
         description: entry.description,
-        remaining: Number(resource.items[entry.id] || 0),
+        remaining: Number((resource as { items: Record<string, number> }).items[entry.id] || 0),
         timing: "出价前",
         resultPublic: false
       }))
@@ -132,72 +136,72 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       return {
         gameState: {
           round: {
-            current: this.round,
+            current: (this as unknown as { round: number }).round,
             total: GAME_SETTINGS.maxRounds
           },
           selfId: playerId,
           selfName: player.name,
-          wallet: this.getAiWallet(playerId),
+          wallet: (this as unknown as { getAiWallet(id: string): number }).getAiWallet(playerId),
           directWinRatio: Number((1 + GAME_SETTINGS.directTakeRatio).toFixed(2)),
           folded: false,
-          Previousbid: this.round === 1 ? null : this.currentBid,
-          currentLeader: this.bidLeader
+          Previousbid: (this as unknown as { round: number }).round === 1 ? null : (this as unknown as { currentBid: number }).currentBid,
+          currentLeader: (this as unknown as { bidLeader: string | null }).bidLeader
         },
         selfRoleAndTools: {
           character: characterInfo,
-          roleName: persona ? persona.archetype : "规则型",
+          roleName: persona ? (persona as { archetype: string }).archetype : "规则型",
           passive: persona
-            ? `激进${persona.aggression.toFixed(2)} / 纪律${persona.discipline.toFixed(2)} / 跟风${persona.followRate.toFixed(2)}`
+            ? `激进${(persona as { aggression: number }).aggression.toFixed(2)} / 纪律${(persona as { discipline: number }).discipline.toFixed(2)} / 跟风${(persona as { followRate: number }).followRate.toFixed(2)}`
             : "默认规则人格",
           activeSkills: availableSkills,
           items: availableItems
         },
-        otherPlayersPublic: this.buildOtherPlayersPublicInfo(playerId, { compact }),
-        catalogSummary: this.buildCatalogSummary({ compact }),
+        otherPlayersPublic: (this as unknown as { buildOtherPlayersPublicInfo(id: string, opts: { compact: boolean }): unknown }).buildOtherPlayersPublicInfo(playerId, { compact }),
+        catalogSummary: (this as unknown as { buildCatalogSummary(opts: { compact: boolean }): unknown }).buildCatalogSummary({ compact }),
         ...(compact
-          ? { roundPublicStateTable: this.buildRoundPublicStateTable(playerId) }
+          ? { roundPublicStateTable: (this as unknown as { buildRoundPublicStateTable(id: string): unknown }).buildRoundPublicStateTable(playerId) }
           : { bidHistory, publicEvents }),
-        privateIntel: this.buildAiPrivateIntelBlock(playerId),
+        privateIntel: (this as unknown as { buildAiPrivateIntelBlock(id: string): unknown }).buildAiPrivateIntelBlock(playerId),
         actionConstraints: {
-          canBid: actionConstraint.canBid,
-          canFold: actionConstraint.canFold,
-          availableSkills: actionConstraint.availableSkills,
-          availableItems: actionConstraint.availableItems,
-          notes: actionConstraint.notes
+          canBid: (actionConstraint as { canBid: boolean }).canBid,
+          canFold: (actionConstraint as { canFold: boolean }).canFold,
+          availableSkills: (actionConstraint as { availableSkills: string[] }).availableSkills,
+          availableItems: (actionConstraint as { availableItems: string[] }).availableItems,
+          notes: (actionConstraint as { notes: string }).notes
         }
       }
     },
 
     buildAiIncrementalPayload(player: Player) {
-      const playerId = player.id
-      const previousRound = this.round - 1
-      const actionConstraint = this.buildAiActionConstraintBlock(playerId)
-      const resource = this.getAiResourceSnapshot(playerId)
+      const playerId = player.id;
+      const previousRound = (this as unknown as { round: number }).round - 1;
+      const actionConstraint = (this as unknown as { buildAiActionConstraintBlock(id: string): Record<string, unknown> }).buildAiActionConstraintBlock(playerId);
+      const resource = (this as unknown as { getAiResourceSnapshot(id: string): Record<string, unknown> }).getAiResourceSnapshot(playerId);
 
-      const bidHistory = this.buildBidHistorySnapshot()
-      const lastRoundBid = bidHistory.find((entry: { round: number }) => entry.round === previousRound)
+      const bidHistory = (this as unknown as { buildBidHistorySnapshot(): unknown[] }).buildBidHistorySnapshot();
+      const lastRoundBid = (bidHistory as Array<{ round: number }>).find((entry: { round: number }) => entry.round === previousRound);
 
-      const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number(resource.skills[entry.id] || 0) > 0).map(
+      const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number((resource as { skills: Record<string, number> }).skills[entry.id] || 0) > 0).map(
         (entry: SkillDef) => ({
           name: entry.name,
-          remaining: Number(resource.skills[entry.id] || 0)
+          remaining: Number((resource as { skills: Record<string, number> }).skills[entry.id] || 0)
         })
       )
 
-      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number(resource.items[entry.id] || 0) > 0).map((entry: ItemDef) => ({
+      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number((resource as { items: Record<string, number> }).items[entry.id] || 0) > 0).map((entry: ItemDef) => ({
         name: entry.name,
-        remaining: Number(resource.items[entry.id] || 0)
+        remaining: Number((resource as { items: Record<string, number> }).items[entry.id] || 0)
       }))
 
-      const lastRoundActions: Record<string, { playerName: string; actions: Array<{ type: string; name: string; description: string }> }> = {}
-      this.players.forEach((p: Player) => {
-        if (p.id === playerId) return
-        const usage = (this.playerUsageHistory[p.id] || []).find((entry: { round: number }) => entry.round === previousRound)
-        if (usage && usage.actions && usage.actions.length > 0) {
+      const lastRoundActions: Record<string, { playerName: string; actions: Array<{ type: string; name: string; description: string }> }> = {};
+      (this as unknown as { players: Player[] }).players.forEach((p: Player) => {
+        if (p.id === playerId) return;
+        const usage = ((this as unknown as { playerUsageHistory: Record<string, unknown[]> }).playerUsageHistory[p.id] || [] as unknown[]).find((entry: unknown) => (entry as { round: number }).round === previousRound);
+        if (usage && (usage as { actions?: string[] }).actions && (usage as { actions: string[] }).actions.length > 0) {
           lastRoundActions[p.id] = {
             playerName: p.name,
-            actions: usage.actions.map((actionId: string) => {
-              const def = this.getActionDefById(actionId)
+            actions: (usage as { actions: string[] }).actions.map((actionId: string) => {
+              const def = (this as unknown as { getActionDefById(id: string): { type: string; name: string; description?: string } }).getActionDefById(actionId);
               return { type: def.type, name: def.name, description: def.description || "" }
             })
           }
@@ -206,43 +210,43 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
 
       return {
         round: {
-          current: this.round,
+          current: (this as unknown as { round: number }).round,
           previous: previousRound
         },
         lastRoundResult: {
-          bids: lastRoundBid ? lastRoundBid.bids : {},
-          winner: lastRoundBid ? lastRoundBid.winner : null,
+          bids: lastRoundBid ? (lastRoundBid as unknown as { bids: Record<string, unknown> }).bids : {},
+          winner: lastRoundBid ? (lastRoundBid as unknown as { winner: string | null }).winner : null,
           actions: lastRoundActions
         },
-        currentWallet: this.getAiWallet(playerId),
-        currentLeader: this.bidLeader,
-        currentBid: this.currentBid,
+        currentWallet: (this as unknown as { getAiWallet(id: string): number }).getAiWallet(playerId),
+        currentLeader: (this as unknown as { bidLeader: string | null }).bidLeader,
+        currentBid: (this as unknown as { currentBid: number }).currentBid,
         selfAvailableTools: {
           skills: availableSkills,
           items: availableItems
         },
         actionConstraints: {
-          canBid: actionConstraint.canBid,
-          canFold: actionConstraint.canFold,
-          availableSkills: actionConstraint.availableSkills,
-          availableItems: actionConstraint.availableItems
+          canBid: (actionConstraint as { canBid: boolean }).canBid,
+          canFold: (actionConstraint as { canFold: boolean }).canFold,
+          availableSkills: (actionConstraint as { availableSkills: string[] }).availableSkills,
+          availableItems: (actionConstraint as { availableItems: string[] }).availableItems
         },
-        privateIntel: this.buildAiPrivateIntelBlock(playerId)
+        privateIntel: (this as unknown as { buildAiPrivateIntelBlock(id: string): unknown }).buildAiPrivateIntelBlock(playerId)
       }
     },
 
     buildAiFollowupRoundPayload(player: Player, currentPlan: LlmDecision & { toolResultSummary?: string; toolActionType?: string; toolActionId?: string }, toolSummary?: string) {
-      const resolvedToolSummary = toolSummary || (currentPlan && currentPlan.toolResultSummary) || ""
+      const resolvedToolSummary = toolSummary || (currentPlan && currentPlan.toolResultSummary) || "";
       return {
         requestStage: "followup-after-tool",
-        round: this.round,
+        round: (this as unknown as { round: number }).round,
         gameState: {
           selfId: player.id,
           selfName: player.name,
-          wallet: this.getAiWallet(player.id),
+          wallet: (this as unknown as { getAiWallet(id: string): number }).getAiWallet(player.id),
           directWinRatio: Number((1 + GAME_SETTINGS.directTakeRatio).toFixed(2)),
-          Previousbid: this.round === 1 ? null : this.currentBid,
-          currentLeader: this.bidLeader
+          Previousbid: (this as unknown as { round: number }).round === 1 ? null : (this as unknown as { currentBid: number }).currentBid,
+          currentLeader: (this as unknown as { bidLeader: string | null }).bidLeader
         },
         followupContext: {
           toolResultSummary: resolvedToolSummary,
@@ -258,31 +262,31 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
     },
 
     buildAiDecisionUserPrompt(payload: LlmPayload, extraBlocks: string[] = [], options: { requestStage?: string; isFirstRound?: boolean } = {}) {
-      const requestStage = options.requestStage || "initial"
-      const isFollowup = requestStage === "followup-after-tool"
-      const isFirstRound = options.isFirstRound === true
+      const requestStage = options.requestStage || "initial";
+      const isFollowup = requestStage === "followup-after-tool";
+      const isFirstRound = options.isFirstRound === true;
       const roundNoRaw = pickFirstDefined(
         payload && payload.gameState && payload.gameState.round && payload.gameState.round.current,
         payload && payload.round,
-        this.round
-      )
+        (this as unknown as { round: number }).round
+      );
       const totalRoundRaw = pickFirstDefined(
         payload && payload.gameState && payload.gameState.round && payload.gameState.round.total,
         GAME_SETTINGS.maxRounds
-      )
+      );
       const roundNo = Number.isFinite(Number(roundNoRaw))
         ? Math.max(1, Math.round(Number(roundNoRaw)))
-        : Math.max(1, this.round)
+        : Math.max(1, (this as unknown as { round: number }).round);
       const totalRounds = Number.isFinite(Number(totalRoundRaw))
         ? Math.max(roundNo, Math.round(Number(totalRoundRaw)))
-        : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo)
-      const isFinalRound = roundNo >= totalRounds
-      const roundStateText = isFinalRound ? "最终轮" : "后续轮"
+        : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo);
+      const isFinalRound = roundNo >= totalRounds;
+      const roundStateText = isFinalRound ? "最终轮" : "后续轮";
       const finalRoundHint = isFinalRound
         ? "【最终轮提醒】本轮直接按最高出价者获胜，不再看相对第二名高出比例。"
-        : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。"
+        : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。";
 
-      let base: string[]
+      let base: string[];
       if (isFollowup) {
         base = [
           "【任务】第 " + roundNo + "/" + totalRounds + " 轮 follow-up。根据工具结果修正最终出价。",
@@ -439,22 +443,22 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
           ? payload.gameState.round.current
           : payload && payload.round && payload.round.current
             ? payload.round.current
-            : this.round
+            : (this as unknown as { round: number }).round;
       const totalRoundRaw =
         payload && payload.gameState && payload.gameState.round && payload.gameState.round.total
           ? payload.gameState.round.total
-          : GAME_SETTINGS.maxRounds
+          : GAME_SETTINGS.maxRounds;
       const roundNo = Number.isFinite(Number(roundNoRaw))
         ? Math.max(1, Math.round(Number(roundNoRaw)))
-        : Math.max(1, this.round)
+        : Math.max(1, (this as unknown as { round: number }).round);
       const totalRounds = Number.isFinite(Number(totalRoundRaw))
         ? Math.max(roundNo, Math.round(Number(totalRoundRaw)))
-        : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo)
-      const isFinalRound = roundNo >= totalRounds
-      const roundStateText = isFinalRound ? "最终轮" : "后续轮"
+        : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo);
+      const isFinalRound = roundNo >= totalRounds;
+      const roundStateText = isFinalRound ? "最终轮" : "后续轮";
       const finalRoundHint = isFinalRound
         ? "【最终轮提醒】本轮直接按最高出价者获胜，不再看相对第二名高出比例。"
-        : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。"
+        : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。";
 
       let taskContent: string
       if (isFollowup) {
@@ -530,16 +534,16 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         return { actionId: null as string | null, target }
       }
 
-      const normalized = normalizeActionToken(namePart)
+      const normalized = normalizeActionToken(namePart);
       for (const actionId of availableIds) {
-        const def = this.getActionDefById(actionId)
-        const aliases = [actionId, def.name, this.getItemInfo(actionId).label]
+        const def = (this as unknown as { getActionDefById(id: string): { type: string; name: string } }).getActionDefById(actionId);
+        const aliases = [actionId, def.name, (this as unknown as { getItemInfo(id: string): { label: string } }).getItemInfo(actionId).label]
           .filter(Boolean)
-          .map((entry: string) => normalizeActionToken(entry))
+          .map((entry: string) => normalizeActionToken(entry));
 
         const matched = aliases.some((alias: string) => {
           return alias === normalized || alias.includes(normalized) || normalized.includes(alias)
-        })
+        });
 
         if (matched) {
           return { actionId, target }
@@ -567,22 +571,22 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         decision && decision.reason
       )
 
-      const actionState = this.getAiAvailableActionState(playerId)
-      const allowAction = options.allowAction !== false
-      const bidParsed = Number(bidRaw)
-      const hasBidDecision = Number.isFinite(bidParsed)
-      let bid = hasBidDecision ? Math.round(bidParsed) : 0
+      const actionState = (this as unknown as { getAiAvailableActionState(id: string): ActionState }).getAiAvailableActionState(playerId);
+      const allowAction = options.allowAction !== false;
+      const bidParsed = Number(bidRaw);
+      const hasBidDecision = Number.isFinite(bidParsed);
+      let bid = hasBidDecision ? Math.round(bidParsed) : 0;
       if (hasBidDecision) {
-        const wallet = this.getAiWallet(playerId)
-        bid = this.normalizeAiBidValue(playerId, bid, wallet)
+        const wallet = (this as unknown as { getAiWallet(id: string): number }).getAiWallet(playerId);
+        bid = (this as unknown as { normalizeAiBidValue(id: string, bid: number, wallet: number): number }).normalizeAiBidValue(playerId, bid, wallet);
       }
 
       const skillPick = allowAction
-        ? this.resolveActionPick(skillRaw, "skill", actionState.availableSkillIds)
-        : { actionId: null as string | null, target: "" }
+        ? (this as unknown as { resolveActionPick(text: string, type: string, ids: string[]): { actionId: string | null; target: string } }).resolveActionPick(String(skillRaw), "skill", actionState.availableSkillIds)
+        : { actionId: null as string | null, target: "" };
       const itemPick = allowAction
-        ? this.resolveActionPick(itemRaw, "item", actionState.availableItemIds)
-        : { actionId: null as string | null, target: "" }
+        ? (this as unknown as { resolveActionPick(text: string, type: string, ids: string[]): { actionId: string | null; target: string } }).resolveActionPick(String(itemRaw), "item", actionState.availableItemIds)
+        : { actionId: null as string | null, target: "" };
 
       let actionType = "none"
       let actionId = "none"
@@ -620,36 +624,36 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
     },
 
     buildAiToolResultSummary(result: ToolResult | null, actionType: string, actionId: string) {
-      const info = this.getItemInfo(actionId)
-      const stats = result && result.signalStats && result.signalStats.aggregate ? result.signalStats.aggregate : null
-      const parts: string[] = []
-      parts.push(`action=${actionType}:${actionId}`)
-      parts.push(`name=${info.label}`)
-      parts.push(`ok=${Boolean(result && result.ok)}`)
-      parts.push(`revealed=${Number(result && result.revealed) || 0}`)
+      const info = (this as unknown as { getItemInfo(id: string): { label: string } }).getItemInfo(actionId);
+      const stats = result && result.signalStats && result.signalStats.aggregate ? result.signalStats.aggregate : null;
+      const parts: string[] = [];
+      parts.push(`action=${actionType}:${actionId}`);
+      parts.push(`name=${info.label}`);
+      parts.push(`ok=${Boolean(result && result.ok)}`);
+      parts.push(`revealed=${Number(result && result.revealed) || 0}`);
 
       if (result && Array.isArray(result.signals) && result.signals.length > 0) {
-        const revealDetails: string[] = []
-        const itemIdSet = new Set<string>()
+        const revealDetails: string[] = [];
+        const itemIdSet = new Set<string>();
         result.signals.forEach((signal: SignalData) => {
-          if (!signal || !signal.itemId) return
-          if (itemIdSet.has(signal.itemId as string)) return
-          itemIdSet.add(signal.itemId as string)
+          if (!signal || !signal.itemId) return;
+          if (itemIdSet.has(signal.itemId as string)) return;
+          itemIdSet.add(signal.itemId as string);
 
-          const item = this.items.find((i: { id: string }) => i.id === (signal.itemId as string))
-          if (!item) return
+          const item = (this as unknown as { items: Array<{ id: string; basePrice?: number }> }).items.find((i: { id: string }) => i.id === (signal.itemId as string));
+          if (!item) return;
 
-          const detailParts: string[] = []
+          const detailParts: string[] = [];
           if (signal.mode === "outline") {
-            detailParts.push(`轮廓:${signal.sizeTag || "?"}格`)
-            detailParts.push(`品类:${signal.category || "?"}`)
+            detailParts.push(`轮廓:${signal.sizeTag || "?"}格`);
+            detailParts.push(`品类:${signal.category || "?"}`);
           }
           if (signal.mode === "quality") {
-            const qualityConfig = QUALITY_CONFIG || {}
-            const qualityKey = signal.qualityKey as string
-            const qualityLabel = qualityConfig[qualityKey]?.label || qualityKey || "?"
-            detailParts.push(`品质:${qualityLabel}`)
-            detailParts.push(`基价:${item.basePrice || "?"}`)
+            const qualityConfig = QUALITY_CONFIG || {};
+            const qualityKey = signal.qualityKey as string;
+            const qualityLabel = qualityConfig[qualityKey]?.label || qualityKey || "?";
+            detailParts.push(`品质:${qualityLabel}`);
+            detailParts.push(`基价:${item.basePrice || "?"}`);
           }
           if (signal.sampleCell) {
             detailParts.push(`位置:(${signal.sampleCell.x},${signal.sampleCell.y})`)
