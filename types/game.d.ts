@@ -160,7 +160,7 @@ export interface MapProfile {
   name: string            // "标准仓库"
   desc: string            // 描述
   icon: string            // 图标路径
-  background: string      // 背景图路径
+  background: string | null  // 背景图路径（可能为空）
   params: MapParams
 }
 
