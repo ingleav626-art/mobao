@@ -24,7 +24,16 @@
  */
 import { escapeHtml } from "../core/utils"
 
+interface IntelEntry {
+  source: string
+  text: string
+  round: number
+}
+
 export const UiPanelsMixin: Record<string, any> = {
+  privateIntelEntries: [] as IntelEntry[],
+  publicInfoEntries: [] as IntelEntry[],
+
   addPrivateIntelEntry(entry: { source?: string; text?: string }): void {
     this.privateIntelEntries.push({
       source: entry.source || "未知",
@@ -67,7 +76,7 @@ export const UiPanelsMixin: Record<string, any> = {
     const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 20
     container.innerHTML = this.privateIntelEntries
       .map(
-        (entry) =>
+        (entry: IntelEntry) =>
           `<div class="side-line intel-entry"><span class="intel-source">${escapeHtml(entry.source)}：</span>${escapeHtml(entry.text)}</div>`
       )
       .join("")
@@ -90,7 +99,7 @@ export const UiPanelsMixin: Record<string, any> = {
     const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 20
     container.innerHTML = this.publicInfoEntries
       .map(
-        (entry) =>
+        (entry: IntelEntry) =>
           `<div class="public-line public-event"><span class="intel-source">[${escapeHtml(entry.source)}]</span> ${escapeHtml(entry.text)}</div>`
       )
       .join("")
