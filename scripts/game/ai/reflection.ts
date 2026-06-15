@@ -65,7 +65,7 @@ export const AiReflectionMixin: Record<string, any> = {
     }
     window.addEventListener("beforeunload", this._reflectionBeforeUnload)
     const originalCrossGameMemory = this.aiCrossGameMemory
-    const aiPlayers = this.players.filter((p) => !p.isHuman && this.canUseLlmDecisionForPlayer(p.id))
+    const aiPlayers = (this as unknown as { players: Array<{ id: string; name: string; isHuman: boolean }>; canUseLlmDecisionForPlayer(id: string): boolean }).players.filter((p: { id: string; name: string; isHuman: boolean }) => !p.isHuman && (this as unknown as { canUseLlmDecisionForPlayer(id: string): boolean }).canUseLlmDecisionForPlayer(p.id))
     this.aiReflectionTotal = aiPlayers.length
     this.updateReflectionStatusUI()
     console.log("[triggerAiReflection] aiPlayers count:", aiPlayers.length)
@@ -74,9 +74,9 @@ export const AiReflectionMixin: Record<string, any> = {
       this.updateReflectionStatusUI()
       return
     }
-    const failedPlayers = []
-    const timeoutPlayers = []
-    const reflectionPromises = aiPlayers.map(async (player) => {
+    const failedPlayers: Array<{ playerId: string; playerName: string; reason: string; code?: string; thinkingEnabled?: boolean; exception?: boolean; status?: string }> = []
+    const timeoutPlayers: Array<{ playerId: string; playerName: string; reason: string; code?: string; thinkingEnabled?: boolean }> = []
+    const reflectionPromises = aiPlayers.map(async (player: { id: string; name: string }) => {
       const playerName = player.name
       const playerId = player.id
       console.log("[triggerAiReflection] starting reflection for player:", playerId, playerName)
@@ -91,16 +91,16 @@ export const AiReflectionMixin: Record<string, any> = {
           dividendTicketText = `门票触发：拍下者盈利，你被扣除${record.dividendTicket.ticketPerPlayer || 0}门票`
         }
       }
-      const crossMemory = this.ensureAiCrossGameMemory(player.id)
+      const crossMemory = (this as unknown as { ensureAiCrossGameMemory(id: string): { stats: Record<string, number>; lessons: string[]; strategies: string[]; praises: string[] } }).ensureAiCrossGameMemory(player.id)
       const stats = crossMemory.stats || {}
       const lessons = crossMemory.lessons || []
       const strategies = crossMemory.strategies || []
       const praises = crossMemory.praises || []
       const MAX_ENTRIES = 10
 
-      const praiseList = praises.map((p, i) => `${i}. ${p}`).join("; ")
-      const strategyList = strategies.map((s, i) => `${i}. ${s}`).join("; ")
-      const lessonList = lessons.map((l, i) => `${i}. ${l}`).join("; ")
+      const praiseList = praises.map((p: string, i: number) => `${i}. ${p}`).join("; ")
+      const strategyList = strategies.map((s: string, i: number) => `${i}. ${s}`).join("; ")
+      const lessonList = lessons.map((l: string, i: number) => `${i}. ${l}`).join("; ")
 
       let statsInfo = ""
       if (stats.totalGames > 0) {
@@ -411,7 +411,7 @@ export const AiReflectionMixin: Record<string, any> = {
         this.updateReflectionStatusUI()
         return { playerId: player.id, reflection: null, error: result.error || result.code }
       } catch (err) {
-        const errMsg = err && err.message ? err.message : "异常"
+        const errMsg = err && (err as Error).message ? (err as Error).message : "异常"
         failedPlayers.push({ playerId: player.id, playerName: player.name, reason: errMsg, exception: true })
         console.log("[triggerAiReflection] EXCEPTION for player:", player.id, "error:", errMsg)
         this.aiReflectionCompleted++
@@ -420,8 +420,8 @@ export const AiReflectionMixin: Record<string, any> = {
       }
     })
     if (this.pendingSettlementSummary && this.aiCrossGameMessagesByPlayer) {
-      this.players.filter((p) => !p.isHuman).forEach((p) => {
-        const messages = this.aiCrossGameMessagesByPlayer[p.id]
+      (this as unknown as { players: Array<{ id: string; isHuman: boolean }> }).players.filter((p: { id: string; isHuman: boolean }) => !p.isHuman).forEach((p: { id: string }) => {
+        const messages = (this as unknown as { aiCrossGameMessagesByPlayer: Record<string, Array<{ role: string; content: string }[]> | undefined> }).aiCrossGameMessagesByPlayer[p.id]
         if (Array.isArray(messages) && messages.length > 0) {
           const lastGame = messages[messages.length - 1]
           if (Array.isArray(lastGame)) {
@@ -671,13 +671,19 @@ export const AiReflectionMixin: Record<string, any> = {
       "</div>"
     overlay.appendChild(box)
     document.body.appendChild(overlay)
-    document.getElementById("reflectionDialogWait").addEventListener("click", () => {
-      this.removeReflectionPendingDialog()
-    })
-    document.getElementById("reflectionDialogSkip").addEventListener("click", () => {
-      this.removeReflectionPendingDialog()
-      this.proceedToNewRun()
-    })
+    const waitBtn = document.getElementById("reflectionDialogWait")
+    if (waitBtn) {
+      waitBtn.addEventListener("click", () => {
+        this.removeReflectionPendingDialog()
+      })
+    }
+    const skipBtn = document.getElementById("reflectionDialogSkip")
+    if (skipBtn) {
+      skipBtn.addEventListener("click", () => {
+        this.removeReflectionPendingDialog()
+        this.proceedToNewRun()
+      })
+    }
   },
 
   showReflectionPendingDialogForBack() {
@@ -701,13 +707,19 @@ export const AiReflectionMixin: Record<string, any> = {
       "</div>"
     overlay.appendChild(box)
     document.body.appendChild(overlay)
-    document.getElementById("reflectionDialogWait").addEventListener("click", () => {
-      this.removeReflectionPendingDialog()
-    })
-    document.getElementById("reflectionDialogSkip").addEventListener("click", () => {
-      this.removeReflectionPendingDialog()
-      this.proceedToBack()
-    })
+    const waitBtn = document.getElementById("reflectionDialogWait")
+    if (waitBtn) {
+      waitBtn.addEventListener("click", () => {
+        this.removeReflectionPendingDialog()
+      })
+    }
+    const skipBtn = document.getElementById("reflectionDialogSkip")
+    if (skipBtn) {
+      skipBtn.addEventListener("click", () => {
+        this.removeReflectionPendingDialog()
+        this.proceedToBack()
+      })
+    }
   },
 
   proceedToBack() {
