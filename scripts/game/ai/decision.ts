@@ -17,8 +17,6 @@
  *   scene-llm.js (LLM决策) → telemetry → recordAiThoughtLogs() → currentRunLog → renderAiThoughtLog()
  *   bidding.js (规则AI决策) → lastDecisionLog → buildAiDecisionPanelSnapshot()
  *
- * @requires MobaoUtils - 工具函数（formatBidRevealNumber）
- *
  * @exports DecisionMixin - AI决策日志 Mixin，混入 Phaser Scene
  *
  * 混入方式：Object.assign(scene, MobaoAi.DecisionMixin)
@@ -26,7 +24,7 @@
  *   buildAiDecisionPanelSnapshot, compactPanelTextForSnapshot,
  *   beginRunTracking, recordAiThoughtLogs, renderAiThoughtLog, writeLog
  */
-const { formatBidRevealNumber } = (window as unknown as Record<string, { formatBidRevealNumber(v: number): string }>).MobaoUtils
+import { formatBidRevealNumber } from "../core/utils"
 
 type RuleDecisionEntry = {
   playerId: string

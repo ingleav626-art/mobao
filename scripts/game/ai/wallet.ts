@@ -11,9 +11,6 @@
  *   - 查询AI余额（支持联机回退到主机数据）
  *   - 规范化出价值：clamp 到 [最低出价, 钱包余额] 并对齐到出价步长
  *
- * @requires MobaoSettings  - 全局设置（GAME_SETTINGS.bidStep）
- * @requires MobaoUtils     - 工具函数（clamp, roundToStep）
- *
  * @exports WalletMixin - AI钱包管理 Mixin，混入 Phaser Scene
  * @exports AI_WALLET_INITIAL - AI初始资金常量
  *
@@ -21,8 +18,8 @@
  * 混入后 scene 将获得：aiWallets, loadAiWalletsFromStorage, saveAiWalletsToStorage,
  *   resetAiWallets, initAiWallets, getAiWallet, getAiMinimumBid, normalizeAiBidValue
  */
-const { GAME_SETTINGS } = (window as unknown as Record<string, { GAME_SETTINGS: { [key: string]: unknown } }>).MobaoSettings
-const { clamp, roundToStep } = (window as unknown as Record<string, { clamp(v: number, min: number, max: number): number; roundToStep(v: number, step: number): number }>).MobaoUtils
+import { GAME_SETTINGS } from "../core/settings"
+import { clamp, roundToStep } from "../core/utils"
 
 export const AI_WALLET_INITIAL = 1000000
 const AI_WALLET_STORAGE_KEY = "mobao_ai_wallets_v1"

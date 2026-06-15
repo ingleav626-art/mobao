@@ -23,9 +23,6 @@
  *     lessons: [string]     // 经验教训，最多10条
  *   }
  *
- * @requires MobaoConstants - 常量（AI_MEMORY_STORAGE_KEY）
- * @requires MobaoUtils     - 工具函数（formatBidRevealNumber）
- *
  * @exports MemoryMixin - AI记忆系统 Mixin，混入 Phaser Scene
  *
  * 混入方式：Object.assign(scene, MobaoAi.MemoryMixin)
@@ -34,22 +31,9 @@
  *   loadAiMemoryFromStorage, saveAiMemoryToStorage, restoreAiMemoryFromStorage,
  *   getAiConversationMessages, pushAiRoundSummary, updateLastAiRoundResult, 等
  */
-interface GameHistoryRecord {
-  winnerName: string
-  winnerBid: number
-  totalValue: number
-  winnerProfit: number
-  dividendTicket?: { mechanism?: string; dividendPerPlayer?: number; ticketPerPlayer?: number }
-  qualityCounts?: { poor?: number; normal?: number; fine?: number; rare?: number; legendary?: number }
-  totalItems?: number
-  totalCells?: number
-  aiDecisions?: Array<{ round: number; bid?: number; skill?: string; item?: string; thought?: string }>
-  [key: string]: unknown
-}
-
-const { AI_MEMORY_STORAGE_KEY } = (window as unknown as Record<string, { AI_MEMORY_STORAGE_KEY: string }>).MobaoConstants
-const { formatBidRevealNumber } = (window as unknown as Record<string, { formatBidRevealNumber(v: number): string }>).MobaoUtils
-const MobaoGameHistory = (window as unknown as Record<string, { getCount(playerId: string, isLan: boolean): number; clear(playerId: string, isLan: boolean): void; load(playerId: string, isLan: boolean): GameHistoryRecord[]; append(playerId: string, record: Record<string, unknown>, maxRecords?: number, isLan?: boolean): void }>).MobaoGameHistory
+import { AI_MEMORY_STORAGE_KEY } from "../core/constants"
+import { formatBidRevealNumber } from "../core/utils"
+import { MobaoGameHistory, GameRecord } from "./game-history"
 
 export const AiMemoryMixin: Record<string, unknown> = {
   getAiMemoryStorageKey(): string {
@@ -474,12 +458,12 @@ export const AiMemoryMixin: Record<string, unknown> = {
   pushRunStartContextToAi(): void { },
 
   pushRunSettlementContextToAi(result: Record<string, unknown>): void {
-    const winnerId = result && result.winnerId ? result.winnerId : null
-    const winnerName = result && result.winnerName ? result.winnerName : "未知"
+    const winnerId = result && result.winnerId ? String(result.winnerId) : null
+    const winnerName = result && result.winnerName ? String(result.winnerName) : "未知"
     const winnerBid = Math.round(Number(result && result.winnerBid) || 0)
     const totalValue = Math.round(Number(result && result.totalValue) || 0)
     const winnerProfit = Math.round(Number(result && result.winnerProfit) || 0)
-    const reasonText = result && result.reasonText ? result.reasonText : "结算"
+    const reasonText = result && result.reasonText ? String(result.reasonText) : "结算"
     const dtInfo = result && result.dividendTicketInfo ? result.dividendTicketInfo as { mechanism?: string; dividendPerPlayer?: number; ticketPerPlayer?: number } : null
     const mechanism = dtInfo ? dtInfo.mechanism : "none"
     const dividendAmt = dtInfo ? Math.round(Number(dtInfo.dividendPerPlayer) || 0) : 0
