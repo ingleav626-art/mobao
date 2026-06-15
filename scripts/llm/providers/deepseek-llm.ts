@@ -11,7 +11,7 @@ const LLM_API_KEY_STORAGE_KEY = "mobao_deepseek_api_key_v1"
 const MAX_LOG_ENTRIES = 120
 
 const llmProxyResolvers: Map<string, { resolve: (value: string) => void }> = (window as any).__llmProxyResolvers || new Map()
-;(window as any).__llmProxyResolvers = llmProxyResolvers
+  ; (window as any).__llmProxyResolvers = llmProxyResolvers
 
 interface UsageInput {
   prompt_cache_hit_tokens?: number
@@ -104,7 +104,7 @@ function broadcastToTokenMonitor(result: any, options: any): void {
 }
 
 if (!(window as any).__llmProxyCallback) {
-  ;(window as any).__llmProxyCallback = function (requestId: string, b64Result: string): void {
+  ; (window as any).__llmProxyCallback = function (requestId: string, b64Result: string): void {
     const entry = llmProxyResolvers.get(requestId)
     if (entry) {
       llmProxyResolvers.delete(requestId)
@@ -137,7 +137,7 @@ if (!(window as any).__llmProxyCallback) {
 function llmProxyAsync(requestId: string, bodyJson: string): Promise<string> {
   return new Promise(function (resolve) {
     llmProxyResolvers.set(requestId, { resolve: resolve })
-    ;(window as any).NativeBridge.llmProxyAsync(requestId, bodyJson)
+      ; (window as any).NativeBridge.llmProxyAsync(requestId, bodyJson)
   })
 }
 
@@ -152,7 +152,7 @@ function defaultDeepSeekSettings(): any {
     multiGameMemoryEnabled: false,
     reflectionEnabled: false,
     contextLength: 5,
-    summaryInterval: 0,
+    autoSummarizeEnabled: true,
     reflectionScope: "current",
     endpoint: "/api/deepseek/chat/completions",
     model: "deepseek-v4-flash",
@@ -164,11 +164,11 @@ function defaultDeepSeekSettings(): any {
   }
 }
 
-function normalizeObject(value: any): any {
+function normalizeObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object") {
     return {}
   }
-  return value
+  return value as Record<string, unknown>
 }
 
 function toFiniteNumber(value: any, fallback: number): number {
@@ -265,14 +265,14 @@ function normalizeDeepSeekSettings(source: any, fallback?: any): any {
     multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
     reflectionEnabled: Boolean(input.reflectionEnabled),
     contextLength: clamp(Math.round(toFiniteNumber(input.contextLength, defaults.contextLength)), 2, 20),
-    summaryInterval: clamp(Math.round(toFiniteNumber(input.summaryInterval, defaults.summaryInterval)), 0, 50),
+    autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
     reflectionScope: input.reflectionScope === "full" ? "full" : "current",
     endpoint,
     model: modelRaw.length > 0 ? modelRaw : defaults.model,
     apiKey: apiKeyRaw,
     timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
     temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 1.5),
-    maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400),
+    maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens))),
     independentModelEnabled: Boolean(input.independentModelEnabled)
   }
 }
@@ -370,30 +370,30 @@ function extractErrorMessage(payload: any, fallbackStatus: number): string {
 }
 
 class DeepSeekClient {
-  settings: any
-  logs: any[]
+  settings: Record<string, unknown>
+  logs: Array<Record<string, unknown>>
 
-  constructor(initialSettings?: any) {
+  constructor(initialSettings?: Record<string, unknown>) {
     this.settings = normalizeDeepSeekSettings(initialSettings, defaultDeepSeekSettings())
     this.logs = []
   }
 
-  applySettings(nextSettings: any): any {
+  applySettings(nextSettings: Record<string, unknown>): Record<string, unknown> {
     this.settings = normalizeDeepSeekSettings(nextSettings, this.settings)
     this.log("info", "settings.updated", {
       enabled: this.settings.enabled,
       model: this.settings.model,
       endpoint: this.settings.endpoint,
-      apiKey: maskApiKey(this.settings.apiKey)
+      apiKey: maskApiKey(String(this.settings.apiKey || ""))
     })
     return this.getSettings()
   }
 
-  getSettings(): any {
+  getSettings(): Record<string, unknown> {
     return { ...this.settings }
   }
 
-  getLogs(): any[] {
+  getLogs(): Array<Record<string, unknown>> {
     return this.logs.slice()
   }
 
@@ -401,7 +401,7 @@ class DeepSeekClient {
     this.logs = []
   }
 
-  log(level: string, event: string, detail?: any): void {
+  log(level: string, event: string, detail?: unknown): void {
     this.logs.push({
       timestamp: new Date().toISOString(),
       level,
@@ -429,13 +429,13 @@ class DeepSeekClient {
       }
     }
 
-    const messages: any[] =
+    const messages: Array<Record<string, unknown>> =
       Array.isArray(input.messages) && input.messages.length > 0
         ? input.messages
         : [{ role: "user", content: "请回复：连接成功" }]
     const timeoutMs = clamp(Math.round(toFiniteNumber(input.timeoutMs, mergedSettings.timeoutMs)), 3000, 120000)
     const temperature = clamp(toFiniteNumber(input.temperature, mergedSettings.temperature), 0, 1.5)
-    const maxTokens = clamp(Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens)), 32, 102400)
+    const maxTokens = Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens)))
 
     const isV4OrReasoner = /deepseek-(v4|reasoner)/i.test(mergedSettings.model)
     const userEnabledThinking = input.isThinking === true
@@ -471,7 +471,7 @@ class DeepSeekClient {
 
     const startedAt = Date.now()
     const requestId = makeRequestId()
-    const messageChars = messages.reduce((sum: number, msg: any) => sum + String(msg && msg.content ? msg.content : "").length, 0)
+    const messageChars = messages.reduce((sum: number, msg: Record<string, unknown>) => sum + String(msg && msg.content ? msg.content : "").length, 0)
     this.log("info", "request.start", {
       requestId,
       endpoint: mergedSettings.endpoint,
@@ -624,7 +624,7 @@ class DeepSeekClient {
       const elapsedMs = Date.now() - startedAt
       const timeoutError = error && (error as Error).name === "AbortError"
       if (timeoutError && isNativeEnv && (window as any).NativeBridge && (window as any).NativeBridge.llmProxyCancel) {
-        ;(window as any).NativeBridge.llmProxyCancel(requestId)
+        ; (window as any).NativeBridge.llmProxyCancel(requestId)
       }
       llmProxyResolvers.delete(requestId)
       const endpointLooksLegacy = /api\.deepseek\.com\/chat\/completions/i.test(mergedSettings.endpoint)
@@ -716,4 +716,4 @@ export const DeepSeekLLM = {
   DeepSeekClient
 }
 
-;(window as any).DeepSeekLLM = DeepSeekLLM
+  ; (window as any).DeepSeekLLM = DeepSeekLLM
