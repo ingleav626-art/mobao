@@ -150,5 +150,3 @@ export const OpenAIProvider = {
     return provider.testConnection(overrideSettings)
   }
 }
-
-  ; (window as any).OpenAIProvider = OpenAIProvider

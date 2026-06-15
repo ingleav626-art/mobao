@@ -92,16 +92,3 @@ export function recordGameFinished(playerWon: boolean, profit: number): AppState
   save(current)
   return current
 }
-
-// 兼容层：保持 window.MobaoAppState 全局变量可用
-;(window as any).MobaoAppState = {
-  APP_STATE_KEY,
-  DEFAULT_STATE,
-  load,
-  save,
-  patch,
-  get,
-  set,
-  reset,
-  recordGameFinished
-}

@@ -715,5 +715,3 @@ export const DeepSeekLLM = {
   maskApiKey,
   DeepSeekClient
 }
-
-  ; (window as any).DeepSeekLLM = DeepSeekLLM

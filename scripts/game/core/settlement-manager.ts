@@ -258,6 +258,3 @@ export const SettlementManagerMixin = {
     this.updateHud()
   }
 }
-
-  // 兼容层
-  ; (window as any).MobaoSettlementManager = SettlementManagerMixin

@@ -34,7 +34,3 @@ export function createSceneLlmBridge(deps: any) {
     saveAiLlmPlayerSwitches: settingsModule.saveAiLlmPlayerSwitches
   }
 }
-
-;(window as any).MobaoSceneLlm = {
-  createSceneLlmBridge
-}

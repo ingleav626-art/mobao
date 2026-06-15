@@ -132,22 +132,3 @@ export function formatProfitWithBonus(baseProfit: number): { total: number; bonu
   }
   return { total: baseProfit, bonus: 0, label: null }
 }
-
-// 兼容层：保持 window.CharacterSystem 全局变量可用
-;(window as any).CharacterSystem = {
-  getActiveCharacter,
-  getActiveCharacterId,
-  getActiveSkillId,
-  getActivePassive,
-  getDisplayName,
-  getDisplayAvatar,
-  getAvatarLabel,
-  selectCharacter,
-  resetForNewGame,
-  getOutlineBonus,
-  getQualityBonus,
-  getOutlineSortStrategy,
-  applyPassiveEffect,
-  getSessionPassiveBonus,
-  formatProfitWithBonus
-}

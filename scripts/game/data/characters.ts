@@ -80,12 +80,3 @@ export function getSelectedCharacter(): Character {
 export function saveSelectedCharacter(characterId: string): void {
   window.localStorage.setItem("mobao_selected_character_v1", JSON.stringify(characterId))
 }
-
-// 兼容层：保持 window.CharacterData 全局变量可用
-;(window as any).CharacterData = {
-  CHARACTERS,
-  getCharacterById,
-  getUnlockedCharacters,
-  getSelectedCharacter,
-  saveSelectedCharacter
-}

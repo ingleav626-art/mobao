@@ -138,7 +138,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
         await this.playSettlementSearchEffect(item, runToken)
 
         if (runToken !== this.settlementRunToken) {
-          if (window.AudioUI) {
+          if (AudioUI) {
             AudioUI.stopSearch()
           }
           return

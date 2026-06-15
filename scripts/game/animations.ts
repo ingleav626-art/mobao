@@ -503,7 +503,4 @@ export const MobaoAnimations = {
   transitionToSettlement,
   bindPressScale,
   bindAllButtonEffects
-};
-
-// 兼容层：保持 window.MobaoAnimations 全局变量可用
-; (window as any).MobaoAnimations = MobaoAnimations
+}

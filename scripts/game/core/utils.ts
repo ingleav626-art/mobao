@@ -264,33 +264,3 @@ export function settlementSearchDurationByQuality(qualityKey: string): number {
     default: return Math.round(540 * multiplier)
   }
 }
-
-// 兼容层：保持 window.MobaoUtils 全局变量可用
-;(window as any).MobaoUtils = {
-  shuffle,
-  delay,
-  tweenToPromise,
-  clamp,
-  roundToStep,
-  toCellKey,
-  fromCellKey,
-  sizeTagToCellCount,
-  formatTrackIndex,
-  rgbHex,
-  trimTrailingZero,
-  formatCompactNumber,
-  formatBidRevealNumber,
-  escapeHtml,
-  compactOneLine,
-  compactPanelText,
-  indentMultiline,
-  normalizeActionToken,
-  isNoneActionText,
-  safeParseJson,
-  tryExtractDecisionJson,
-  pickFirstDefined,
-  createEmptyAiPrivateIntelPool,
-  qualityPulseDuration,
-  settlementRevealDelayByQuality,
-  settlementSearchDurationByQuality
-}

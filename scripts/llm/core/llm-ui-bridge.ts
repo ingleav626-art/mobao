@@ -856,7 +856,6 @@ export const LlmUiBridge = {
   deleteCurrentProvider,
   BUILTIN_PROVIDERS
 }
-  ; (window as any).LlmUiBridge = LlmUiBridge
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initialize)

@@ -110,17 +110,3 @@ export function savePlayerMoney(value: number): void {
 
 export let GAME_SETTINGS: GameSettingsData = loadGameSettings()
 GAME_SETTINGS.actionsPerRound = 99
-
-// 兼容层：保持 window.MobaoSettings 全局变量可用
-;(window as any).MobaoSettings = {
-  defaultGameSettings,
-  normalizeSettingsSource,
-  normalizeGameSettings,
-  loadGameSettings,
-  saveGameSettings,
-  loadPlayerMoney,
-  savePlayerMoney,
-  GAME_SETTINGS
-}
-// 兼容层：部分文件直接引用 GAME_SETTINGS 全局变量
-;(window as any).GAME_SETTINGS = GAME_SETTINGS

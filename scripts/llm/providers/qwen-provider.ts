@@ -149,5 +149,3 @@ export const QwenProvider = {
     return provider.testConnection(overrideSettings)
   }
 }
-
-;(window as any).QwenProvider = QwenProvider

@@ -574,29 +574,31 @@
             <p class="settings-group-sub">开启后AI玩家使用大模型决策，否则使用规则AI。</p>
             <label style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">启用多局AI上下文
               <input type="checkbox" id="setting-llmMultiGameMemoryEnabled" />
-              <span id="contextLengthInline" class="hidden" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;">
+              <span id="contextLengthInline" class="hidden"
+                style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;">
                 最长上下文（局）：
                 <button type="button" class="stepper-btn" id="contextLengthDecrease">-</button>
-                <input type="number" id="setting-contextLength" min="2" max="20" step="1" value="5" class="stepper-input" readonly />
+                <input type="number" id="setting-contextLength" min="2" max="20" step="1" value="5"
+                  class="stepper-input" readonly />
                 <button type="button" class="stepper-btn" id="contextLengthIncrease">+</button>
               </span>
             </label>
+            <div class="settings-inline-actions" style="margin: 4px 0;">
+              <button id="clearAiContextBtn" type="button">清空AI上下文</button>
+            </div>
             <p class="settings-group-sub">开启后AI保留跨局历史记录，越玩越聪明。关闭仅停止发送，不删除记录。</p>
-            <div id="summaryConfig" class="hidden">
-              <div class="settings-stepper-row">
-                <span class="stepper-label">总结间隔（局）：</span>
-                <button type="button" class="stepper-btn" id="summaryIntervalDecrease">-</button>
-                <input type="number" id="setting-summaryInterval" min="0" max="50" step="1" value="0" class="stepper-input" readonly />
-                <button type="button" class="stepper-btn" id="summaryIntervalIncrease">+</button>
-              </div>
-              <p class="settings-group-sub">总结间隔为0表示不自动总结。设为5则每5局触发一次AI总结。</p>
+            <div id="summaryConfig" class="hidden settings-sub-group">
+              <label>自动总结
+                <input type="checkbox" id="setting-autoSummarizeEnabled" checked />
+              </label>
+              <p class="settings-group-sub">达到上下文局数后自动触发AI总结，将经验写入跨局记忆。</p>
             </div>
             <label>启用局后AI反思
               <input type="checkbox" id="setting-llmReflectionEnabled" />
             </label>
             <p class="settings-group-sub">每局结算后AI自动反思决策优劣，反思结果写入跨局记忆。</p>
-            <div id="reflectionScopeConfig" class="hidden">
-              <p class="settings-group-sub">反思范围：</p>
+            <div id="reflectionScopeConfig" class="hidden settings-sub-group">
+              <label>反思范围：</label>
               <label style="margin-left:12px;">
                 <input type="radio" name="reflectionScope" value="current" checked /> 仅本局
               </label>
@@ -609,7 +611,7 @@
               <input type="checkbox" id="setting-llmThinkingEnabled" />
             </label>
             <p class="settings-group-sub">开启后模型会进行深度推理，适合复杂决策。注意：思考模式需要更长的响应时间（建议超时60秒以上）和更大的Token限制（建议4000以上）。</p>
-            <div id="thinkingModeParams" class="hidden">
+            <div id="thinkingModeParams" class="hidden settings-sub-group">
               <label>思考模式请求参数（JSON，可选）：
                 <input type="text" id="setting-thinkingParams" autocomplete="off"
                   placeholder='{"reasoning_effort":"max"}' />
@@ -624,11 +626,11 @@
               <input type="checkbox" id="setting-llmIndependentModelEnabled" />
             </label>
             <p class="settings-group-sub">开启后可为每个AI单独配置不同的模型。</p>
-            <div id="independentModelConfig" class="hidden">
-              <label>对反思生效
+            <div id="independentModelConfig" class="hidden settings-sub-group">
+              <label>对反思与总结生效
                 <input type="checkbox" id="setting-llmIndependentReflectionEnabled" checked />
               </label>
-              <p class="settings-group-sub">勾选时，AI反思也使用各自配置的模型；不勾选时，统一使用默认模型进行反思。</p>
+              <p class="settings-group-sub">勾选时，AI反思与总结也使用各自配置的模型；不勾选时，统一使用默认模型进行反思与总结。</p>
               <div class="settings-inline-actions">
                 <button id="configIndependentModelBtn" type="button">配置AI模型</button>
               </div>
@@ -644,7 +646,7 @@
             </div>
             <p class="settings-group-sub">清空：删除所有AI的持久化记忆，不可恢复。查看：浏览AI的跨局记忆内容。导出/导入：备份或恢复AI记忆。重置AI钱包：将所有AI钱包恢复到初始100万。
             </p>
-            <div id="llmProviderSettings">
+            <div id="llmProviderSettings" class="settings-provider-section">
               <label id="llmApiKeyLabel">API Key：
                 <input type="text" id="setting-llmApiKey" autocomplete="off" placeholder="sk-..." inputmode="url" />
               </label>
@@ -856,58 +858,7 @@
       </div>
     </section>
   </div>
-  <script type="module" src="./scripts/audio/audio-manager.ts"></script>
-  <script type="module" src="./scripts/audio/audio-ui.ts"></script>
-  <script type="module" src="./scripts/game/data/artifacts.ts"></script>
-  <script type="module" src="./scripts/game/ai/bidding.ts"></script>
-  <script type="module" src="./scripts/game/data/skills.ts"></script>
-  <script type="module" src="./scripts/game/data/items.ts"></script>
-  <script type="module" src="./scripts/game/data/public-events.ts"></script>
-  <script type="module" src="./scripts/game/core/app-state.ts"></script>
-  <script type="module" src="./scripts/game/data/map-profiles.ts"></script>
-  <script type="module" src="./scripts/game/data/characters.ts"></script>
-  <script type="module" src="./scripts/game/data/character-system.ts"></script>
-  <script type="module" src="./scripts/game/bridge/shop.ts"></script>
-  <script type="module" src="./scripts/game/shop/index.ts"></script>
-  <script type="module" src="./scripts/game/bridge/battle-record.ts"></script>
-  <script type="module" src="./scripts/game/bridge/settlement.ts"></script>
-  <script type="module" src="./scripts/llm/core/llm-manager.ts"></script>
-  <script type="module" src="./scripts/llm/providers/deepseek-provider.ts"></script>
-  <script type="module" src="./scripts/llm/providers/openai-provider.ts"></script>
-  <script type="module" src="./scripts/llm/providers/qwen-provider.ts"></script>
-  <script type="module" src="./scripts/llm/providers/glm-provider.ts"></script>
-  <script type="module" src="./scripts/llm/providers/kimi-provider.ts"></script>
-  <script type="module" src="./scripts/llm/providers/deepseek-llm.ts"></script>
-  <script type="module" src="./scripts/llm/core/scene-llm.ts"></script>
-  <script type="module" src="./scripts/llm/core/llm-ui-bridge.ts"></script>
-  <script type="module" src="./lan/client/lan-bridge.ts"></script>
-  <script type="module" src="./scripts/game/core/constants.ts"></script>
-  <script type="module" src="./scripts/game/core/utils.ts"></script>
-  <script type="module" src="./scripts/game/animations.ts"></script>
-  <script type="module" src="./scripts/game/core/settings.ts"></script>
-  <script type="module" src="./scripts/game/warehouse/index.ts"></script>
-  <script type="module" src="./scripts/game/ai/wallet.ts"></script>
-  <script type="module" src="./scripts/game/ai/intel.ts"></script>
-  <script type="module" src="./scripts/game/ai/memory.ts"></script>
-  <script type="module" src="./scripts/game/ai/reflection.ts"></script>
-  <script type="module" src="./scripts/game/ai/game-history.ts"></script>
-  <script type="module" src="./scripts/game/ai/summarizer.ts"></script>
-  <script type="module" src="./scripts/game/ai/decision.ts"></script>
-  <script type="module" src="./scripts/game/ai/context-builder.ts"></script>
-  <script type="module" src="./scripts/game/core/round-manager.ts"></script>
-  <script type="module" src="./scripts/game/core/skill-item-manager.ts"></script>
-  <script type="module" src="./scripts/game/core/settlement-manager.ts"></script>
-  <script type="module" src="./scripts/game/core/deps.ts"></script>
-  <script type="module" src="./scripts/game/bidding/index.ts"></script>
-  <script type="module" src="./scripts/game/ui/overlay.ts"></script>
-  <script type="module" src="./scripts/game/ui/panels.ts"></script>
-  <script type="module" src="./scripts/game/ui/history.ts"></script>
-  <script type="module" src="./scripts/game/lobby/carousel.ts"></script>
-  <script type="module" src="./scripts/game/lobby/character-select.ts"></script>
-  <script type="module" src="./scripts/game/lobby/index.ts"></script>
-  <script type="module" src="./scripts/game/lan/index.ts"></script>
   <script type="module" src="./scripts/game/main.ts"></script>
-  <script type="module" src="./scripts/mobile/mobile-handler.ts"></script>
 </body>
 
 </html>

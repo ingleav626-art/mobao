@@ -33,7 +33,3 @@ export const Deps: {
 export function initDeps(bridges: Record<string, any>): void {
   Object.assign(Deps, bridges)
 }
-
-// 兼容层：过渡期保留 window 引用，待所有模块迁移到 Deps 后移除
-window.Deps = Deps
-window.initDeps = initDeps

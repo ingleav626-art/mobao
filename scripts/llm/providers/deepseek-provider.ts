@@ -182,4 +182,3 @@ export const DeepSeekProvider = {
     return provider.testConnection(overrideSettings)
   }
 }
-  ; (window as any).DeepSeekProvider = DeepSeekProvider

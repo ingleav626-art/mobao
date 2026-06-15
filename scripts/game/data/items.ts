@@ -207,11 +207,3 @@ export class ItemManager {
     }))
   }
 }
-
-// 兼容层：保持 window.ItemSystem 全局变量可用
-; (window as any).ItemSystem = {
-  ITEM_DEFS,
-  ItemManager
-}
-  // 兼容层：skill-item-manager.ts 直接引用 ITEM_DEFS 全局变量
-  ; (window as any).ITEM_DEFS = ITEM_DEFS

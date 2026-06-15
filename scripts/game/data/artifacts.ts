@@ -1143,14 +1143,3 @@ function weightedPick(pool: Array<{ weight: number;[key: string]: any }>): Recor
 
   return pool[pool.length - 1]
 }
-
-// 兼容层：保持 window.ArtifactData 全局变量可用
-; (window as any).ArtifactData = {
-  QUALITY_CONFIG,
-  ARTIFACT_LIBRARY,
-  SIZE_TAG_BY_DIMENSION,
-  CATEGORY_WEIGHTS,
-  toSizeTag,
-  estimatePriceByQuality,
-  ArtifactManager
-}

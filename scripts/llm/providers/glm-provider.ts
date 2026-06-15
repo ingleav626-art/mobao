@@ -146,4 +146,3 @@ export const GlmProvider = {
     return provider.testConnection(overrideSettings)
   }
 }
-  ; (window as any).GlmProvider = GlmProvider

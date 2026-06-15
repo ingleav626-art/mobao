@@ -122,4 +122,3 @@ export const KimiProvider = {
     return provider.testConnection(overrideSettings)
   }
 }
-  ; (window as any).KimiProvider = KimiProvider

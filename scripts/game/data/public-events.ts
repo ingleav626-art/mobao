@@ -323,13 +323,3 @@ export function pickMultiplePublicEvents(items: WarehouseItem[], gridCols: numbe
 export function getWarehouseAnalysis(items: WarehouseItem[], gridCols: number, gridRows: number): WarehouseAnalysis | null {
   return analyzeWarehouse(items)
 }
-
-// 兼容层：保持 window.PublicEventSystem 全局变量可用
-;(window as any).PublicEventSystem = {
-  generateEvents,
-  pickRandomPublicEvent,
-  pickMultiplePublicEvents,
-  getWarehouseAnalysis,
-  QUALITY_LABELS,
-  CATEGORY_NAMES
-}

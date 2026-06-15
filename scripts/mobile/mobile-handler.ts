@@ -808,5 +808,3 @@ if (document.readyState === "loading") {
 } else {
   initMobileHandler()
 }
-
-; (window as any).MobileHandler = MobileHandler

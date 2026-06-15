@@ -127,11 +127,3 @@ export class SkillManager {
     }))
   }
 }
-
-// 兼容层：保持 window.SkillSystem 全局变量可用
-; (window as any).SkillSystem = {
-  SKILL_DEFS,
-  SkillManager
-}
-  // 兼容层：skill-item-manager.ts 直接引用 SKILL_DEFS 全局变量
-  ; (window as any).SKILL_DEFS = SKILL_DEFS
