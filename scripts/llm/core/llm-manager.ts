@@ -293,9 +293,9 @@ function registerProvider(provider: any): void {
       },
     loadSettings:
       provider.loadSettings ||
-      function () {
-        return this.defaultSettings()
-      },
+      (() => {
+        return provider.defaultSettings ? provider.defaultSettings() : {}
+      }),
     saveSettings: provider.saveSettings || function () { },
     requestChat: provider.requestChat,
     testConnection: provider.testConnection || defaultTestConnection,
@@ -343,7 +343,7 @@ function unregisterProvider(providerId: string): boolean {
   }
   providers.delete(providerId)
   if (activeProviderId === providerId) {
-    activeProviderId = providers.size > 0 ? providers.keys().next().value : null
+    activeProviderId = providers.size > 0 ? (providers.keys().next().value as string | undefined) || null : null
   }
   return true
 }
@@ -1090,7 +1090,7 @@ export const LlmManager = {
     })
     saveCustomProviders(filtered)
     if (activeProviderId === providerId) {
-      activeProviderId = providers.size > 0 ? providers.keys().next().value : null
+      activeProviderId = providers.size > 0 ? (providers.keys().next().value as string | undefined) || null : null
       saveManagerSettings({ activeProviderId })
     }
     try {
@@ -1197,7 +1197,7 @@ export const LlmManager = {
       activeProviderId = managerSettings.activeProviderId
       console.log("[LlmManager.init] set activeProviderId from storage:", activeProviderId)
     } else if (providers.size > 0) {
-      activeProviderId = providers.keys().next().value
+      activeProviderId = (providers.keys().next().value as string | undefined) || null
       console.log("[LlmManager.init] set activeProviderId to first provider:", activeProviderId)
     } else {
       console.log("[LlmManager.init] no providers available")
