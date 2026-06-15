@@ -32,14 +32,10 @@
  *   - mobao_shop_inventory_v1: 道具库存
  *   - mobao_shop_refresh_date_v1: 每日购买记录
  *   - mobao_shop_limited_offer_v1: 限时特惠数据
- *   - mobao_player_money_v1: 玩家资金（由其他模块写入）
  *
- * @exports window.MobaoShopBridge - 商店系统单例对象
- *
- * 使用方式：
- *   MobaoShopBridge.purchaseItem("item-outline-lamp");
- *   MobaoShopBridge.consumeItem("item-quality-glass");
- *   const count = MobaoShopBridge.getItemCount("item-outline-torch");
+ * @requires core/constants - 常量定义
+ * @requires core/settings - 游戏设置（资金管理）
+ * @exports window.MobaoShopBridge - 商店系统 Bridge 单例
  */
 const SHOP_STORAGE_KEY = "mobao_shop_inventory_v1"
 const SHOP_REFRESH_DATE_KEY = "mobao_shop_refresh_date_v1"
