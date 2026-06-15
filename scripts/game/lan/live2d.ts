@@ -7,10 +7,24 @@
  * @exports LanLive2dMixin - 包含 startLanLive2dLoop 和 stopLanLive2dLoop 方法
  */
 
-let _lanLive2dState = null;
+interface Live2dState {
+  current: string
+  src: string
+  running: boolean
+  duration: number
+  prewarmed: boolean
+  nextFrameReady: boolean
+  switchPending: boolean
+  rafId: number | null
+  loadRetries: number
+  maxRetries: number
+  loadTimeout: number | null
+}
+
+let _lanLive2dState: Live2dState | null = null;
 
 export const LanLive2dMixin = {
-  startLanLive2dLoop(src, videoA, videoB) {
+  startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB: HTMLVideoElement) {
     this.stopLanLive2dLoop();
 
     var loadingPlaceholder = document.getElementById("lanLive2dLoadingPlaceholder");
@@ -21,7 +35,7 @@ export const LanLive2dMixin = {
     var PREWARM_TIME = isMobile ? 5.0 : 2.0;
     var SWITCH_TIME = isMobile ? 4.0 : 0.033;
 
-    var state = {
+    var state: Live2dState = {
       current: "A",
       src: src,
       running: true,
