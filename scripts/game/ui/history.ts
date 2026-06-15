@@ -28,17 +28,17 @@ import { GAME_SETTINGS } from "../core/settings"
 
 export const UiHistoryMixin: Record<string, any> = {
   resetPlayerHistoryState(): void {
-    this.players.forEach((player) => {
-      this.playerRoundHistory[player.id] = []
-      this.playerUsageHistory[player.id] = []
-      this.currentRoundUsage[player.id] = []
+    (this.players as Array<{ id: string }>).forEach((player: { id: string }) => {
+      (this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>)[player.id] = [];
+      (this.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>)[player.id] = [];
+      (this.currentRoundUsage as Record<string, string[]>)[player.id] = []
     })
     this.refreshPlayerHistoryUI()
   },
 
   clearCurrentRoundUsage(): void {
-    this.players.forEach((player) => {
-      this.currentRoundUsage[player.id] = []
+    (this.players as Array<{ id: string }>).forEach((player: { id: string }) => {
+      (this.currentRoundUsage as Record<string, string[]>)[player.id] = []
     })
   },
 
@@ -51,18 +51,18 @@ export const UiHistoryMixin: Record<string, any> = {
   },
 
   recordRoundHistory(roundBids: Array<{ playerId: string; bid: number }>): void {
-    const roundNumber = this.round
-    this.players.forEach((player) => {
-      const bid = roundBids.find((entry) => entry.playerId === player.id)?.bid ?? 0
-      this.playerRoundHistory[player.id].push({ round: roundNumber, bid })
-      if (this.playerRoundHistory[player.id].length > GAME_SETTINGS.maxRounds) {
-        this.playerRoundHistory[player.id].shift()
+    const roundNumber = this.round;
+    (this.players as Array<{ id: string }>).forEach((player: { id: string }) => {
+      const bid = roundBids.find((entry) => entry.playerId === player.id)?.bid ?? 0;
+      (this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>)[player.id].push({ round: roundNumber, bid })
+      if ((this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>)[player.id].length > GAME_SETTINGS.maxRounds) {
+        (this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>)[player.id].shift()
       }
 
-      const actions = [...(this.currentRoundUsage[player.id] || [])]
-      this.playerUsageHistory[player.id].push({ round: roundNumber, actions })
-      if (this.playerUsageHistory[player.id].length > GAME_SETTINGS.maxRounds) {
-        this.playerUsageHistory[player.id].shift()
+      const actions = [...((this.currentRoundUsage as Record<string, string[]>)[player.id] || [])];
+      (this.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>)[player.id].push({ round: roundNumber, actions })
+      if ((this.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>)[player.id].length > GAME_SETTINGS.maxRounds) {
+        (this.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>)[player.id].shift()
       }
     })
 
@@ -70,17 +70,17 @@ export const UiHistoryMixin: Record<string, any> = {
   },
 
   refreshPlayerHistoryUI(): void {
-    this.players.forEach((player) => {
-      const panel = this.playerHistoryPanels[player.id]
+    (this.players as Array<{ id: string }>).forEach((player: { id: string }) => {
+      const panel = (this.playerHistoryPanels as Record<string, HTMLElement | null>)[player.id]
       if (!panel) {
         return
       }
 
       const rounds = Array.from({ length: GAME_SETTINGS.maxRounds }, (_v, idx) => idx + 1)
-      const bidByRound = new Map((this.playerRoundHistory[player.id] || []).map((entry) => [entry.round, entry.bid]))
-      const usageByRound = new Map(
-        (this.playerUsageHistory[player.id] || []).map((entry) => [entry.round, entry.actions])
-      )
+      const bidByRoundArray = ((this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>)[player.id] || []).map((entry: { round: number; bid: number }) => [entry.round, entry.bid] as [number, number])
+      const bidByRound = new Map<number, number>(bidByRoundArray)
+      const usageByRoundArray = ((this.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>)[player.id] || []).map((entry: { round: number; actions: string[] }) => [entry.round, entry.actions] as [number, string[]])
+      const usageByRound = new Map<number, string[]>(usageByRoundArray)
 
       const roundHeaders = rounds.map((value) => `<td>${value}</td>`).join("")
       const itemCells = rounds
@@ -162,7 +162,7 @@ export const UiHistoryMixin: Record<string, any> = {
     }
 
     const canUse = !(this.settled || this.roundResolving || this.playerBidSubmitted || this.roundTimeLeft <= 0)
-    const itemState = this.itemManager.getItemState().filter((item) => item.count > 0)
+    const itemState = (this.itemManager as { getItemState(): Array<{ id: string; count: number }> }).getItemState().filter((item: { id: string; count: number }) => item.count > 0)
 
     const version = JSON.stringify(itemState) + "|" + canUse
     if (this._drawerVersion === version) return
@@ -185,8 +185,8 @@ export const UiHistoryMixin: Record<string, any> = {
     }
 
     this.dom.itemDrawerList.innerHTML = itemState
-      .map((item) => {
-        const info = this.getItemInfo(item.id)
+      .map((item: { id: string; count: number }) => {
+        const info = (this as unknown as { getItemInfo(id: string): { tip: string; label: string } }).getItemInfo(item.id)
         const disabled = !canUse || item.count <= 0
         return [
           `<button type="button" class="item-drawer-btn${disabled ? " is-empty" : ""}" data-item-id="${item.id}" ${disabled ? "disabled" : ""} title="${escapeHtml(info.tip)}">`,
