@@ -846,7 +846,7 @@ export class ArtifactManager {
   }): Record<string, any> | null {
     const categoryWeightMap = categoryWeights
       ? { ...categoryWeights }
-      : CATEGORY_WEIGHTS.reduce((acc, item) => {
+      : CATEGORY_WEIGHTS.reduce((acc: Record<string, number>, item) => {
         acc[item.key] = item.weight
         return acc
       }, {})
@@ -862,9 +862,9 @@ export class ArtifactManager {
         _qw: qualityWeights[def.qualityKey] || 1
       }))
       fitDefs = fitDefs.filter(() => Math.random() < 1)
-      const expanded = []
+      const expanded: any[] = []
       fitDefs.forEach((def) => {
-        const cw = categoryWeightMap[def.category] || 1
+        const cw = (categoryWeightMap as Record<string, number>)[def.category] || 1
         const qw = def._qw / totalQ
         expanded.push({ ...def, weight: cw * qw })
       })
@@ -881,7 +881,7 @@ export class ArtifactManager {
 
     const weightedDefs = fitDefs.map((def) => ({
       ...def,
-      weight: categoryWeightMap[def.category] || 1
+      weight: (categoryWeightMap as Record<string, number>)[def.category] || 1
     }))
 
     const picked = weightedPick(weightedDefs)
@@ -965,7 +965,7 @@ export class ArtifactManager {
   }
 
   getLibraryStats() {
-    const byCategory = ARTIFACT_LIBRARY.reduce((acc, artifact) => {
+    const byCategory = ARTIFACT_LIBRARY.reduce((acc: Record<string, number>, artifact) => {
       acc[artifact.category] = (acc[artifact.category] || 0) + 1
       return acc
     }, {})
@@ -978,7 +978,7 @@ export class ArtifactManager {
 }
 
 export function estimatePriceByQuality(basePrice: number, qualityKey: string): number {
-  const multiplierMap = {
+  const multiplierMap: Record<string, number> = {
     poor: 0.72,
     normal: 0.95,
     fine: 1.18,
@@ -1056,7 +1056,7 @@ export function summarizeStatsCollection(statsList: any[] = []): Record<string, 
   }
 
   const totalWeight = list.reduce((acc, stats) => acc + stats.count, 0)
-  const weighted = (field) => list.reduce((acc, stats) => acc + stats[field] * stats.count, 0) / totalWeight
+  const weighted = (field: string) => list.reduce((acc, stats) => acc + (stats as Record<string, number>)[field] * stats.count, 0) / totalWeight
 
   return {
     count: Math.round(weighted("count")),
