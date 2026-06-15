@@ -20,8 +20,8 @@ export interface GameSettingsData {
   sfxVolume: number
 }
 
-const { SETTINGS_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY, DEFAULT_START_MONEY } = (window as any).MobaoConstants
-const { clamp } = (window as any).MobaoUtils
+import { SETTINGS_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY, DEFAULT_START_MONEY } from "./constants"
+import { clamp } from "./utils"
 
 export function defaultGameSettings(): GameSettingsData {
   return {

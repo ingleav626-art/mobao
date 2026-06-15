@@ -13,22 +13,26 @@
  *   - 音效路由（_getSoundForElement）优先级：
  *     1. data-sound 属性 → 自定义音效名
  *     2. _customBindings 匹配（id 或 CSS 选择器）
- *     3. 默认 'click' 音效
- *   - bindSound(selector, soundName) / unbindSound(selector): 动态绑定/解绑
  *
+ * 3. 默认 'click' 音效
+* - bindSound(selector, soundName) / unbindSound(selector): 动态绑定 / 解绑
+*
  * 业务快捷方法：
- *   - playClick / playCoin / playReveal / playWin / playLose
- *   - playCountdown / stopCountdown: 可停止音效（倒计时）
- *   - playRound / playSkill(skillName)
- *   - startSearch / stopSearch: 搜索音效控制
- *   - playSettlementReveal(qualityKey): 按品质播放揭示音效
- *     legendary → revealLegendary, rare → revealRare, 其他 → revealNormal
- *   - play(soundName, options): 通用播放
- *
- * @requires AudioManager - 音频管理器（scripts/audio/audio-manager.js）
+ * - playClick / playCoin / playReveal / playWin / playLose
+  * - playCountdown / stopCountdown: 可停止音效（倒计时）
+ * - playRound / playSkill(skillName)
+  * - startSearch / stopSearch: 搜索音效控制
+    * - playSettlementReveal(qualityKey): 按品质播放揭示音效
+      * legendary → revealLegendary, rare → revealRare, 其他 → revealNormal
+        * - play(soundName, options): 通用播放
+          *
+ * @requires AudioManager - 音频管理器（scripts / audio / audio - manager.js）
  *
  * @exports window.AudioUI - 音频 UI 交互层单例
- */
+  */
+
+import { AudioManager } from "./audio-manager"
+
 const AudioUI: Record<string, any> = {
   _initialized: false as boolean,
   _clickSelector: 'button, .btn, [role="button"], .clickable, .tab, .menu-item',
@@ -50,7 +54,7 @@ const AudioUI: Record<string, any> = {
   },
 
   _handleClick(e: MouseEvent): void {
-    if (!(window as any).AudioManager._enabled || !(window as any).AudioManager._sfxEnabled) return
+    if (!AudioManager._enabled || !AudioManager._sfxEnabled) return
 
     const target = (e.target as HTMLElement).closest(this._clickSelector)
     if (target) {
@@ -60,12 +64,12 @@ const AudioUI: Record<string, any> = {
       const soundName = this._getSoundForElement(target as HTMLElement)
       const volume = parseFloat((target as HTMLElement).dataset.soundVolume || "") || 0.8
 
-        ; (window as any).AudioManager.playSfx(soundName, { volume })
+        ; AudioManager.playSfx(soundName, { volume })
     }
   },
 
   _handleKeydown(e: KeyboardEvent): void {
-    if (!(window as any).AudioManager._enabled || !(window as any).AudioManager._sfxEnabled) return
+    if (!AudioManager._enabled || !AudioManager._sfxEnabled) return
 
     if (e.key === "Enter" || e.key === " ") {
       const activeEl = document.activeElement as HTMLElement
@@ -76,7 +80,7 @@ const AudioUI: Record<string, any> = {
         const soundName = this._getSoundForElement(activeEl as HTMLElement)
         const volume = parseFloat((activeEl as HTMLElement).dataset.soundVolume || "") || 0.8
 
-          ; (window as any).AudioManager.playSfx(soundName, { volume })
+          ; AudioManager.playSfx(soundName, { volume })
       }
     }
   },
@@ -110,60 +114,60 @@ const AudioUI: Record<string, any> = {
   },
 
   playClick(): void {
-    ; (window as any).AudioManager.playSfx("click")
+    ; AudioManager.playSfx("click")
   },
 
   playCoin(): void {
-    ; (window as any).AudioManager.playSfx("coin")
+    ; AudioManager.playSfx("coin")
   },
 
   playReveal(): void {
-    ; (window as any).AudioManager.playSfx("reveal", { volume: 0.5 })
+    ; AudioManager.playSfx("reveal", { volume: 0.5 })
   },
 
   playWin(): void {
-    ; (window as any).AudioManager.playSfx("win")
+    ; AudioManager.playSfx("win")
   },
 
   playLose(): void {
-    ; (window as any).AudioManager.playSfx("lose")
+    ; AudioManager.playSfx("lose")
   },
 
   playCountdown(): void {
-    ; (window as any).AudioManager.playStopableSfx("countdown")
+    ; AudioManager.playStopableSfx("countdown")
   },
 
   stopCountdown(): void {
-    ; (window as any).AudioManager.stopStopableSfx("countdown")
+    ; AudioManager.stopStopableSfx("countdown")
   },
 
   playRound(): void {
-    ; (window as any).AudioManager.playSfx("round")
+    ; AudioManager.playSfx("round")
   },
 
   playSkill(skillName: string): void {
-    ; (window as any).AudioManager.playSfx(skillName)
+    ; AudioManager.playSfx(skillName)
   },
 
   play(soundName: string, options: Record<string, any> = {}): void {
-    ; (window as any).AudioManager.playSfx(soundName, options)
+    ; AudioManager.playSfx(soundName, options)
   },
 
   startSearch(): void {
-    ; (window as any).AudioManager.playStopableSfx("search", { volume: 1 })
+    ; AudioManager.playStopableSfx("search", { volume: 1 })
   },
 
   stopSearch(): void {
-    ; (window as any).AudioManager.stopStopableSfx("search")
+    ; AudioManager.stopStopableSfx("search")
   },
 
   playSettlementReveal(qualityKey: string): void {
     if (qualityKey === "legendary") {
-      ; (window as any).AudioManager.playSfx("revealLegendary", { volume: 0.8 })
+      ; AudioManager.playSfx("revealLegendary", { volume: 0.8 })
     } else if (qualityKey === "rare") {
-      ; (window as any).AudioManager.playSfx("revealRare", { volume: 0.7 })
+      ; AudioManager.playSfx("revealRare", { volume: 0.7 })
     } else {
-      ; (window as any).AudioManager.playSfx("revealNormal", { volume: 0.6 })
+      ; AudioManager.playSfx("revealNormal", { volume: 0.6 })
     }
   }
 }

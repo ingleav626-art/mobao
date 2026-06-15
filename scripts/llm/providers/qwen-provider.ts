@@ -6,11 +6,9 @@
  */
 "use strict"
 
-if (!(window as any).LlmManager) {
-  console.error("LlmManager not loaded. Please load llm-manager.js first.")
-}
+import { LlmManager } from "../core/llm-manager"
 
-const { createOpenAICompatibleProvider, utils } = (window as any).LlmManager
+const { createOpenAICompatibleProvider, utils } = LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
 const QWEN_STORAGE_KEY = "mobao_qwen_settings_v1"

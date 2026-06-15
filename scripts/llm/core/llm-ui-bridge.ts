@@ -13,33 +13,37 @@
  *   - kimi: Moonshot，Moonshot API 端点
  *   每个定义含 name/description/defaultEndpoint/defaultModel/placeholder
  *
+ *
+*
  * 核心功能：
- *   - initialize(): 初始化（DOM 就绪后自动调用），绑定事件、加载活跃 Provider
- *   - updateUiForProvider(providerId): 切换 Provider 时更新 UI（描述/占位符/端点/模型）
- *   - loadProviderSettings() / saveProviderSettings(): 从/向 DOM 表单读写设置
- *   - testConnection(): 测试当前 Provider 连接（按钮禁用+状态反馈）
- *   - getActiveProviderSettings(): 获取活跃 Provider 的完整设置
- *   - refreshProviderSelect(): 刷新 Provider 下拉列表（含自定义 Provider）
+ * - initialize(): 初始化（DOM 就绪后自动调用），绑定事件、加载活跃 Provider
+  * - updateUiForProvider(providerId): 切换 Provider 时更新 UI（描述 / 占位符 / 端点 / 模型）
+ * - loadProviderSettings() / saveProviderSettings(): 从 / 向 DOM 表单读写设置
+  * - testConnection(): 测试当前 Provider 连接（按钮禁用 + 状态反馈）
+ * - getActiveProviderSettings(): 获取活跃 Provider 的完整设置
+  * - refreshProviderSelect(): 刷新 Provider 下拉列表（含自定义 Provider）
  *
  * 自定义 Provider 管理：
- *   - showAddProviderModal() / hideAddProviderModal(): 添加弹窗
- *   - addCustomProvider(config): 添加自定义 Provider（通过 LlmManager.createDynamicProvider）
- *   - deleteCurrentProvider(): 删除当前自定义 Provider（内置不可删）
+ * - showAddProviderModal() / hideAddProviderModal(): 添加弹窗
+  * - addCustomProvider(config): 添加自定义 Provider（通过 LlmManager.createDynamicProvider）
+ * - deleteCurrentProvider(): 删除当前自定义 Provider（内置不可删）
  *
- * DOM 依赖（setting-llm* 系列 ID）：
- *   setting-llmProvider, setting-llmApiKey, setting-llmEndpoint,
- *   setting-llmModel, setting-llmTimeout, setting-llmTemperature, 等
- *
- * @requires LlmManager   - LLM 管理器（scripts/llm/core/llm-manager.js）
- * @requires DOM           - 设置面板表单元素
- *
+ * DOM 依赖（setting - llm * 系列 ID）：
+ * setting - llmProvider, setting - llmApiKey, setting - llmEndpoint,
+ * setting - llmModel, setting - llmTimeout, setting - llmTemperature, 等
+  *
+ * @requires LlmManager - LLM 管理器（scripts / llm / core / llm - manager.js）
+ * @requires DOM - 设置面板表单元素
+  *
  * @exports window.LlmUiBridge
- *   { initialize, getCurrentProviderId, updateUiForProvider, loadProviderSettings,
- *     saveProviderSettings, testConnection, getActiveProviderSettings,
- *     refreshProviderSelect, showAddProviderModal, hideAddProviderModal,
- * @exports LlmUiBridge - LLM UI 桥接模块对象
- */
+  * {
+  initialize, getCurrentProviderId, updateUiForProvider, loadProviderSettings,
+  *     saveProviderSettings, testConnection, getActiveProviderSettings,
+  *     refreshProviderSelect, showAddProviderModal, hideAddProviderModal,
+  * @exports LlmUiBridge - LLM UI 桥接模块对象
+    */
 "use strict"
+import { LlmManager } from "./llm-manager"
 
 const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
 
@@ -223,8 +227,8 @@ function getProviderConfig(providerId: string): ProviderConfig {
   if (BUILTIN_PROVIDERS[providerId]) {
     return BUILTIN_PROVIDERS[providerId]
   }
-  if ((window as any).LlmManager) {
-    const customList = (window as any).LlmManager.loadCustomProviders()
+  if (LlmManager) {
+    const customList = LlmManager.loadCustomProviders()
     const found = customList.find(function (p: any) {
       return p.id === providerId
     })
@@ -299,8 +303,8 @@ function refreshProviderSelect(selectValue?: string): void {
 
   els.providerSelect.appendChild(optgroup1)
 
-  if ((window as any).LlmManager) {
-    const customList = (window as any).LlmManager.loadCustomProviders()
+  if (LlmManager) {
+    const customList = LlmManager.loadCustomProviders()
     if (customList.length > 0) {
       const optgroup2 = document.createElement("optgroup")
       optgroup2.label = "自定义模型"
@@ -326,7 +330,7 @@ function refreshProviderSelect(selectValue?: string): void {
 
 function loadProviderSettings(providerId: string): void {
   console.log("[loadProviderSettings] providerId:", providerId)
-  const provider = (window as any).LlmManager ? (window as any).LlmManager.getProvider(providerId) : null
+  const provider = LlmManager ? LlmManager.getProvider(providerId) : null
   const els = getElements()
   console.log("[loadProviderSettings] provider:", provider ? provider.id : null)
 
@@ -432,12 +436,12 @@ function saveProviderSettings(providerId: string): any {
     providerSettings
   )
 
-  if ((window as any).LlmManager) {
-    const provider = (window as any).LlmManager.getProvider(providerId)
+  if (LlmManager) {
+    const provider = LlmManager.getProvider(providerId)
     if (provider) {
       provider.saveSettings(providerSettings)
     }
-    (window as any).LlmManager.setActiveProvider(providerId)
+    LlmManager.setActiveProvider(providerId)
   }
 
   return providerSettings
@@ -465,8 +469,8 @@ async function testConnection(providerId: string): Promise<any> {
 
   try {
     let result: any
-    if ((window as any).LlmManager) {
-      result = await (window as any).LlmManager.testConnection(providerId, settings)
+    if (LlmManager) {
+      result = await LlmManager.testConnection(providerId, settings)
     } else {
       result = { ok: false, error: "LlmManager 未加载" }
     }
@@ -567,9 +571,9 @@ function addCustomProvider(): void {
     return
   }
 
-  if ((window as any).LlmManager) {
+  if (LlmManager) {
     try {
-      const provider = (window as any).LlmManager.createDynamicProvider({
+      const provider = LlmManager.createDynamicProvider({
         name: name,
         endpoint: endpoint,
         model: model,
@@ -603,7 +607,7 @@ function addCustomProvider(): void {
 
       refreshProviderSelect(newProviderId)
       loadProviderSettings(newProviderId)
-        ; (window as any).LlmManager.setActiveProvider(newProviderId)
+        ; LlmManager.setActiveProvider(newProviderId)
 
       hideAddProviderModal(true)
 
@@ -646,8 +650,8 @@ function deleteCurrentProvider(): void {
     (window as any).WarehouseScene.instance.showGameConfirm(
       `确定要删除模型 "${config.name}" 吗？此操作不可恢复。`,
       () => {
-        if ((window as any).LlmManager) {
-          (window as any).LlmManager.deleteDynamicProvider(providerId)
+        if (LlmManager) {
+          LlmManager.deleteDynamicProvider(providerId)
           refreshProviderSelect("deepseek")
 
           if (els.providerSelect) {
@@ -680,8 +684,8 @@ function deleteCurrentProvider(): void {
     if (!confirm(`确定要删除模型 "${config.name}" 吗？此操作不可恢复。`)) {
       return
     }
-    if ((window as any).LlmManager) {
-      (window as any).LlmManager.deleteDynamicProvider(providerId)
+    if (LlmManager) {
+      LlmManager.deleteDynamicProvider(providerId)
       refreshProviderSelect("deepseek")
 
       if (els.providerSelect) {
@@ -695,11 +699,11 @@ function deleteCurrentProvider(): void {
 function initialize(): void {
   const els = getElements()
 
-  if ((window as any).LlmManager && (window as any).LlmManager.initializeCustomProviders) {
-    (window as any).LlmManager.initializeCustomProviders()
+  if (LlmManager && LlmManager.initializeCustomProviders) {
+    LlmManager.initializeCustomProviders()
   }
 
-  const managerSettings = (window as any).LlmManager ? (window as any).LlmManager.getActiveProviderId() : null
+  const managerSettings = LlmManager ? LlmManager.getActiveProviderId() : null
   const initialProviderId = managerSettings || "deepseek"
 
   let isInitializing = true
@@ -710,15 +714,15 @@ function initialize(): void {
         return
       }
 
-      const previousProviderId = (window as any).LlmManager ? (window as any).LlmManager.getActiveProviderId() : null
+      const previousProviderId = LlmManager ? LlmManager.getActiveProviderId() : null
       if (previousProviderId && previousProviderId !== (this as HTMLSelectElement).value) {
         saveProviderSettings(previousProviderId)
       }
 
       const providerId = (this as HTMLSelectElement).value
       loadProviderSettings(providerId)
-      if ((window as any).LlmManager) {
-        (window as any).LlmManager.setActiveProvider(providerId)
+      if (LlmManager) {
+        LlmManager.setActiveProvider(providerId)
       }
     })
   }
@@ -825,7 +829,7 @@ function initialize(): void {
 
 function getActiveProviderSettings(): any {
   const providerId = getCurrentProviderId()
-  const provider = (window as any).LlmManager ? (window as any).LlmManager.getProvider(providerId) : null
+  const provider = LlmManager ? LlmManager.getProvider(providerId) : null
 
   if (provider) {
     return provider.loadSettings()

@@ -22,7 +22,7 @@
  *
  * @exports PanelsMixin - 侧边信息面板 Mixin，混入 Phaser Scene
  */
-const { escapeHtml } = (window as any).MobaoUtils
+import { escapeHtml } from "../core/utils"
 
 export const UiPanelsMixin: Record<string, any> = {
   addPrivateIntelEntry(entry: { source?: string; text?: string }): void {

@@ -21,6 +21,8 @@ import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
 import { ITEM_DEFS } from "../data/items"
 import { SKILL_DEFS } from "../data/skills"
 import { getActiveCharacter } from "../data/character-system"
+import { getCharacterById } from "../data/characters"
+import { loadDeepSeekSettings, saveDeepSeekSettings, maskApiKey } from "../../llm/providers/deepseek-llm"
 import { LlmManager } from "../../llm/core/llm-manager"
 import { MobaoAnimations } from "../animations"
 import { MobaoShopPage } from "../shop/index"
@@ -158,7 +160,7 @@ export const UiOverlayMixin = {
     } else {
       const charAssign = (this as any).aiCharacterAssignments && (this as any).aiCharacterAssignments[playerId]
       if (charAssign) {
-        const charDef = (window as any).CharacterData && (window as any).CharacterData.getCharacterById(charAssign.characterId)
+        const charDef = getCharacterById(charAssign.characterId)
         characterInfo = {
           name: charAssign.characterName,
           desc: charDef ? charDef.desc : "",
@@ -392,7 +394,7 @@ export const UiOverlayMixin = {
   },
 
   saveSettingsFromOverlay() {
-    const { LLM_SETTINGS, saveDeepSeekSettings, maskApiKey } = (window as any).MobaoLlm || {}
+    const LLM_SETTINGS = loadDeepSeekSettings()
     const next = (this as any).readSettingsForm()
     Object.assign(GAME_SETTINGS, next)
     saveGameSettings(GAME_SETTINGS)

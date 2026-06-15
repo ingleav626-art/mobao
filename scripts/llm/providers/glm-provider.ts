@@ -6,11 +6,9 @@
  */
 "use strict"
 
-if (!(window as any).LlmManager) {
-  console.error("LlmManager not loaded. Please load llm-manager.js first.")
-}
+import { LlmManager } from "../core/llm-manager"
 
-const { createOpenAICompatibleProvider, utils } = (window as any).LlmManager
+const { createOpenAICompatibleProvider, utils } = LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
 const GLM_STORAGE_KEY = "mobao_glm_settings_v1"
@@ -117,7 +115,7 @@ var provider = {
   name: "智谱GLM",
   description: "智谱AI GLM系列，支持 glm-4、glm-4-flash、glm-z1 等模型"
 }
-  ; (window as any).LlmManager.registerProvider(provider)
+LlmManager.registerProvider(provider)
 
 export const GlmProvider = {
   id: "glm",

@@ -242,7 +242,7 @@ export function qualityPulseDuration(qualityKey: string): number {
 }
 
 export function settlementRevealDelayByQuality(qualityKey: string): number {
-  const multiplier = (window as any).MobaoSettings ? (window as any).MobaoSettings.GAME_SETTINGS.settlementSpeedMultiplier : 1
+  const multiplier = 1
   switch (qualityKey) {
     case "legendary": return Math.round(360 * multiplier)
     case "rare": return Math.round(320 * multiplier)
@@ -254,7 +254,7 @@ export function settlementRevealDelayByQuality(qualityKey: string): number {
 }
 
 export function settlementSearchDurationByQuality(qualityKey: string): number {
-  const multiplier = (window as any).MobaoSettings ? (window as any).MobaoSettings.GAME_SETTINGS.settlementSpeedMultiplier : 1
+  const multiplier = 1
   switch (qualityKey) {
     case "legendary": return Math.round(1250 * multiplier)
     case "rare": return Math.round(920 * multiplier)

@@ -6,11 +6,9 @@
  */
 "use strict"
 
-if (!(window as any).LlmManager) {
-  console.error("LlmManager not loaded. Please load llm-manager.js first.")
-}
+import { LlmManager } from "../core/llm-manager"
 
-const { createOpenAICompatibleProvider, utils } = (window as any).LlmManager
+const { createOpenAICompatibleProvider, utils } = LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
 const DEEPSEEK_STORAGE_KEY = "mobao_deepseek_settings_v2"
@@ -152,7 +150,7 @@ var provider = {
   name: "DeepSeek",
   description: "DeepSeek 大模型，支持 V4 和 Reasoner 等思考模型"
 }
-  ; (window as any).LlmManager.registerProvider(provider)
+LlmManager.registerProvider(provider)
 
 export const DeepSeekProvider = {
   id: "deepseek",

@@ -23,8 +23,8 @@
  *
  * @exports HistoryMixin - 历史记录与道具抽屉 Mixin，混入 Phaser Scene
  */
-const { escapeHtml, formatCompactNumber } = (window as any).MobaoUtils
-const { GAME_SETTINGS } = (window as any).MobaoSettings
+import { escapeHtml, formatCompactNumber } from "../core/utils"
+import { GAME_SETTINGS } from "../core/settings"
 
 export const UiHistoryMixin: Record<string, any> = {
   resetPlayerHistoryState(): void {
@@ -87,7 +87,7 @@ export const UiHistoryMixin: Record<string, any> = {
         .map((round) => `<td>${this.renderItemUsageCell(usageByRound.get(round) || [])}</td>`)
         .join("")
       const bidCells = rounds
-        .map((round) => `<td>${bidByRound.has(round) ? formatCompactNumber(bidByRound.get(round)) : "-"}</td>`)
+        .map((round) => `<td>${bidByRound.has(round) ? formatCompactNumber(bidByRound.get(round) as number) : "-"}</td>`)
         .join("")
 
       panel.innerHTML = [

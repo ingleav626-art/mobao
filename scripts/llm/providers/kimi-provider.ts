@@ -6,11 +6,9 @@
  */
 "use strict"
 
-if (!(window as any).LlmManager) {
-  console.error("LlmManager not loaded. Please load llm-manager.js first.")
-}
+import { LlmManager } from "../core/llm-manager"
 
-const { createOpenAICompatibleProvider, utils } = (window as any).LlmManager
+const { createOpenAICompatibleProvider, utils } = LlmManager
 const { clamp, toFiniteNumber, normalizeObject } = utils
 
 const KIMI_STORAGE_KEY = "mobao_kimi_settings_v1"
@@ -94,7 +92,7 @@ var provider = {
   name: "Kimi",
   description: "Moonshot Kimi，支持 moonshot-v1-8k、moonshot-v1-32k 等模型"
 }
-  ; (window as any).LlmManager.registerProvider(provider)
+LlmManager.registerProvider(provider)
 
 export const KimiProvider = {
   id: "kimi",

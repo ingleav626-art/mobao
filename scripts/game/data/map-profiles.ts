@@ -14,7 +14,7 @@
  */
 
 import type { MapProfile } from '../../../types/game'
-import { set as setAppState } from "../core/app-state"
+import { set as setAppState, get as getAppState } from "../core/app-state"
 
 export const MAP_PROFILES: MapProfile[] = [
   {
@@ -132,10 +132,7 @@ export function getAllProfiles(): MapProfile[] {
 }
 
 export function getSelectedProfileId(): string {
-  if ((window as any).MobaoAppState) {
-    return (window as any).MobaoAppState.get("selectedMapProfile") || "default"
-  }
-  return "default"
+  return getAppState("selectedMapProfile") || "default"
 }
 
 export function setSelectedProfileId(id: string): void {
