@@ -87,9 +87,9 @@ interface SelectedCharacter {
   name: string
   skillName?: string
   skillDesc?: string
-  live2d?: string
+  live2d?: string | null
   passive?: { label: string } | null
-  avatar?: string
+  avatar?: string | null
 }
 
 import { getUnlockedCharacters, getCharacterById } from "../data/characters"
@@ -121,7 +121,7 @@ export const CharacterSelectMixin = {
     const confirmBtn = document.getElementById("characterSelectConfirmBtn")
 
     if (backBtn) {
-      backBtn.addEventListener("click", () => (this as { showLobbySubPage(page: string): void }).showLobbySubPage("soloSetup"))
+      backBtn.addEventListener("click", () => (this as unknown as { showLobbySubPage(page: string): void }).showLobbySubPage("soloSetup"))
     }
 
     if (confirmBtn) {
@@ -163,10 +163,9 @@ export const CharacterSelectMixin = {
     this.characterPageEl!.classList.add("lobby-subpage-entering")
     this.characterPageEl!.addEventListener(
       "animationend",
-      function onEnter() {
+      () => {
         this.characterPageEl!.classList.remove("lobby-subpage-entering")
-        this.characterPageEl!.removeEventListener("animationend", onEnter)
-      }.bind(this),
+      },
       { once: true }
     )
     this._loadCarryItems()
@@ -1248,12 +1247,12 @@ export const CharacterSelectMixin = {
 
     this.renderSelectedCharacterPreview()
 
-    if (typeof (this as { updatePlayerAvatar?: Function }).updatePlayerAvatar === "function" && (this as { players?: unknown[] }).players) {
-      const humanPlayer = (this as { players: { isHuman: boolean; id: string }[] }).players.find((p: { isHuman: boolean }) => p.isHuman)
+    if (typeof (this as unknown as { updatePlayerAvatar?: Function }).updatePlayerAvatar === "function" && (this as unknown as { players?: unknown[] }).players) {
+      const humanPlayer = (this as unknown as { players: { isHuman: boolean; id: string }[] }).players.find((p: { isHuman: boolean }) => p.isHuman)
       if (humanPlayer) {
         const avatarEl = document.getElementById(`avatar-${humanPlayer.id}`)
         if (avatarEl) {
-          ; (this as { updatePlayerAvatar(id: string, el: HTMLElement): void }).updatePlayerAvatar(humanPlayer.id, avatarEl)
+          ; (this as unknown as { updatePlayerAvatar(id: string, el: HTMLElement): void }).updatePlayerAvatar(humanPlayer.id, avatarEl)
         }
       }
     }
@@ -1299,8 +1298,8 @@ export const CharacterSelectMixin = {
   },
 
   _doStartSoloGame() {
-    if (typeof (this as { startSoloGame?: Function }).startSoloGame === "function") {
-      ; (this as { startSoloGame(): void }).startSoloGame()
+    if (typeof (this as unknown as { startSoloGame?: Function }).startSoloGame === "function") {
+      ; (this as unknown as { startSoloGame(): void }).startSoloGame()
     }
   },
 
