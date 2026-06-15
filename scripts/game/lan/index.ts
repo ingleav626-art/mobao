@@ -42,12 +42,9 @@
  *
  * @exports MobaoLan.LanIndexMixin - 联机大厅 Mixin，混入 Phaser Scene
  */
-const { LanBridge } = window;
-const { MobaoAppState } = window;
-const { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } = window.MobaoConstants
-const { savePlayerMoney } = window.MobaoSettings
-const { GAME_SETTINGS } = window.MobaoSettings
-
+import { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } from "../core/constants"
+import { savePlayerMoney, GAME_SETTINGS } from "../core/settings"
+import { patch as patchAppState } from "../core/app-state"
 
 import { LanGameFlowMixin } from "./game-flow.js"
 import { LanSyncMixin } from "./sync.js"
@@ -67,5 +64,3 @@ export const LanIndexMixin = {
 // Merge sub-mixins into LanIndexMixin
 Object.assign(LanIndexMixin, LanGameFlowMixin, LanSyncMixin, LanSettleMixin, LanReconnectMixin, LanLive2dMixin, LanEventsMixin)
 
-window.MobaoLan = window.MobaoLan || {};
-window.MobaoLan.IndexMixin = LanIndexMixin;

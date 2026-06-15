@@ -278,7 +278,3 @@ export const LanLive2dMixin = {
     if (loadingPlaceholder) loadingPlaceholder.classList.remove("visible");
   },
 };
-
-// 兼容层
-window.MobaoLan = window.MobaoLan || {};
-window.MobaoLan.Live2dMixin = LanLive2dMixin;

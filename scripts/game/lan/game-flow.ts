@@ -9,8 +9,12 @@
  *
  * @exports LanGameFlowMixin
  */
-const { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } = window.MobaoConstants
-const { GAME_SETTINGS, savePlayerMoney } = window.MobaoSettings
+import { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } from "../core/constants"
+import { GAME_SETTINGS, savePlayerMoney } from "../core/settings"
+import { getSelectedProfileId, getProfile, setSelectedProfileId } from "../data/map-profiles"
+import { pickRandomPublicEvent } from "../data/public-events"
+import { getActiveCharacter, resetForNewGame } from "../data/character-system"
+import { CHARACTERS } from "../data/characters"
 
 export const LanGameFlowMixin = {
   lanResolveRound(reason) {
@@ -181,9 +185,8 @@ export const LanGameFlowMixin = {
     this.guardWarehouseCapacity()
 
     // 应用地图配置
-    if (window.MobaoMapProfiles) {
-      var _mapId = MobaoMapProfiles.getSelectedProfileId()
-      var profile = MobaoMapProfiles.getProfile(_mapId)
+    if (getProfile) {
+      const profile = getProfile(getSelectedProfileId())
       if (profile && profile.params) {
         var mp = profile.params
         if (Number.isFinite(mp.maxRounds)) GAME_SETTINGS.maxRounds = mp.maxRounds
@@ -228,8 +231,8 @@ export const LanGameFlowMixin = {
     this.setupWarehouseAuction()
     this.rebuildWarehouseCellIndex()
 
-    if (this.lanIsHost && window.PublicEventSystem && this.items.length > 0) {
-      this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent(this.items, GRID_COLS, GRID_ROWS)
+    if (this.lanIsHost && pickRandomPublicEvent && this.items.length > 0) {
+      this.currentPublicEvent = pickRandomPublicEvent(this.items, GRID_COLS, GRID_ROWS)
       this.publicInfoEntries = [
         {
           source: this.currentPublicEvent.category,
@@ -273,18 +276,18 @@ export const LanGameFlowMixin = {
     this.initPlayersUI()
 
     // 应用角色选择到玩家数据
-    if (window.CharacterSystem) {
-      CharacterSystem.resetForNewGame()
+    if (getActiveCharacter) {
+      resetForNewGame()
       this.applyCharacterToPlayer()
     }
     // 为其他玩家设置角色信息（从 lanPlayers 同步，game:start 已包含 characterId）
     this.players.forEach((p) => {
       if (p.characterId && !p.isSelf) {
-        if (window.CharacterData && (window.CharacterData as any).CHARACTERS) {
-          var charData = (window.CharacterData as any).CHARACTERS.find((c) => c.id === p.characterId)
+        if (CHARACTERS) {
+          var charData = CHARACTERS.find((c) => c.id === p.characterId)
           if (charData) {
             p.characterName = charData.name
-            p.avatar = charData.avatarLabel || charData.name.substring(0, 2)
+            p.avatar = charData.avatar || charData.name.substring(0, 2)
           }
         }
       }

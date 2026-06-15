@@ -8,8 +8,7 @@
  *
  * @exports LanReconnectMixin
  */
-const { LanBridge } = window;
-const { MobaoAppState } = window;
+import { patch as patchAppState } from "../core/app-state"
 
 export const LanReconnectMixin = {
   tryAutoReconnect(playerId, roomCode, playerName, isHost) {
@@ -45,7 +44,7 @@ export const LanReconnectMixin = {
           // 退出房间界面
           this.exitLanRoom();
           // 进入游戏场景
-          window.MobaoAppState.patch({ appMode: "game", gameSource: "lan" });
+          patchAppState({ appMode: "game", gameSource: "lan" });
           this.startLanRun();
           this.setOnlineStatus("已重连到游戏", "connected");
           // 请求完整同步
@@ -69,7 +68,3 @@ export const LanReconnectMixin = {
       });
   },
 };
-
-// 兼容层
-window.MobaoLan = window.MobaoLan || {};
-window.MobaoLan.ReconnectMixin = LanReconnectMixin;

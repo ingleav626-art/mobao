@@ -8,8 +8,9 @@
  *
  * @exports LanSettleMixin
  */
-const { DEFAULT_START_MONEY } = window.MobaoConstants
-const { savePlayerMoney } = window.MobaoSettings
+import { DEFAULT_START_MONEY } from "../core/constants"
+import { savePlayerMoney } from "../core/settings"
+import { patch as patchAppState } from "../core/app-state"
 
 export const LanSettleMixin = {
   lanOnSettleFinal(msg) {
@@ -75,7 +76,7 @@ export const LanSettleMixin = {
         this.lanPlayers.push(ai)
       })
     }
-    window.MobaoAppState.patch({ appMode: "game", gameSource: "lan" })
+    patchAppState({ appMode: "game", gameSource: "lan" })
     this.exitLobby()
     this.exitSettlementPage()
     this.startLanRun()

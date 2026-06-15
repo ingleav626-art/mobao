@@ -261,7 +261,7 @@ export const LobbyIndexMixin = {
   showCharacterSelectPageWithMap() {
     let mapProfile: { name?: string; params?: Record<string, unknown> } | null = null
     if (getProfile) {
-      mapProfile = getProfile(getSelectedProfileId()) as { name?: string; params?: Record<string, unknown> } | null
+      mapProfile = getProfile(getSelectedProfileId()) as unknown as { name?: string; params?: Record<string, unknown> } | null
     }
     if ((this as LobbySceneLike).showCharacterSelectPage) {
       ; (this as LobbySceneLike).showCharacterSelectPage(mapProfile)

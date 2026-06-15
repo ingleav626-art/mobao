@@ -9,8 +9,13 @@
  *
  * @exports LanSyncMixin
  */
-const { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } = window.MobaoConstants
-const { GAME_SETTINGS } = window.MobaoSettings
+import { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } from "../core/constants"
+import { GAME_SETTINGS } from "../core/settings"
+import { getSelectedProfileId, setSelectedProfileId } from "../data/map-profiles"
+import { CHARACTERS } from "../data/characters"
+import { QUALITY_CONFIG } from "../data/artifacts"
+import { patch as patchAppState } from "../core/app-state"
+import { pickRandomPublicEvent } from "../data/public-events"
 
 export const LanSyncMixin = {
   lanBuildFullSyncData(targetPlayerId) {
@@ -57,7 +62,7 @@ export const LanSyncMixin = {
       wallets: wallets,
       bids: bids,
       playerCharacters: playerCharacters,
-      mapProfileId: window.MobaoMapProfiles ? MobaoMapProfiles.getSelectedProfileId() : "default",
+      mapProfileId: getSelectedProfileId(),
       warehouse: this.buildWarehouseSnapshotForSync(),
       publicInfoEntries: this.publicInfoEntries || []
     }
@@ -140,13 +145,13 @@ export const LanSyncMixin = {
           })
           if (cp) {
             cp.characterId = msg.playerCharacters[charLanId]
-            if (window.CharacterData && (window.CharacterData as any).CHARACTERS) {
-              var charInfo = (window.CharacterData as any).CHARACTERS.find(function (c) {
+            if (CHARACTERS) {
+              var charInfo = CHARACTERS.find(function (c) {
                 return c.id === cp.characterId
               })
               if (charInfo) {
                 cp.characterName = charInfo.name
-                cp.avatar = charInfo.avatarLabel || charInfo.name.substring(0, 2)
+                cp.avatar = charInfo.avatar || charInfo.name.substring(0, 2)
               }
             }
           }
@@ -156,8 +161,8 @@ export const LanSyncMixin = {
 
     if (msg.mapProfileId) {
       var lanSelectedMapId = msg.mapProfileId
-      if (window.MobaoMapProfiles) {
-        window.MobaoMapProfiles.setSelectedProfileId(lanSelectedMapId)
+      if (setSelectedProfileId) {
+        setSelectedProfileId(lanSelectedMapId)
       }
     }
 
@@ -183,7 +188,7 @@ export const LanSyncMixin = {
     this.warehouseTrueValue = 0
     this.revealedCells = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
 
-    const qualityConfig = (window.ArtifactData && window.ArtifactData.QUALITY_CONFIG) || {}
+    const qualityConfig = QUALITY_CONFIG
     warehouseData.forEach((saved, idx) => {
       const qualityKey = saved.qualityKey && qualityConfig[saved.qualityKey] ? saved.qualityKey : "normal"
       const quality = qualityConfig[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff }
@@ -219,8 +224,8 @@ export const LanSyncMixin = {
     this.currentBid = msg.currentBid || this.currentBid
     this.aiMaxBid = msg.aiMaxBid || this.aiMaxBid
 
-    if (window.PublicEventSystem && this.items.length > 0) {
-      this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent(this.items, GRID_COLS, GRID_ROWS)
+    if (pickRandomPublicEvent && this.items.length > 0) {
+      this.currentPublicEvent = pickRandomPublicEvent(this.items, GRID_COLS, GRID_ROWS)
       this.publicInfoEntries = [
         {
           source: this.currentPublicEvent.category,
@@ -348,7 +353,7 @@ export const LanSyncMixin = {
           // 退出房间界面
           this.exitLanRoom()
           // 进入游戏场景
-          window.MobaoAppState.patch({ appMode: "game", gameSource: "lan" })
+          patchAppState({ appMode: "game", gameSource: "lan" })
           this.startLanRun()
           this.setOnlineStatus("已重连到游戏", "connected")
           // 请求完整同步

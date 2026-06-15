@@ -27,8 +27,9 @@
  * @exports LanEventsMixin
  */
 
-const { DEFAULT_START_MONEY } = window.MobaoConstants;
-const { MobaoAppState } = window;
+import { DEFAULT_START_MONEY } from "../core/constants"
+import { getSelectedProfileId, setSelectedProfileId, getProfile } from "../data/map-profiles"
+import { patch as patchAppState } from "../core/app-state"
 
 export const LanEventsMixin = {
   /**
@@ -108,11 +109,11 @@ export const LanEventsMixin = {
       if (msg.mapProfileId) {
         lanSelectedMapId = msg.mapProfileId;
         this.writeLog(`同步地图: ${lanSelectedMapId}`);
-        if (window.MobaoMapProfiles) {
-          window.MobaoMapProfiles.setSelectedProfileId(lanSelectedMapId);
+        if (setSelectedProfileId) {
+          setSelectedProfileId(lanSelectedMapId);
         }
         if (mapCardLabel) {
-          var profile = window.MobaoMapProfiles && window.MobaoMapProfiles.getProfile(lanSelectedMapId);
+          var profile = getProfile && getProfile(lanSelectedMapId);
           mapCardLabel.textContent = profile ? profile.name : lanSelectedMapId;
         }
       }
@@ -158,11 +159,11 @@ export const LanEventsMixin = {
 
     bridge.on("lan:map-selected", (msg) => {
       lanSelectedMapId = msg.mapProfileId || "default";
-      if (window.MobaoMapProfiles) {
-        MobaoMapProfiles.setSelectedProfileId(lanSelectedMapId);
+      if (setSelectedProfileId) {
+        setSelectedProfileId(lanSelectedMapId);
       }
       if (mapCardLabel) {
-        var profile = window.MobaoMapProfiles && window.MobaoMapProfiles.getProfile(lanSelectedMapId);
+        var profile = getProfile && getProfile(lanSelectedMapId);
         mapCardLabel.textContent = profile ? profile.name : lanSelectedMapId;
       }
     });
@@ -219,11 +220,11 @@ export const LanEventsMixin = {
       if (msg.mapProfileId) {
         lanSelectedMapId = msg.mapProfileId;
         this.writeLog(`同步地图: ${lanSelectedMapId}`);
-        if (window.MobaoMapProfiles) {
-          window.MobaoMapProfiles.setSelectedProfileId(lanSelectedMapId);
+        if (setSelectedProfileId) {
+          setSelectedProfileId(lanSelectedMapId);
         }
         if (mapCardLabel) {
-          var profile = window.MobaoMapProfiles && window.MobaoMapProfiles.getProfile(lanSelectedMapId);
+          var profile = getProfile && getProfile(lanSelectedMapId);
           mapCardLabel.textContent = profile ? profile.name : lanSelectedMapId;
         }
       }
@@ -311,7 +312,7 @@ export const LanEventsMixin = {
         });
       }
 
-      MobaoAppState.patch({ appMode: "game", gameSource: "lan" });
+      patchAppState({ appMode: "game", gameSource: "lan" });
       this.exitLobby();
       this.startLanRun();
     });
@@ -470,7 +471,3 @@ export const LanEventsMixin = {
     });
   },
 };
-
-// 兼容层
-window.MobaoLan = window.MobaoLan || {};
-window.MobaoLan.EventsMixin = LanEventsMixin;

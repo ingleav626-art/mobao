@@ -20,6 +20,11 @@
  * 初始化联机大厅。作为 initLanLobby 的独立实现，通过 .call(this) 调用。
  * @this {object} scene - 混入了 LanIndexMixin 的场景对象
  */
+import { getCharacterById, getUnlockedCharacters, getSelectedCharacter } from "../data/characters"
+import { getProfile, setSelectedProfileId, getAllProfiles } from "../data/map-profiles"
+import { MobaoShopPage } from "../shop/index"
+import { MobaoShopBridge } from "../bridge/shop"
+
 export function initLanLobbyImpl() {
   console.log('[LAN] initLanLobby called, LanBridge=' + !!LanBridge);
   if (!LanBridge) return;
@@ -669,8 +674,8 @@ export function initLanLobbyImpl() {
   };
 
   const getCharAvatarHtml = (characterId: string) => {
-    if (!window.CharacterData) return '<span class="lan-avatar-emoji">👤</span>';
-    const char = (window.CharacterData as any).getCharacterById(characterId);
+    if (!getCharacterById) return '<span class="lan-avatar-emoji">👤</span>';
+    const char = getCharacterById(characterId);
     if (char && char.avatar) {
       return '<img src="' + char.avatar + '" alt="' + char.name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\';"><span class="lan-avatar-emoji" style="display:none;">👤</span>';
     }
@@ -733,7 +738,7 @@ export function initLanLobbyImpl() {
 
   const renderLanCharacterList = () => {
     if (!characterList) return;
-    const characters = (window.CharacterData && (window.CharacterData as any).getUnlockedCharacters()) || [];
+    const characters = getUnlockedCharacters() || [];
     characterList.innerHTML = characters.map((char) => {
       const avatarHtml = char.avatar
         ? '<img src="' + char.avatar + '" alt="' + char.name + '">'
@@ -766,13 +771,13 @@ export function initLanLobbyImpl() {
 
   const updateLanPortrait = () => {
     if (!portraitArea || !portraitPlaceholder || !portraitName) return;
-    if (!lanSelectedCharacterId || !window.CharacterData) {
+    if (!lanSelectedCharacterId) {
       portraitArea.classList.remove("has-character");
       portraitName.classList.add("hidden");
       this.stopLanLive2dLoop();
       return;
     }
-    var char = (window.CharacterData as any).getCharacterById(lanSelectedCharacterId);
+    var char = getCharacterById(lanSelectedCharacterId);
     if (!char) {
       portraitArea.classList.remove("has-character");
       portraitName.classList.add("hidden");
@@ -848,8 +853,8 @@ export function initLanLobbyImpl() {
   // 渲染地图选择列表
   const renderLanMapList = () => {
     var body = document.getElementById("lanMapSelectBody");
-    if (!body || !window.MobaoMapProfiles) return;
-    var profiles = MobaoMapProfiles.getAllProfiles();
+    if (!body || !getAllProfiles) return;
+    var profiles = getAllProfiles();
     body.innerHTML = "";
     profiles.forEach(function (profile) {
       var card = document.createElement("div");
@@ -863,7 +868,7 @@ export function initLanLobbyImpl() {
         '</div>';
       card.addEventListener("click", function () {
         lanSelectedMapId = profile.id;
-        if (window.MobaoMapProfiles) MobaoMapProfiles.setSelectedProfileId(profile.id);
+        if (setSelectedProfileId) setSelectedProfileId(profile.id);
         if (mapCardLabel) mapCardLabel.textContent = profile.name;
         closeOverlay(mapSelectOverlay);
         if (bridge && bridge.connected) {
@@ -893,15 +898,15 @@ export function initLanLobbyImpl() {
 
   if (roomShopBtn) {
     roomShopBtn.addEventListener("click", () => {
-      if (typeof window.MobaoShopPage !== "undefined") {
-        window.MobaoShopPage.init({
+      if (typeof MobaoShopPage !== "undefined") {
+        MobaoShopPage.init({
           onPurchase: () => {
             if (bridge && bridge.connected) {
               bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it) { return it.id; }) });
             }
           }
         });
-        window.MobaoShopPage.open();
+        MobaoShopPage.open();
       }
     });
   }
@@ -944,7 +949,7 @@ export function initLanLobbyImpl() {
     if (lanCarryPickerEl) { lanCarryPickerEl.remove(); lanCarryPickerEl = null; }
 
     var existingIds = new Set(lanCarryItems.map(function (i) { return i.id; }));
-    var bridge2 = window.MobaoShopBridge;
+    var bridge2 = MobaoShopBridge;
     var inventory = bridge2 ? bridge2.getFullInventory() : {};
     var shopItems = bridge2 ? bridge2.SHOP_ITEMS : [];
     var available = shopItems.map(function (def) {
@@ -1028,8 +1033,8 @@ export function initLanLobbyImpl() {
   };
 
   const initLanCharacterFromStorage = () => {
-    if (window.CharacterData && (window.CharacterData as any).getSelectedCharacter) {
-      var saved = (window.CharacterData as any).getSelectedCharacter();
+    if (getSelectedCharacter) {
+      var saved = getSelectedCharacter();
       if (saved && saved.id) {
         lanSelectedCharacterId = saved.id;
       } else if (typeof saved === "string") {
@@ -1256,7 +1261,3 @@ export function initLanLobbyImpl() {
   }
 
 }
-
-// 兼容层
-window.MobaoLan = window.MobaoLan || {};
-window.MobaoLan.LobbyImpl = initLanLobbyImpl;
