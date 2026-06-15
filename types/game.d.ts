@@ -54,7 +54,7 @@ export interface ArtifactView {
   silhouette: Phaser.GameObjects.Rectangle
   border: Phaser.GameObjects.Rectangle
   qualityMarkers: Phaser.GameObjects.Container
-  clickZone: Phaser.GameObjects.Rectangle
+  clickZone: Phaser.GameObjects.Rectangle | Phaser.GameObjects.Zone
   artifactImage: Phaser.GameObjects.Image | null
   borderPulseStarted: boolean
   qualitySynced: boolean

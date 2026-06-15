@@ -1,6 +1,6 @@
 /**
  * @file warehouse/index.ts
- * @module warehouse
+ * @module game/warehouse
  * @description 仓库核心系统。管理仓库网格的绘制、藏品生成与放置、揭示机制、
  *              候选预览等完整仓库逻辑。由三个 Mixin 组成，混入 Phaser Scene。
  *
@@ -31,6 +31,10 @@
  *   - renderPreviewCandidates / renderSettlementItemPreview
  *
  * @exports window.MobaoWarehouse - 仓库 Mixin 集合
+ *
+ * @requires data/artifacts - 藏品数据
+ * @requires core/constants - 常量定义
+ * @requires core/utils - 工具函数
  */
 import type { Artifact, ArtifactRevealState, QualityLevel, QualityConfig, RevealResult } from "../../../types/game"
 
@@ -45,9 +49,9 @@ interface WarehouseSceneLike {
   input: Phaser.InputPlugin
 
   // 核心属性
-  gridLayer: Phaser.Graphics | null
-  revealCellLayer: Phaser.Graphics | null
-  itemLayer: Phaser.Container | null
+  gridLayer: Phaser.GameObjects.Graphics | null
+  revealCellLayer: Phaser.GameObjects.Graphics | null
+  itemLayer: Phaser.GameObjects.Container | null
   items: Artifact[]
   revealedCells: boolean[][]
   warehouseCellIndex: Record<string, string>
@@ -177,6 +181,11 @@ export const WarehouseCoreMixin = {
       ; (this as WarehouseSceneLike).load.start()
   },
 
+  /**
+   * 绘制空白仓库网格。创建gridLayer和revealCellLayer两个Phaser Graphics图层，
+   * 绘制12列×25行的网格线
+   * @returns {void}
+   */
   drawUnknownWarehouse() {
     if ((this as WarehouseSceneLike).gridLayer) {
       ; (this as WarehouseSceneLike).gridLayer.destroy()
@@ -260,7 +269,33 @@ export const WarehouseCoreMixin = {
     }
   },
 
+  /**
+   * 随机生成藏品并放置到仓库网格中
+   * 根据ARTIFACT_COUNT_RANGE和WAREHOUSE_OCCUPANCY_RATIO_RANGE确定目标数量，
+   * 使用ArtifactManager按品类权重随机生成藏品，尝试放置到网格中
+   * @returns {void}
+   */
   spawnRandomItems() {
+    // ─── 仓库生成算法 ───
+    //
+    // 步骤1: 初始化空网格 occupancy[ROWS][COLS] = false
+    // 步骤2: 计算目标占用格数 = capacity × random(0.38, 0.88)
+    // 步骤3: 循环生成藏品直到满足条件:
+    //   a. 查找第一个空槽位 findFirstEmptySlot()
+    //   b. 按品类权重随机生成藏品 createRandomArtifactForSlot()
+    //   c. 尝试放置到网格 placeArtifact()
+    //   d. 更新占用计数
+    // 步骤4: 渲染所有藏品到itemLayer
+    //
+    // 关键变量:
+    //   occupancy - 网格占用状态二维数组
+    //   targetOccupiedCells - 目标占用格数
+    //   occupiedCellsCount - 当前已占用格数
+    //
+    // 注意事项:
+    //   - 最多尝试520次防止无限循环
+    //   - 藏品尺寸从1×1到3×2不等，需要矩形放置检测
+
     if ((this as WarehouseSceneLike).itemLayer) {
       ; (this as WarehouseSceneLike).itemLayer.destroy()
     }
@@ -491,6 +526,14 @@ export const WarehouseCoreMixin = {
 }
 
 export const WarehouseRevealMixin = {
+  /**
+   * 批量揭示藏品轮廓
+   * @param {number} count - 要揭示的数量
+   * @param {string|null} category - 按品类筛选（null表示不限）
+   * @param {boolean} allowCategoryFallback - 品类不足时是否允许跨品类
+   * @param {string|null} sortStrategy - 排序策略（smallestFirst/largestFirst）
+   * @returns {{ ok: boolean, revealed: number, bottomCell?: Object, message?: string }}
+   */
   revealOutlineBatch(count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string | null) {
     const targets = this.pickRevealTargets({ mode: "outline", count, category, allowCategoryFallback, sortStrategy })
     if (targets.length === 0) {
@@ -507,6 +550,14 @@ export const WarehouseRevealMixin = {
     }
   },
 
+  /**
+   * 批量揭示藏品品质格
+   * @param {number} count - 要揭示的数量
+   * @param {string|null} category - 按品类筛选（null表示不限）
+   * @param {boolean} allowCategoryFallback - 品类不足时是否允许跨品类
+   * @param {string|null} sortStrategy - 排序策略（smallestFirst/largestFirst）
+   * @returns {{ ok: boolean, revealed: number, bottomCell?: Object, message?: string }}
+   */
   revealQualityBatch(count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string | null) {
     const targets = this.pickRevealTargets({ mode: "quality", count, category, allowCategoryFallback, sortStrategy })
     if (targets.length === 0) {
@@ -1177,7 +1228,7 @@ export const WarehouseRevealMixin = {
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut"
-    })
+    }) as Phaser.Tweens.Tween;
 
     if (item.revealed.outline && !item.view.borderPulseStarted) {
       item.view.border.setStrokeStyle(3, item.quality.color, 1)

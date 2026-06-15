@@ -1,3 +1,4 @@
+/// <reference types="phaser" />
 import type {
   Player,
   Artifact,
@@ -45,7 +46,7 @@ import type {
 
 /**
  * @file main.ts
- * @module main
+ * @module game/main
  * @description 游戏入口与主场景。创建 Phaser.Game 实例，定义 WarehouseScene 主场景类，
  *              并通过 Object.assign 将所有 Mixin 混入场景原型。是整个游戏的核心组装文件。
  *
@@ -507,6 +508,12 @@ class WarehouseScene extends _PhaserScene {
     this.lanReconnectAttempts = 0
     this.lanMaxReconnectAttempts = 5
 
+    this._activeSkillId = null
+    this._gameConfirmCallback = null
+    this._gameCancelCallback = null
+    this.lanAiPlayers = []
+    this.lanAiLlmEnabled = false
+
     this.previewOpenTick = 0
     this.roundTimerId = null
     this.roundPaused = false
@@ -669,7 +676,35 @@ class WarehouseScene extends _PhaserScene {
     this.keypadValue = "0"
   }
 
+  /**
+   * Phaser Scene 初始化入口。按顺序执行：
+   * 1. 缓存DOM元素引用
+   * 2. 绑定DOM事件监听
+   * 3. 绑定大厅事件
+   * 4. 初始化玩家UI
+   * 5. 初始化动效系统
+   * 6. 进入大厅页面
+   * @returns {void}
+   */
   create() {
+    // ─── 游戏状态机 ───
+    //
+    // 状态流转：LOBBY → WAREHOUSE → BIDDING(循环N轮) → SETTLEMENT
+    //
+    // LOBBY: 大厅选角 → 地图选择 → 角色选择
+    //   ↓ startSoloGame() / startLanGame()
+    // WAREHOUSE: 生成仓库网格，展示藏品（信息隐藏状态）
+    //   ↓ startRound()
+    // BIDDING: 每轮玩家可使用技能/道具 → 提交出价 → 揭示出价
+    //   ↓ resolveRoundBids() → 判定直接拿下/进入下一轮
+    //   ↓ (循环直到最终轮)
+    // SETTLEMENT: 逐一揭示藏品真实信息，计算盈亏，更新战绩
+    //
+    // 关键变量:
+    //   this.gameState - 当前游戏状态 ('lobby' | 'playing' | 'settled')
+    //   this.round - 当前轮次 (1-based)
+    //   this.settled - 是否已结算
+
     WarehouseScene.instance = this
     this.initAudio()
     this.cacheDom()
@@ -681,6 +716,10 @@ class WarehouseScene extends _PhaserScene {
     this.enterLobby()
   }
 
+  /**
+   * 初始化音频系统。异步加载AudioManager，预加载常用音效
+   * @returns {void}
+   */
   initAudio() {
     if (AudioManager) {
       AudioManager.init().then(() => {
@@ -694,6 +733,10 @@ class WarehouseScene extends _PhaserScene {
     }
   }
 
+  /**
+   * 缓存常用DOM元素引用到this.dom对象
+   * @returns {void}
+   */
   cacheDom() {
     this.dom.hudRound = document.getElementById("hudRound")
     this.dom.hudTimer = document.getElementById("hudTimer")
@@ -844,7 +887,7 @@ class WarehouseScene extends _PhaserScene {
   }
 
   bindDomEvents() {
-    const updateVolumeIcon = (value, imgEl) => {
+    const updateVolumeIcon = (value: string | number, imgEl: HTMLImageElement | null) => {
       if (!imgEl) return
       const isMuted = Number(value) === 0
       imgEl.src = isMuted ? "./assets/images/icons/ui/mute-fill.svg" : "./assets/images/icons/ui/sound-on.svg"
@@ -1305,9 +1348,9 @@ class WarehouseScene extends _PhaserScene {
         this.removeAiMemoryExportDialog()
       })
       document.getElementById("exportShareBtn").addEventListener("click", () => {
-        if (window.NativeBridge && window.NativeBridge.shareFile) {
+        if (window.NativeBridge?.shareFile) {
           const base64Data = btoa(unescape(encodeURIComponent(jsonData)))
-          const success = (window as unknown as Record<string, { shareFile?: (...args: unknown[]) => unknown }>).NativeBridge?.shareFile?.(base64Data, fileName, "AI记忆导出")
+          const success = window.NativeBridge.shareFile(base64Data, fileName, "AI记忆导出")
           if (success) {
             if (this.dom.aiMemoryStatusText) {
               this.dom.aiMemoryStatusText.textContent = "已导出"
@@ -1416,7 +1459,7 @@ class WarehouseScene extends _PhaserScene {
       const overlay = document.createElement("div")
       overlay.id = "aiMemoryImportDialog"
       overlay.className = "ai-import-overlay"
-      const hasNativeImport = !!(window.NativeBridge && window.NativeBridge.openFileImport)
+      const hasNativeImport = !!window.NativeBridge?.openFileImport
       const box = document.createElement("div")
       box.className = "ai-import-box"
       box.innerHTML =
@@ -1456,7 +1499,7 @@ class WarehouseScene extends _PhaserScene {
       if (hasNativeImport && fileBtn) {
         fileBtn.addEventListener("click", () => {
           showStatus("正在打开文件选择器...", "loading")
-          window.NativeBridge.openFileImport()
+          window.NativeBridge?.openFileImport?.()
         })
       }
 
@@ -1530,7 +1573,7 @@ class WarehouseScene extends _PhaserScene {
       const el = document.getElementById("aiMemoryImportDialog")
       if (el) el.remove()
     }
-    this.downloadAiMemoryFallback = (jsonData, fileName) => {
+    this.downloadAiMemoryFallback = (jsonData: string, fileName: string) => {
       const url = URL.createObjectURL(new Blob([jsonData], { type: "application/json" }))
       const a = document.createElement("a")
       a.href = url
@@ -2188,7 +2231,7 @@ class WarehouseScene extends _PhaserScene {
     lines.push("信心影响：信心越高，AI越愿意贴近心理预期和上限；信心越低，AI越可能观望或回撤。\n")
     lines.push("-")
 
-    payload.entries.forEach((entry) => {
+    payload.entries.forEach((entry: any) => {
       const parts = entry.confidenceParts || {}
       const overheat = Math.round((entry.overheatRatio || 0) * 100)
       const threshold = Math.round((entry.overheatThreshold || 0) * 100)
@@ -2626,8 +2669,8 @@ class WarehouseScene extends _PhaserScene {
     if (DeepSeekClient) {
       console.log("[getLlmProvider] using DeepSeekProvider (fallback)")
       return {
-        requestChat: (options) => DeepSeekProvider.requestChat(options),
-        applySettings: (settings) => DeepSeekProvider.applySettings(settings)
+        requestChat: (options: any) => DeepSeekProvider.requestChat(options),
+        applySettings: (settings: any) => DeepSeekProvider.applySettings(settings)
       }
     }
     console.log("[getLlmProvider] NO provider available")
@@ -2672,6 +2715,14 @@ const config = {
     }
   },
   scene: [WarehouseScene]
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    LlmUiBridge.initialize()
+  })
+} else {
+  LlmUiBridge.initialize()
 }
 
 new (Phaser as any).Game(config)
