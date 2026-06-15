@@ -190,7 +190,7 @@ function scrollNumber(element: HTMLElement, fromValue: number, toValue: number, 
       } else {
         element.textContent = prefix + formatNumber(to, decimals, useLocale, format) + suffix;
         element.classList.remove('is-scrolling');
-        if (options.onComplete) options.onComplete();
+        if (options?.onComplete) options.onComplete();
         resolve();
       }
     }

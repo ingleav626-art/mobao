@@ -297,11 +297,11 @@ export const UiOverlayMixin = {
       MobaoAnimations.animateOverlayClose(
         (this as any).dom.settingsOverlay,
         (this as any).dom.settingsPanel,
-        function () {
+        () => {
           if (!keepStatus) {
             ; (this as any).setSettingsStatus("设置保存在本地浏览器中。", false)
           }
-        }.bind(this)
+        }
       )
     } else {
       ; (this as any).dom.settingsOverlay.classList.add("hidden")
@@ -383,7 +383,7 @@ export const UiOverlayMixin = {
     const draft: Record<string, number> = {}
     SETTINGS_FIELDS.forEach((field: string) => {
       const input = document.getElementById(this.settingsInputId(field))
-      draft[field] = input ? Number((input as HTMLInputElement).value) : GAME_SETTINGS[field]
+      draft[field] = input ? Number((input as HTMLInputElement).value) : (GAME_SETTINGS as unknown as Record<string, number>)[field]
     })
     return normalizeGameSettings(draft, GAME_SETTINGS)
   },

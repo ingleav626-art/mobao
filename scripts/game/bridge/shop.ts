@@ -129,7 +129,7 @@ function getItemStorageKey(itemId: string): string {
     "item-cat-wood": "catWood",
     "item-cat-stone": "catStone"
   }
-  return map[itemId] || itemId
+  return (map as Record<string, string>)[itemId] || itemId
 }
 
 function getDefaultInventory(): Record<string, number> {
