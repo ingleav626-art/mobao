@@ -28,7 +28,7 @@ export function getActiveCharacter(): any {
       }
     }
   } catch (_e) { /* ignore */ }
-  const fallback = ((window as any).CharacterData && (window as any).CharacterData.CHARACTERS) || []
+  const fallback = CHARACTERS || []
   _activeCharacter = fallback[0] || null
   return _activeCharacter
 }
@@ -67,7 +67,7 @@ export function getAvatarLabel(): string {
 }
 
 export function selectCharacter(characterId: string): boolean {
-  const pool = ((window as any).CharacterData && (window as any).CharacterData.CHARACTERS) || []
+  const pool = CHARACTERS || []
   const char = pool.find((c: any) => c.id === characterId)
   if (!char) return false
   _activeCharacter = char

@@ -10,7 +10,7 @@ import { QUALITY_CONFIG } from '../../game/data/artifacts'
 import type { Player, SkillDef, ItemDef } from "../../../types/game"
 
 interface LlmPromptDeps {
-  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number; [key: string]: unknown }
+  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number;[key: string]: unknown }
   SKILL_DEFS: SkillDef[]
   ITEM_DEFS: ItemDef[]
   pickFirstDefined: (...args: unknown[]) => unknown
@@ -26,7 +26,7 @@ interface LlmMessage {
 }
 
 interface LlmPayload {
-  gameState?: { round?: { current?: number; total?: number }; selfId?: string; selfName?: string; wallet?: number; directWinRatio?: number; folded?: boolean; Previousbid?: number | null; currentLeader?: string; [key: string]: unknown }
+  gameState?: { round?: { current?: number; total?: number }; selfId?: string; selfName?: string; wallet?: number; directWinRatio?: number; folded?: boolean; Previousbid?: number | null; currentLeader?: string;[key: string]: unknown }
   selfRoleAndTools?: Record<string, unknown>
   otherPlayersPublic?: unknown
   catalogSummary?: unknown
@@ -36,7 +36,7 @@ interface LlmPayload {
   privateIntel?: unknown
   actionConstraints?: Record<string, unknown>
   lastRoundResult?: Record<string, unknown>
-  round?: { current?: number; total?: number; [key: string]: unknown }
+  round?: { current?: number; total?: number;[key: string]: unknown }
   currentWallet?: number
   currentLeader?: string
   currentBid?: number
@@ -645,7 +645,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
             detailParts.push(`品类:${signal.category || "?"}`)
           }
           if (signal.mode === "quality") {
-            const qualityConfig = ((window as any).ArtifactData && (window as any).ArtifactData.QUALITY_CONFIG) || {}
+            const qualityConfig = QUALITY_CONFIG || {}
             const qualityKey = signal.qualityKey as string
             const qualityLabel = qualityConfig[qualityKey]?.label || qualityKey || "?"
             detailParts.push(`品质:${qualityLabel}`)
