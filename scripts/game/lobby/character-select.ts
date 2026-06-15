@@ -92,8 +92,9 @@ interface SelectedCharacter {
   avatar?: string
 }
 
-const getUnlockedCharacters = (window as unknown as Record<string, { getUnlockedCharacters(): SelectedCharacter[] }>).CharacterData.getUnlockedCharacters.bind((window as unknown as Record<string, unknown>).CharacterData)
-const CharacterSystem = window.CharacterSystem
+import { getUnlockedCharacters } from "../data/characters"
+import { getActiveCharacter, selectCharacter } from "../data/character-system"
+import { MobaoShopBridge } from "../bridge/shop"
 
 export const CharacterSelectMixin = {
   selectedCharacter: null as SelectedCharacter | null,
@@ -389,7 +390,7 @@ export const CharacterSelectMixin = {
 
     row.innerHTML = ""
 
-    const bridge = window.MobaoShopBridge
+    const bridge = MobaoShopBridge
     const inventory: Record<string, number> = bridge ? bridge.getFullInventory() : {}
 
     this._carryItems.forEach((item) => {
@@ -436,7 +437,7 @@ export const CharacterSelectMixin = {
     }
 
     const existingIds = new Set(this._carryItems.map((i) => i.id))
-    const bridge = window.MobaoShopBridge
+    const bridge = MobaoShopBridge
     const inventory: Record<string, number> = bridge ? bridge.getFullInventory() : {}
     const shopItems: Array<{ id: string; name: string; icon: string; price?: number }> = bridge ? bridge.SHOP_ITEMS : []
     const available = shopItems
@@ -601,7 +602,7 @@ export const CharacterSelectMixin = {
    * 计算自动补充携带道具所需的费用
    */
   calcReplenishCost(): ReplenishCostResult {
-    const bridge = window.MobaoShopBridge
+    const bridge = MobaoShopBridge
     if (!bridge) return { totalCost: 0, items: [] }
     const inv: Record<string, number> = bridge.getFullInventory()
     const result: ReplenishItem[] = []
@@ -626,7 +627,7 @@ export const CharacterSelectMixin = {
    * 执行自动补充（扣费 + 补库存）
    */
   executeReplenish(): ReplenishResult {
-    const bridge = window.MobaoShopBridge
+    const bridge = MobaoShopBridge
     if (!bridge) return { ok: false, message: "商店系统不可用" }
 
     const { totalCost, items } = this.calcReplenishCost()
@@ -1275,7 +1276,7 @@ export const CharacterSelectMixin = {
         this.renderCarryItems()
         this.updateCharacterMoneyDisplay()
       } else {
-        const bridge = window.MobaoShopBridge
+        const bridge = MobaoShopBridge
         if (bridge) {
           const inventory: Record<string, number> = bridge.getFullInventory()
           const depleted = this._carryItems.filter((item) => {
@@ -1357,15 +1358,11 @@ export const CharacterSelectMixin = {
     const moneyEl = document.getElementById("characterSelectMoney")
     if (!moneyEl) return
 
-    const money: number = window.MobaoShopBridge ? window.MobaoShopBridge.getPlayerMoney() : 0
+    const money: number = MobaoShopBridge ? MobaoShopBridge.getPlayerMoney() : 0
     moneyEl.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${money.toLocaleString()}`
   },
 
   getSelectedCharacterForGame(): SelectedCharacter | null {
-    return this.selectedCharacter || ((window as unknown as Record<string, { getSelectedCharacter(): SelectedCharacter | null }>).CharacterData.getSelectedCharacter() as SelectedCharacter | null)
+    return this.selectedCharacter || (getActiveCharacter() as SelectedCharacter | null)
   }
 }
-
-  // 兼容层：保持 window.MobaoLobby 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoLobby = (window as unknown as Record<string, unknown>).MobaoLobby || {}
-  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoLobby).CharacterSelectMixin = CharacterSelectMixin

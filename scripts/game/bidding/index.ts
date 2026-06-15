@@ -452,7 +452,3 @@ export const BiddingMixin: Record<string, unknown> = {
     })
   }
 }
-
-  // 兼容层：保持 window.MobaoBidding 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoBidding = (window as unknown as Record<string, unknown>).MobaoBidding || {}
-  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoBidding).BiddingMixin = BiddingMixin

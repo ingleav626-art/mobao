@@ -168,4 +168,4 @@ const AudioUI: Record<string, any> = {
   }
 }
 
-  ; (window as any).AudioUI = AudioUI
+export { AudioUI }

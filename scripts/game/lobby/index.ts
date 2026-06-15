@@ -30,6 +30,16 @@
  */
 import { Deps } from '../core/deps.js'
 import type { Player, ArtifactDef } from '../../../types/game'
+import { loadPlayerMoney, GAME_SETTINGS } from "../core/settings"
+import { patch as patchAppState } from "../core/app-state"
+import { getProfile, getSelectedProfileId } from "../data/map-profiles"
+import { MobaoShopBridge } from "../bridge/shop"
+import { MobaoAnimations } from "../animations"
+import { getActiveCharacter } from "../data/character-system"
+import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
+import { MobaoShopPage } from "../shop/index"
+import { rgbHex } from "../core/utils"
+import { MobileHandler } from "../../mobile/mobile-handler"
 
 interface LobbySceneLike {
   showLobbySubPage(page: string): void
@@ -89,7 +99,6 @@ interface LobbySceneLike {
   _mapCategoryWeights: Record<string, number> | null
 }
 
-const { loadPlayerMoney } = window.MobaoSettings
 
 export const LobbyIndexMixin = {
   bindLobbyEvents() {
@@ -251,8 +260,8 @@ export const LobbyIndexMixin = {
 
   showCharacterSelectPageWithMap() {
     let mapProfile: { name?: string; params?: Record<string, unknown> } | null = null
-    if (window.MobaoMapProfiles) {
-      mapProfile = window.MobaoMapProfiles.getProfile(window.MobaoMapProfiles.getSelectedProfileId())
+    if (getProfile) {
+      mapProfile = getProfile(getSelectedProfileId()) as { name?: string; params?: Record<string, unknown> } | null
     }
     if ((this as LobbySceneLike).showCharacterSelectPage) {
       ; (this as LobbySceneLike).showCharacterSelectPage(mapProfile)
@@ -263,7 +272,7 @@ export const LobbyIndexMixin = {
   },
 
   updateLobbyMoneyDisplay() {
-    const money: number = window.MobaoShopBridge ? window.MobaoShopBridge.getPlayerMoney() : loadPlayerMoney()
+    const money: number = MobaoShopBridge ? MobaoShopBridge.getPlayerMoney() : loadPlayerMoney()
     const mainMoney = document.getElementById("lobbyMainMoney")
     const soloMoney = document.getElementById("lobbySoloMoney")
     if (mainMoney) {
@@ -348,7 +357,7 @@ export const LobbyIndexMixin = {
     ; (this as LobbySceneLike).initPlayersUI()
     this.showLobbyMain(true)
     this.updateLobbyMoneyDisplay()
-    window.MobaoAppState.patch({ appMode: "lobby", gameSource: null })
+    patchAppState({ appMode: "lobby", gameSource: null })
     const connectPanel = document.getElementById("lobbyOnlineConnect")
     const roomPanel = document.getElementById("lobbyOnlineRoom")
     const createPanel = document.getElementById("lobbyOnlineCreatePanel")
@@ -382,7 +391,7 @@ export const LobbyIndexMixin = {
     if (joinPanel) joinPanel.classList.add("hidden")
       ; (this as LobbySceneLike).exitSettlementPage()
     this.updateLobbyMoneyDisplay()
-    window.MobaoAppState.patch({ appMode: "lobby", gameSource: null })
+    patchAppState({ appMode: "lobby", gameSource: null })
     if (typeof AudioManager !== "undefined") {
       AudioManager.stopBgm()
       AudioManager.playBgm("lobby")
@@ -426,7 +435,7 @@ export const LobbyIndexMixin = {
       )
     }
 
-    if (window.MobaoAnimations) {
+    if (MobaoAnimations) {
       setTimeout(function () {
         const allCards = ["p1", "p2", "p3", "p4"]
           .map((id) => document.getElementById(`playerCard-${id}`))
@@ -451,17 +460,17 @@ export const LobbyIndexMixin = {
   },
 
   startSoloGame() {
-    window.MobaoAppState.patch({ appMode: "game", gameSource: "solo" })
+    patchAppState({ appMode: "game", gameSource: "solo" })
     this.applyMapProfile()
     this.exitLobby()
       ; (this as LobbySceneLike).startNewRun()
   },
 
   applyMapProfile() {
-    if (!window.MobaoMapProfiles) {
+    if (!getProfile) {
       return
     }
-    const profile = window.MobaoMapProfiles.getProfile(window.MobaoMapProfiles.getSelectedProfileId())
+    const profile = getProfile(getSelectedProfileId())
     if (!profile || !profile.params) {
       return
     }
@@ -593,7 +602,7 @@ export const LobbyIndexMixin = {
     if (!player || !avatarEl) return
 
     if (player.isHuman) {
-      const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter()
+      const char = getActiveCharacter()
       if (char && (char as { avatar?: string }).avatar) {
         avatarEl.innerHTML = `<img src="${(char as { avatar?: string }).avatar}" alt="${char.name}" class="avatar-img">`
         return
@@ -617,7 +626,7 @@ export const LobbyIndexMixin = {
   },
 
   initPreviewFilterOptions() {
-    const categories = [...new Set(window.ArtifactData.ARTIFACT_LIBRARY.map((item: { category: string }) => item.category))]
+    const categories = [...new Set(ARTIFACT_LIBRARY.map((item: { category: string }) => item.category))]
     const options = ['<option value="all">全部品类</option>']
       .concat(categories.map((category: string) => `<option value="${category}">${category}</option>`))
       .join("")
@@ -628,8 +637,8 @@ export const LobbyIndexMixin = {
   },
 
   renderShopContent() {
-    if (typeof window.MobaoShopPage !== "undefined") {
-      window.MobaoShopPage.init({
+    if (typeof MobaoShopPage !== "undefined") {
+      MobaoShopPage.init({
         onPurchase: (result: { ok?: boolean; newMoney: number }) => {
           if (result && result.ok) {
             ; (this as LobbySceneLike).playerMoney = result.newMoney
@@ -638,15 +647,15 @@ export const LobbyIndexMixin = {
           }
         }
       })
-      window.MobaoShopPage.updateMoneyDisplay()
-      window.MobaoShopPage.renderAllItems()
-      window.MobaoShopPage.renderInventory()
+      MobaoShopPage.updateMoneyDisplay()
+      MobaoShopPage.renderAllItems()
+      MobaoShopPage.renderInventory()
     }
   },
 
   syncItemManagerFromShop() {
-    if (!window.MobaoShopBridge) return
-    const bridge = window.MobaoShopBridge
+    if (!MobaoShopBridge) return
+    const bridge = MobaoShopBridge
     const inv = bridge.getFullInventory()
 
     let carryIds: Set<string> | undefined
@@ -679,8 +688,8 @@ export const LobbyIndexMixin = {
 
     this.initCollectionPanel()
 
-    if (window.MobaoAnimations) {
-      ; (window.MobaoAnimations as unknown as { animateOverlayOpen(overlay: HTMLElement, panel: HTMLElement): void }).animateOverlayOpen(overlay, panel)
+    if (MobaoAnimations) {
+      MobaoAnimations.animateOverlayOpen(overlay, panel)
     } else {
       overlay.classList.remove("hidden")
     }
@@ -703,8 +712,8 @@ export const LobbyIndexMixin = {
     const panel = document.getElementById("collectionPanel")
     if (!overlay) return
 
-    if (window.MobaoAnimations) {
-      ; (window.MobaoAnimations as unknown as { animateOverlayClose(overlay: HTMLElement, panel: HTMLElement): void }).animateOverlayClose(overlay, panel)
+    if (MobaoAnimations) {
+      MobaoAnimations.animateOverlayClose(overlay, panel)
     } else {
       overlay.classList.add("hidden")
     }
@@ -721,8 +730,8 @@ export const LobbyIndexMixin = {
 
   _rebuildCustomSelect(originalSelect: HTMLSelectElement) {
     this._destroyCustomSelect(originalSelect)
-    if (window.MobileHandler && (window.MobileHandler.isMobile || window.MobileHandler.isTouch)) {
-      window.MobileHandler.convertToCustomSelect(originalSelect)
+    if (MobileHandler && (MobileHandler.isMobile || MobileHandler.isTouch)) {
+      MobileHandler.convertToCustomSelect(originalSelect)
     }
   },
 
@@ -743,7 +752,7 @@ export const LobbyIndexMixin = {
     }
 
     if (qualitySelect) {
-      const qualities = Object.entries(window.ArtifactData.QUALITY_CONFIG)
+      const qualities = Object.entries(QUALITY_CONFIG)
       qualitySelect.innerHTML =
         '<option value="all">全部品质</option>' +
         qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join("")
@@ -772,7 +781,7 @@ export const LobbyIndexMixin = {
   },
 
   getCollectionCategories(): string[] {
-    const artifacts: (ArtifactDef & { key: string })[] = (window.ArtifactData.ARTIFACT_LIBRARY || []) as (ArtifactDef & { key: string })[]
+    const artifacts: (ArtifactDef & { key: string })[] = (ARTIFACT_LIBRARY || []) as (ArtifactDef & { key: string })[]
     const categories = new Set<string>()
     artifacts.forEach((a) => {
       if (a.category) categories.add(a.category)
@@ -790,7 +799,7 @@ export const LobbyIndexMixin = {
     const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value?.toLowerCase() || ""
     const sortValue = (document.getElementById("collectionSortFilter") as HTMLSelectElement | null)?.value || "default"
 
-    let artifacts: (ArtifactDef & { key: string })[] = (window.ArtifactData.ARTIFACT_LIBRARY || []) as (ArtifactDef & { key: string })[]
+    let artifacts: (ArtifactDef & { key: string })[] = (ARTIFACT_LIBRARY || []) as (ArtifactDef & { key: string })[]
 
     if (categoryFilter !== "all") {
       artifacts = artifacts.filter((a) => a.category === categoryFilter)
@@ -823,16 +832,16 @@ export const LobbyIndexMixin = {
       })
     }
 
-    const total = (window.ArtifactData.ARTIFACT_LIBRARY || []).length
+    const total = (ARTIFACT_LIBRARY || []).length
     if (stats) {
       stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`
     }
 
-    const rgbHex = (window.MobaoUtils as unknown as { rgbHex(color: number | { r: number; g: number; b: number } | [number, number, number]): string }).rgbHex
+    const rgbHexFn = rgbHex
 
     grid.innerHTML = artifacts
       .map((artifact) => {
-        const quality = window.ArtifactData.QUALITY_CONFIG[artifact.qualityKey]
+        const quality = QUALITY_CONFIG[artifact.qualityKey]
         const qualityLabel = quality ? quality.label : "未知"
         const qualityColor = quality ? rgbHex(quality.color) : "#9f9f9f"
         const imgSrc = `assets/images/artifacts/thumbs/${artifact.key}.png`
@@ -865,7 +874,7 @@ export const LobbyIndexMixin = {
       if (!avatarEl) return
       let charName = ""
       if (player.isHuman) {
-        const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter()
+        const char = getActiveCharacter()
         if (char && char.name) charName = char.name
       } else {
         const charAssign = (this as LobbySceneLike).aiCharacterAssignments && (this as LobbySceneLike).aiCharacterAssignments[player.id]
@@ -889,7 +898,3 @@ export const LobbyIndexMixin = {
     })
   }
 }
-
-  // 兼容层：保持 window.MobaoLobby 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoLobby = (window as unknown as Record<string, unknown>).MobaoLobby || {}
-  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoLobby).IndexMixin = LobbyIndexMixin

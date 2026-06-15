@@ -38,6 +38,9 @@
  *   const bridge = createSettlementBridge({ MARGIN, CELL_SIZE, delay, tweenToPromise, ... });
  *   Object.assign(scene, bridge);
  */
+import { AudioUI } from "../../audio/audio-ui"
+import { applyPassiveEffect } from "../data/character-system"
+
 interface SettlementDeps {
   MARGIN: number
   CELL_SIZE: number
@@ -127,7 +130,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
           break
         }
 
-        if (window.AudioUI) {
+        if (AudioUI) {
           AudioUI.startSearch()
         }
 
@@ -147,7 +150,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
           this.playQualityRevealEffect(item)
         }
 
-        if (window.AudioUI) {
+        if (AudioUI) {
           AudioUI.stopSearch()
           AudioUI.playSettlementReveal(item.qualityKey)
         }
@@ -166,7 +169,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
         return
       }
 
-      if (window.AudioUI) {
+      if (AudioUI) {
         AudioUI.play("coinsReveal")
       }
 
@@ -656,11 +659,11 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       this.dom.settleRevealedValue.textContent = String(revealedValue)
       let displayProfit = winnerProfit
       let passiveLabel = ""
-      if (winnerProfit > 0 && typeof window.CharacterSystem !== "undefined") {
+      if (winnerProfit > 0) {
         const self = this.players.find((p) => p.isSelf)
         const isSelfWinner = self && this.settlementSession && self.id === this.settlementSession.winnerId
         if (isSelfWinner) {
-          const result = CharacterSystem.applyPassiveEffect({ profit: winnerProfit })
+          const result = applyPassiveEffect({ profit: winnerProfit })
           if (result.bonus > 0 && result.label) {
             passiveLabel = `（+${result.bonus}）`
             displayProfit += result.bonus
@@ -717,8 +720,3 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
 
   return { methods }
 }
-
-// 兼容层：保持 window.MobaoSettlementBridge 全局变量可用
-window.MobaoSettlementBridge = {
-  createSettlementBridge
-} as unknown as typeof window.MobaoSettlementBridge

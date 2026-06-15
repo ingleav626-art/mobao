@@ -14,9 +14,16 @@
  *
  * @exports UiOverlayMixin - 弹窗与覆盖层 Mixin，混入 Phaser Scene
  */
-const { clamp } = window.MobaoUtils
-const { GAME_SETTINGS, saveGameSettings, normalizeGameSettings, defaultGameSettings } = window.MobaoSettings
-const { DEFAULT_START_MONEY, SETTINGS_FIELDS } = window.MobaoConstants
+import { clamp, rgbHex } from "../core/utils"
+import { GAME_SETTINGS, saveGameSettings, normalizeGameSettings, defaultGameSettings } from "../core/settings"
+import { DEFAULT_START_MONEY, SETTINGS_FIELDS } from "../core/constants"
+import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
+import { ITEM_DEFS } from "../data/items"
+import { SKILL_DEFS } from "../data/skills"
+import { getActiveCharacter } from "../data/character-system"
+import { LlmManager } from "../../llm/core/llm-manager"
+import { MobaoAnimations } from "../animations"
+import { MobaoShopPage } from "../shop/index"
 
 export const UiOverlayMixin = {
   showInfoPopup(title: string, sourceScrollEl: HTMLElement | null) {
@@ -26,8 +33,8 @@ export const UiOverlayMixin = {
     } else {
       ; (this as any).dom.infoPopupContent.innerHTML = ""
     }
-    if (window.MobaoAnimations) {
-      ; (window.MobaoAnimations as any).animateOverlayOpen(
+    if (MobaoAnimations) {
+      MobaoAnimations.animateOverlayOpen(
         (this as any).dom.infoPopupOverlay,
         (this as any).dom.infoPopupOverlay.querySelector(".info-popup-box")
       )
@@ -37,8 +44,8 @@ export const UiOverlayMixin = {
   },
 
   hideInfoPopup() {
-    if (window.MobaoAnimations) {
-      ; (window.MobaoAnimations as any).animateOverlayClose((this as any).dom.infoPopupOverlay)
+    if (MobaoAnimations) {
+      MobaoAnimations.animateOverlayClose((this as any).dom.infoPopupOverlay)
     } else {
       ; (this as any).dom.infoPopupOverlay.classList.add("hidden")
     }
@@ -97,10 +104,10 @@ export const UiOverlayMixin = {
   },
 
   showItemDetailPopup(itemId: string, itemName: string | null, x: number, y: number) {
-    const itemDefs = (window.ItemSystem && window.ItemSystem.ITEM_DEFS) || []
-    const skillDefs = (window.SkillSystem && window.SkillSystem.SKILL_DEFS) || []
-    const itemDef = itemDefs.find((item: any) => item.id === itemId)
-    const skillDef = skillDefs.find((skill: any) => skill.id === itemId)
+    const itemDefs = ITEM_DEFS || []
+    const skillDefs = SKILL_DEFS || []
+    const itemDef = itemDefs.find((item: any) => item.id === itemId) as any
+    const skillDef = skillDefs.find((skill: any) => skill.id === itemId) as any
 
     if (itemDef) {
       const title = itemName || itemDef.name || "道具详情"
@@ -138,7 +145,7 @@ export const UiOverlayMixin = {
 
     let characterInfo: { name: string; desc: string; skillName: string; skillDesc: string; passive: any } | null = null
     if (player.isHuman) {
-      const char = window.CharacterSystem && window.CharacterSystem.getActiveCharacter()
+      const char = getActiveCharacter()
       if (char) {
         characterInfo = {
           name: char.name,
@@ -235,8 +242,8 @@ export const UiOverlayMixin = {
         }
       }
     }
-    if (window.MobaoAnimations) {
-      ; (window.MobaoAnimations as any).animateOverlayOpen((this as any).dom.settingsOverlay, (this as any).dom.settingsPanel)
+    if (MobaoAnimations) {
+      MobaoAnimations.animateOverlayOpen((this as any).dom.settingsOverlay, (this as any).dom.settingsPanel)
     } else {
       ; (this as any).dom.settingsOverlay.classList.remove("hidden")
     }
@@ -284,8 +291,8 @@ export const UiOverlayMixin = {
     // 清除初始值记录，避免关闭时再次弹窗
     ; (this as any)._settingsInitialValues = null
 
-    if (window.MobaoAnimations) {
-      ; (window.MobaoAnimations as any).animateOverlayClose(
+    if (MobaoAnimations) {
+      MobaoAnimations.animateOverlayClose(
         (this as any).dom.settingsOverlay,
         (this as any).dom.settingsPanel,
         function () {
@@ -370,7 +377,7 @@ export const UiOverlayMixin = {
     }
   },
 
-  readSettingsForm(): Record<string, number> {
+  readSettingsForm(): Record<string, any> {
     const draft: Record<string, number> = {}
     SETTINGS_FIELDS.forEach((field: string) => {
       const input = document.getElementById(this.settingsInputId(field))
@@ -398,12 +405,43 @@ export const UiOverlayMixin = {
         enabled: llmNext.enabled,
         apiKey: llmNext.apiKey ? "(已设置)" : "(空)"
       })
+
+      const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
+      const globalSettings = {
+        enabled: llmNext.enabled,
+        multiGameMemoryEnabled: llmNext.multiGameMemoryEnabled,
+        reflectionEnabled: llmNext.reflectionEnabled,
+        thinkingEnabled: llmNext.thinkingEnabled,
+        independentModelEnabled: llmNext.independentModelEnabled,
+        independentReflectionEnabled: llmNext.independentReflectionEnabled,
+        contextLength: llmNext.contextLength,
+        autoSummarizeEnabled: llmNext.autoSummarizeEnabled,
+        reflectionScope: llmNext.reflectionScope
+      }
+      try {
+        window.localStorage.setItem(LLM_GLOBAL_SETTINGS_KEY, JSON.stringify(globalSettings))
+      } catch (_e) { }
+
       const llmProvider = (this as any).getLlmProvider()
       console.log("[saveSettingsFromOverlay] llmProvider:", llmProvider ? llmProvider.id : null)
       if (llmProvider && llmProvider.saveSettings) {
-        llmProvider.saveSettings(llmNext)
+        llmProvider.saveSettings({
+          apiKey: llmNext.apiKey,
+          endpoint: llmNext.endpoint,
+          model: llmNext.model,
+          maxTokens: llmNext.maxTokens,
+          timeoutMs: llmNext.timeoutMs,
+          thinkingParams: llmNext.thinkingParams
+        })
       } else if (saveDeepSeekSettings) {
-        saveDeepSeekSettings(llmNext)
+        saveDeepSeekSettings({
+          apiKey: llmNext.apiKey,
+          endpoint: llmNext.endpoint,
+          model: llmNext.model,
+          maxTokens: llmNext.maxTokens,
+          timeoutMs: llmNext.timeoutMs,
+          thinkingParams: llmNext.thinkingParams
+        })
       }
       if (llmProvider && llmProvider.applySettings) {
         llmProvider.applySettings(llmNext)
@@ -588,8 +626,8 @@ export const UiOverlayMixin = {
     if (typeof (this as any).renderAiThoughtLog === "function") {
       ; (this as any).renderAiThoughtLog()
     }
-    if (window.MobaoAnimations) {
-      ; (window.MobaoAnimations as any).animateOverlayOpen((this as any).dom.aiLogicOverlay, (this as any).dom.aiLogicPanel)
+    if (MobaoAnimations) {
+      MobaoAnimations.animateOverlayOpen((this as any).dom.aiLogicOverlay, (this as any).dom.aiLogicPanel)
     } else {
       ; (this as any).dom.aiLogicOverlay.classList.remove("hidden")
     }
@@ -599,16 +637,16 @@ export const UiOverlayMixin = {
     if (!(this as any).dom.aiLogicOverlay) {
       return
     }
-    if (window.MobaoAnimations) {
-      ; (window.MobaoAnimations as any).animateOverlayClose((this as any).dom.aiLogicOverlay, (this as any).dom.aiLogicPanel)
+    if (MobaoAnimations) {
+      MobaoAnimations.animateOverlayClose((this as any).dom.aiLogicOverlay, (this as any).dom.aiLogicPanel)
     } else {
       ; (this as any).dom.aiLogicOverlay.classList.add("hidden")
     }
   },
 
   openShopOverlay() {
-    if (typeof window.MobaoShopPage !== "undefined") {
-      window.MobaoShopPage.init({
+    if (typeof MobaoShopPage !== "undefined") {
+      MobaoShopPage.init({
         onPurchase: () => {
           ; (this as any).updateLobbyMoneyDisplay()
           if (!document.getElementById("gameArea")!.classList.contains("hidden")) {
@@ -616,13 +654,13 @@ export const UiOverlayMixin = {
           }
         }
       })
-      window.MobaoShopPage.open()
+      MobaoShopPage.open()
     }
   },
 
   closeShopOverlay() {
-    if (typeof window.MobaoShopPage !== "undefined") {
-      window.MobaoShopPage.close()
+    if (typeof MobaoShopPage !== "undefined") {
+      MobaoShopPage.close()
     }
     ; (this as any).updateLobbyMoneyDisplay()
     if (!document.getElementById("gameArea")!.classList.contains("hidden")) {
@@ -680,7 +718,7 @@ export const UiOverlayMixin = {
 
     if (qualitySelect && !(qualitySelect as any)._initialized) {
       ; (qualitySelect as any)._initialized = true
-      const qualities = Object.entries(window.ArtifactData.QUALITY_CONFIG)
+      const qualities = Object.entries(QUALITY_CONFIG)
       qualitySelect.innerHTML =
         '<option value="all">全部品质</option>' +
         qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join("")
@@ -696,7 +734,7 @@ export const UiOverlayMixin = {
   },
 
   getCollectionCategories(): string[] {
-    const artifacts = window.ArtifactData.ARTIFACT_LIBRARY || []
+    const artifacts = ARTIFACT_LIBRARY || []
     const categories = new Set<string>()
     artifacts.forEach((a: any) => {
       if (a.category) categories.add(a.category)
@@ -713,7 +751,7 @@ export const UiOverlayMixin = {
     const qualityFilter = (document.getElementById("collectionQualityFilter") as HTMLSelectElement | null)?.value || "all"
     const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value?.toLowerCase() || ""
 
-    let artifacts = window.ArtifactData.ARTIFACT_LIBRARY || []
+    let artifacts = ARTIFACT_LIBRARY || []
 
     if (categoryFilter !== "all") {
       artifacts = artifacts.filter((a: any) => a.category === categoryFilter)
@@ -727,16 +765,16 @@ export const UiOverlayMixin = {
       )
     }
 
-    const total = (window.ArtifactData.ARTIFACT_LIBRARY || []).length
+    const total = (ARTIFACT_LIBRARY || []).length
     if (stats) {
       stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`
     }
 
-    const rgbHex = (window.MobaoUtils as any).rgbHex
+    const rgbHexFn = rgbHex
 
     grid.innerHTML = artifacts
       .map((artifact: any) => {
-        const quality = window.ArtifactData.QUALITY_CONFIG[artifact.qualityKey]
+        const quality = QUALITY_CONFIG[artifact.qualityKey]
         const qualityLabel = quality ? quality.label : "未知"
         const qualityColor = quality ? rgbHex(quality.color) : "#9f9f9f"
         const imgSrc = `assets/images/artifacts/thumbs/${artifact.key}.png`
@@ -801,12 +839,12 @@ export const UiOverlayMixin = {
     const htmlContentEl = document.getElementById("aiModelConfigContent")
     if (!htmlContentEl) return
     const aiModelConfigs = this.loadAiModelConfigs()
-    const providers = window.LlmManager ? window.LlmManager.listProviders() : []
-    const activeProviderId = window.LlmManager ? window.LlmManager.getActiveProviderId() : "deepseek"
+    const providers = LlmManager ? LlmManager.listProviders() : []
+    const activeProviderId = LlmManager ? LlmManager.getActiveProviderId() : "deepseek"
     const currentSettings: Record<string, any> =
       typeof (this as any).getLlmSettings === "function"
         ? (this as any).getLlmSettings()
-        : (window.MobaoLlm && (window.MobaoLlm as any).LLM_SETTINGS) || {}
+        : {} as Record<string, any>
     const currentModel = currentSettings.model || "未配置"
     const currentEndpoint = currentSettings.endpoint || "未配置"
     const hasCurrentApiKey = !!(currentSettings.apiKey && currentSettings.apiKey.trim())
@@ -820,16 +858,22 @@ export const UiOverlayMixin = {
           <div style="font-size:11px;color:${hasCurrentApiKey ? "#2a7a2a" : "#a04040"};">API Key: ${hasCurrentApiKey ? "已配置" : "未配置"}</div>
         </div>
       `
+    const providerIds = new Set(providers.map((p: any) => p.id))
     const providerOptions = providers.map((p: any) => `<option value="${p.id}">${p.name}</option>`).join("")
       ;["ai1", "ai2", "ai3"].forEach((aiId, i) => {
-        const selectedProviderId = aiModelConfigs[aiId] || ""
-        const selectValue = selectedProviderId || ""
+        const savedProviderId = aiModelConfigs[aiId] || ""
+        const isSavedValid = !savedProviderId || providerIds.has(savedProviderId)
+        let extraOption = ""
+        if (savedProviderId && !isSavedValid) {
+          extraOption = `<option value="${savedProviderId}" selected>[已失效] ${savedProviderId}</option>`
+        }
         html += `
           <div class="ai-model-config-section" style="margin-bottom:12px;padding:10px;background:#fff;border:1px solid #d6ba8d;border-radius:6px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:bold;color:#402f1c;">
               <span style="width:60px;">AI${i + 1}：</span>
               <select id="aiModelProvider-${aiId}" style="flex:1;padding:6px 8px;border:1px solid #b79d77;border-radius:4px;font-size:13px;background:#fff;">
-                <option value="">使用默认配置</option>
+                <option value="" ${!savedProviderId ? "selected" : ""}>使用默认配置</option>
+                ${extraOption}
                 ${providerOptions}
               </select>
             </label>
@@ -837,12 +881,6 @@ export const UiOverlayMixin = {
         `
       })
     htmlContentEl.innerHTML = html
-      ;["ai1", "ai2", "ai3"].forEach((aiId) => {
-        const select = document.getElementById(`aiModelProvider-${aiId}`) as HTMLSelectElement | null
-        if (select) {
-          select.value = aiModelConfigs[aiId] || ""
-        }
-      })
   },
 
   saveAiModelConfigFromForm() {
@@ -867,8 +905,8 @@ export const UiOverlayMixin = {
       console.log("[getAiModelConfig] no providerId for aiId:", aiId)
       return null
     }
-    if (window.LlmManager) {
-      const provider = window.LlmManager.getProvider(providerId)
+    if (LlmManager) {
+      const provider = LlmManager.getProvider(providerId)
       console.log("[getAiModelConfig] provider:", provider ? provider.id : null)
       if (provider && typeof provider.loadSettings === "function") {
         const settings = provider.loadSettings()
@@ -891,7 +929,3 @@ export const UiOverlayMixin = {
     return null
   }
 }
-
-  // 兼容层：保持 window.MobaoUi 全局变量可用
-  ; (window as any).MobaoUi = (window as any).MobaoUi || {}
-  ; (window as any).MobaoUi.OverlayMixin = UiOverlayMixin

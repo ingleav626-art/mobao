@@ -198,7 +198,3 @@ export const UiHistoryMixin: Record<string, any> = {
       .join("")
   }
 }
-
-  // 兼容层：保持 window.MobaoUi 全局变量可用
-  ; (window as any).MobaoUi = (window as any).MobaoUi || {}
-  ; (window as any).MobaoUi.HistoryMixin = UiHistoryMixin

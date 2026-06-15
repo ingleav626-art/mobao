@@ -219,7 +219,3 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
     }
   }
 }
-
-  // 兼容层：保持 window.MobaoLobby 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoLobby = (window as unknown as Record<string, unknown>).MobaoLobby || {}
-  ; ((window as unknown as Record<string, Record<string, unknown>>).MobaoLobby).CarouselMixin = LobbyCarouselMixin

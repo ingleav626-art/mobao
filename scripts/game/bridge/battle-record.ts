@@ -39,6 +39,9 @@
  *   const bridge = createBattleRecordBridge({ BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber });
  *   Object.assign(scene, bridge);
  */
+import { load as loadAppState } from "../core/app-state"
+import { QUALITY_CONFIG } from "../data/artifacts"
+
 interface BattleRecordDeps {
   BATTLE_RECORD_STORAGE_KEY: string
   GRID_COLS: number
@@ -63,6 +66,112 @@ interface BattleRecord {
 
 export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string, unknown> {
   const { BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber } = deps
+
+  function parsePanelTextToHtml(text: string): string {
+    if (!text) return ""
+    const lines = text.split("\n")
+    const htmlParts: string[] = []
+    let currentEntry: string[] = []
+    let inPromptBlock = false
+    let promptTitle = ""
+
+    const flushEntry = () => {
+      if (currentEntry.length === 0) return
+      const entryText = currentEntry.join("\n")
+      if (entryText.includes("接管状态: 大模型") || entryText.includes("接管状态: 规则AI")) {
+        const isLlm = entryText.includes("接管状态: 大模型")
+        const isFallback = entryText.includes("⚠️")
+        const nameMatch = entryText.match(/^(.+?)（(.+?)）/)
+        const playerName = nameMatch ? nameMatch[1] : "AI"
+        const playerId = nameMatch ? nameMatch[2] : ""
+        const bidMatch = entryText.match(/最终出价:\s*(.+?)\s*\|/)
+        const bid = bidMatch ? bidMatch[1] : "?"
+        const sourceMatch = entryText.match(/决策来源:\s*(.+)/)
+        const source = sourceMatch ? sourceMatch[1].trim() : "?"
+        const thoughtMatch = entryText.match(/思考:\s*(.+)/)
+        const thought = thoughtMatch ? thoughtMatch[1] : ""
+        const errorMatch = entryText.match(/错误:\s*(.+)/)
+        const error = errorMatch ? errorMatch[1] : ""
+        const cacheMatch = entryText.match(/缓存命中:\s*(.+)/)
+        const cacheInfo = cacheMatch ? cacheMatch[1] : ""
+        const memoryMatch = entryText.match(/跨局记忆注入:\s*(.+)/)
+        const memoryInfo = memoryMatch ? memoryMatch[1] : ""
+        const actionMatch = entryText.match(/大模型动作:\s*(.+)/)
+        const actionInfo = actionMatch ? actionMatch[1] : ""
+        const fallbackBidMatch = entryText.match(/回退规则出价参考:\s*(.+)/)
+        const fallbackBid = fallbackBidMatch ? fallbackBidMatch[1] : ""
+
+        const badgeClass = isFallback ? "badge-fallback" : isLlm ? "badge-llm" : "badge-rule"
+        const badgeText = isFallback ? "回退" : isLlm ? "大模型" : "规则AI"
+
+        htmlParts.push(`<div class="ai-player-card"><div class="ai-player-card-header"><span class="player-name">${escapeHtml(playerName)}（${escapeHtml(playerId)}）</span><span class="control-badge ${badgeClass}">${badgeText}</span></div><div class="ai-player-card-body">`)
+        htmlParts.push(`<div class="ai-decision-summary"><span class="label">出价</span><span class="value bid-value">${escapeHtml(bid)}</span><span class="label">来源</span><span class="value">${escapeHtml(source)}</span></div>`)
+        if (isFallback) htmlParts.push(`<div class="ai-error-box">⚠️ ${escapeHtml(entryText.match(/⚠️\s*(.+)/)?.[1] || "回退")}</div>`)
+        if (cacheInfo) htmlParts.push(`<div class="ai-cache-info">缓存: ${escapeHtml(cacheInfo)}</div>`)
+        if (memoryInfo) htmlParts.push(`<div class="ai-memory-inject-info">跨局记忆注入: ${escapeHtml(memoryInfo)}</div>`)
+        if (actionInfo) htmlParts.push(`<div class="ai-decision-summary"><span class="label">动作</span><span class="value">${escapeHtml(actionInfo)}</span></div>`)
+        if (fallbackBid) htmlParts.push(`<div class="ai-decision-summary"><span class="label">回退参考</span><span class="value">${escapeHtml(fallbackBid)}</span></div>`)
+        if (thought) htmlParts.push(`<div class="ai-thought-box"><div class="thought-label">思考</div>${escapeHtml(thought)}</div>`)
+        if (error) htmlParts.push(`<div class="ai-error-box">错误: ${escapeHtml(error)}</div>`)
+        htmlParts.push("</div></div>")
+      } else if (entryText.match(/信心\s*\d+%.*人格/)) {
+        const ruleMatch = entryText.match(/信心\s*(\d+)%\s*\|\s*人格\s*(.+)/)
+        const confidence = ruleMatch ? ruleMatch[1] : "?"
+        const archetype = ruleMatch ? ruleMatch[2] : "?"
+        const valueMatch = entryText.match(/估值:\s*(.+?)\s*\|\s*上限\s*(.+)/)
+        const perceivedValue = valueMatch ? valueMatch[1] : "?"
+        const hardCap = valueMatch ? valueMatch[2] : "?"
+        const psychMatch = entryText.match(/心理预期:\s*(.+)/)
+        const psychExpected = psychMatch ? psychMatch[1] : "?"
+        const overheatMatch = entryText.match(/超预期:\s*(.+?)%\s*\|\s*回撤阈值\s*(.+?)%/)
+        const overheat = overheatMatch ? overheatMatch[1] : "?"
+        const threshold = overheatMatch ? overheatMatch[2] : "?"
+        const behaviorMatch = entryText.match(/行为:\s*(.+)/)
+        const behavior = behaviorMatch ? behaviorMatch[1] : ""
+
+        htmlParts.push(`<div class="ai-player-card"><div class="ai-player-card-header"><span class="player-name">规则AI</span><span class="control-badge badge-rule">规则AI</span></div><div class="ai-player-card-body">`)
+        htmlParts.push(`<div class="ai-decision-summary"><span class="label">信心</span><span class="value">${escapeHtml(confidence)}% | 人格 ${escapeHtml(archetype)}</span><span class="label">估值</span><span class="value">${escapeHtml(perceivedValue)} | 上限 ${escapeHtml(hardCap)}</span><span class="label">心理预期</span><span class="value">${escapeHtml(psychExpected)}</span><span class="label">超预期</span><span class="value">${escapeHtml(overheat)}% | 回撤阈值 ${escapeHtml(threshold)}%</span></div>`)
+        if (behavior) htmlParts.push(`<div class="ai-decision-summary"><span class="label">行为</span><span class="value">${escapeHtml(behavior)}</span></div>`)
+        htmlParts.push("</div></div>")
+      } else {
+        htmlParts.push(`<div style="font-size:12px;color:#6b5a48;padding:4px 0;">${escapeHtml(entryText)}</div>`)
+      }
+      currentEntry = []
+    }
+
+    for (const line of lines) {
+      if (line.match(/^\[.+\]$/)) {
+        flushEntry()
+        inPromptBlock = true
+        promptTitle = line.slice(1, -1)
+        continue
+      }
+      if (inPromptBlock) {
+        if (line === "" && currentEntry.length > 0) {
+          htmlParts.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">${escapeHtml(promptTitle)}</summary><pre>${escapeHtml(currentEntry.join("\n"))}</pre></details>`)
+          currentEntry = []
+          inPromptBlock = false
+        } else {
+          currentEntry.push(line)
+        }
+        continue
+      }
+      if (line === "-") {
+        flushEntry()
+        continue
+      }
+      if (line.startsWith("回合 ") || line.startsWith("说明：")) {
+        continue
+      }
+      currentEntry.push(line)
+    }
+    flushEntry()
+    if (inPromptBlock && currentEntry.length > 0) {
+      htmlParts.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">${escapeHtml(promptTitle)}</summary><pre>${escapeHtml(currentEntry.join("\n"))}</pre></details>`)
+    }
+
+    return htmlParts.join("")
+  }
 
   function loadBattleRecords(): BattleRecord[] {
     const raw = window.localStorage.getItem(BATTLE_RECORD_STORAGE_KEY)
@@ -213,7 +322,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
         return
       }
 
-      const appState = window.MobaoAppState ? window.MobaoAppState.load() : {}
+      const appState = loadAppState()
       const records = Array.isArray(this.battleRecords) ? this.battleRecords : []
       const totalGames = appState.totalGamesPlayed || 0
       const totalWins = appState.totalWins || 0
@@ -400,28 +509,27 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
         const roundThoughts = aiThoughtLogs.filter((e) => e.round === currentPage)
         const roundActionLogs = roundLogsByRound[String(currentPage)] || []
 
-        const lines = []
-        lines.push(`═══ 第 ${currentPage} 轮 / 共 ${maxRound} 轮 ═══`)
-        lines.push("")
+        const lines: string[] = []
+        lines.push(`<div class="ai-round-header">第 ${currentPage} 轮 / 共 ${maxRound} 轮</div>`)
 
         if (roundPanelText) {
-          lines.push("──── 完整AI决策详情 ────")
-          roundPanelText.split("\n").forEach((line) => lines.push(line))
-          lines.push("")
+          lines.push(roundPanelText)
         } else if (panelText && Object.keys(roundPanelTexts).length === 0) {
           const isLegacy = currentPage === 1 ? "（该局在旧版本中运行，此为最终轮快照）" : ""
-          lines.push(`──── 完整AI决策详情 ${isLegacy}────`.trim())
-          panelText.split("\n").forEach((line) => lines.push(line))
-          lines.push("")
+          lines.push(`<div class="ai-round-section-header">完整AI决策详情 ${isLegacy}</div>`)
+          lines.push(parsePanelTextToHtml(panelText))
         }
 
         if (roundThoughts.length > 0) {
-          lines.push("──── AI决策摘要 ────")
+          lines.push(`<div class="ai-round-section-header">AI决策摘要</div>`)
           roundThoughts.forEach((entry) => {
             const isLlm = entry.controlMode === "llm"
-            lines.push(
-              `【${entry.playerName || "AI"}】| ${isLlm ? "大模型" : "规则AI"} | 出价: ${formatBidRevealNumber(entry.finalBid)} | 来源: ${entry.decisionSource || "?"}`
-            )
+            const badgeClass = isLlm ? "badge-llm" : "badge-rule"
+            const badgeText = isLlm ? "大模型" : "规则AI"
+            lines.push(`<div class="ai-player-card" style="margin:6px 0;">`)
+            lines.push(`<div class="ai-player-card-header"><span class="player-name">${escapeHtml(entry.playerName || "AI")}</span><span class="control-badge ${badgeClass}">${badgeText}</span></div>`)
+            lines.push(`<div class="ai-player-card-body">`)
+            lines.push(`<div class="ai-decision-summary"><span class="label">出价</span><span class="value bid-value">${formatBidRevealNumber(entry.finalBid)}</span><span class="label">来源</span><span class="value">${escapeHtml(entry.decisionSource || "?")}</span></div>`)
             if (isLlm) {
               const cacheHit = entry.cacheHitTokens || 0
               const cacheMiss = entry.cacheMissTokens || 0
@@ -434,23 +542,25 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
               )
             }
             if (entry.error) {
-              lines.push(`  错误: ${entry.error}`)
+              lines.push(`<div class="ai-error-box">错误: ${escapeHtml(entry.error)}</div>`)
             }
             if (entry.thought) {
-              entry.thought.split("\n").forEach((line) => lines.push(`  ${line}`))
+              lines.push(`<div class="ai-thought-box"><div class="thought-label">思考</div>${escapeHtml(entry.thought)}</div>`)
             }
-            lines.push("")
+            lines.push(`</div></div>`)
           })
         }
 
         if (roundActionLogs.length > 0) {
-          lines.push("──── 行动日志 ────")
-          roundActionLogs.forEach((line) => lines.push(`  ${line}`))
+          lines.push(`<div class="ai-round-section-header">行动日志</div>`)
+          lines.push(`<div class="ai-action-log">`)
+          roundActionLogs.forEach((line) => lines.push(`<div class="ai-action-log-line">${escapeHtml(line)}</div>`))
+          lines.push(`</div>`)
         }
 
-        bodyContent = lines.join("\n")
+        bodyContent = lines.join("")
       } else {
-        bodyContent = panelText
+        bodyContent = panelText ? parsePanelTextToHtml(panelText) : ""
       }
 
       const paginationHtml =
@@ -480,7 +590,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
           return `<p class="battle-record-meta">自身利润：${pp >= 0 ? "+" : ""}${formatBidRevealNumber(pp)}${dtSuffix}</p>`
         })(),
         paginationHtml,
-        `<pre class="battle-record-log-body">${escapeHtml(bodyContent)}</pre>`,
+        `<div class="battle-record-log-body">${bodyContent}</div>`,
         paginationHtml,
         "</article>"
       ].join("")
@@ -592,8 +702,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       this.items = []
       this.warehouseTrueValue = 0
 
-      const qualityConfig =
-        window.ArtifactData && window.ArtifactData.QUALITY_CONFIG ? window.ArtifactData.QUALITY_CONFIG : {}
+      const qualityConfig = QUALITY_CONFIG
       const snapshotItems =
         record && record.warehouse && Array.isArray(record.warehouse.items) ? record.warehouse.items : []
 
@@ -677,8 +786,3 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
     formatRecordTime
   }
 }
-
-// 兼容层：保持 window.MobaoBattleRecordBridge 全局变量可用
-window.MobaoBattleRecordBridge = {
-  createBattleRecordBridge
-} as unknown as typeof window.MobaoBattleRecordBridge

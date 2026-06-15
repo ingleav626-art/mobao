@@ -394,5 +394,3 @@ export const MobaoShopBridge = {
   LIMITED_OFFER_KEY
 }
 
-// 兼容层：保持 window.MobaoShopBridge 全局变量可用
-window.MobaoShopBridge = MobaoShopBridge as unknown as typeof window.MobaoShopBridge

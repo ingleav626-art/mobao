@@ -449,6 +449,3 @@ export const MobaoShopPage = {
   renderLimitedOffers: renderLimitedOffers,
   ITEM_CATEGORIES: ITEM_CATEGORIES
 }
-
-  // 兼容层：保持 window.MobaoShopPage 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoShopPage = MobaoShopPage
