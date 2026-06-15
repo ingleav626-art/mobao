@@ -24,6 +24,7 @@ import { getCharacterById, getUnlockedCharacters, getSelectedCharacter } from ".
 import { getProfile, setSelectedProfileId, getAllProfiles } from "../data/map-profiles"
 import { MobaoShopPage } from "../shop/index"
 import { MobaoShopBridge } from "../bridge/shop"
+import { LanBridge } from "../../../lan/client/lan-bridge"
 
 export function initLanLobbyImpl() {
   console.log('[LAN] initLanLobby called, LanBridge=' + !!LanBridge);

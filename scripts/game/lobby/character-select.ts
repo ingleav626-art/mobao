@@ -111,7 +111,7 @@ export const CharacterSelectMixin = {
 
   initCharacterSelect() {
     this.characterPageEl = document.getElementById("lobbyCharacterSelect")
-    this.selectedCharacter = CharacterSystem.getActiveCharacter() as SelectedCharacter | null
+    this.selectedCharacter = getActiveCharacter() as SelectedCharacter | null
     this.bindCharacterSelectEvents()
     this.bindCardGlowEffect()
   },

@@ -613,3 +613,5 @@
 
   global.LanBridge = LanBridge;
 })(window);
+
+export const LanBridge = (window as any).LanBridge;
