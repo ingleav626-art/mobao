@@ -20,6 +20,7 @@ import { getOutlineBonus, getQualityBonus, getOutlineSortStrategy } from "../dat
 import { MobaoShopBridge } from "../bridge/shop"
 import { SKILL_DEFS } from "../data/skills"
 import { ITEM_DEFS } from "../data/items"
+import { GAME_SETTINGS } from "./settings"
 
 export const SkillItemManagerMixin: Record<string, Function> = {
   useSkill(skillId) {
