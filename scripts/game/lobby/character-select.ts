@@ -92,7 +92,7 @@ interface SelectedCharacter {
   avatar?: string
 }
 
-import { getUnlockedCharacters } from "../data/characters"
+import { getUnlockedCharacters, getCharacterById } from "../data/characters"
 import { getActiveCharacter, selectCharacter } from "../data/character-system"
 import { MobaoShopBridge } from "../bridge/shop"
 
@@ -151,7 +151,7 @@ export const CharacterSelectMixin = {
       this.initCharacterSelect()
     }
 
-    this.selectedCharacter = CharacterSystem.getActiveCharacter() as SelectedCharacter | null
+    this.selectedCharacter = getActiveCharacter() as SelectedCharacter | null
 
     const mapNameEl = document.getElementById("characterSelectMapName")
     if (mapNameEl && mapProfile) {
@@ -1231,11 +1231,11 @@ export const CharacterSelectMixin = {
   },
 
   selectCharacter(characterId: string) {
-    const char = (window as unknown as Record<string, { getCharacterById(id: string): SelectedCharacter | null }>).CharacterData.getCharacterById(characterId) as SelectedCharacter | null
+    const char = getCharacterById(characterId) as SelectedCharacter | null
     if (!char) return
 
     this.selectedCharacter = char
-    CharacterSystem.selectCharacter(characterId)
+    selectCharacter(characterId)
     try {
       window.localStorage.setItem("mobao_selected_character_v1", JSON.stringify(characterId))
     } catch (_e) { }
