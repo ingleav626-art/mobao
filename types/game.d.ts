@@ -186,8 +186,8 @@ export interface Character {
   id: string              // "appraiser"
   name: string            // "鉴定师"
   desc: string            // "精准识宝，稳扎稳打"
-  avatar: string          // 头像路径
-  live2d: string          // Live2D视频路径
+  avatar: string | null   // 头像路径（可能为空）
+  live2d: string | null   // Live2D视频路径（可能为空）
   skillId: string         // 关联技能ID
   skillName: string       // "玉脉鉴质"
   skillDesc: string       // 技能详细描述
