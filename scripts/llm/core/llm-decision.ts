@@ -6,8 +6,142 @@
  */
 import { LLM_DECISION_SYSTEM_PROMPT } from './prompts.js'
 import { parseLlmError, showAiErrorToast, setPlayerLlmError, clearPlayerLlmErrors } from './llm-error.js'
+import type { Player } from "../../../types/game"
+import type { LlmSettings } from "../../../types/llm"
 
-export function createLlmDecisionModule(deps: any) {
+interface RuleDecisionEntry {
+  playerId: string
+  finalBid: number
+  confidence?: number
+  archetype?: string
+  confidenceParts?: {
+    base?: number
+    clue?: number
+    quality?: number
+    progress?: number
+    market?: number
+    tool?: number
+    edgeBonus?: number
+    spreadPenalty?: number
+    uncertaintyPenalty?: number
+    mood?: number
+    [key: string]: number
+  }
+  overheatRatio?: number
+  overheatThreshold?: number
+  intelClueRate?: number
+  intelQualityRate?: number
+  intelUncertainty?: number
+  intelSpreadRatio?: number
+  perceivedValue?: number
+  hardCap?: number
+  psychExpectedBid?: number
+  toolTag?: string
+  toolScoreBoost?: number
+  actionTag?: string
+  mistakeTag?: string
+  diversifyTag?: string
+  [key: string]: unknown
+}
+
+interface RoundBidEntry {
+  playerId: string
+  bid: number
+  [key: string]: unknown
+}
+
+interface LlmPlanResult {
+  source: string
+  failed?: boolean
+  hasBidDecision?: boolean
+  bid: number
+  actionType: string
+  actionId: string
+  thought?: string
+  reasoningContent?: string
+  error?: string
+  model?: string
+  configuredModel?: string
+  controlMode?: string
+  folded?: boolean
+  actionExecuted?: boolean
+  toolActionId?: string
+  toolActionType?: string
+  systemPrompt?: string
+  userPrompt?: string
+  modelResponse?: string
+  toolResultSummary?: string
+  followupPrompt?: string
+  followupResponse?: string
+  followupError?: string
+  followupActionRejected?: string
+  correctionAttempt?: number
+  originalError?: string
+  errorCorrectionPrompt?: string
+  errorCorrectionResponse?: string
+  historyMessagesCount?: number
+  crossGameMemoryCount?: number
+  inGameHistoryCount?: number
+  historyMessagesPreview?: string
+  crossGameMemoryText?: string
+  cacheHitTokens?: number
+  cacheMissTokens?: number
+  cacheHitRate?: number
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; prompt_cache_hit_tokens?: number; prompt_cache_miss_tokens?: number } | null
+  elapsedMs?: number
+  rawSkill?: string
+  rawItem?: string
+}
+
+interface TelemetryEntry {
+  playerId: string
+  playerName: string
+  finalBid: number
+  folded?: boolean
+  decisionSource?: string
+  llmActionName?: string
+  ruleActionName?: string
+  actionExecuted?: boolean
+  controlMode?: string
+  thought?: string
+  reasoningContent?: string
+  error?: string
+  fallbackRuleBid?: number | null
+  systemPrompt?: string
+  userPrompt?: string
+  modelResponse?: string
+  toolResultSummary?: string
+  followupPrompt?: string
+  followupResponse?: string
+  followupError?: string
+  followupActionRejected?: string
+  correctionAttempt?: number
+  originalError?: string
+  errorCorrectionPrompt?: string
+  errorCorrectionResponse?: string
+  historyMessagesCount?: number
+  crossGameMemoryCount?: number
+  inGameHistoryCount?: number
+  historyMessagesPreview?: string
+  crossGameMemoryText?: string
+  cacheHitTokens?: number
+  cacheMissTokens?: number
+  cacheHitRate?: number
+  usage?: { prompt_cache_hit_tokens?: number; prompt_cache_miss_tokens?: number } | null
+}
+
+interface LlmDecisionDeps {
+  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number; roundSeconds: number;[key: string]: unknown }
+  LLM_SETTINGS: LlmSettings
+  isNoneActionText: (text: string) => boolean
+  compactOneLine: (text: string, maxLen?: number) => string
+  formatBidRevealNumber: (v: number) => string
+  indentMultiline: (text: string, indent?: string) => string
+  compactPanelText: (text: string, maxLen?: number) => string
+  [key: string]: unknown
+}
+
+export function createLlmDecisionModule(deps: LlmDecisionDeps) {
   const {
     GAME_SETTINGS,
     LLM_SETTINGS,
@@ -37,7 +171,7 @@ export function createLlmDecisionModule(deps: any) {
       }
       const endpoint = typeof settings.endpoint === "string" ? settings.endpoint.trim() : ""
       const isProxyEndpoint = endpoint.length > 0 && endpoint.startsWith("/")
-      const isNative = !!((window as any).NativeBridge && (window as any).NativeBridge.getServerUrl)
+      const isNative = !!((window as unknown as Record<string, { getServerUrl?: () => string }>).NativeBridge && (window as unknown as Record<string, { getServerUrl?: () => string }>).NativeBridge.getServerUrl)
       if (isProxyEndpoint && !isNative) {
         return true
       }
@@ -64,7 +198,7 @@ export function createLlmDecisionModule(deps: any) {
       return this.canUseLlmDecision() && this.isAiLlmEnabledForPlayer(playerId)
     },
 
-    getAiModelConfigForPlayer(playerId: string): any {
+    getAiModelConfigForPlayer(playerId: string): Record<string, unknown> {
       const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
       console.log(
         "[getAiModelConfigForPlayer] playerId:",
@@ -103,31 +237,38 @@ export function createLlmDecisionModule(deps: any) {
 
     getAiIndexFromPlayerId(playerId: string): number {
       if (typeof playerId !== "string") return -1
-      const match = playerId.match(/^ai(\d+)$/i)
-      if (match) {
-        return parseInt(match[1], 10) - 1
+      const aiMatch = playerId.match(/^ai(\d+)$/i)
+      if (aiMatch) {
+        return parseInt(aiMatch[1], 10) - 1
+      }
+      const pMatch = playerId.match(/^p(\d+)$/i)
+      if (pMatch) {
+        const num = parseInt(pMatch[1], 10)
+        if (num === 1) return 0
+        if (num === 3) return 1
+        if (num === 4) return 2
       }
       return -1
     },
 
-    async requestAiLlmPlan(player: any, options: any = {}): Promise<any> {
+    async requestAiLlmPlan(player: Player, options: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
       const requestStartTime = Date.now()
-      const batchId = options.batchId || "solo"
-      const batchStartTime = options.batchStartTime || requestStartTime
+      const batchId = String(options.batchId || "solo")
+      const batchStartTime = Number(options.batchStartTime || requestStartTime)
       const requestId = `${player.id}-${requestStartTime}`
       console.log(
         `[requestAiLlmPlan] ${requestId} START, player: ${player.id}, batchId: ${batchId}, delay from batch start: ${requestStartTime - batchStartTime}ms`
       )
 
-      const requestStage = options.requestStage || "initial"
+      const requestStage = String(options.requestStage || "initial")
       const isFirstRound = requestStage === "initial" && Number(this.round) === 1
 
-      let payload: any
-      if (options.requestStage === "followup-after-tool") {
+      let payload: Record<string, unknown>
+      if (requestStage === "followup-after-tool") {
         payload = this.buildAiFollowupRoundPayload(
           player,
-          options.followupContext || {},
-          options.followupToolSummary || ""
+          (options.followupContext || {}) as Record<string, unknown>,
+          String(options.followupToolSummary || "")
         )
       } else if (isFirstRound) {
         payload = this.buildAiLlmRoundPayload(player)
@@ -136,10 +277,10 @@ export function createLlmDecisionModule(deps: any) {
       }
 
       const firstRoundBlocks =
-        isFirstRound && typeof this.getAiFirstRoundExtraBlocks === "function" ? this.getAiFirstRoundExtraBlocks() : []
+        isFirstRound && typeof this.getAiFirstRoundExtraBlocks === "function" ? this.getAiFirstRoundExtraBlocks(player.id) : []
       const mergedExtraBlocks = [
         ...(Array.isArray(firstRoundBlocks) ? firstRoundBlocks : []),
-        ...(options.extraBlocks || [])
+        ...(Array.isArray(options.extraBlocks) ? options.extraBlocks : [])
       ]
 
       const userPrompt = this.buildAiDecisionUserPrompt(payload, mergedExtraBlocks, {
@@ -149,7 +290,7 @@ export function createLlmDecisionModule(deps: any) {
       const systemPrompt = LLM_DECISION_SYSTEM_PROMPT
       const useMultiGameMemory =
         typeof this.isAiMultiGameMemoryEnabled === "function" ? this.isAiMultiGameMemoryEnabled() : false
-      const historyMessages: any[] =
+      const historyMessages: Array<Record<string, unknown>> =
         useMultiGameMemory && typeof this.getAiConversationMessages === "function"
           ? this.getAiConversationMessages(player.id)
           : []
@@ -172,9 +313,9 @@ export function createLlmDecisionModule(deps: any) {
         this.aiConversationCache[player.id] = null
       }
       const playerCache = this.aiConversationCache[player.id]
-      let messages: any[]
+      let messages: Array<Record<string, unknown>>
       if (playerCache) {
-        const incrementalMessages: any[] = []
+        const incrementalMessages: Array<Record<string, unknown>> = []
         if (payload && payload.lastRoundResult) {
           incrementalMessages.push({
             role: "user",
@@ -187,9 +328,9 @@ export function createLlmDecisionModule(deps: any) {
             content: "【轮次信息】\n" + JSON.stringify(payload.round, null, 2)
           })
         }
-        const gameState =
+        const gameState: Record<string, unknown> =
           payload && payload.gameState
-            ? payload.gameState
+            ? (payload.gameState as Record<string, unknown>)
             : {
               currentWallet: payload && payload.currentWallet,
               currentLeader: payload && payload.currentLeader,
@@ -224,16 +365,10 @@ export function createLlmDecisionModule(deps: any) {
             content: "【行动约束】\n" + JSON.stringify(payload.actionConstraints, null, 2)
           })
         }
-        const roundNoRaw =
-          payload && payload.gameState && payload.gameState.round && payload.gameState.round.current
-            ? payload.gameState.round.current
-            : payload && payload.round && payload.round.current
-              ? payload.round.current
-              : this.round
-        const totalRoundRaw =
-          payload && payload.gameState && payload.gameState.round && payload.gameState.round.total
-            ? payload.gameState.round.total
-            : GAME_SETTINGS.maxRounds
+        const gs = gameState as Record<string, unknown>
+        const roundInfo = (gs.round || payload.round) as Record<string, unknown> | undefined
+        const roundNoRaw = roundInfo && roundInfo.current ? roundInfo.current : this.round
+        const totalRoundRaw = roundInfo && roundInfo.total ? roundInfo.total : GAME_SETTINGS.maxRounds
         const roundNo = Number.isFinite(Number(roundNoRaw))
           ? Math.max(1, Math.round(Number(roundNoRaw)))
           : Math.max(1, this.round)
@@ -257,7 +392,7 @@ export function createLlmDecisionModule(deps: any) {
         ].join("\n")
         incrementalMessages.push({ role: "user", content: taskContent })
         if (Array.isArray(options.extraBlocks) && options.extraBlocks.length > 0) {
-          options.extraBlocks.forEach((block: any) => {
+          options.extraBlocks.forEach((block: Record<string, unknown>) => {
             incrementalMessages.push({
               role: "user",
               content: String(block || "")
@@ -332,7 +467,7 @@ export function createLlmDecisionModule(deps: any) {
           console.error("[requestAiLlmPlan] getAiModelConfigForPlayer error:", e)
         }
         const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000))
-        const isNativeEnv = !!((window as any).NativeBridge && (window as any).NativeBridge.llmProxyAsync)
+        const isNativeEnv = !!((window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge && (window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge.llmProxyAsync)
         const isFlashModel = /deepseek.*flash|qwen.*turbo|glm.*flash|gpt-3\.5|gpt-4o-mini/i.test(settings.model || "")
         let baseTokens = Number(settings.maxTokens) || 600
         if (isNativeEnv && isFlashModel && baseTokens < 1500) {
@@ -343,6 +478,7 @@ export function createLlmDecisionModule(deps: any) {
         console.log(
           `[requestAiLlmPlan] ${requestId} CALLING requestChat, model: ${settings.model}, elapsed so far: ${chatStartTime - requestStartTime}ms`
         )
+        console.log(`[requestAiLlmPlan] ${requestId} messages count: ${messages.length}, historyMessages count: ${historyMessages.length}, crossGameMemoryCount: ${crossGameMemoryCount}`)
         const result = await provider.requestChat({
           temperature: 0.1,
           maxTokens: requestMaxTokens,
@@ -383,12 +519,6 @@ export function createLlmDecisionModule(deps: any) {
             detail.hint ? `hint=${detail.hint}` : ""
           ].filter(Boolean)
           const errorMessage = errorPieces.join(" | ")
-          if (requestStage === "initial") {
-            this.aiConversationCache[player.id] = [
-              ...messages,
-              { role: "assistant", content: `[LLM请求失败] ${errorMessage}` }
-            ]
-          }
           setPlayerLlmError(this, player.id, errorMessage, result.code)
           showAiErrorToast(player.name, parseLlmError(errorMessage, result.code).brief)
           return {
@@ -487,7 +617,7 @@ export function createLlmDecisionModule(deps: any) {
         plan.historyMessagesCount = historyMessages.length
         plan.crossGameMemoryCount = crossGameMemoryCount
         plan.inGameHistoryCount = inGameHistoryCount
-        plan.historyMessagesPreview = historyMessages.map((m: any) => String(m.content || "").slice(0, 80)).join(" | ")
+        plan.historyMessagesPreview = historyMessages.map((m: Record<string, unknown>) => String(m.content || "").slice(0, 80)).join(" | ")
         plan.crossGameMemoryText =
           !playerCache && useMultiGameMemory && crossGameMemoryCount > 0
             ? String(historyMessages[0]?.content || "")
@@ -519,12 +649,6 @@ export function createLlmDecisionModule(deps: any) {
         return plan
       } catch (error) {
         const message = error && (error as Error).message ? (error as Error).message : "LLM请求异常"
-        if (requestStage === "initial") {
-          this.aiConversationCache[player.id] = [
-            ...messages,
-            { role: "assistant", content: `[LLM请求异常] ${message}` }
-          ]
-        }
         setPlayerLlmError(this, player.id, message, "EXCEPTION")
         showAiErrorToast(player.name, parseLlmError(message, "EXCEPTION").brief)
         return {
@@ -544,7 +668,7 @@ export function createLlmDecisionModule(deps: any) {
       }
     },
 
-    async requestAiLlmFollowupBid(player: any, currentPlan: any, toolSummary: string): Promise<any> {
+    async requestAiLlmFollowupBid(player: Player, currentPlan: Record<string, unknown>, toolSummary: string): Promise<Record<string, unknown>> {
       const trackHint = String(toolSummary || "").includes("tracks=")
         ? "若 tracks=none，代表本次探查未直接命中高价值追踪目标，不要把它写成已确认。"
         : ""
@@ -589,7 +713,7 @@ export function createLlmDecisionModule(deps: any) {
       return followupPlan
     },
 
-    async requestAiLlmErrorCorrection(player: any, currentPlan: any, errorInfo: string, correctionHistory: any[], previousMessages: any[] = []): Promise<any> {
+    async requestAiLlmErrorCorrection(player: Player, currentPlan: Record<string, unknown>, errorInfo: string, correctionHistory: Array<Record<string, unknown>>, previousMessages: Array<Record<string, unknown>> = []): Promise<Record<string, unknown>> {
       const correctionCount = correctionHistory ? correctionHistory.length : 0
       const maxCorrections = 2
 
@@ -608,7 +732,7 @@ export function createLlmDecisionModule(deps: any) {
       const previousCorrections =
         correctionHistory && correctionHistory.length > 0
           ? correctionHistory
-            .map((entry: any, idx: number) => `第${idx + 1}次纠错: ${entry.error} -> AI回复: ${entry.aiResponse || "无"}`)
+            .map((entry: Record<string, unknown>, idx: number) => `第${idx + 1}次纠错: ${entry.error} -> AI回复: ${entry.aiResponse || "无"}`)
             .join("\n")
           : ""
 
@@ -655,7 +779,7 @@ export function createLlmDecisionModule(deps: any) {
           selfId: player.id,
           selfName: player.name,
           wallet: this.getAiWallet(player.id),
-          directWinRatio: Number((1 + GAME_SETTINGS.directTakeRatio).toFixed(2)),
+          directWinRatio: Number((1 + Number(GAME_SETTINGS.directTakeRatio || 0)).toFixed(2)),
           folded: false,
           Previousbid: this.round === 1 ? null : this.currentBid,
           currentLeader: this.bidLeader
@@ -691,7 +815,7 @@ export function createLlmDecisionModule(deps: any) {
       const systemPrompt = LLM_DECISION_SYSTEM_PROMPT
 
       const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000))
-      const isNativeEnv = !!((window as any).NativeBridge && (window as any).NativeBridge.llmProxyAsync)
+      const isNativeEnv = !!((window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge && (window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge.llmProxyAsync)
       let settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
       const aiModelConfig = this.getAiModelConfigForPlayer(player.id)
       if (aiModelConfig) {
@@ -857,9 +981,9 @@ export function createLlmDecisionModule(deps: any) {
         return
       }
 
-      const aiPlayers = this.players.filter((player: any) => !player.isHuman)
-      const activePlayers = aiPlayers.filter((player: any) => this.canUseLlmDecisionForPlayer(player.id))
-      const disabledPlayers = aiPlayers.filter((player: any) => !this.canUseLlmDecisionForPlayer(player.id))
+      const aiPlayers = this.players.filter((player: Player) => !player.isHuman)
+      const activePlayers = aiPlayers.filter((player: Player) => this.canUseLlmDecisionForPlayer(player.id))
+      const disabledPlayers = aiPlayers.filter((player: Player) => !this.canUseLlmDecisionForPlayer(player.id))
       if (activePlayers.length === 0) {
         this.writeLog("大模型总开关已开，但所有AI位开关均关闭，使用规则AI。")
         return
@@ -868,11 +992,11 @@ export function createLlmDecisionModule(deps: any) {
       const batchStartTime = Date.now()
       const batchId = `batch-${batchStartTime}-${Math.random().toString(16).slice(2, 6)}`
       console.log(
-        `[prepareAiLlmRoundPlans] ${batchId} START, activePlayers: ${activePlayers.length}, players: ${activePlayers.map((p: any) => p.id).join(",")}`
+        `[prepareAiLlmRoundPlans] ${batchId} START, activePlayers: ${activePlayers.length}, players: ${activePlayers.map((p: Player) => p.id).join(",")}`
       )
 
       const plans = await Promise.all(
-        activePlayers.map((player: any) => this.requestAiLlmPlan(player, { batchId, batchStartTime }))
+        activePlayers.map((player: Player) => this.requestAiLlmPlan(player, { batchId, batchStartTime }))
       )
 
       const batchEndTime = Date.now()
@@ -883,7 +1007,7 @@ export function createLlmDecisionModule(deps: any) {
 
       const summary: string[] = []
 
-      activePlayers.forEach((player: any, index: number) => {
+      activePlayers.forEach((player: Player, index: number) => {
         const plan = plans[index]
         if (!plan) {
           return
@@ -906,13 +1030,13 @@ export function createLlmDecisionModule(deps: any) {
         summary.push(`${player.name}:出价${plan.bid} 计划动作${actionName}`)
       })
 
-      disabledPlayers.forEach((player: any) => {
+      disabledPlayers.forEach((player: Player) => {
         summary.push(`${player.name}:规则AI(开关关闭)`)
       })
 
       if (summary.length > 0) {
         let actualModel = ""
-        activePlayers.forEach((player: any) => {
+        activePlayers.forEach((player: Player) => {
           const p = this.aiLlmRoundPlans[player.id]
           if (p && p.model && !actualModel) actualModel = p.model
         })
@@ -933,23 +1057,23 @@ export function createLlmDecisionModule(deps: any) {
         this.aiErrorCorrectionHistory = {}
       }
 
-      const aiPlayers = this.players.filter((player: any) => !player.isHuman)
-      const activePlayers = aiPlayers.filter((player: any) => this.canUseLlmDecisionForPlayer(player.id))
-      const disabledPlayers = aiPlayers.filter((player: any) => !this.canUseLlmDecisionForPlayer(player.id))
+      const aiPlayers = this.players.filter((player: Player) => !player.isHuman)
+      const activePlayers = aiPlayers.filter((player: Player) => this.canUseLlmDecisionForPlayer(player.id))
+      const disabledPlayers = aiPlayers.filter((player: Player) => !this.canUseLlmDecisionForPlayer(player.id))
 
       console.log(
         "[processAiDecisions] aiPlayers:",
-        aiPlayers.map((p: any) => p.id)
+        aiPlayers.map((p: Player) => p.id)
       )
       console.log(
         "[processAiDecisions] activePlayers:",
-        activePlayers.map((p: any) => p.id)
+        activePlayers.map((p: Player) => p.id)
       )
       console.log(
         "[processAiDecisions] disabledPlayers:",
-        disabledPlayers.map((p: any) => p.id)
+        disabledPlayers.map((p: Player) => p.id)
       )
-      aiPlayers.forEach((p: any) => {
+      aiPlayers.forEach((p: Player) => {
         const canUse = this.canUseLlmDecisionForPlayer(p.id)
         const isEnabled = this.isAiLlmEnabledForPlayer(p.id)
         const globalEnabled = this.canUseLlmDecision()
@@ -971,7 +1095,7 @@ export function createLlmDecisionModule(deps: any) {
 
       const roundProgress = GAME_SETTINGS.maxRounds <= 1 ? 1 : (this.round - 1) / (GAME_SETTINGS.maxRounds - 1)
       const independentPromises: Promise<void>[] = []
-      aiPlayers.forEach((player: any) => {
+      aiPlayers.forEach((player: Player) => {
         const startTime = Date.now()
         console.log(
           `[processAiDecision] ${player.id}-${startTime} START, delay from batch start: ${startTime - batchStartTime}ms`
@@ -1025,11 +1149,11 @@ export function createLlmDecisionModule(deps: any) {
             }
 
             if (this.isLanMode && this.lanIsHost && this.lanBridge) {
-              const readyAiPlayers = aiPlayers.filter((p: any) => this.roundBidReadyState[p.id])
+              const readyAiPlayers = aiPlayers.filter((p: Player) => this.roundBidReadyState[p.id])
               if (readyAiPlayers.length === aiPlayers.length) {
                 this.lanBridge.send({
                   type: "lan:ai-bids-ready",
-                  aiPlayerIds: this.lanAiPlayers.map((ai: any) => ai.id)
+                  aiPlayerIds: this.lanAiPlayers.map((ai: Player) => ai.id)
                 })
               }
             }
@@ -1045,13 +1169,13 @@ export function createLlmDecisionModule(deps: any) {
           delete indicator.dataset.aiThinking
         }
         if (this.lastAiIntelActions.length > 0) {
-          const text = this.lastAiIntelActions.map((entry: any) => this.formatAiIntelActionPublicLine(entry)).join("；")
+          const text = this.lastAiIntelActions.map((entry: Record<string, unknown>) => this.formatAiIntelActionPublicLine(entry)).join("；")
           this.writeLog(`他人情报行动：${text}`)
         }
 
         const summary: string[] = []
         let actualModel2 = ""
-        activePlayers.forEach((player: any) => {
+        activePlayers.forEach((player: Player) => {
           const plan = this.aiLlmRoundPlans[player.id]
           if (!plan) {
             summary.push(`${player.name}:失败(无计划)`)
@@ -1070,7 +1194,7 @@ export function createLlmDecisionModule(deps: any) {
           summary.push(`${player.name}:出价${plan.bid} 计划动作${actionName}`)
         })
 
-        disabledPlayers.forEach((player: any) => {
+        disabledPlayers.forEach((player: Player) => {
           summary.push(`${player.name}:规则AI(开关关闭)`)
         })
 
@@ -1082,17 +1206,17 @@ export function createLlmDecisionModule(deps: any) {
       })
     },
 
-    _flushAiDecisionSummary(activePlayers: any[], disabledPlayers: any[]): void {
+    _flushAiDecisionSummary(activePlayers: Player[], disabledPlayers: Player[]): void {
       if (!this._aiDecisionSummaryWaiting) return
       this._aiDecisionSummaryWaiting = false
 
       if (this.lastAiIntelActions.length > 0) {
-        const text = this.lastAiIntelActions.map((entry: any) => this.formatAiIntelActionPublicLine(entry)).join("；")
+        const text = this.lastAiIntelActions.map((entry: Record<string, unknown>) => this.formatAiIntelActionPublicLine(entry)).join("；")
         this.writeLog(`他人情报行动：${text}`)
       }
 
       const summary: string[] = []
-      activePlayers.forEach((player: any) => {
+      activePlayers.forEach((player: Player) => {
         const plan = this.aiLlmRoundPlans[player.id]
         if (!plan) {
           summary.push(`${player.name}:失败(无计划)`)
@@ -1110,13 +1234,13 @@ export function createLlmDecisionModule(deps: any) {
         summary.push(`${player.name}:出价${plan.bid} 计划动作${actionName}`)
       })
 
-      disabledPlayers.forEach((player: any) => {
+      disabledPlayers.forEach((player: Player) => {
         summary.push(`${player.name}:规则AI(开关关闭)`)
       })
 
       if (summary.length > 0) {
         const actualModels = new Set<string>()
-        activePlayers.forEach((player: any) => {
+        activePlayers.forEach((player: Player) => {
           const plan = this.aiLlmRoundPlans[player.id]
           if (plan && !plan.failed && plan.model) {
             actualModels.add(plan.model)
@@ -1127,9 +1251,9 @@ export function createLlmDecisionModule(deps: any) {
       }
     },
 
-    captureAiDecisionTelemetry(roundBids: any[]): void {
-      const aiPlayers = this.players.filter((player: any) => !player.isHuman)
-      const hasLlm = aiPlayers.some((player: any) => Boolean(this.aiLlmRoundPlans[player.id]))
+    captureAiDecisionTelemetry(roundBids: Array<Record<string, unknown>>): void {
+      const aiPlayers = this.players.filter((player: Player) => !player.isHuman)
+      const hasLlm = aiPlayers.some((player: Player) => Boolean(this.aiLlmRoundPlans[player.id]))
 
       if (!hasLlm) {
         this.lastAiDecisionTelemetry = {
@@ -1140,12 +1264,12 @@ export function createLlmDecisionModule(deps: any) {
       }
 
       const rulePayload = this.aiEngine.getLastDecisionLog()
-      const ruleEntryById = new Map<string, any>(
-        ((rulePayload && rulePayload.entries) || []).map((entry: any) => [entry.playerId, entry])
+      const ruleEntryById = new Map<string, RuleDecisionEntry>(
+        ((rulePayload && rulePayload.entries) || []).map((entry: RuleDecisionEntry) => [entry.playerId, entry])
       )
 
-      const bidByPlayerId = new Map<string, number>((roundBids || []).map((entry: any) => [entry.playerId, Number(entry.bid) || 0]))
-      const entries = aiPlayers.map((player: any) => {
+      const bidByPlayerId = new Map<string, number>((roundBids || []).map((entry: RoundBidEntry) => [entry.playerId, Number(entry.bid) || 0]))
+      const entries = aiPlayers.map((player: Player) => {
         const plan = this.aiLlmRoundPlans[player.id] || null
         const llmSeatEnabled = this.canUseLlmDecisionForPlayer(player.id)
         const ruleEntry = ruleEntryById.get(player.id)
@@ -1217,20 +1341,7 @@ export function createLlmDecisionModule(deps: any) {
       }
     },
 
-    renderAiLogicPanelForLlm(telemetry: any): void {
-      const lines: string[] = []
-      lines.push(`回合 ${telemetry.round} | 决策模式：混合（大模型+规则AI）`)
-      lines.push("说明：大模型接管显示完整提示词与回复；规则AI显示信心拆解与估值。\n")
-      lines.push("-")
-
-      const rulePayload =
-        this.aiEngine && typeof this.aiEngine.getLastDecisionLog === "function"
-          ? this.aiEngine.getLastDecisionLog()
-          : null
-      const ruleEntryById = new Map<string, any>(
-        ((rulePayload && rulePayload.entries) || []).map((entry: any) => [entry.playerId, entry])
-      )
-
+    renderAiLogicPanelForLlm(telemetry: { round: number; entries?: TelemetryEntry[] }): void {
       const CONTROL_MODE_LABELS: Record<string, string> = {
         llm: "大模型正常决策",
         "llm-corrected": "大模型纠错后决策",
@@ -1241,126 +1352,54 @@ export function createLlmDecisionModule(deps: any) {
         "rule-fallback-llm-invalid": "回退原因: LLM返回无效决策(无出价)"
       }
 
-        ; (telemetry.entries || []).forEach((entry: any) => {
-          const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected"
-          const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback")
-          lines.push(`${entry.playerName}（${entry.playerId}）| 接管状态: ${isLlm ? "大模型" : "规则AI"}`)
-          lines.push(`  最终出价: ${formatBidRevealNumber(entry.finalBid)} | 决策来源: ${entry.decisionSource}`)
+      const rulePayload =
+        this.aiEngine && typeof this.aiEngine.getLastDecisionLog === "function"
+          ? this.aiEngine.getLastDecisionLog()
+          : null
+      const ruleEntryById = new Map<string, RuleDecisionEntry>(
+        ((rulePayload && rulePayload.entries) || []).map((entry: RuleDecisionEntry) => [entry.playerId, entry])
+      )
 
-          if (entry.controlMode) {
-            const modeLabel = CONTROL_MODE_LABELS[entry.controlMode] || entry.controlMode
-            if (isFallback) {
-              lines.push(`  ⚠️ ${modeLabel}`)
-            } else if (isLlm) {
-              lines.push(`  接管模式: ${modeLabel}`)
-            }
-          }
-          if (isLlm) {
-            const cacheHit = entry.cacheHitTokens || 0
-            const cacheMiss = entry.cacheMissTokens || 0
-            const cacheRate = entry.cacheHitRate || 0
-            lines.push(`  缓存命中: ${cacheHit} tokens | 未命中: ${cacheMiss} tokens | 命中率: ${cacheRate}%`)
-            if (entry.correctionAttempt > 0) {
-              lines.push(`  纠错次数: ${entry.correctionAttempt}/2`)
-              if (entry.originalError) {
-                lines.push(`  原始错误: ${entry.originalError}`)
-              }
-            }
-            if (entry.historyMessagesCount > 0 || entry.crossGameMemoryCount > 0) {
-              const gameInfo =
-                entry.crossGameMemoryCount > 0
-                  ? entry.inGameHistoryCount > 0
-                    ? `${entry.crossGameMemoryCount}局跨局记忆+${entry.inGameHistoryCount}条本局历史`
-                    : `${entry.crossGameMemoryCount}局跨局记忆`
-                  : `${entry.inGameHistoryCount}条本局历史`
-              lines.push(`  跨局记忆注入: ${gameInfo}`)
-            }
-            if (entry.llmActionName) {
-              lines.push(`  大模型动作: ${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}`)
-            }
-            if (entry.ruleActionName) {
-              lines.push(`  规则动作: ${entry.ruleActionName}`)
-            }
-            if (entry.thought) {
-              lines.push(`  思考: ${entry.thought}`)
-            }
-            if (entry.reasoningContent) {
-              lines.push(`  思考过程:`)
-              lines.push(indentMultiline(entry.reasoningContent, "    "))
-            }
-            if (entry.error) {
-              lines.push(`  错误: ${entry.error}`)
-            }
-            if (entry.fallbackRuleBid !== null && entry.fallbackRuleBid !== undefined) {
-              lines.push(`  回退规则出价参考: ${formatBidRevealNumber(entry.fallbackRuleBid)}`)
-            }
+      const fragment = document.createDocumentFragment()
 
-            if (entry.systemPrompt) {
-              lines.push("  [System Prompt]")
-              lines.push(indentMultiline(entry.systemPrompt || "", "    "))
-            }
-            if (entry.crossGameMemoryText) {
-              lines.push("  [Cross-game Memory]")
-              lines.push(indentMultiline(entry.crossGameMemoryText || "", "    "))
-            }
-            lines.push("  [User Prompt]")
-            lines.push(indentMultiline(entry.userPrompt || "", "    "))
-            lines.push("  [Model Response]")
-            lines.push(indentMultiline(entry.modelResponse || "", "    "))
-            if (entry.toolResultSummary) {
-              lines.push("  [Tool Result]")
-              lines.push(indentMultiline(entry.toolResultSummary || "", "    "))
-            }
-            if (entry.errorCorrectionPrompt || entry.errorCorrectionResponse) {
-              lines.push("  [Error Correction Prompt]")
-              lines.push(indentMultiline(entry.errorCorrectionPrompt || "", "    "))
-              lines.push("  [Error Correction Response]")
-              lines.push(indentMultiline(entry.errorCorrectionResponse || "", "    "))
-            }
-            if (entry.followupPrompt || entry.followupResponse || entry.followupError) {
-              lines.push("  [Follow-up Prompt]")
-              lines.push(indentMultiline(entry.followupPrompt || "", "    "))
-              lines.push("  [Follow-up Response]")
-              lines.push(indentMultiline(entry.followupResponse || entry.followupError || "", "    "))
-              if (entry.followupActionRejected) {
-                lines.push("  [Follow-up Action Guard]")
-                lines.push(indentMultiline(entry.followupActionRejected || "", "    "))
-              }
-            }
-          } else {
-            const ruleEntry = ruleEntryById.get(entry.playerId)
-            if (ruleEntry) {
-              const parts = ruleEntry.confidenceParts || {}
-              const overheat = Math.round((ruleEntry.overheatRatio || 0) * 100)
-              const threshold = Math.round((ruleEntry.overheatThreshold || 0) * 100)
-              lines.push(
-                `  信心 ${Math.round((ruleEntry.confidence || 0) * 100)}% | 人格 ${ruleEntry.archetype || "规则型"}`
-              )
-              lines.push(
-                `  私有线索: 线索率 ${Math.round((ruleEntry.intelClueRate || 0) * 100)}% | 品质率 ${Math.round((ruleEntry.intelQualityRate || 0) * 100)}% | 不确定 ${(ruleEntry.intelUncertainty || 0).toFixed(2)} | 波动 ${(ruleEntry.intelSpreadRatio || 0).toFixed(2)}`
-              )
-              lines.push(
-                `  估值: ${formatBidRevealNumber(ruleEntry.perceivedValue || 0)} | 上限 ${formatBidRevealNumber(ruleEntry.hardCap || 0)}`
-              )
-              lines.push(`  心理预期: ${formatBidRevealNumber(ruleEntry.psychExpectedBid || 0)}`)
-              lines.push(
-                `  信心拆解: 基础 ${(parts.base || 0).toFixed(2)} + 线索 ${(parts.clue || 0).toFixed(2)} + 品质 ${(parts.quality || 0).toFixed(2)} + 回合 ${(parts.progress || 0).toFixed(2)} + 盘口 ${(parts.market || 0).toFixed(2)} + 工具 ${(parts.tool || 0).toFixed(2)} + 边缘奖励 ${(parts.edgeBonus || 0).toFixed(2)} - 波动惩罚 ${(parts.spreadPenalty || 0).toFixed(2)} - 不确定惩罚 ${(parts.uncertaintyPenalty || 0).toFixed(2)} + 情绪 ${(parts.mood || 0).toFixed(2)}`
-              )
-              lines.push(`  超预期: ${overheat}% | 回撤阈值 ${threshold}%`)
-              lines.push(
-                `  工具影响: ${ruleEntry.toolTag || "无"} | 决策加分 ${(ruleEntry.toolScoreBoost || 0).toFixed(2)}`
-              )
-              lines.push(
-                `  行为: ${ruleEntry.actionTag || "常规"}${ruleEntry.mistakeTag ? ` | 失误:${ruleEntry.mistakeTag}` : ""}${ruleEntry.diversifyTag ? ` | 去同质:${ruleEntry.diversifyTag}` : ""}`
-              )
-            } else {
-              lines.push("  （无规则AI决策数据）")
-            }
-          }
-          lines.push("-")
-        })
+      const headerDiv = document.createElement("div")
+      headerDiv.style.cssText = "padding: 8px 12px; font-size: 12px; color: #6b5a48; border-bottom: 1px solid #e8d8b8;"
+      headerDiv.textContent = `回合 ${telemetry.round} | 决策模式：混合（大模型+规则AI）`
+      fragment.appendChild(headerDiv)
 
-      this.dom.aiLogicContent.textContent = lines.join("\n")
+      ;(telemetry.entries || []).forEach((entry: TelemetryEntry) => {
+        const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected"
+        const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback")
+
+        const card = document.createElement("div")
+        card.className = "ai-player-card"
+
+        const badgeClass = isFallback ? "badge-fallback" : isLlm ? "badge-llm" : "badge-rule"
+        const badgeText = isFallback ? "回退" : isLlm ? "大模型" : "规则AI"
+        const modeLabel = entry.controlMode ? (CONTROL_MODE_LABELS[entry.controlMode] || entry.controlMode) : ""
+
+        card.innerHTML = `
+          <div class="ai-player-card-header">
+            <span class="player-name">${entry.playerName}（${entry.playerId}）</span>
+            <span class="control-badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="ai-player-card-body">
+            <div class="ai-decision-summary">
+              <span class="label">最终出价</span>
+              <span class="value bid-value">${formatBidRevealNumber(entry.finalBid)}</span>
+              <span class="label">决策来源</span>
+              <span class="value">${entry.decisionSource || "-"}</span>
+              ${modeLabel ? `<span class="label">接管模式</span><span class="value">${modeLabel}</span>` : ""}
+            </div>
+            ${isFallback ? `<div class="ai-error-box">⚠️ ${modeLabel}</div>` : ""}
+            ${isLlm ? renderLlmEntryDetails(entry) : renderRuleEntryDetails(entry, ruleEntryById)}
+          </div>
+        `
+        fragment.appendChild(card)
+      })
+
+      this.dom.aiLogicContent.innerHTML = ""
+      this.dom.aiLogicContent.appendChild(fragment)
 
       const hasConversationMessages = this.aiConversationCache && Object.keys(this.aiConversationCache).length > 0
       if (this.dom.aiViewMessagesBtn) {
@@ -1394,7 +1433,7 @@ export function createLlmDecisionModule(deps: any) {
           lines.push(`──── ${playerId} ────`)
           lines.push(`消息数: ${playerMessages.length}`)
           lines.push("")
-          playerMessages.forEach((msg: any, idx: number) => {
+          playerMessages.forEach((msg: Record<string, unknown>, idx: number) => {
             const role = msg.role || "unknown"
             const content = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content, null, 2)
             lines.push(`[${idx + 1}] role: ${role}`)
@@ -1407,6 +1446,161 @@ export function createLlmDecisionModule(deps: any) {
 
       this.dom.aiLogicContent.textContent = lines.join("\n")
     }
+  }
+
+  function escapeHtml(text: string): string {
+    if (!text) return ""
+    const div = document.createElement("div")
+    div.textContent = text
+    return div.innerHTML
+  }
+
+  function parseCrossGameMemoryText(text: string): { history?: string; summary?: string; experience?: string; inGame?: string } {
+    const result: { history?: string; summary?: string; experience?: string; inGame?: string } = {}
+    if (!text) return result
+
+    const sections = text.split(/【(.+?)】/)
+    for (let i = 1; i < sections.length; i += 2) {
+      const title = sections[i]
+      const content = sections[i + 1] || ""
+      if (title.includes("跨局历史")) result.history = content.trim()
+      else if (title.includes("上期总结")) result.summary = content.trim()
+      else if (title.includes("经验本")) result.experience = content.trim()
+      else if (title.includes("本局决策")) result.inGame = content.trim()
+    }
+    return result
+  }
+
+  function renderLlmEntryDetails(entry: TelemetryEntry): string {
+    const parts: string[] = []
+
+    if (entry.cacheHitTokens || entry.cacheMissTokens) {
+      const cacheRate = entry.cacheHitRate || 0
+      parts.push(`<div class="ai-cache-info">缓存命中: ${entry.cacheHitTokens || 0} tokens | 未命中: ${entry.cacheMissTokens || 0} tokens | 命中率: ${cacheRate}%</div>`)
+    }
+
+    if (entry.correctionAttempt && entry.correctionAttempt > 0) {
+      parts.push(`<div class="ai-error-box">纠错次数: ${entry.correctionAttempt}/2${entry.originalError ? ` | 原始错误: ${entry.originalError}` : ""}</div>`)
+    }
+
+    if (entry.historyMessagesCount && entry.historyMessagesCount > 0 || entry.crossGameMemoryCount && entry.crossGameMemoryCount > 0) {
+      const gameInfo = entry.crossGameMemoryCount && entry.crossGameMemoryCount > 0
+        ? entry.inGameHistoryCount && entry.inGameHistoryCount > 0
+          ? `${entry.crossGameMemoryCount}局跨局记忆+${entry.inGameHistoryCount}条本局历史`
+          : `${entry.crossGameMemoryCount}局跨局记忆`
+        : `${entry.inGameHistoryCount}条本局历史`
+      parts.push(`<div class="ai-memory-inject-info">跨局记忆注入: ${gameInfo}</div>`)
+    }
+
+    if (entry.llmActionName) {
+      parts.push(`<div class="ai-decision-summary"><span class="label">大模型动作</span><span class="value">${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}</span></div>`)
+    }
+
+    if (entry.ruleActionName) {
+      parts.push(`<div class="ai-decision-summary"><span class="label">规则动作</span><span class="value">${entry.ruleActionName}</span></div>`)
+    }
+
+    if (entry.thought) {
+      parts.push(`<div class="ai-thought-box"><div class="thought-label">思考</div>${escapeHtml(entry.thought)}</div>`)
+    }
+
+    if (entry.reasoningContent) {
+      parts.push(`<div class="ai-thought-box"><div class="thought-label">思考过程</div><pre style="margin:0;white-space:pre-wrap;font-size:11px;">${escapeHtml(entry.reasoningContent)}</pre></div>`)
+    }
+
+    if (entry.error) {
+      parts.push(`<div class="ai-error-box">错误: ${escapeHtml(entry.error)}</div>`)
+    }
+
+    if (entry.fallbackRuleBid !== null && entry.fallbackRuleBid !== undefined) {
+      parts.push(`<div class="ai-decision-summary"><span class="label">回退规则出价参考</span><span class="value">${formatBidRevealNumber(entry.fallbackRuleBid)}</span></div>`)
+    }
+
+    const promptBlocks: string[] = []
+    if (entry.systemPrompt) {
+      promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">System Prompt</summary><pre>${escapeHtml(entry.systemPrompt)}</pre></details>`)
+    }
+    if (entry.crossGameMemoryText) {
+      const sections = parseCrossGameMemoryText(entry.crossGameMemoryText)
+      let blockContent = ""
+      if (sections.history) {
+        blockContent += `<div class="ai-memory-section"><div class="ai-memory-section-title">跨局历史</div><pre>${escapeHtml(sections.history)}</pre></div>`
+      }
+      if (sections.summary) {
+        blockContent += `<div class="ai-memory-section"><div class="ai-memory-section-title">上期总结</div><pre>${escapeHtml(sections.summary)}</pre></div>`
+      }
+      if (sections.experience) {
+        blockContent += `<div class="ai-memory-section"><div class="ai-memory-section-title">经验本</div><pre>${escapeHtml(sections.experience)}</pre></div>`
+      }
+      if (sections.inGame) {
+        blockContent += `<div class="ai-memory-section"><div class="ai-memory-section-title">本局决策</div><pre>${escapeHtml(sections.inGame)}</pre></div>`
+      }
+      if (!blockContent) {
+        blockContent = `<pre>${escapeHtml(entry.crossGameMemoryText)}</pre>`
+      }
+      promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">跨局记忆</summary><div class="ai-detail-content">${blockContent}</div></details>`)
+    }
+    promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">User Prompt</summary><pre>${escapeHtml(entry.userPrompt || "")}</pre></details>`)
+    promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Model Response</summary><pre>${escapeHtml(entry.modelResponse || "")}</pre></details>`)
+    if (entry.toolResultSummary) {
+      promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Tool Result</summary><pre>${escapeHtml(entry.toolResultSummary)}</pre></details>`)
+    }
+    if (entry.errorCorrectionPrompt || entry.errorCorrectionResponse) {
+      promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Error Correction</summary><pre>Prompt:\n${escapeHtml(entry.errorCorrectionPrompt || "")}\n\nResponse:\n${escapeHtml(entry.errorCorrectionResponse || "")}</pre></details>`)
+    }
+    if (entry.followupPrompt || entry.followupResponse || entry.followupError) {
+      promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Follow-up</summary><pre>Prompt:\n${escapeHtml(entry.followupPrompt || "")}\n\nResponse:\n${escapeHtml(entry.followupResponse || entry.followupError || "")}${entry.followupActionRejected ? `\n\nAction Guard:\n${escapeHtml(entry.followupActionRejected)}` : ""}</pre></details>`)
+    }
+
+    if (promptBlocks.length > 0) {
+      parts.push(`<details class="ai-detail-section"><summary class="ai-detail-toggle">详细提示词与回复（${promptBlocks.length}项）</summary><div class="ai-detail-content">${promptBlocks.join("")}</div></details>`)
+    }
+
+    return parts.join("")
+  }
+
+  function renderRuleEntryDetails(entry: TelemetryEntry, ruleEntryById: Map<string, RuleDecisionEntry>): string {
+    const ruleEntry = ruleEntryById.get(entry.playerId)
+    if (!ruleEntry) {
+      return '<div style="color:#8a7a68;font-size:12px;">（无规则AI决策数据）</div>'
+    }
+
+    const parts = ruleEntry.confidenceParts || {}
+    const overheat = Math.round((ruleEntry.overheatRatio || 0) * 100)
+    const threshold = Math.round((ruleEntry.overheatThreshold || 0) * 100)
+
+    return `
+      <div class="ai-decision-summary">
+        <span class="label">信心</span>
+        <span class="value">${Math.round((ruleEntry.confidence || 0) * 100)}% | 人格 ${ruleEntry.archetype || "规则型"}</span>
+        <span class="label">估值</span>
+        <span class="value">${formatBidRevealNumber(ruleEntry.perceivedValue || 0)} | 上限 ${formatBidRevealNumber(ruleEntry.hardCap || 0)}</span>
+        <span class="label">心理预期</span>
+        <span class="value">${formatBidRevealNumber(ruleEntry.psychExpectedBid || 0)}</span>
+        <span class="label">超预期</span>
+        <span class="value">${overheat}% | 回撤阈值 ${threshold}%</span>
+      </div>
+      <details class="ai-detail-section">
+        <summary class="ai-detail-toggle">详细数据</summary>
+        <div class="ai-detail-content">
+          <div class="ai-decision-summary">
+            <span class="label">线索率</span>
+            <span class="value">${Math.round((ruleEntry.intelClueRate || 0) * 100)}%</span>
+            <span class="label">品质率</span>
+            <span class="value">${Math.round((ruleEntry.intelQualityRate || 0) * 100)}%</span>
+            <span class="label">不确定</span>
+            <span class="value">${(ruleEntry.intelUncertainty || 0).toFixed(2)}</span>
+            <span class="label">波动</span>
+            <span class="value">${(ruleEntry.intelSpreadRatio || 0).toFixed(2)}</span>
+          </div>
+          <div style="font-size:11px;color:#6b5a48;margin-top:6px;">
+            <div>信心拆解: 基础 ${(parts.base || 0).toFixed(2)} + 线索 ${(parts.clue || 0).toFixed(2)} + 品质 ${(parts.quality || 0).toFixed(2)} + 回合 ${(parts.progress || 0).toFixed(2)} + 盘口 ${(parts.market || 0).toFixed(2)} + 工具 ${(parts.tool || 0).toFixed(2)} + 边缘奖励 ${(parts.edgeBonus || 0).toFixed(2)} - 波动惩罚 ${(parts.spreadPenalty || 0).toFixed(2)} - 不确定惩罚 ${(parts.uncertaintyPenalty || 0).toFixed(2)} + 情绪 ${(parts.mood || 0).toFixed(2)}</div>
+            <div>工具影响: ${ruleEntry.toolTag || "无"} | 决策加分 ${(ruleEntry.toolScoreBoost || 0).toFixed(2)}</div>
+            <div>行为: ${ruleEntry.actionTag || "常规"}${ruleEntry.mistakeTag ? ` | 失误:${ruleEntry.mistakeTag}` : ""}${ruleEntry.diversifyTag ? ` | 去同质:${ruleEntry.diversifyTag}` : ""}</div>
+          </div>
+        </div>
+      </details>
+    `
   }
 
   return { methods }
