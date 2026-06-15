@@ -51,13 +51,13 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
         setSelectedProfileId(id || "")
         track.querySelectorAll(".lobby-map-card").forEach((c) => c.classList.remove("selected"))
         card.classList.add("selected")
-        this.renderMapDetail()
+          ; (this as unknown as { renderMapDetail(): void }).renderMapDetail()
       })
     })
 
-    this._carouselOffset = 0
-    this.updateCarouselPosition()
-    this.bindCarouselTouch()
+      ; (this as unknown as { _carouselOffset: number })._carouselOffset = 0
+      ; (this as unknown as { updateCarouselPosition(): void }).updateCarouselPosition()
+      ; (this as unknown as { bindCarouselTouch(): void }).bindCarouselTouch()
   },
 
   bindCarouselTouch(): void {
@@ -87,7 +87,7 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
         const dx = e.changedTouches[0].clientX - startX
         const dy = e.changedTouches[0].clientY - startY
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
-          this.carouselScroll(dx < 0 ? 1 : -1)
+          ; (this as unknown as { carouselScroll(direction: number): void }).carouselScroll(dx < 0 ? 1 : -1)
         }
       },
       { passive: true }
@@ -99,8 +99,8 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
     if (!track) return
     const cards = track.querySelectorAll(".lobby-map-card")
     const maxOffset = Math.max(0, cards.length - 3)
-    this._carouselOffset = Math.max(0, Math.min(maxOffset, this._carouselOffset + direction))
-    this.updateCarouselPosition()
+      ; (this as unknown as { _carouselOffset: number })._carouselOffset = Math.max(0, Math.min(maxOffset, (this as unknown as { _carouselOffset: number })._carouselOffset + direction))
+      ; (this as unknown as { updateCarouselPosition(): void }).updateCarouselPosition()
   },
 
   updateCarouselPosition(): void {
@@ -110,12 +110,12 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
     if (!track) return
 
     const cardWidth = 174
-    track.style.transform = "translateX(" + -this._carouselOffset * cardWidth + "px)"
+    track.style.transform = "translateX(" + -(this as unknown as { _carouselOffset: number })._carouselOffset * cardWidth + "px)"
 
     const cards = track.querySelectorAll(".lobby-map-card")
     const maxOffset = Math.max(0, cards.length - 3)
-    if (leftBtn) (leftBtn as HTMLButtonElement).disabled = this._carouselOffset <= 0
-    if (rightBtn) (rightBtn as HTMLButtonElement).disabled = this._carouselOffset >= maxOffset
+    if (leftBtn) (leftBtn as HTMLButtonElement).disabled = (this as unknown as { _carouselOffset: number })._carouselOffset <= 0
+    if (rightBtn) (rightBtn as HTMLButtonElement).disabled = (this as unknown as { _carouselOffset: number })._carouselOffset >= maxOffset
   },
 
   renderMapDetail(): void {
@@ -126,8 +126,8 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
     if (!profile) return
 
     const p = profile.params as unknown as Record<string, unknown> | undefined
-    const qualityLabels = { poor: "粗品", normal: "良品", fine: "精品", rare: "珍品", legendary: "绝品" }
-    const toLevel = (v, thresholds) => {
+    const qualityLabels: Record<string, string> = { poor: "粗品", normal: "良品", fine: "精品", rare: "珍品", legendary: "绝品" }
+    const toLevel = (v: number, thresholds: [number, string][]): string => {
       for (let i = 0; i < thresholds.length; i++) {
         if (v < thresholds[i][0]) return thresholds[i][1]
       }
@@ -138,8 +138,8 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
     const highQ =
       ((qw.fine || 0) + (qw.rare || 0) + (qw.legendary || 0)) / totalQ
     const lowQ = (qw.poor || 0) / totalQ
-    const takeRatio = p.directTakeRatio || 0.2
-    const rounds = p.maxRounds || 5
+    const takeRatio = (p?.directTakeRatio as number) || 0.2
+    const rounds = (p?.maxRounds as number) || 5
 
     const qualityLevel = toLevel(highQ, [
       [0.2, "低"],
