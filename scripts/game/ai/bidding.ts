@@ -339,7 +339,7 @@ export class AuctionAiEngine {
         playerId: player.id,
         //这里的clamp函数用于确保输入的数值在合理的范围内，避免异常值导致AI决策失常。把数值强行限制在最小和最大值之间，超出就截断
         // 情报相关的输入：线索率、质量率、不确定性、信息分布等，AI根据这些评估当前的信心和价值。
-        clueRate: clamp(Number.isFinite(intelSummary.clueRate) ? intelSummary.clueRate : clueRate, 0, 1),
+        clueRate: clamp(Number.isFinite(intelSummary.clueRate) ? (intelSummary.clueRate as number) : clueRate, 0, 1),
 
         // 质量率：如果主场景没有提供，默认使用0作为质量率的估计，表示平均质量水平。
         qualityRate: clamp(Number(intelSummary.qualityRate) || 0, 0, 1),
@@ -824,8 +824,8 @@ export class AuctionAiEngine {
       0,
       1.2
     )
-    const skillPool = resources.skills || {}
-    const itemPool = resources.items || {}
+    const skillPool: Record<string, number> = (resources.skills as Record<string, number>) || {}
+    const itemPool: Record<string, number> = (resources.items as Record<string, number>) || {}
     const itemTotal = (Object.values(itemPool) as number[]).reduce((sum, value) => sum + (Number(value) || 0), 0)
     const itemPenaltyBase = itemTotal <= 1 ? 0.1 : itemTotal <= 2 ? 0.06 : 0.03
     const itemUseBoost = clamp(0.05 + earlyNeed * 0.04 + confidenceNeed * 0.03, 0, 0.14)
