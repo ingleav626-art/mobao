@@ -27,7 +27,8 @@
  *   - 全局：savePlayerMoney（window.MobaoSettings）, window.MobaoAppState
  */
 
-const { savePlayerMoney } = window.MobaoSettings
+import { savePlayerMoney } from "./settings"
+import { recordGameFinished } from "./app-state"
 
 export const SettlementManagerMixin = {
   async finishAuction(winner, mode) {
@@ -247,16 +248,16 @@ export const SettlementManagerMixin = {
     }
 
     const selfPlayer = this.players.find((p) => p.isSelf)
-    if (selfPlayer && window.MobaoAppState) {
+    if (selfPlayer && recordGameFinished) {
       const playerIsWinner = winnerPlayer.isSelf
       const playerProfit = playerIsWinner ? winnerProfit : selfProfit
       const playerWon = playerIsWinner && winnerProfit > 0
-      window.MobaoAppState.recordGameFinished(playerWon, playerProfit)
+      recordGameFinished(playerWon, playerProfit)
     }
 
     this.updateHud()
   }
 }
 
-// 兼容层
-;(window as any).MobaoSettlementManager = SettlementManagerMixin
+  // 兼容层
+  ; (window as any).MobaoSettlementManager = SettlementManagerMixin

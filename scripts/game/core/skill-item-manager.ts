@@ -16,7 +16,12 @@
  * @requires ITEM_DEFS - 道具定义（全局）
  */
 
-const SkillItemManagerMixin: Record<string, Function> = {
+import { getOutlineBonus, getQualityBonus, getOutlineSortStrategy } from "../data/character-system"
+import { MobaoShopBridge } from "../bridge/shop"
+import { SKILL_DEFS } from "../data/skills"
+import { ITEM_DEFS } from "../data/items"
+
+export const SkillItemManagerMixin: Record<string, Function> = {
   useSkill(skillId) {
     if (!this.canUseIntelActions()) {
       return
@@ -27,10 +32,10 @@ const SkillItemManagerMixin: Record<string, Function> = {
     }
 
     let context = this.buildSkillContext()
-    if (window.CharacterSystem) {
-      const outlineBonus = CharacterSystem.getOutlineBonus()
-      const qualityBonus = CharacterSystem.getQualityBonus()
-      const sortStrategy = CharacterSystem.getOutlineSortStrategy()
+    if (getOutlineBonus) {
+      const outlineBonus = getOutlineBonus()
+      const qualityBonus = getQualityBonus()
+      const sortStrategy = getOutlineSortStrategy()
       if (outlineBonus > 0 || qualityBonus > 0 || sortStrategy) {
         const baseContext = context
         context = {
@@ -90,10 +95,10 @@ const SkillItemManagerMixin: Record<string, Function> = {
     }
 
     let itemContext = this.buildSkillContext()
-    if (window.CharacterSystem) {
-      const outlineBonus = CharacterSystem.getOutlineBonus()
-      const qualityBonus = CharacterSystem.getQualityBonus()
-      const sortStrategy = CharacterSystem.getOutlineSortStrategy()
+    if (getOutlineBonus) {
+      const outlineBonus = getOutlineBonus()
+      const qualityBonus = getQualityBonus()
+      const sortStrategy = getOutlineSortStrategy()
       if (outlineBonus > 0 || qualityBonus > 0 || sortStrategy) {
         const baseItemContext = itemContext
         itemContext = {
@@ -122,8 +127,8 @@ const SkillItemManagerMixin: Record<string, Function> = {
       return
     }
 
-    if (window.MobaoShopBridge) {
-      window.MobaoShopBridge.consumeItem(itemId)
+    if (MobaoShopBridge) {
+      MobaoShopBridge.consumeItem(itemId)
     }
 
     this.recordPlayerUsage(this.isLanMode ? this.lanMySlotId : "p2", itemId)
@@ -163,16 +168,14 @@ const SkillItemManagerMixin: Record<string, Function> = {
   },
 
   getItemInfo(itemId) {
-    if (typeof ItemSystem !== "undefined" && ItemSystem.ITEM_DEFS) {
-      const itemDef = ItemSystem.ITEM_DEFS.find((item) => item.id === itemId)
+    if (ITEM_DEFS) {
+      const itemDef = ITEM_DEFS.find((item) => item.id === itemId)
       if (itemDef) return { label: itemDef.name, tip: itemDef.description }
     }
-    if (typeof SkillSystem !== "undefined" && SkillSystem.SKILL_DEFS) {
-      const skillDef = SkillSystem.SKILL_DEFS.find((skill) => skill.id === itemId)
+    if (SKILL_DEFS) {
+      const skillDef = SKILL_DEFS.find((skill) => skill.id === itemId)
       if (skillDef) return { label: skillDef.name, tip: skillDef.description }
     }
     return { label: "未知道具", tip: "未知道具：暂无说明。" }
   }
 }
-
-window.MobaoSkillItemManager = SkillItemManagerMixin

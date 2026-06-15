@@ -115,7 +115,7 @@ interface WarehouseSceneLike {
   aiMaxBid: number
   previewOpenTick: number
 }
-const {
+import {
   GRID_COLS,
   GRID_ROWS,
   CELL_SIZE,
@@ -124,9 +124,9 @@ const {
   MAX_WAREHOUSE_CELLS,
   ARTIFACT_COUNT_RANGE,
   WAREHOUSE_OCCUPANCY_RATIO_RANGE
-} = window.MobaoConstants
-const { shuffle, clamp, toCellKey, rgbHex, qualityPulseDuration } = window.MobaoUtils
-const { toSizeTag, ARTIFACT_LIBRARY } = window.ArtifactData
+} from "../core/constants"
+import { shuffle, clamp, toCellKey, rgbHex, qualityPulseDuration } from "../core/utils"
+import { toSizeTag, ARTIFACT_LIBRARY, QUALITY_CONFIG } from "../data/artifacts"
 
 const ARTIFACT_IMAGE_BASE_PATH = "assets/images/artifacts/thumbs/"
 
@@ -1377,7 +1377,7 @@ export const WarehousePreviewMixin = {
     const sorted = [...candidates].sort((a: Artifact, b: Artifact) => b.expectedPrice - a.expectedPrice)
     const html = sorted
       .map((candidate: Artifact) => {
-        const candidateQuality = window.ArtifactData.QUALITY_CONFIG[candidate.qualityKey]
+        const candidateQuality = QUALITY_CONFIG[candidate.qualityKey]
         const qualityText = candidateQuality ? candidateQuality.label : "未知"
         const sizeText = candidate.previewSizeTag || "未知"
         const imgSrc = `assets/images/artifacts/thumbs/${candidate.key}.png`
@@ -1414,10 +1414,3 @@ export const WarehousePreviewMixin = {
     this.repositionPreview()
   }
 }
-
-  // 兼容层：保持 window.MobaoWarehouse 全局变量可用
-  ; (window as unknown as Record<string, unknown>).MobaoWarehouse = {
-    WarehouseCoreMixin,
-    WarehouseRevealMixin,
-    WarehousePreviewMixin
-  }

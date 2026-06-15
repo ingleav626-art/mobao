@@ -17,7 +17,11 @@
  * @requires window.AudioUI - 音效 UI（倒计时提示）
  */
 
-const RoundManagerMixin: Record<string, Function> = {
+import { MobaoAnimations } from "../animations"
+import { AudioUI } from "../../audio/audio-ui"
+import { GAME_SETTINGS } from "./settings"
+
+export const RoundManagerMixin: Record<string, Function> = {
   startRound() {
     this.roundResolving = false
     this.roundPaused = false
@@ -63,7 +67,7 @@ const RoundManagerMixin: Record<string, Function> = {
 
       this.roundTimeLeft -= 1
       this.updateHud()
-      if (this.roundTimeLeft === 5 && window.AudioUI) {
+      if (this.roundTimeLeft === 5 && AudioUI) {
         AudioUI.playCountdown()
       }
       if (this.roundTimeLeft <= 0) {
@@ -99,8 +103,8 @@ const RoundManagerMixin: Record<string, Function> = {
     }
     this.syncPauseButton()
 
-    if (window.MobaoAnimations) {
-      const hudEl = document.querySelector(".hud")
+    if (MobaoAnimations) {
+      const hudEl = document.querySelector(".hud") as HTMLElement | null
       const timerSpan = this._timerSpan || null
       MobaoAnimations.togglePauseVisual(hudEl, this.roundPaused, timerSpan)
     }
@@ -152,5 +156,3 @@ const RoundManagerMixin: Record<string, Function> = {
     })
   }
 }
-
-window.MobaoRoundManager = RoundManagerMixin
