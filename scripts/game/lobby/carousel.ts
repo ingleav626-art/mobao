@@ -18,19 +18,19 @@
  *   如 highQ<0.2→"低", <0.35→"较低", <0.5→"中", <0.65→"较高", else→"高"
  *   底部有"向下滑动查看更多"提示，滚动到底部自动隐藏
  *
- * @requires MobaoMapProfiles - 地图配置数据（getAllProfiles, getSelectedProfileId, setSelectedProfileId）
- *
  * @exports CarouselMixin - 轮播组件 Mixin，混入 Phaser Scene
  */
+import { getAllProfiles, getSelectedProfileId, setSelectedProfileId, getProfile } from "../data/map-profiles"
+
 export const LobbyCarouselMixin: Record<string, unknown> = {
   renderCarousel(): void {
     const track = document.getElementById("carouselTrack")
-    if (!track || !(window as unknown as Record<string, unknown>).MobaoMapProfiles) {
+    if (!track) {
       return
     }
 
-    const profiles = (window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.getAllProfiles()
-    const selectedId = (window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.getSelectedProfileId()
+    const profiles = getAllProfiles()
+    const selectedId = getSelectedProfileId()
 
     track.innerHTML = profiles
       .map((p) => {
@@ -48,7 +48,7 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
     track.querySelectorAll(".lobby-map-card").forEach((card) => {
       card.addEventListener("click", () => {
         const id = card.getAttribute("data-map-id")
-          ; (window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.setSelectedProfileId(id)
+        setSelectedProfileId(id || "")
         track.querySelectorAll(".lobby-map-card").forEach((c) => c.classList.remove("selected"))
         card.classList.add("selected")
         this.renderMapDetail()
@@ -120,12 +120,12 @@ export const LobbyCarouselMixin: Record<string, unknown> = {
 
   renderMapDetail(): void {
     const detail = document.getElementById("lobbyMapDetail")
-    if (!detail || !(window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles) return
+    if (!detail) return
 
-    const profile = (window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.getProfile((window as unknown as Record<string, { getAllProfiles(): { id: string; icon: string; name: string; desc: string }[]; getSelectedProfileId(): string; setSelectedProfileId(id: string): void; getProfile(id: string): { name: string; icon?: string; desc?: string; params?: Record<string, unknown>; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number>; directTakeDown?: number; rounds?: number } | null }>).MobaoMapProfiles.getSelectedProfileId())
+    const profile = getProfile(getSelectedProfileId())
     if (!profile) return
 
-    const p = profile.params as Record<string, unknown> | undefined
+    const p = profile.params as unknown as Record<string, unknown> | undefined
     const qualityLabels = { poor: "粗品", normal: "良品", fine: "精品", rare: "珍品", legendary: "绝品" }
     const toLevel = (v, thresholds) => {
       for (let i = 0; i < thresholds.length; i++) {
