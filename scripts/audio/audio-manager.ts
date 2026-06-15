@@ -171,8 +171,8 @@ const AudioManager: Record<string, any> = {
         sound.audio = audio
         sound.loaded = true
         console.log(`[AudioManager] Loaded: ${key}`)
-      } catch (e) {
-        console.warn(`[AudioManager] Preload failed for ${key}:`, e.message)
+      } catch (e: unknown) {
+        console.warn(`[AudioManager] Preload failed for ${key}:`, (e as Error).message)
       }
     }
   },
@@ -204,7 +204,7 @@ const AudioManager: Record<string, any> = {
       const audio = sound.audio.cloneNode()
       audio.volume = (options.volume ?? 1) * this._sfxVolume
       audio.playbackRate = options.playbackRate ?? 1
-      audio.play().catch((e) => console.warn(`[AudioManager] Play failed: ${key}`, e.message))
+      audio.play().catch((e: Error) => console.warn(`[AudioManager] Play failed: ${key}`, e.message))
     } catch (e) {
       console.warn(`[AudioManager] SFX play error: ${key}`, e)
     }
@@ -237,7 +237,7 @@ const AudioManager: Record<string, any> = {
       const audio = sound.audio.cloneNode()
       audio.volume = (options.volume ?? 1) * this._sfxVolume
       audio.loop = options.loop ?? true
-      audio.play().catch((e) => console.warn(`[AudioManager] Looping SFX play failed: ${key}`, e.message))
+      audio.play().catch((e: Error) => console.warn(`[AudioManager] Looping SFX play failed: ${key}`, e.message))
       this._loopingSfx.set(key, audio)
     } catch (e) {
       console.warn(`[AudioManager] Looping SFX play error: ${key}`, e)
@@ -254,7 +254,7 @@ const AudioManager: Record<string, any> = {
   },
 
   stopAllLoopingSfx(): void {
-    this._loopingSfx.forEach((audio, key) => {
+    this._loopingSfx.forEach((audio: HTMLAudioElement, key: string) => {
       audio.pause()
       audio.currentTime = 0
     })
@@ -287,7 +287,7 @@ const AudioManager: Record<string, any> = {
     try {
       const audio = sound.audio.cloneNode()
       audio.volume = (options.volume ?? 1) * this._sfxVolume
-      audio.play().catch((e) => console.warn(`[AudioManager] Stopable SFX play failed: ${key}`, e.message))
+      audio.play().catch((e: Error) => console.warn(`[AudioManager] Stopable SFX play failed: ${key}`, e.message))
       this._stopableSfx.set(key, audio)
 
       audio.onended = () => {
@@ -331,7 +331,7 @@ const AudioManager: Record<string, any> = {
       this._bgmAudio = sound.audio.cloneNode()
       this._bgmAudio.volume = (options.volume ?? 1) * this._bgmVolume
       this._bgmAudio.loop = options.loop ?? true
-      this._bgmAudio.play().catch((e) => console.warn(`[AudioManager] BGM play failed: ${key}`, e.message))
+      this._bgmAudio.play().catch((e: Error) => console.warn(`[AudioManager] BGM play failed: ${key}`, e.message))
       this._currentBgm = key
     } catch (e) {
       console.warn(`[AudioManager] BGM play error: ${key}`, e)
