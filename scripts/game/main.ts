@@ -190,6 +190,11 @@ import {
   normalizeDeepSeekSettings,
   maskApiKey
 } from "../llm/providers/deepseek-llm"
+import "../llm/providers/deepseek-provider"
+import "../llm/providers/openai-provider"
+import "../llm/providers/qwen-provider"
+import "../llm/providers/glm-provider"
+import "../llm/providers/kimi-provider"
 import { createSceneLlmBridge } from "../llm/core/scene-llm"
 import { createBattleRecordBridge } from "./bridge/battle-record"
 import { createSettlementBridge } from "./bridge/settlement"
