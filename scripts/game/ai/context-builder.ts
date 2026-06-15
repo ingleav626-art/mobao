@@ -38,7 +38,7 @@ import { ITEM_DEFS } from "../data/items"
 export function buildBidHistorySnapshot(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>): Array<{ round: number; bids: Record<string, number> }> {
   const rounds = Array.from({ length: Math.max(0, round - 1) }, (_v, idx) => idx + 1)
   return rounds.map((roundNo) => {
-    const bids = {}
+    const bids: Record<string, number> = {}
     players.forEach((player) => {
       const records = playerRoundHistory[player.id] || []
       const entry = records.find((record) => record.round === roundNo)
@@ -56,16 +56,16 @@ export function buildPublicEventSnapshot(players: Player[], playerUsageHistory: 
   const viewerId = options.viewerId || ""
   const events = []
 
-  const pushEventsFromUsage = (usageMap, stageLabelBuilder) => {
+  const pushEventsFromUsage = (usageMap: Record<string, Array<{ round: number; actions: string[] }>>, stageLabelBuilder: (round: number) => string) => {
     players.forEach((player) => {
       if (viewerId && player.id === viewerId) {
         return
       }
       const list = usageMap[player.id] || []
-      list.forEach((entry) => {
+      list.forEach((entry: { round: number; actions: string[] }) => {
         const stage = stageLabelBuilder(entry.round)
         const actionIds = Array.isArray(entry.actions) ? entry.actions : []
-        actionIds.forEach((actionId) => {
+        actionIds.forEach((actionId: string) => {
           const def = getActionDefById(actionId)
           events.push({
             stage,
@@ -273,7 +273,7 @@ export function buildOtherPlayersPublicInfo(players: Player[], aiEngine: { perso
     .filter((player) => player.id !== viewerId)
     .map((player) => {
       var persona = aiEngine.personalityMap[player.id] || null
-      var usageNames = []
+      var usageNames: string[] = []
 
         ; (playerUsageHistory[player.id] || []).forEach((entry) => {
           ; (entry.actions || []).forEach((actionId) => {
