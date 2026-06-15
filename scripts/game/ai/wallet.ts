@@ -42,50 +42,50 @@ export const AiWalletMixin: Record<string, unknown> = {
 
   saveAiWalletsToStorage(): void {
     try {
-      localStorage.setItem(AI_WALLET_STORAGE_KEY, JSON.stringify(this.aiWallets || {}))
+      localStorage.setItem(AI_WALLET_STORAGE_KEY, JSON.stringify((this as unknown as { aiWallets: Record<string, number> }).aiWallets || {}))
     } catch (e) {
       console.warn("[saveAiWalletsToStorage] failed:", e)
     }
   },
 
   resetAiWallets(): void {
-    this.aiWallets = {}
-    const aiPlayers = this.players.filter((player) => !player.isHuman)
-    aiPlayers.forEach((player) => {
-      this.aiWallets[player.id] = AI_WALLET_INITIAL
-    })
-    this.saveAiWalletsToStorage()
+    (this as unknown as { aiWallets: Record<string, number> }).aiWallets = {}
+    const aiPlayers = (this as unknown as { players: Array<{ id: string; isHuman: boolean }> }).players.filter((player: { id: string; isHuman: boolean }) => !player.isHuman)
+    aiPlayers.forEach((player: { id: string }) => {
+      (this as unknown as { aiWallets: Record<string, number> }).aiWallets[player.id] = AI_WALLET_INITIAL
+    });
+    (this as unknown as { saveAiWalletsToStorage(): void }).saveAiWalletsToStorage()
     console.log("[resetAiWallets] AI wallets reset to", AI_WALLET_INITIAL)
   },
 
   initAiWallets(): void {
-    const aiPlayers = this.players.filter((player) => !player.isHuman)
-    const stored = this.loadAiWalletsFromStorage()
-    this.aiWallets = {}
-    aiPlayers.forEach((player) => {
+    const aiPlayers = (this as unknown as { players: Array<{ id: string; isHuman: boolean }> }).players.filter((player: { id: string; isHuman: boolean }) => !player.isHuman)
+    const stored = (this as unknown as { loadAiWalletsFromStorage(): Record<string, number> }).loadAiWalletsFromStorage() as Record<string, number>
+    (this as unknown as { aiWallets: Record<string, number> }).aiWallets = {}
+    aiPlayers.forEach((player: { id: string }) => {
       if (stored[player.id] && Number.isFinite(Number(stored[player.id])) && Number(stored[player.id]) > 0) {
-        this.aiWallets[player.id] = Math.round(Number(stored[player.id]))
+        (this as unknown as { aiWallets: Record<string, number> }).aiWallets[player.id] = Math.round(Number(stored[player.id]))
       } else {
-        this.aiWallets[player.id] = AI_WALLET_INITIAL
+        (this as unknown as { aiWallets: Record<string, number> }).aiWallets[player.id] = AI_WALLET_INITIAL
       }
     })
-    console.log("[initAiWallets] AI wallets loaded:", this.aiWallets)
+    console.log("[initAiWallets] AI wallets loaded:", (this as unknown as { aiWallets: Record<string, number> }).aiWallets)
   },
 
   getAiWallet(playerId: string): number {
-    const fallback = Math.max(this.currentBid + GAME_SETTINGS.bidStep, this.aiMaxBid || 0)
-    const direct = Math.max(0, Math.round(Number(this.aiWallets[playerId]) || 0))
+    const fallback = Math.max((this as unknown as { currentBid: number }).currentBid + GAME_SETTINGS.bidStep, (this as unknown as { aiMaxBid: number }).aiMaxBid || 0)
+    const direct = Math.max(0, Math.round(Number((this as unknown as { aiWallets: Record<string, number> }).aiWallets[playerId]) || 0))
     if (direct > 0) return direct
-    if (this.isLanMode && this.slotIdToLanId[playerId]) {
-      const lanId = this.slotIdToLanId[playerId]
-      const lanWallet = Math.max(0, Math.round(Number(this.lanHostWallets[lanId]) || 0))
+    if ((this as unknown as { isLanMode: boolean }).isLanMode && (this as unknown as { slotIdToLanId: Record<string, string> }).slotIdToLanId[playerId]) {
+      const lanId = (this as unknown as { slotIdToLanId: Record<string, string> }).slotIdToLanId[playerId]
+      const lanWallet = Math.max(0, Math.round(Number((this as unknown as { lanHostWallets: Record<string, number> }).lanHostWallets[lanId]) || 0))
       if (lanWallet > 0) return lanWallet
     }
     return fallback
   },
 
   getAiMinimumBid(playerId: string, wallet: number | null = null): number {
-    const safeWallet = wallet === null ? this.getAiWallet(playerId) : Math.max(0, Math.round(Number(wallet) || 0))
+    const safeWallet = wallet === null ? (this as unknown as { getAiWallet(playerId: string): number }).getAiWallet(playerId) : Math.max(0, Math.round(Number(wallet) || 0))
     const step = Math.max(1, Math.round(Number(GAME_SETTINGS.bidStep) || 1))
     if (safeWallet <= 0) {
       return 0
@@ -94,9 +94,9 @@ export const AiWalletMixin: Record<string, unknown> = {
   },
 
   normalizeAiBidValue(playerId: string, bid: number, wallet: number | null = null): number {
-    const safeWallet = wallet === null ? this.getAiWallet(playerId) : Math.max(0, Math.round(Number(wallet) || 0))
+    const safeWallet = wallet === null ? (this as unknown as { getAiWallet(playerId: string): number }).getAiWallet(playerId) : Math.max(0, Math.round(Number(wallet) || 0))
     const step = Math.max(1, Math.round(Number(GAME_SETTINGS.bidStep) || 1))
-    const minBid = this.getAiMinimumBid(playerId, safeWallet)
+    const minBid = (this as unknown as { getAiMinimumBid(playerId: string, wallet: number | null): number }).getAiMinimumBid(playerId, safeWallet)
     if (safeWallet <= 0) {
       return 0
     }
