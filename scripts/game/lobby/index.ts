@@ -36,6 +36,7 @@ import { getProfile, getSelectedProfileId } from "../data/map-profiles"
 import { MobaoShopBridge } from "../bridge/shop"
 import { MobaoAnimations } from "../animations"
 import { getActiveCharacter } from "../data/character-system"
+import { getCharacterById } from "../data/characters"
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
 import { MobaoShopPage } from "../shop/index"
 import { rgbHex } from "../core/utils"
@@ -615,7 +616,7 @@ export const LobbyIndexMixin = {
 
     if ((this as LobbySceneLike).aiCharacterAssignments && (this as LobbySceneLike).aiCharacterAssignments[playerId]) {
       const assign = (this as LobbySceneLike).aiCharacterAssignments[playerId]
-      const charData = (window as unknown as Record<string, { getCharacterById(id: string): { avatar: string; name: string } }>).CharacterData.getCharacterById(assign.characterId)
+      const charData = getCharacterById(assign.characterId)
       if (charData && charData.avatar) {
         avatarEl.innerHTML = `<img src="${charData.avatar}" alt="${charData.name}" class="avatar-img">`
         return
