@@ -143,11 +143,11 @@ function toFiniteNumber(value: any, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-function normalizeObject(value: any): Record<string, any> {
+function normalizeObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object") {
     return {}
   }
-  return value
+  return value as Record<string, unknown>
 }
 
 function parseJsonSafely(text: any): any {
@@ -288,8 +288,8 @@ function registerProvider(provider: any): void {
       },
     normalizeSettings:
       provider.normalizeSettings ||
-      function (s: any) {
-        return s || {}
+      function (s: unknown) {
+        return (s as Record<string, unknown>) || {}
       },
     loadSettings:
       provider.loadSettings ||
@@ -443,9 +443,9 @@ function createBaseProvider(config: any): any {
   const storageKey = config.storageKey || `mobao_${id}_settings_v1`
   const apiKeyStorageKey = config.apiKeyStorageKey || `mobao_${id}_api_key_v1`
 
-  const logs: any[] = []
+  const logs: Array<Record<string, unknown>> = []
 
-  function log(level: string, event: string, detail: any): void {
+  function log(level: string, event: string, detail: unknown): void {
     logs.push({
       timestamp: new Date().toISOString(),
       level,
@@ -457,7 +457,7 @@ function createBaseProvider(config: any): any {
     }
   }
 
-  function getLogs(): any[] {
+  function getLogs(): Array<Record<string, unknown>> {
     return logs.slice()
   }
 
@@ -640,7 +640,7 @@ function createOpenAICompatibleProvider(config: any): any {
 
     const timeoutMs = clamp(Math.round(toFiniteNumber(input.timeoutMs, mergedSettings.timeoutMs)), 3000, 120000)
     const temperature = clamp(toFiniteNumber(input.temperature, mergedSettings.temperature), 0, 2)
-    const maxTokens = clamp(Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens)), 32, 102400)
+    const maxTokens = Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens)))
 
     const isThinking = input.isThinking === true
     const requestBody: any = {
@@ -669,7 +669,7 @@ function createOpenAICompatibleProvider(config: any): any {
 
     const startedAt = Date.now()
     const requestId = `${base.id}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
-    const messageChars = messages.reduce(function (sum: number, msg: any) {
+    const messageChars = messages.reduce(function (sum: number, msg: Record<string, unknown>) {
       return sum + String(msg && msg.content ? msg.content : "").length
     }, 0)
 
@@ -991,7 +991,7 @@ export const LlmManager = {
           multiGameMemoryEnabled: false,
           reflectionEnabled: false,
           contextLength: 5,
-          summaryInterval: 0,
+          autoSummarizeEnabled: true,
           reflectionScope: "current",
           thinkingEnabled: false,
           thinkingParams: "",
@@ -1010,7 +1010,7 @@ export const LlmManager = {
           multiGameMemoryEnabled: false,
           reflectionEnabled: false,
           contextLength: 5,
-          summaryInterval: 0,
+          autoSummarizeEnabled: true,
           reflectionScope: "current",
           thinkingEnabled: false,
           independentModelEnabled: false,
@@ -1039,7 +1039,7 @@ export const LlmManager = {
           multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
           reflectionEnabled: Boolean(input.reflectionEnabled),
           contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
-          summaryInterval: Math.max(0, Math.min(50, Math.round(Number(input.summaryInterval) || 0))),
+          autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
           reflectionScope: input.reflectionScope === "full" ? "full" : "current",
           thinkingEnabled: Boolean(input.thinkingEnabled),
           independentModelEnabled: Boolean(input.independentModelEnabled),
@@ -1050,7 +1050,7 @@ export const LlmManager = {
           apiKey: resultApiKey,
           timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
           temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 2),
-          maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
+          maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
         }
       },
       isThinkingModel: function (model: string) {
@@ -1067,7 +1067,7 @@ export const LlmManager = {
     registerProvider(provider)
 
     const customList = loadCustomProviders()
-    const existingIndex = customList.findIndex(function (p: any) {
+    const existingIndex = customList.findIndex(function (p: Record<string, unknown>) {
       return p.id === providerId
     })
     const providerInfo = { id: providerId, name: config.name || providerId, description: config.description || "" }
@@ -1085,7 +1085,7 @@ export const LlmManager = {
       providers.delete(providerId)
     }
     const customList = loadCustomProviders()
-    const filtered = customList.filter(function (p: any) {
+    const filtered = customList.filter(function (p: Record<string, unknown>) {
       return p.id !== providerId
     })
     saveCustomProviders(filtered)
@@ -1101,8 +1101,8 @@ export const LlmManager = {
   },
   initializeCustomProviders: function (): void {
     const customList = loadCustomProviders()
-    customList.forEach(function (cfg: any) {
-      if (!providers.has(cfg.id)) {
+    customList.forEach(function (cfg: Record<string, unknown>) {
+      if (!providers.has(String(cfg.id))) {
         const provider = createOpenAICompatibleProvider({
           id: cfg.id,
           name: cfg.name,
@@ -1116,7 +1116,7 @@ export const LlmManager = {
               multiGameMemoryEnabled: false,
               reflectionEnabled: false,
               contextLength: 5,
-              summaryInterval: 0,
+              autoSummarizeEnabled: true,
               reflectionScope: "current",
               thinkingEnabled: false,
               thinkingParams: "",
@@ -1135,7 +1135,7 @@ export const LlmManager = {
               multiGameMemoryEnabled: false,
               reflectionEnabled: false,
               contextLength: 5,
-              summaryInterval: 0,
+              autoSummarizeEnabled: true,
               reflectionScope: "current",
               thinkingEnabled: false,
               thinkingParams: "",
@@ -1163,7 +1163,7 @@ export const LlmManager = {
               multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
               reflectionEnabled: Boolean(input.reflectionEnabled),
               contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
-              summaryInterval: Math.max(0, Math.min(50, Math.round(Number(input.summaryInterval) || 0))),
+              autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
               reflectionScope: input.reflectionScope === "full" ? "full" : "current",
               thinkingEnabled: Boolean(input.thinkingEnabled),
               thinkingParams:
@@ -1173,7 +1173,7 @@ export const LlmManager = {
               apiKey: resultApiKey,
               timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
               temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 2),
-              maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
+              maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
             }
           },
           isThinkingModel: function (model: string) {
