@@ -467,6 +467,7 @@ class WarehouseScene extends _PhaserScene {
   aiReflectionState: string
   aiConversationByPlayer: Record<string, ConversationMessage[]>
   aiCrossGameMemory: Record<string, CrossGameMemory[]>
+  aiCrossGameMessagesByPlayer: Record<string, Array<Array<Record<string, string>>>>
   aiReflectionPending: Record<string, any>
   runSerial: number
   runLogHistory: any[]
@@ -478,7 +479,8 @@ class WarehouseScene extends _PhaserScene {
   battleRecordLogView: any
   roundBidReadyState: Record<string, any>
   aiRoundDecisionPromise: Promise<any> | null
-  pendingNextRunAiSummary: string
+  pendingNextRunAiSummaryByPlayer: Record<string, string>
+  pendingSettlementSummary: string
   privateIntelEntries: any[]
   publicInfoEntries: any[]
   currentPublicEvent: any
@@ -573,8 +575,12 @@ class WarehouseScene extends _PhaserScene {
     this.lastAiDecisionTelemetry = null
     this.llmEverUsedThisRun = false
     this.aiReflectionState = "idle"
+    this.aiReflectionTotal = 0
+    this.aiReflectionCompleted = 0
+    this._reflectionBeforeUnload = null
     this.aiConversationByPlayer = {}
     this.aiCrossGameMemory = {}
+    this.aiCrossGameMessagesByPlayer = {}
     this.aiReflectionPending = {}
     this.runSerial = 0
     this.runLogHistory = []
@@ -586,7 +592,8 @@ class WarehouseScene extends _PhaserScene {
     this.battleRecordLogView = null
     this.roundBidReadyState = {}
     this.aiRoundDecisionPromise = null
-    this.pendingNextRunAiSummary = ""
+    this.pendingNextRunAiSummaryByPlayer = {}
+    this.pendingSettlementSummary = ""
     this.restoreAiMemoryFromStorage()
     this.privateIntelEntries = []
     this.publicInfoEntries = []
@@ -808,6 +815,7 @@ class WarehouseScene extends _PhaserScene {
       document.getElementById("settingsTestDeepSeekBtn") || document.getElementById("settingsTestLlmBtn")
     this.dom.settingsLlmStatusText = document.getElementById("settingsLlmStatusText")
     this.dom.clearAiMemoryBtn = document.getElementById("clearAiMemoryBtn")
+    this.dom.clearAiContextBtn = document.getElementById("clearAiContextBtn")
     this.dom.aiMemoryStatusText = document.getElementById("aiMemoryStatusText")
     this.dom.viewAiMemoryBtn = document.getElementById("viewAiMemoryBtn")
     this.dom.exportAiMemoryBtn = document.getElementById("exportAiMemoryBtn")
@@ -844,19 +852,19 @@ class WarehouseScene extends _PhaserScene {
     MobaoAnimations.bindAllButtonEffects(selector)
 
     // 2. 标记已初始化的按钮避免重复绑定
-    document.querySelectorAll(selector).forEach(function (btn: any) {
-      if (btn && !btn.dataset.rippleInited) {
-        btn.dataset.rippleInited = "1"
+    document.querySelectorAll(selector).forEach(function (btn: Element) {
+      if (btn && !(btn as HTMLElement).dataset.rippleInited) {
+        (btn as HTMLElement).dataset.rippleInited = "1"
       }
     })
 
     // 3. 单独处理未在通用选择器中的元素
     const extraBtns = document.querySelectorAll('[data-btn-effect="ripple"]')
-    extraBtns.forEach(function (btn: any) {
-      if (btn && !btn.dataset.rippleInited) {
+    extraBtns.forEach(function (btn: Element) {
+      if (btn && !(btn as HTMLElement).dataset.rippleInited) {
         MobaoAnimations.bindRipple(btn)
         MobaoAnimations.bindPressScale(btn)
-        btn.dataset.rippleInited = "1"
+          ; (btn as HTMLElement).dataset.rippleInited = "1"
       }
     })
 
@@ -882,12 +890,12 @@ class WarehouseScene extends _PhaserScene {
     this.dom.openSettingsBtn.addEventListener("click", () => {
       this.openSettingsOverlay()
     })
-    const roundSecondsInput: any = document.getElementById("setting-roundSeconds")
-    const roundSecondsDecrease: any = document.getElementById("roundSecondsDecrease")
-    const roundSecondsIncrease: any = document.getElementById("roundSecondsIncrease")
-    function updateRoundSecondsUI(value) {
+    const roundSecondsInput = document.getElementById("setting-roundSeconds") as HTMLInputElement | null
+    const roundSecondsDecrease = document.getElementById("roundSecondsDecrease") as HTMLButtonElement | null
+    const roundSecondsIncrease = document.getElementById("roundSecondsIncrease") as HTMLButtonElement | null
+    function updateRoundSecondsUI(value: number) {
       if (roundSecondsInput) {
-        roundSecondsInput.value = value
+        roundSecondsInput.value = String(value)
       }
       if (roundSecondsDecrease) {
         roundSecondsDecrease.disabled = value <= 10
@@ -910,12 +918,12 @@ class WarehouseScene extends _PhaserScene {
         updateRoundSecondsUI(value)
       })
     }
-    const settlementSpeedInput: any = document.getElementById("setting-settlementSpeedMultiplier")
-    const settlementSpeedDecrease: any = document.getElementById("settlementSpeedDecrease")
-    const settlementSpeedIncrease: any = document.getElementById("settlementSpeedIncrease")
-    function updateSettlementSpeedUI(value) {
+    const settlementSpeedInput = document.getElementById("setting-settlementSpeedMultiplier") as HTMLInputElement | null
+    const settlementSpeedDecrease = document.getElementById("settlementSpeedDecrease") as HTMLButtonElement | null
+    const settlementSpeedIncrease = document.getElementById("settlementSpeedIncrease") as HTMLButtonElement | null
+    function updateSettlementSpeedUI(value: number) {
       if (settlementSpeedInput) {
-        settlementSpeedInput.value = value
+        settlementSpeedInput.value = String(value)
       }
       if (settlementSpeedDecrease) {
         settlementSpeedDecrease.disabled = value <= 0.5
@@ -938,12 +946,12 @@ class WarehouseScene extends _PhaserScene {
         updateSettlementSpeedUI(value)
       })
     }
-    const contextLengthInput: any = document.getElementById("setting-contextLength")
-    const contextLengthDecrease: any = document.getElementById("contextLengthDecrease")
-    const contextLengthIncrease: any = document.getElementById("contextLengthIncrease")
-    const contextLengthConfig: any = document.getElementById("contextLengthConfig")
-    function updateContextLengthUI(value) {
-      if (contextLengthInput) contextLengthInput.value = value
+    const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null
+    const contextLengthDecrease = document.getElementById("contextLengthDecrease") as HTMLButtonElement | null
+    const contextLengthIncrease = document.getElementById("contextLengthIncrease") as HTMLButtonElement | null
+    const contextLengthConfig = document.getElementById("contextLengthConfig") as HTMLElement | null
+    function updateContextLengthUI(value: number) {
+      if (contextLengthInput) contextLengthInput.value = String(value)
       if (contextLengthDecrease) contextLengthDecrease.disabled = value <= 2
       if (contextLengthIncrease) contextLengthIncrease.disabled = value >= 20
     }
@@ -961,100 +969,82 @@ class WarehouseScene extends _PhaserScene {
         updateContextLengthUI(value)
       })
     }
-    const summaryIntervalInput: any = document.getElementById("setting-summaryInterval")
-    const summaryIntervalDecrease: any = document.getElementById("summaryIntervalDecrease")
-    const summaryIntervalIncrease: any = document.getElementById("summaryIntervalIncrease")
-    function updateSummaryIntervalUI(value) {
-      if (summaryIntervalInput) summaryIntervalInput.value = value
-      if (summaryIntervalDecrease) summaryIntervalDecrease.disabled = value <= 0
-      if (summaryIntervalIncrease) summaryIntervalIncrease.disabled = value >= 50
-    }
-    if (summaryIntervalDecrease && summaryIntervalInput) {
-      summaryIntervalDecrease.addEventListener("click", () => {
-        let value = Number(summaryIntervalInput.value) || 0
-        value = Math.max(0, value - 1)
-        updateSummaryIntervalUI(value)
-      })
-    }
-    if (summaryIntervalIncrease && summaryIntervalInput) {
-      summaryIntervalIncrease.addEventListener("click", () => {
-        let value = Number(summaryIntervalInput.value) || 0
-        value = Math.min(50, value + 1)
-        updateSummaryIntervalUI(value)
-      })
-    }
-    const multiGameMemoryCb: any = document.getElementById("setting-llmMultiGameMemoryEnabled")
-    const contextLengthInline: any = document.getElementById("contextLengthInline")
-    const summaryConfig: any = document.getElementById("summaryConfig")
+    const summaryConfig = document.getElementById("summaryConfig") as HTMLElement | null
+    const multiGameMemoryCb = document.getElementById("setting-llmMultiGameMemoryEnabled") as HTMLInputElement | null
+    const contextLengthInline = document.getElementById("contextLengthInline") as HTMLElement | null
     if (multiGameMemoryCb) {
       multiGameMemoryCb.addEventListener("change", () => {
         if (contextLengthInline) contextLengthInline.classList.toggle("hidden", !multiGameMemoryCb.checked)
         if (summaryConfig) summaryConfig.classList.toggle("hidden", !multiGameMemoryCb.checked)
       })
     }
-    const reflectionCb: any = document.getElementById("setting-llmReflectionEnabled")
-    const reflectionScopeConfig: any = document.getElementById("reflectionScopeConfig")
+    const reflectionCb = document.getElementById("setting-llmReflectionEnabled") as HTMLInputElement | null
+    const reflectionScopeConfig = document.getElementById("reflectionScopeConfig") as HTMLElement | null
     if (reflectionCb && reflectionScopeConfig) {
       reflectionCb.addEventListener("change", () => {
         reflectionScopeConfig.classList.toggle("hidden", !reflectionCb.checked)
       })
     }
-    const musicVolumeSlider: any = document.getElementById("setting-musicVolume")
-    const musicVolumeValue: any = document.getElementById("musicVolumeValue")
-    const musicVolumeIcon: any = document.getElementById("musicVolumeIcon")
-    const musicVolumeIconImg: any = document.getElementById("musicVolumeIconImg")
+    const musicVolumeSlider = document.getElementById("setting-musicVolume") as HTMLInputElement | null
+    const musicVolumeValue = document.getElementById("musicVolumeValue") as HTMLElement | null
+    const musicVolumeIcon = document.getElementById("musicVolumeIcon") as HTMLElement | null
+    const musicVolumeIconImg = document.getElementById("musicVolumeIconImg") as HTMLImageElement | null
     let musicVolumeBeforeMute = 70
     if (musicVolumeSlider && musicVolumeValue) {
       musicVolumeSlider.addEventListener("input", () => {
-        musicVolumeValue.textContent = `${musicVolumeSlider.value}%`
+        const vol = Number(musicVolumeSlider.value)
+        musicVolumeValue.textContent = `${vol}%`
         if (typeof AudioManager !== "undefined") {
-          AudioManager.setBgmVolume(musicVolumeSlider.value / 100)
+          AudioManager.setBgmVolume(vol / 100)
         }
-        updateVolumeIcon(musicVolumeSlider.value, musicVolumeIconImg)
+        updateVolumeIcon(String(vol), musicVolumeIconImg)
       })
     }
     if (musicVolumeIcon && musicVolumeSlider && musicVolumeIconImg) {
       musicVolumeIcon.addEventListener("click", () => {
         if (Number(musicVolumeSlider.value) > 0) {
           musicVolumeBeforeMute = Number(musicVolumeSlider.value)
-          musicVolumeSlider.value = 0
+          musicVolumeSlider.value = "0"
         } else {
-          musicVolumeSlider.value = musicVolumeBeforeMute
+          musicVolumeSlider.value = String(musicVolumeBeforeMute)
         }
-        musicVolumeValue.textContent = `${musicVolumeSlider.value}%`
+        const vol = Number(musicVolumeSlider.value)
+        musicVolumeValue.textContent = `${vol}%`
         if (typeof AudioManager !== "undefined") {
-          AudioManager.setBgmVolume(musicVolumeSlider.value / 100)
+          AudioManager.setBgmVolume(vol / 100)
         }
-        updateVolumeIcon(musicVolumeSlider.value, musicVolumeIconImg)
+        updateVolumeIcon(String(vol), musicVolumeIconImg)
       })
     }
-    const sfxVolumeSlider: any = document.getElementById("setting-sfxVolume")
-    const sfxVolumeValue: any = document.getElementById("sfxVolumeValue")
-    const sfxVolumeIcon: any = document.getElementById("sfxVolumeIcon")
-    const sfxVolumeIconImg: any = document.getElementById("sfxVolumeIconImg")
+    const sfxVolumeSlider = document.getElementById("setting-sfxVolume") as HTMLInputElement | null
+    const sfxVolumeValue = document.getElementById("sfxVolumeValue") as HTMLElement | null
+    const sfxVolumeIcon = document.getElementById("sfxVolumeIcon") as HTMLElement | null
+    const sfxVolumeIconImg = document.getElementById("sfxVolumeIconImg") as HTMLImageElement | null
     let sfxVolumeBeforeMute = 80
     if (sfxVolumeSlider && sfxVolumeValue) {
       sfxVolumeSlider.addEventListener("input", () => {
-        sfxVolumeValue.textContent = `${sfxVolumeSlider.value}%`
+        const vol = Number(sfxVolumeSlider.value)
+        sfxVolumeValue.textContent = `${vol}%`
         if (typeof AudioManager !== "undefined") {
-          AudioManager.setSfxVolume(sfxVolumeSlider.value / 100)
+          AudioManager.setSfxVolume(vol / 100)
         }
-        updateVolumeIcon(sfxVolumeSlider.value, sfxVolumeIconImg)
+        updateVolumeIcon(String(vol), sfxVolumeIconImg)
       })
     }
     if (sfxVolumeIcon && sfxVolumeSlider && sfxVolumeIconImg) {
       sfxVolumeIcon.addEventListener("click", () => {
         if (Number(sfxVolumeSlider.value) > 0) {
           sfxVolumeBeforeMute = Number(sfxVolumeSlider.value)
-          sfxVolumeSlider.value = 0
+          sfxVolumeSlider.value = "0"
         } else {
-          sfxVolumeSlider.value = sfxVolumeBeforeMute
+          sfxVolumeSlider.value = String(sfxVolumeBeforeMute)
         }
-        sfxVolumeValue.textContent = `${sfxVolumeSlider.value}%`
+        const vol = Number(sfxVolumeSlider.value)
+        sfxVolumeValue.textContent = `${vol}%`
         if (typeof AudioManager !== "undefined") {
-          AudioManager.setSfxVolume(sfxVolumeSlider.value / 100)
+          AudioManager.setSfxVolume(vol / 100)
         }
-        updateVolumeIcon(sfxVolumeSlider.value, sfxVolumeIconImg)
+        updateVolumeIcon(String(vol), sfxVolumeIconImg)
       })
     }
     const gameShopBtn = document.getElementById("gameShopBtn")
@@ -1277,9 +1267,6 @@ class WarehouseScene extends _PhaserScene {
         }
       })
     }
-    if (this.dom.settingsTestDeepSeekBtn) {
-      this.dom.settingsTestDeepSeekBtn.addEventListener("click", () => this.testDeepSeekConnectionFromOverlay())
-    }
     if (this.dom.clearAiMemoryBtn) {
       this.dom.clearAiMemoryBtn.addEventListener("click", () => {
         this.showGameConfirm("确定要清空所有AI的持久化记忆吗？此操作不可恢复。", () => {
@@ -1288,6 +1275,30 @@ class WarehouseScene extends _PhaserScene {
             this.dom.aiMemoryStatusText.textContent = "已清空"
           }
           this.writeLog("AI持久化记忆已清空。")
+        })
+      })
+    }
+    if (this.dom.clearAiContextBtn) {
+      this.dom.clearAiContextBtn.addEventListener("click", () => {
+        this.showGameConfirm("确定要清空AI跨局上下文吗？这将清除所有AI的跨局记忆和对话缓存。", () => {
+          if (this.aiCrossGameMessagesByPlayer) {
+            Object.keys(this.aiCrossGameMessagesByPlayer).forEach((pid) => {
+              this.aiCrossGameMessagesByPlayer[pid] = []
+            })
+          }
+          if (this.pendingNextRunAiSummaryByPlayer) {
+            Object.keys(this.pendingNextRunAiSummaryByPlayer).forEach((pid) => {
+              this.pendingNextRunAiSummaryByPlayer[pid] = ""
+            })
+          }
+          if (this.aiConversationCache) {
+            Object.keys(this.aiConversationCache).forEach((pid) => {
+              this.aiConversationCache[pid] = null
+            })
+          }
+          this.pendingSettlementSummary = ""
+          this.saveAiMemoryToStorage()
+          this.writeLog("AI跨局上下文已清空。")
         })
       })
     }
@@ -1328,7 +1339,7 @@ class WarehouseScene extends _PhaserScene {
       document.getElementById("exportShareBtn").addEventListener("click", () => {
         if (window.NativeBridge && window.NativeBridge.shareFile) {
           const base64Data = btoa(unescape(encodeURIComponent(jsonData)))
-          const success: any = window.NativeBridge.shareFile(base64Data, fileName, "AI记忆导出")
+          const success = (window as unknown as Record<string, { shareFile?: (...args: unknown[]) => unknown }>).NativeBridge?.shareFile?.(base64Data, fileName, "AI记忆导出")
           if (success) {
             if (this.dom.aiMemoryStatusText) {
               this.dom.aiMemoryStatusText.textContent = "已导出"
@@ -1459,7 +1470,7 @@ class WarehouseScene extends _PhaserScene {
       overlay.appendChild(box)
       document.body.appendChild(overlay)
 
-      const textarea: any = document.getElementById("importJsonTextarea")
+      const textarea = document.getElementById("importJsonTextarea") as HTMLTextAreaElement | null
       const pasteArea = document.getElementById("importPasteArea")
       const confirmBtn = document.getElementById("importPasteConfirmBtn")
       const fileBtn = document.getElementById("importFileBtn")
@@ -2617,14 +2628,23 @@ class WarehouseScene extends _PhaserScene {
   }
 
   getLlmSettings() {
+    const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
+    let globalSettings: Record<string, unknown> = {}
+    try {
+      const raw = window.localStorage.getItem(LLM_GLOBAL_SETTINGS_KEY)
+      if (raw) {
+        globalSettings = JSON.parse(raw)
+      }
+    } catch (_e) { }
+
     if (window.LlmManager) {
       const provider = window.LlmManager.getProvider()
       if (provider) {
-        const settings = provider.loadSettings()
-        return settings
+        const providerSettings = provider.loadSettings()
+        return { ...providerSettings, ...globalSettings }
       }
     }
-    return LLM_SETTINGS
+    return { ...LLM_SETTINGS, ...globalSettings }
   }
 
   getLlmProvider() {
