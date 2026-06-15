@@ -1367,18 +1367,18 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
       headerDiv.textContent = `回合 ${telemetry.round} | 决策模式：混合（大模型+规则AI）`
       fragment.appendChild(headerDiv)
 
-      ;(telemetry.entries || []).forEach((entry: TelemetryEntry) => {
-        const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected"
-        const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback")
+        ; (telemetry.entries || []).forEach((entry: TelemetryEntry) => {
+          const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected"
+          const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback")
 
-        const card = document.createElement("div")
-        card.className = "ai-player-card"
+          const card = document.createElement("div")
+          card.className = "ai-player-card"
 
-        const badgeClass = isFallback ? "badge-fallback" : isLlm ? "badge-llm" : "badge-rule"
-        const badgeText = isFallback ? "回退" : isLlm ? "大模型" : "规则AI"
-        const modeLabel = entry.controlMode ? (CONTROL_MODE_LABELS[entry.controlMode] || entry.controlMode) : ""
+          const badgeClass = isFallback ? "badge-fallback" : isLlm ? "badge-llm" : "badge-rule"
+          const badgeText = isFallback ? "回退" : isLlm ? "大模型" : "规则AI"
+          const modeLabel = entry.controlMode ? (CONTROL_MODE_LABELS[entry.controlMode] || entry.controlMode) : ""
 
-        card.innerHTML = `
+          card.innerHTML = `
           <div class="ai-player-card-header">
             <span class="player-name">${entry.playerName}（${entry.playerId}）</span>
             <span class="control-badge ${badgeClass}">${badgeText}</span>
@@ -1395,8 +1395,8 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
             ${isLlm ? renderLlmEntryDetails(entry) : renderRuleEntryDetails(entry, ruleEntryById)}
           </div>
         `
-        fragment.appendChild(card)
-      })
+          fragment.appendChild(card)
+        })
 
       this.dom.aiLogicContent.innerHTML = ""
       this.dom.aiLogicContent.appendChild(fragment)

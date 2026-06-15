@@ -30,12 +30,12 @@ type QualityConfigEntry = { label: string;[key: string]: unknown }
 type ArtifactDataWindow = { QUALITY_CONFIG: Record<string, QualityConfigEntry>; ARTIFACT_LIBRARY: Array<{ qualityKey: string; basePrice: number;[key: string]: unknown }> }
 type ActionDefSystem = { SKILL_DEFS: ActionDef[]; ITEM_DEFS: ActionDef[] }
 
-const { QUALITY_CONFIG, ARTIFACT_LIBRARY } = (window as unknown as Record<string, ArtifactDataWindow>).ArtifactData
-const { GRID_COLS, GRID_ROWS } = (window as unknown as Record<string, { GRID_COLS: number; GRID_ROWS: number }>).MobaoConstants
-const SKILL_DEFS: ActionDef[] = (window as unknown as Record<string, ActionDefSystem>).SkillSystem.SKILL_DEFS || []
-const ITEM_DEFS: ActionDef[] = (window as unknown as Record<string, ActionDefSystem>).ItemSystem.ITEM_DEFS || []
+import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
+import { GRID_COLS, GRID_ROWS } from "../core/constants"
+import { SKILL_DEFS } from "../data/skills"
+import { ITEM_DEFS } from "../data/items"
 
-function buildBidHistorySnapshot(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>): Array<{ round: number; bids: Record<string, number> }> {
+export function buildBidHistorySnapshot(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>): Array<{ round: number; bids: Record<string, number> }> {
   const rounds = Array.from({ length: Math.max(0, round - 1) }, (_v, idx) => idx + 1)
   return rounds.map((roundNo) => {
     const bids = {}
@@ -51,7 +51,7 @@ function buildBidHistorySnapshot(round: number, players: Player[], playerRoundHi
   })
 }
 
-function buildPublicEventSnapshot(players: Player[], playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, currentRoundUsage: Record<string, string[]>, round: number, getActionDefByIdFn: (id: string) => ActionDef, currentPublicEvent: { category: string; id: string; text: string } | null, options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
+export function buildPublicEventSnapshot(players: Player[], playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, currentRoundUsage: Record<string, string[]>, round: number, getActionDefByIdFn: (id: string) => ActionDef, currentPublicEvent: { category: string; id: string; text: string } | null, options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
   const compact = Boolean(options.compact)
   const viewerId = options.viewerId || ""
   const events = []
@@ -123,7 +123,7 @@ function buildPublicEventSnapshot(players: Player[], playerUsageHistory: Record<
   return events.slice(-30)
 }
 
-function buildRoundPublicStateTable(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>, currentRoundUsage: Record<string, string[]>, playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, viewerId: string): { columns: string[]; rows: unknown[][] } {
+export function buildRoundPublicStateTable(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>, currentRoundUsage: Record<string, string[]>, playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, viewerId: string): { columns: string[]; rows: unknown[][] } {
   const bidHistory = buildBidHistorySnapshot(round, players, playerRoundHistory)
   const bidByRound = new Map(bidHistory.map((entry) => [entry.round, entry.bids || {}]))
   const actionPlayers = players.filter((player) => player.id !== viewerId)
@@ -168,7 +168,7 @@ function buildRoundPublicStateTable(round: number, players: Player[], playerRoun
   }
 }
 
-function buildQualityPriceRangeTableCompact(): { columns: string[]; rows: unknown[][] } {
+export function buildQualityPriceRangeTableCompact(): { columns: string[]; rows: unknown[][] } {
   var columns = ["quality_key", "quality_name", "min_price", "max_price", "avg_price"]
   var rows = Object.keys(QUALITY_CONFIG).map((qualityKey) => {
     var entries = ARTIFACT_LIBRARY.filter((artifact) => artifact.qualityKey === qualityKey)
@@ -189,7 +189,7 @@ function buildQualityPriceRangeTableCompact(): { columns: string[]; rows: unknow
   return { columns, rows }
 }
 
-function buildCatalogSummaryInner(options: Record<string, unknown> = {}): Record<string, unknown> {
+export function buildCatalogSummaryInner(options: Record<string, unknown> = {}): Record<string, unknown> {
   var compact = Boolean(options.compact)
   var prices = ARTIFACT_LIBRARY.map((entry) => Number(entry.basePrice) || 0)
     .filter((value) => value > 0)
@@ -214,7 +214,7 @@ function buildCatalogSummaryInner(options: Record<string, unknown> = {}): Record
   }
 }
 
-function buildQualityPriceGuide(options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
+export function buildQualityPriceGuide(options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
   var compact = Boolean(options.compact)
   return Object.keys(QUALITY_CONFIG).map((qualityKey) => {
     var entries = ARTIFACT_LIBRARY.filter((artifact) => artifact.qualityKey === qualityKey)
@@ -238,7 +238,7 @@ function buildQualityPriceGuide(options: Record<string, unknown> = {}): Array<Re
   })
 }
 
-function getActionDefById(actionId: string): ActionDef {
+export function getActionDefById(actionId: string): ActionDef {
   var skill = SKILL_DEFS.find((entry) => entry.id === actionId)
   if (skill) {
     return {
@@ -267,7 +267,7 @@ function getActionDefById(actionId: string): ActionDef {
   }
 }
 
-function buildOtherPlayersPublicInfo(players: Player[], aiEngine: { personalityMap: Record<string, Personality> }, playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, getActionDefById: (id: string) => ActionDef, viewerId: string, options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
+export function buildOtherPlayersPublicInfo(players: Player[], aiEngine: { personalityMap: Record<string, Personality> }, playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, getActionDefById: (id: string) => ActionDef, viewerId: string, options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
   var compact = Boolean(options.compact)
   return players
     .filter((player) => player.id !== viewerId)
@@ -298,16 +298,4 @@ function buildOtherPlayersPublicInfo(players: Player[], aiEngine: { personalityM
         publicUsedActions: [...new Set(usageNames)].slice(-10)
       }
     })
-}
-
-// 兼容层
-; (window as unknown as Record<string, unknown>).MobaoContextBuilder = {
-  buildBidHistorySnapshot,
-  buildPublicEventSnapshot,
-  buildRoundPublicStateTable,
-  buildQualityPriceRangeTableCompact,
-  buildCatalogSummary: buildCatalogSummaryInner,
-  buildQualityPriceGuide,
-  getActionDefById,
-  buildOtherPlayersPublicInfo
 }

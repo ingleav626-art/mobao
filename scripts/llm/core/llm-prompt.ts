@@ -6,8 +6,78 @@
  *              从 scene-llm.js 拆分而来。
  */
 import { tryExtractDecisionJson } from './llm-error.js'
+import type { Player, SkillDef, ItemDef } from "../../../types/game"
 
-export function createLlmPromptModule(deps: any) {
+interface LlmPromptDeps {
+  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number; [key: string]: unknown }
+  SKILL_DEFS: SkillDef[]
+  ITEM_DEFS: ItemDef[]
+  pickFirstDefined: (...args: unknown[]) => unknown
+  normalizeActionToken: (text: string) => string
+  isNoneActionText: (text: string) => boolean
+  compactOneLine: (text: string, maxLen?: number) => string
+  [key: string]: unknown
+}
+
+interface LlmMessage {
+  role: string
+  content: string
+}
+
+interface LlmPayload {
+  gameState?: { round?: { current?: number; total?: number }; selfId?: string; selfName?: string; wallet?: number; directWinRatio?: number; folded?: boolean; Previousbid?: number | null; currentLeader?: string; [key: string]: unknown }
+  selfRoleAndTools?: Record<string, unknown>
+  otherPlayersPublic?: unknown
+  catalogSummary?: unknown
+  bidHistory?: unknown[]
+  publicEvents?: Array<Record<string, unknown>>
+  roundPublicStateTable?: unknown
+  privateIntel?: unknown
+  actionConstraints?: Record<string, unknown>
+  lastRoundResult?: Record<string, unknown>
+  round?: { current?: number; total?: number; [key: string]: unknown }
+  currentWallet?: number
+  currentLeader?: string
+  currentBid?: number
+  selfAvailableTools?: Record<string, unknown>
+  followupContext?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+interface LlmDecision {
+  bid?: number | string
+  skill?: string
+  item?: string
+  thought?: string
+  [key: string]: unknown
+}
+
+interface ActionState {
+  availableSkillIds: string[]
+  availableItemIds: string[]
+}
+
+interface SignalData {
+  itemId?: string
+  mode?: string
+  sizeTag?: string
+  category?: string
+  qualityKey?: string
+  sampleCell?: { x: number; y: number }
+  [key: string]: unknown
+}
+
+interface ToolResult {
+  ok?: boolean
+  revealed?: number
+  message?: string
+  signals?: SignalData[]
+  signalStats?: { aggregate?: Record<string, unknown>; qualitySignalRate?: number; outlineSignalRate?: number }
+  trackUpdates?: Array<{ trackId?: string }>
+  bottomCell?: { row?: number; col?: number }
+}
+
+export function createLlmPromptModule(deps: LlmPromptDeps) {
   const {
     GAME_SETTINGS,
     SKILL_DEFS,
@@ -19,7 +89,7 @@ export function createLlmPromptModule(deps: any) {
   } = deps
 
   const methods = {
-    buildAiLlmRoundPayload(player: any) {
+    buildAiLlmRoundPayload(player: Player) {
       const playerId = player.id
       const isInitialRound = this.round <= 1
       const compact = !isInitialRound
@@ -40,8 +110,8 @@ export function createLlmPromptModule(deps: any) {
         }
         : null
 
-      const availableSkills = SKILL_DEFS.filter((entry: any) => Number(resource.skills[entry.id] || 0) > 0).map(
-        (entry: any) => ({
+      const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number(resource.skills[entry.id] || 0) > 0).map(
+        (entry: SkillDef) => ({
           name: entry.name,
           description: entry.description,
           remaining: Number(resource.skills[entry.id] || 0),
@@ -50,7 +120,7 @@ export function createLlmPromptModule(deps: any) {
         })
       )
 
-      const availableItems = ITEM_DEFS.filter((entry: any) => Number(resource.items[entry.id] || 0) > 0).map((entry: any) => ({
+      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number(resource.items[entry.id] || 0) > 0).map((entry: ItemDef) => ({
         name: entry.name,
         description: entry.description,
         remaining: Number(resource.items[entry.id] || 0),
@@ -97,31 +167,31 @@ export function createLlmPromptModule(deps: any) {
       }
     },
 
-    buildAiIncrementalPayload(player: any) {
+    buildAiIncrementalPayload(player: Player) {
       const playerId = player.id
       const previousRound = this.round - 1
       const actionConstraint = this.buildAiActionConstraintBlock(playerId)
       const resource = this.getAiResourceSnapshot(playerId)
 
       const bidHistory = this.buildBidHistorySnapshot()
-      const lastRoundBid = bidHistory.find((entry: any) => entry.round === previousRound)
+      const lastRoundBid = bidHistory.find((entry: { round: number }) => entry.round === previousRound)
 
-      const availableSkills = SKILL_DEFS.filter((entry: any) => Number(resource.skills[entry.id] || 0) > 0).map(
-        (entry: any) => ({
+      const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number(resource.skills[entry.id] || 0) > 0).map(
+        (entry: SkillDef) => ({
           name: entry.name,
           remaining: Number(resource.skills[entry.id] || 0)
         })
       )
 
-      const availableItems = ITEM_DEFS.filter((entry: any) => Number(resource.items[entry.id] || 0) > 0).map((entry: any) => ({
+      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number(resource.items[entry.id] || 0) > 0).map((entry: ItemDef) => ({
         name: entry.name,
         remaining: Number(resource.items[entry.id] || 0)
       }))
 
-      const lastRoundActions: Record<string, any> = {}
-      this.players.forEach((p: any) => {
+      const lastRoundActions: Record<string, { playerName: string; actions: Array<{ type: string; name: string; description: string }> }> = {}
+      this.players.forEach((p: Player) => {
         if (p.id === playerId) return
-        const usage = (this.playerUsageHistory[p.id] || []).find((entry: any) => entry.round === previousRound)
+        const usage = (this.playerUsageHistory[p.id] || []).find((entry: { round: number }) => entry.round === previousRound)
         if (usage && usage.actions && usage.actions.length > 0) {
           lastRoundActions[p.id] = {
             playerName: p.name,
@@ -160,7 +230,7 @@ export function createLlmPromptModule(deps: any) {
       }
     },
 
-    buildAiFollowupRoundPayload(player: any, currentPlan: any, toolSummary?: string) {
+    buildAiFollowupRoundPayload(player: Player, currentPlan: LlmDecision & { toolResultSummary?: string; toolActionType?: string; toolActionId?: string }, toolSummary?: string) {
       const resolvedToolSummary = toolSummary || (currentPlan && currentPlan.toolResultSummary) || ""
       return {
         requestStage: "followup-after-tool",
@@ -186,7 +256,7 @@ export function createLlmPromptModule(deps: any) {
       }
     },
 
-    buildAiDecisionUserPrompt(payload: any, extraBlocks: string[] = [], options: any = {}) {
+    buildAiDecisionUserPrompt(payload: LlmPayload, extraBlocks: string[] = [], options: { requestStage?: string; isFirstRound?: boolean } = {}) {
       const requestStage = options.requestStage || "initial"
       const isFollowup = requestStage === "followup-after-tool"
       const isFirstRound = options.isFirstRound === true
@@ -257,7 +327,7 @@ export function createLlmPromptModule(deps: any) {
       return base.join("\n")
     },
 
-    buildAiDecisionMessages(payload: any, options: any = {}) {
+    buildAiDecisionMessages(payload: LlmPayload, options: { requestStage?: string; isFirstRound?: boolean; systemPrompt?: string; historyMessages?: LlmMessage[]; extraBlocks?: string[] } = {}) {
       const requestStage = options.requestStage || "initial"
       const isFollowup = requestStage === "followup-after-tool"
       const isFirstRound = options.isFirstRound === true
@@ -274,6 +344,12 @@ export function createLlmPromptModule(deps: any) {
         })
       }
 
+      if (Array.isArray(historyMessages) && historyMessages.length > 0) {
+        historyMessages.forEach((m: LlmMessage) => {
+          messages.push({ role: m.role || "user", content: m.content || "" })
+        })
+      }
+
       if (payload && payload.selfRoleAndTools) {
         messages.push({
           role: "user",
@@ -285,12 +361,6 @@ export function createLlmPromptModule(deps: any) {
         messages.push({
           role: "user",
           content: "【其他玩家公开信息】\n" + JSON.stringify(payload.otherPlayersPublic, null, 2)
-        })
-      }
-
-      if (Array.isArray(historyMessages) && historyMessages.length > 0) {
-        historyMessages.forEach((m: any) => {
-          messages.push({ role: m.role || "user", content: m.content || "" })
         })
       }
 
@@ -323,7 +393,7 @@ export function createLlmPromptModule(deps: any) {
       }
 
       if (payload && payload.publicEvents && payload.publicEvents.length > 0) {
-        const compactEvents = payload.publicEvents.map((evt: any) => {
+        const compactEvents = payload.publicEvents.map((evt: Record<string, unknown>) => {
           if (evt.actionType === "public-event") {
             return `${evt.stage}: ${evt.publicResult || evt.effectText || ""}`
           }
@@ -414,7 +484,7 @@ export function createLlmPromptModule(deps: any) {
       }
 
       if (Array.isArray(extraBlocks) && extraBlocks.length > 0) {
-        extraBlocks.forEach((block: any) => {
+        extraBlocks.forEach((block: string) => {
           messages.push({
             role: "user",
             content: String(block || "")
@@ -478,7 +548,7 @@ export function createLlmPromptModule(deps: any) {
       return { actionId: null as string | null, target }
     },
 
-    normalizeAiLlmPlan(playerId: string, decision: any, rawContent: string, options: any = {}) {
+    normalizeAiLlmPlan(playerId: string, decision: LlmDecision | null, rawContent: string, options: { allowAction?: boolean } = {}) {
       const bidRaw = pickFirstDefined(decision && decision.bid, decision && decision.出价, decision && decision.报价)
       const skillRaw = pickFirstDefined(
         decision && decision.skill,
@@ -548,7 +618,7 @@ export function createLlmPromptModule(deps: any) {
       }
     },
 
-    buildAiToolResultSummary(result: any, actionType: string, actionId: string) {
+    buildAiToolResultSummary(result: ToolResult | null, actionType: string, actionId: string) {
       const info = this.getItemInfo(actionId)
       const stats = result && result.signalStats && result.signalStats.aggregate ? result.signalStats.aggregate : null
       const parts: string[] = []
@@ -560,12 +630,12 @@ export function createLlmPromptModule(deps: any) {
       if (result && Array.isArray(result.signals) && result.signals.length > 0) {
         const revealDetails: string[] = []
         const itemIdSet = new Set<string>()
-        result.signals.forEach((signal: any) => {
+        result.signals.forEach((signal: SignalData) => {
           if (!signal || !signal.itemId) return
-          if (itemIdSet.has(signal.itemId)) return
-          itemIdSet.add(signal.itemId)
+          if (itemIdSet.has(signal.itemId as string)) return
+          itemIdSet.add(signal.itemId as string)
 
-          const item = this.items.find((i: any) => i.id === signal.itemId)
+          const item = this.items.find((i: { id: string }) => i.id === (signal.itemId as string))
           if (!item) return
 
           const detailParts: string[] = []
@@ -575,7 +645,8 @@ export function createLlmPromptModule(deps: any) {
           }
           if (signal.mode === "quality") {
             const qualityConfig = ((window as any).ArtifactData && (window as any).ArtifactData.QUALITY_CONFIG) || {}
-            const qualityLabel = qualityConfig[signal.qualityKey]?.label || signal.qualityKey || "?"
+            const qualityKey = signal.qualityKey as string
+            const qualityLabel = qualityConfig[qualityKey]?.label || qualityKey || "?"
             detailParts.push(`品质:${qualityLabel}`)
             detailParts.push(`基价:${item.basePrice || "?"}`)
           }
@@ -598,7 +669,7 @@ export function createLlmPromptModule(deps: any) {
         parts.push(`message=${compactOneLine(result.message, 120)}`)
       }
       if (result && Array.isArray(result.trackUpdates)) {
-        const ids = result.trackUpdates.map((entry: any) => entry && entry.trackId).filter(Boolean)
+        const ids = result.trackUpdates.map((entry: Record<string, unknown>) => entry && entry.trackId).filter(Boolean)
         if (ids.length > 0) {
           parts.push(`tracks=${ids.join(",")}`)
         } else {

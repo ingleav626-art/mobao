@@ -40,6 +40,7 @@ import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
 import { MobaoShopPage } from "../shop/index"
 import { rgbHex } from "../core/utils"
 import { MobileHandler } from "../../mobile/mobile-handler"
+import { AudioManager } from "../../audio/audio-manager"
 
 interface LobbySceneLike {
   showLobbySubPage(page: string): void
@@ -99,6 +100,9 @@ interface LobbySceneLike {
   _mapCategoryWeights: Record<string, number> | null
 }
 
+
+export { LobbyCarouselMixin as CarouselMixin } from "./carousel"
+export { CharacterSelectMixin } from "./character-select"
 
 export const LobbyIndexMixin = {
   bindLobbyEvents() {

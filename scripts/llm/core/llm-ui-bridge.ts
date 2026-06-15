@@ -41,6 +41,51 @@
  */
 "use strict"
 
+const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
+
+interface LlmGlobalSettings {
+  enabled: boolean
+  multiGameMemoryEnabled: boolean
+  reflectionEnabled: boolean
+  thinkingEnabled: boolean
+  independentModelEnabled: boolean
+  independentReflectionEnabled: boolean
+  contextLength: number
+  autoSummarizeEnabled: boolean
+  reflectionScope: string
+}
+
+const DEFAULT_GLOBAL_SETTINGS: LlmGlobalSettings = {
+  enabled: false,
+  multiGameMemoryEnabled: false,
+  reflectionEnabled: false,
+  thinkingEnabled: false,
+  independentModelEnabled: false,
+  independentReflectionEnabled: true,
+  contextLength: 5,
+  autoSummarizeEnabled: true,
+  reflectionScope: "current"
+}
+
+function loadGlobalSettings(): LlmGlobalSettings {
+  try {
+    const raw = window.localStorage.getItem(LLM_GLOBAL_SETTINGS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return { ...DEFAULT_GLOBAL_SETTINGS, ...parsed }
+    }
+  } catch (_e) { }
+  return { ...DEFAULT_GLOBAL_SETTINGS }
+}
+
+function saveGlobalSettings(settings: Partial<LlmGlobalSettings>): void {
+  try {
+    const current = loadGlobalSettings()
+    const merged = { ...current, ...settings }
+    window.localStorage.setItem(LLM_GLOBAL_SETTINGS_KEY, JSON.stringify(merged))
+  } catch (_e) { }
+}
+
 interface ProviderConfig {
   name: string
   description: string
@@ -119,7 +164,7 @@ interface UiElements {
   contextLengthInline: HTMLElement | null
   contextLengthInput: HTMLInputElement | null
   summaryConfig: HTMLElement | null
-  summaryIntervalInput: HTMLInputElement | null
+  autoSummarizeCheckbox: HTMLInputElement | null
   reflectionScopeConfig: HTMLElement | null
   testBtn: HTMLElement | null
   statusText: HTMLElement | null
@@ -154,7 +199,7 @@ function getElements(): UiElements {
     contextLengthInline: document.getElementById("contextLengthInline"),
     contextLengthInput: document.getElementById("setting-contextLength") as HTMLInputElement | null,
     summaryConfig: document.getElementById("summaryConfig"),
-    summaryIntervalInput: document.getElementById("setting-summaryInterval") as HTMLInputElement | null,
+    autoSummarizeCheckbox: document.getElementById("setting-autoSummarizeEnabled") as HTMLInputElement | null,
     reflectionScopeConfig: document.getElementById("reflectionScopeConfig"),
     testBtn: document.getElementById("settingsTestLlmBtn"),
     statusText: document.getElementById("settingsLlmStatusText"),
@@ -272,7 +317,10 @@ function refreshProviderSelect(selectValue?: string): void {
   }
 
   if (selectValue && els.providerSelect.querySelector('option[value="' + selectValue + '"]')) {
-    (els.providerSelect as HTMLSelectElement).value = selectValue
+    const select = els.providerSelect as HTMLSelectElement
+    select.value = ""
+    select.value = selectValue
+    select.dispatchEvent(new Event("change", { bubbles: false }))
   }
 }
 
@@ -281,6 +329,8 @@ function loadProviderSettings(providerId: string): void {
   const provider = (window as any).LlmManager ? (window as any).LlmManager.getProvider(providerId) : null
   const els = getElements()
   console.log("[loadProviderSettings] provider:", provider ? provider.id : null)
+
+  const globalSettings = loadGlobalSettings()
 
   if (provider) {
     const settings = provider.loadSettings()
@@ -291,11 +341,11 @@ function loadProviderSettings(providerId: string): void {
     if (els.maxTokensInput) (els.maxTokensInput as HTMLInputElement).value = settings.maxTokens || 2048
     if (els.timeoutMsInput) (els.timeoutMsInput as HTMLInputElement).value = settings.timeoutMs || 40000
     if (els.thinkingParamsInput) (els.thinkingParamsInput as HTMLInputElement).value = settings.thinkingParams || ""
-    if (els.enabledCheckbox) (els.enabledCheckbox as HTMLInputElement).checked = settings.enabled || false
-    if (els.multiGameMemoryCheckbox) (els.multiGameMemoryCheckbox as HTMLInputElement).checked = settings.multiGameMemoryEnabled || false
-    if (els.reflectionCheckbox) (els.reflectionCheckbox as HTMLInputElement).checked = settings.reflectionEnabled || false
-    if (els.thinkingCheckbox) (els.thinkingCheckbox as HTMLInputElement).checked = settings.thinkingEnabled || false
-    if (els.independentModelCheckbox) (els.independentModelCheckbox as HTMLInputElement).checked = settings.independentModelEnabled || false
+    if (els.enabledCheckbox) (els.enabledCheckbox as HTMLInputElement).checked = globalSettings.enabled
+    if (els.multiGameMemoryCheckbox) (els.multiGameMemoryCheckbox as HTMLInputElement).checked = globalSettings.multiGameMemoryEnabled
+    if (els.reflectionCheckbox) (els.reflectionCheckbox as HTMLInputElement).checked = globalSettings.reflectionEnabled
+    if (els.thinkingCheckbox) (els.thinkingCheckbox as HTMLInputElement).checked = globalSettings.thinkingEnabled
+    if (els.independentModelCheckbox) (els.independentModelCheckbox as HTMLInputElement).checked = globalSettings.independentModelEnabled
   } else {
     console.log("[loadProviderSettings] provider not found, using defaults")
     const config = getProviderConfig(providerId)
@@ -305,11 +355,16 @@ function loadProviderSettings(providerId: string): void {
     if (els.maxTokensInput) (els.maxTokensInput as HTMLInputElement).value = String(2048)
     if (els.timeoutMsInput) (els.timeoutMsInput as HTMLInputElement).value = String(40000)
     if (els.thinkingParamsInput) (els.thinkingParamsInput as HTMLInputElement).value = ""
-    if (els.independentModelCheckbox) (els.independentModelCheckbox as HTMLInputElement).checked = false
+    if (els.enabledCheckbox) (els.enabledCheckbox as HTMLInputElement).checked = globalSettings.enabled
+    if (els.multiGameMemoryCheckbox) (els.multiGameMemoryCheckbox as HTMLInputElement).checked = globalSettings.multiGameMemoryEnabled
+    if (els.reflectionCheckbox) (els.reflectionCheckbox as HTMLInputElement).checked = globalSettings.reflectionEnabled
+    if (els.thinkingCheckbox) (els.thinkingCheckbox as HTMLInputElement).checked = globalSettings.thinkingEnabled
+    if (els.independentModelCheckbox) (els.independentModelCheckbox as HTMLInputElement).checked = globalSettings.independentModelEnabled
   }
 
   updateThinkingParamsVisibility(els)
   updateIndependentModelVisibility(els)
+  updateMultiGameVisibility(els)
   updateUiForProvider(providerId)
 }
 
@@ -321,6 +376,18 @@ function updateIndependentModelVisibility(els: UiElements): void {
     } else {
       independentModelConfig.classList.add("hidden")
     }
+  }
+}
+
+function updateMultiGameVisibility(els: UiElements): void {
+  const contextLengthInline = document.getElementById("contextLengthInline")
+  const summaryConfig = document.getElementById("summaryConfig")
+  const checked = els.multiGameMemoryCheckbox ? (els.multiGameMemoryCheckbox as HTMLInputElement).checked : false
+  if (contextLengthInline) {
+    contextLengthInline.classList.toggle("hidden", !checked)
+  }
+  if (summaryConfig) {
+    summaryConfig.classList.toggle("hidden", !checked)
   }
 }
 
@@ -343,12 +410,16 @@ function saveProviderSettings(providerId: string): any {
     "checked:",
     els.thinkingCheckbox ? (els.thinkingCheckbox as HTMLInputElement).checked : "N/A"
   )
-  const settings = {
+
+  saveGlobalSettings({
     enabled: els.enabledCheckbox ? (els.enabledCheckbox as HTMLInputElement).checked : false,
     multiGameMemoryEnabled: els.multiGameMemoryCheckbox ? (els.multiGameMemoryCheckbox as HTMLInputElement).checked : false,
     reflectionEnabled: els.reflectionCheckbox ? (els.reflectionCheckbox as HTMLInputElement).checked : false,
     thinkingEnabled: els.thinkingCheckbox ? (els.thinkingCheckbox as HTMLInputElement).checked : false,
-    independentModelEnabled: els.independentModelCheckbox ? (els.independentModelCheckbox as HTMLInputElement).checked : false,
+    independentModelEnabled: els.independentModelCheckbox ? (els.independentModelCheckbox as HTMLInputElement).checked : false
+  })
+
+  const providerSettings = {
     apiKey: els.apiKeyInput ? (els.apiKeyInput as HTMLInputElement).value.trim() : "",
     endpoint: els.endpointInput ? (els.endpointInput as HTMLInputElement).value.trim() : "",
     model: els.modelInput ? (els.modelInput as HTMLInputElement).value.trim() : "",
@@ -357,21 +428,19 @@ function saveProviderSettings(providerId: string): any {
     thinkingParams: els.thinkingParamsInput ? (els.thinkingParamsInput as HTMLInputElement).value.trim() : ""
   }
   console.log(
-    "[saveProviderSettings] settings.thinkingEnabled:",
-    settings.thinkingEnabled,
-    "timeoutMs:",
-    settings.timeoutMs
+    "[saveProviderSettings] providerSettings:",
+    providerSettings
   )
 
   if ((window as any).LlmManager) {
     const provider = (window as any).LlmManager.getProvider(providerId)
     if (provider) {
-      provider.saveSettings(settings)
+      provider.saveSettings(providerSettings)
     }
     (window as any).LlmManager.setActiveProvider(providerId)
   }
 
-  return settings
+  return providerSettings
 }
 
 async function testConnection(providerId: string): Promise<any> {
@@ -692,6 +761,12 @@ function initialize(): void {
   if (els.independentModelCheckbox) {
     els.independentModelCheckbox.addEventListener("change", function () {
       updateIndependentModelVisibility(getElements())
+    })
+  }
+
+  if (els.multiGameMemoryCheckbox) {
+    els.multiGameMemoryCheckbox.addEventListener("change", function () {
+      updateMultiGameVisibility(getElements())
     })
   }
 

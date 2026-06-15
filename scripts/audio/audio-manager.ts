@@ -426,5 +426,5 @@ const AudioManager: Record<string, any> = {
     return this._currentBgm
   }
 }
+export { AudioManager }
 
-  ; (window as any).AudioManager = AudioManager

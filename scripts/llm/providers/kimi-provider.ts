@@ -23,7 +23,7 @@ function defaultKimiSettings(): any {
     multiGameMemoryEnabled: false,
     reflectionEnabled: false,
     contextLength: 5,
-    summaryInterval: 0,
+    autoSummarizeEnabled: true,
     reflectionScope: "current",
     thinkingEnabled: false,
     thinkingParams: "",
@@ -54,7 +54,7 @@ function normalizeKimiSettings(source: any, fallback?: any): any {
     multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
     reflectionEnabled: Boolean(input.reflectionEnabled),
     contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
-    summaryInterval: Math.max(0, Math.min(50, Math.round(Number(input.summaryInterval) || 0))),
+    autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
     reflectionScope: input.reflectionScope === "full" ? "full" : "current",
     thinkingEnabled: Boolean(input.thinkingEnabled),
     independentModelEnabled: Boolean(input.independentModelEnabled),
@@ -64,7 +64,7 @@ function normalizeKimiSettings(source: any, fallback?: any): any {
     apiKey: apiKeyRaw,
     timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
     temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 1),
-    maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
+    maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
   }
 }
 

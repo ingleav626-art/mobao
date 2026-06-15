@@ -89,7 +89,7 @@ function normalizeDeepSeekSettings(source: any, fallback?: any): any {
     apiKey: apiKeyRaw,
     timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
     temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 1.5),
-    maxTokens: clamp(Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)), 32, 102400)
+    maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
   }
 }
 

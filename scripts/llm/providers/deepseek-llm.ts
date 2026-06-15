@@ -145,7 +145,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-function defaultDeepSeekSettings(): any {
+export function defaultDeepSeekSettings(): any {
   return {
     provider: "deepseek",
     enabled: false,
@@ -245,7 +245,7 @@ function makeRequestId(): string {
   return `ds-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
 }
 
-function normalizeDeepSeekSettings(source: any, fallback?: any): any {
+export function normalizeDeepSeekSettings(source: any, fallback?: any): any {
   const defaults = {
     ...defaultDeepSeekSettings(),
     ...normalizeObject(fallback)
@@ -277,7 +277,7 @@ function normalizeDeepSeekSettings(source: any, fallback?: any): any {
   }
 }
 
-function loadDeepSeekSettings(): any {
+export function loadDeepSeekSettings(): any {
   const defaults = defaultDeepSeekSettings()
   const raw = window.localStorage.getItem(LLM_STORAGE_KEY)
   const storedApiKey = loadStoredApiKey()
@@ -313,7 +313,7 @@ function loadDeepSeekSettings(): any {
   }
 }
 
-function saveDeepSeekSettings(settings: any): any {
+export function saveDeepSeekSettings(settings: any): any {
   const normalized = normalizeDeepSeekSettings(settings, defaultDeepSeekSettings())
   saveStoredApiKey(normalized.apiKey)
   const safeForLocalStorage = {
@@ -327,7 +327,7 @@ function saveDeepSeekSettings(settings: any): any {
   }
 }
 
-function maskApiKey(value: string): string {
+export function maskApiKey(value: string): string {
   const key = typeof value === "string" ? value.trim() : ""
   if (!key) {
     return "(empty)"
@@ -369,7 +369,7 @@ function extractErrorMessage(payload: any, fallbackStatus: number): string {
   return `请求失败（HTTP ${fallbackStatus}）`
 }
 
-class DeepSeekClient {
+export class DeepSeekClient {
   settings: Record<string, unknown>
   logs: Array<Record<string, unknown>>
 

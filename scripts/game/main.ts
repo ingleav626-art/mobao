@@ -120,25 +120,9 @@ import type {
  *
  * @exports WarehouseScene  - Phaser 主场景类（通过 new Phaser.Game(config) 自动启动）
  */
-if (!window.MobaoConstants) {
-  throw new Error("MobaoConstants not found: 请先加载 scripts/game/constants.js")
-}
-
-if (!window.MobaoUtils) {
-  throw new Error("MobaoUtils not found: 请先加载 scripts/game/utils.js")
-}
-
-if (!window.MobaoSettings) {
-  throw new Error("MobaoSettings not found: 请先加载 scripts/game/settings.js")
-}
-
-if (!window.MobaoWarehouse) {
-  throw new Error("MobaoWarehouse not found: 请先加载 scripts/game/warehouse/index.js")
-}
-
-const {
-  GRID_COLS: _GRID_COLS,
-  GRID_ROWS: _GRID_ROWS,
+import {
+  GRID_COLS as _GRID_COLS,
+  GRID_ROWS as _GRID_ROWS,
   CELL_SIZE,
   MARGIN,
   CANVAS_NATIVE_HEIGHT,
@@ -155,9 +139,8 @@ const {
   QUALITY_COLORS,
   QUALITY_ORDER,
   QUALITY_LABELS
-}: any = window.MobaoConstants
-
-const {
+} from "./core/constants"
+import {
   shuffle,
   delay,
   tweenToPromise,
@@ -184,9 +167,8 @@ const {
   qualityPulseDuration,
   settlementRevealDelayByQuality,
   settlementSearchDurationByQuality
-}: any = window.MobaoUtils
-
-const {
+} from "./core/utils"
+import {
   defaultGameSettings,
   normalizeSettingsSource,
   normalizeGameSettings,
@@ -194,70 +176,50 @@ const {
   saveGameSettings,
   loadPlayerMoney,
   savePlayerMoney,
-  GAME_SETTINGS: _GAME_SETTINGS
-}: any = window.MobaoSettings
-
-if (!window.ArtifactData) {
-  throw new Error("ArtifactData not found: 请先加载 scripts/game/artifacts.js")
-}
-
-if (!window.SkillSystem) {
-  throw new Error("SkillSystem not found: 请先加载 scripts/game/skills.js")
-}
-
-if (!window.ItemSystem) {
-  throw new Error("ItemSystem not found: 请先加载 scripts/game/items.js")
-}
-
-if (!window.AuctionAI) {
-  throw new Error("AuctionAI not found: 请先加载 scripts/game/ai-bidding.js")
-}
-
-if (!window.DeepSeekLLM) {
-  throw new Error("DeepSeekLLM not found: 请先加载 scripts/llm/providers/deepseek-llm.js")
-}
-
-if (!window.MobaoSceneLlm) {
-  throw new Error("MobaoSceneLlm not found: 请先加载 scene-llm.js")
-}
-
-if (!window.MobaoBattleRecordBridge) {
-  throw new Error("MobaoBattleRecordBridge not found: 请先加载 battle-record-bridge.js")
-}
-
-if (!window.MobaoSettlementBridge) {
-  throw new Error("MobaoSettlementBridge not found: 请先加载 settlement-bridge.js")
-}
-
-if (!window.MobaoUi) {
-  throw new Error("MobaoUi not found: 请先加载 scripts/game/ui/overlay.js")
-}
-
-if (!window.MobaoBidding) {
-  throw new Error("MobaoBidding not found: 请先加载 scripts/game/bidding/index.js")
-}
-
-const { ArtifactManager, ARTIFACT_LIBRARY: _ARTIFACT_LIBRARY, QUALITY_CONFIG: _QUALITY_CONFIG, toSizeTag, estimatePriceByQuality }: any = window.ArtifactData
-const { SkillManager, SKILL_DEFS: _SKILL_DEFS }: any = window.SkillSystem
-const { ItemManager, ITEM_DEFS: _ITEM_DEFS }: any = window.ItemSystem
-const { AuctionAiEngine }: any = window.AuctionAI
-const {
+  GAME_SETTINGS as _GAME_SETTINGS
+} from "./core/settings"
+import { ArtifactManager, ARTIFACT_LIBRARY as _ARTIFACT_LIBRARY, QUALITY_CONFIG as _QUALITY_CONFIG, toSizeTag, estimatePriceByQuality } from "./data/artifacts"
+import { SkillManager, SKILL_DEFS as _SKILL_DEFS } from "./data/skills"
+import { ItemManager, ITEM_DEFS as _ITEM_DEFS } from "./data/items"
+import { AuctionAiEngine } from "./ai/bidding"
+import {
   DeepSeekClient,
   defaultDeepSeekSettings,
   loadDeepSeekSettings,
   saveDeepSeekSettings,
   normalizeDeepSeekSettings,
   maskApiKey
-}: any = window.DeepSeekLLM || {}
+} from "../llm/providers/deepseek-llm"
+import { createSceneLlmBridge } from "../llm/core/scene-llm"
+import { createBattleRecordBridge } from "./bridge/battle-record"
+import { createSettlementBridge } from "./bridge/settlement"
+import { initDeps } from "./core/deps"
+import { WarehouseCoreMixin, WarehouseRevealMixin, WarehousePreviewMixin } from "./warehouse/index"
+import { AiWalletMixin, AiIntelMixin, AiMemoryMixin, AiReflectionMixin, AiDecisionMixin } from "./ai/index"
+import { BiddingMixin } from "./bidding/index"
+import { OverlayMixin, PanelsMixin, HistoryMixin } from "./ui/index"
+import { LanIndexMixin } from "./lan/index"
+import { LobbyIndexMixin, CarouselMixin, CharacterSelectMixin } from "./lobby/index"
+import { RoundManagerMixin } from "./core/round-manager"
+import { SkillItemManagerMixin } from "./core/skill-item-manager"
+import { SettlementManagerMixin } from "./core/settlement-manager"
+import { AudioManager } from "../audio/audio-manager"
+import { AudioUI } from "../audio/audio-ui"
+import { MobaoAnimations } from "./animations"
+import { LlmManager } from "../llm/core/llm-manager"
+import { getActiveCharacter, getActiveSkillId, getOutlineBonus, getQualityBonus, getOutlineSortStrategy, getDisplayName, getAvatarLabel, resetForNewGame } from "./data/character-system"
+import { DeepSeekProvider } from "../llm/providers/deepseek-provider"
+import { pickRandomPublicEvent } from "./data/public-events"
+import { buildBidHistorySnapshot, buildPublicEventSnapshot, buildRoundPublicStateTable, buildQualityPriceRangeTableCompact, buildCatalogSummaryInner as buildCatalogSummary, buildQualityPriceGuide, getActionDefById, buildOtherPlayersPublicInfo } from "./ai/context-builder"
 const LLM_SETTINGS = loadDeepSeekSettings ? loadDeepSeekSettings() : {}
-window.MobaoLlm = {
+export const MobaoLlm = {
   LLM_SETTINGS,
   saveDeepSeekSettings,
   maskApiKey,
   defaultDeepSeekSettings,
   loadDeepSeekSettings
 }
-const LLM_BRIDGE: LlmBridge = window.MobaoSceneLlm.createSceneLlmBridge({
+const LLM_BRIDGE = createSceneLlmBridge({
   AI_LLM_SWITCH_STORAGE_KEY,
   LLM_SETTINGS,
   GAME_SETTINGS: _GAME_SETTINGS,
@@ -274,8 +236,8 @@ const LLM_BRIDGE: LlmBridge = window.MobaoSceneLlm.createSceneLlmBridge({
   indentMultiline,
   formatBidRevealNumber
 })
-window.LLM_BRIDGE = LLM_BRIDGE
-const BATTLE_RECORD_BRIDGE: { methods: Record<string, (...args: unknown[]) => unknown>; loadBattleRecords: () => unknown[] } = window.MobaoBattleRecordBridge.createBattleRecordBridge({
+export { LLM_BRIDGE }
+const BATTLE_RECORD_BRIDGE: any = createBattleRecordBridge({
   BATTLE_RECORD_STORAGE_KEY,
   GRID_COLS: _GRID_COLS,
   GRID_ROWS: _GRID_ROWS,
@@ -283,7 +245,7 @@ const BATTLE_RECORD_BRIDGE: { methods: Record<string, (...args: unknown[]) => un
   escapeHtml,
   formatBidRevealNumber
 })
-const SETTLEMENT_BRIDGE: { methods: Record<string, (...args: unknown[]) => unknown> } = window.MobaoSettlementBridge.createSettlementBridge({
+const SETTLEMENT_BRIDGE: any = createSettlementBridge({
   MARGIN,
   CELL_SIZE,
   delay,
@@ -293,7 +255,7 @@ const SETTLEMENT_BRIDGE: { methods: Record<string, (...args: unknown[]) => unkno
 })
 
 // 注册到 Deps 容器，其他模块通过 import { Deps } from '../core/deps.js' 获取
-window.initDeps({ LLM_BRIDGE, BATTLE_RECORD_BRIDGE, SETTLEMENT_BRIDGE })
+initDeps({ LLM_BRIDGE, BATTLE_RECORD_BRIDGE, SETTLEMENT_BRIDGE })
 
 // Mixin 方法声明：这些方法通过 Object.assign 从各 Mixin 混入 WarehouseScene.prototype
 // 声明为 interface 让 TS 识别，运行时由 Mixin 提供
@@ -701,7 +663,6 @@ class WarehouseScene extends _PhaserScene {
   }
 
   create() {
-    window.WarehouseScene = WarehouseScene
     WarehouseScene.instance = this
     this.initAudio()
     this.cacheDom()
@@ -714,12 +675,12 @@ class WarehouseScene extends _PhaserScene {
   }
 
   initAudio() {
-    if (window.AudioManager) {
+    if (AudioManager) {
       AudioManager.init().then(() => {
         AudioManager.preload("ui", ["click"])
         AudioManager.preload("game", ["reveal", "coinsReveal", "search", "countdown"])
         AudioManager.preload("bgm", ["lobby", "game"])
-        if (window.AudioUI) {
+        if (AudioUI) {
           AudioUI.init()
         }
       })
@@ -844,7 +805,7 @@ class WarehouseScene extends _PhaserScene {
 
   /* ---- 动效初始化 ---- */
   initAnimations() {
-    if (!window.MobaoAnimations) return
+    if (!MobaoAnimations) return
 
     // 1. 为所有交互按钮绑定涟漪 + 按下缩放效果
     const selector =
@@ -862,8 +823,8 @@ class WarehouseScene extends _PhaserScene {
     const extraBtns = document.querySelectorAll('[data-btn-effect="ripple"]')
     extraBtns.forEach(function (btn: Element) {
       if (btn && !(btn as HTMLElement).dataset.rippleInited) {
-        MobaoAnimations.bindRipple(btn)
-        MobaoAnimations.bindPressScale(btn)
+        MobaoAnimations.bindRipple(btn as HTMLElement)
+        MobaoAnimations.bindPressScale(btn as HTMLElement)
           ; (btn as HTMLElement).dataset.rippleInited = "1"
       }
     })
@@ -2035,19 +1996,19 @@ class WarehouseScene extends _PhaserScene {
   }
 
   applyCharacterToPlayer() {
-    if (!window.CharacterSystem) return
-    const char = CharacterSystem.getActiveCharacter()
+    if (!getActiveCharacter) return
+    const char = getActiveCharacter()
     if (!char) return
     const self = this.players.find((p) => p.isSelf)
     if (!self) return
     self.characterId = char.id
     self.characterName = char.name
-    self.name = CharacterSystem.getDisplayName()
-    self.avatar = CharacterSystem.getAvatarLabel()
+    self.name = getDisplayName()
+    self.avatar = getAvatarLabel()
     // 同步更新 DOM 中的角色名字
     const nameEl = document.getElementById(`name-${self.id}`)
     if (nameEl) nameEl.textContent = char.name
-    this._activeSkillId = CharacterSystem.getActiveSkillId()
+    this._activeSkillId = getActiveSkillId()
     this.refreshSkillButtonLabel()
   }
 
@@ -2055,15 +2016,15 @@ class WarehouseScene extends _PhaserScene {
     if (!this.dom.skillBtn) return
     this.dom.skillBtn.onclick = () => {
       const skillId =
-        this._activeSkillId || (window.CharacterSystem && CharacterSystem.getActiveSkillId()) || "skill-outline-scan"
+        this._activeSkillId || getActiveSkillId() || "skill-outline-scan"
       this.useSkill(skillId)
     }
     this.refreshSkillButtonLabel()
   }
 
   refreshSkillButtonLabel() {
-    if (!this.dom.skillBtn || !window.CharacterSystem) return
-    const char = CharacterSystem.getActiveCharacter()
+    if (!this.dom.skillBtn || !getActiveCharacter) return
+    const char = getActiveCharacter()
     if (!char || !char.skillName) return
     this.dom.skillBtn.textContent = char.skillName
   }
@@ -2077,8 +2038,8 @@ class WarehouseScene extends _PhaserScene {
     this.exitSettlementPage()
     this.guardWarehouseCapacity()
 
-    if (window.CharacterSystem) {
-      CharacterSystem.resetForNewGame()
+    if (getActiveCharacter) {
+      resetForNewGame()
       this.applyCharacterToPlayer()
     }
 
@@ -2113,8 +2074,8 @@ class WarehouseScene extends _PhaserScene {
     this.drawUnknownWarehouse()
     this.spawnRandomItems()
 
-    if (window.PublicEventSystem && this.items.length > 0) {
-      this.currentPublicEvent = window.PublicEventSystem.pickRandomPublicEvent(this.items, _GRID_COLS, _GRID_ROWS)
+    if (pickRandomPublicEvent && this.items.length > 0) {
+      this.currentPublicEvent = pickRandomPublicEvent(this.items, _GRID_COLS, _GRID_ROWS)
       this.publicInfoEntries.push({
         source: this.currentPublicEvent.category,
         text: this.currentPublicEvent.text
@@ -2296,41 +2257,41 @@ class WarehouseScene extends _PhaserScene {
   }
 
   buildBidHistorySnapshot() {
-    return window.MobaoContextBuilder.buildBidHistorySnapshot(this.round, this.players, this.playerRoundHistory)
+    return buildBidHistorySnapshot(this.round, this.players, this.playerRoundHistory)
   }
 
   buildPublicEventSnapshot(options: Record<string, unknown> = {}) {
-    return window.MobaoContextBuilder.buildPublicEventSnapshot(
+    return buildPublicEventSnapshot(
       this.players, this.playerUsageHistory, this.currentRoundUsage, this.round,
       this.getActionDefById.bind(this), this.currentPublicEvent, options
     )
   }
 
   buildRoundPublicStateTable(viewerId: string) {
-    return window.MobaoContextBuilder.buildRoundPublicStateTable(
+    return buildRoundPublicStateTable(
       this.round, this.players, this.playerRoundHistory,
       this.currentRoundUsage, this.playerUsageHistory, viewerId
     )
   }
 
   buildQualityPriceRangeTableCompact() {
-    return window.MobaoContextBuilder.buildQualityPriceRangeTableCompact()
+    return buildQualityPriceRangeTableCompact()
   }
 
   buildCatalogSummary(options: Record<string, unknown> = {}) {
-    return window.MobaoContextBuilder.buildCatalogSummary(options)
+    return buildCatalogSummary(options)
   }
 
   buildQualityPriceGuide(options: Record<string, unknown> = {}) {
-    return window.MobaoContextBuilder.buildQualityPriceGuide(options)
+    return buildQualityPriceGuide(options)
   }
 
   getActionDefById(actionId: string) {
-    return window.MobaoContextBuilder.getActionDefById(actionId)
+    return getActionDefById(actionId)
   }
 
   buildOtherPlayersPublicInfo(viewerId: string, options: Record<string, unknown> = {}) {
-    return window.MobaoContextBuilder.buildOtherPlayersPublicInfo(
+    return buildOtherPlayersPublicInfo(
       this.players, this.aiEngine, this.playerUsageHistory,
       this.getActionDefById.bind(this), viewerId, options
     )
@@ -2569,14 +2530,14 @@ class WarehouseScene extends _PhaserScene {
     }
 
     // 倒计时 <= 5 秒时对计时器元素附加脉冲心跳效果
-    if (window.MobaoAnimations && this._timerSpan) {
+    if (MobaoAnimations && this._timerSpan) {
       const isDangerState = !this.roundPaused && this.roundTimeLeft <= 5
       if (isDangerState && !this._timerSpan.dataset.pulseActive) {
         this._timerSpan.dataset.pulseActive = "1"
-        window.MobaoAnimations.pulse(this._timerSpan, "heart", { duration: 900 })
+        MobaoAnimations.pulse(this._timerSpan, "heart", { duration: 900 })
       } else if (!isDangerState && this._timerSpan.dataset.pulseActive) {
         delete this._timerSpan.dataset.pulseActive
-        window.MobaoAnimations.stopPulse(this._timerSpan)
+        MobaoAnimations.stopPulse(this._timerSpan)
       }
     }
 
@@ -2594,10 +2555,10 @@ class WarehouseScene extends _PhaserScene {
     }
 
     // 金钱数字滚动动画（仅在金额真正变化时触发，避免每秒重播）
-    if (hudMoneyText && window.MobaoAnimations) {
+    if (hudMoneyText && MobaoAnimations) {
       if (this._lastDisplayedMoney !== this.playerMoney) {
         this._lastDisplayedMoney = this.playerMoney
-        window.MobaoAnimations.scrollToNumber(hudMoneyText, this.playerMoney, { duration: 350 })
+        MobaoAnimations.scrollToNumber(hudMoneyText, this.playerMoney, { duration: 350 })
       }
     } else if (hudMoneyText) {
       hudMoneyText.textContent = this.playerMoney.toLocaleString()
@@ -2637,8 +2598,8 @@ class WarehouseScene extends _PhaserScene {
       }
     } catch (_e) { }
 
-    if (window.LlmManager) {
-      const provider = window.LlmManager.getProvider()
+    if (LlmManager) {
+      const provider = LlmManager.getProvider()
       if (provider) {
         const providerSettings = provider.loadSettings()
         return { ...providerSettings, ...globalSettings }
@@ -2648,18 +2609,18 @@ class WarehouseScene extends _PhaserScene {
   }
 
   getLlmProvider() {
-    if (window.LlmManager) {
-      const provider = window.LlmManager.getProvider()
+    if (LlmManager) {
+      const provider = LlmManager.getProvider()
       if (provider) {
         console.log("[getLlmProvider] using LlmManager provider:", provider.id)
         return provider
       }
     }
-    if (window.DeepSeekLLM) {
+    if (DeepSeekClient) {
       console.log("[getLlmProvider] using DeepSeekProvider (fallback)")
       return {
-        requestChat: (options) => window.DeepSeekProvider.requestChat(options),
-        applySettings: (settings) => window.DeepSeekProvider.applySettings(settings)
+        requestChat: (options) => DeepSeekProvider.requestChat(options),
+        applySettings: (settings) => DeepSeekProvider.applySettings(settings)
       }
     }
     console.log("[getLlmProvider] NO provider available")
@@ -2667,27 +2628,25 @@ class WarehouseScene extends _PhaserScene {
   }
 }
 
-Object.assign(WarehouseScene.prototype, window.MobaoWarehouse.WarehouseCoreMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoWarehouse.WarehouseRevealMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoWarehouse.WarehousePreviewMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoAi.WalletMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoAi.IntelMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoAi.MemoryMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoAi.ReflectionMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoAi.DecisionMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoBidding.BiddingMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoUi.OverlayMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoUi.PanelsMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoUi.HistoryMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoLobby.IndexMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoLobby.CarouselMixin)
-if (window.MobaoLobby && window.MobaoLobby.CharacterSelectMixin) {
-  Object.assign(WarehouseScene.prototype, window.MobaoLobby.CharacterSelectMixin)
-}
-Object.assign(WarehouseScene.prototype, window.MobaoLan.IndexMixin)
-Object.assign(WarehouseScene.prototype, window.MobaoRoundManager)
-Object.assign(WarehouseScene.prototype, window.MobaoSkillItemManager)
-Object.assign(WarehouseScene.prototype, window.MobaoSettlementManager)
+Object.assign(WarehouseScene.prototype, WarehouseCoreMixin)
+Object.assign(WarehouseScene.prototype, WarehouseRevealMixin)
+Object.assign(WarehouseScene.prototype, WarehousePreviewMixin)
+Object.assign(WarehouseScene.prototype, AiWalletMixin)
+Object.assign(WarehouseScene.prototype, AiIntelMixin)
+Object.assign(WarehouseScene.prototype, AiMemoryMixin)
+Object.assign(WarehouseScene.prototype, AiReflectionMixin)
+Object.assign(WarehouseScene.prototype, AiDecisionMixin)
+Object.assign(WarehouseScene.prototype, BiddingMixin)
+Object.assign(WarehouseScene.prototype, OverlayMixin)
+Object.assign(WarehouseScene.prototype, PanelsMixin)
+Object.assign(WarehouseScene.prototype, HistoryMixin)
+Object.assign(WarehouseScene.prototype, LobbyIndexMixin)
+Object.assign(WarehouseScene.prototype, CarouselMixin)
+Object.assign(WarehouseScene.prototype, CharacterSelectMixin)
+Object.assign(WarehouseScene.prototype, LanIndexMixin)
+Object.assign(WarehouseScene.prototype, RoundManagerMixin)
+Object.assign(WarehouseScene.prototype, SkillItemManagerMixin)
+Object.assign(WarehouseScene.prototype, SettlementManagerMixin)
 
 const config = {
   type: (Phaser as any).AUTO,
@@ -2709,3 +2668,5 @@ const config = {
 }
 
 new (Phaser as any).Game(config)
+
+export { WarehouseScene }

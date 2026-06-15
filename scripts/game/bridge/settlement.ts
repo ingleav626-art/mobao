@@ -39,6 +39,7 @@
  *   Object.assign(scene, bridge);
  */
 import { AudioUI } from "../../audio/audio-ui"
+import { AudioManager } from "../../audio/audio-manager"
 import { applyPassiveEffect } from "../data/character-system"
 
 interface SettlementDeps {

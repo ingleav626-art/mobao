@@ -100,13 +100,13 @@ export function createLlmSettingsModule(deps: any) {
           summaryConfig.classList.add("hidden")
         }
       }
+      const autoSummarizeCheckbox = document.getElementById("setting-autoSummarizeEnabled") as HTMLInputElement | null
+      if (autoSummarizeCheckbox) {
+        autoSummarizeCheckbox.checked = source.autoSummarizeEnabled !== false
+      }
       const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null
       if (contextLengthInput) {
         contextLengthInput.value = String(source.contextLength || 5)
-      }
-      const summaryIntervalInput = document.getElementById("setting-summaryInterval") as HTMLInputElement | null
-      if (summaryIntervalInput) {
-        summaryIntervalInput.value = String(source.summaryInterval || 0)
       }
       const reflectionScopeConfig = document.getElementById("reflectionScopeConfig")
       if (reflectionScopeConfig) {
@@ -175,7 +175,7 @@ export function createLlmSettingsModule(deps: any) {
         this.dom.settingLlmIndependentModelEnabled || document.getElementById("setting-llmIndependentModelEnabled") as HTMLInputElement | null
       const independentReflectionCheckbox = document.getElementById("setting-llmIndependentReflectionEnabled") as HTMLInputElement | null
       const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null
-      const summaryIntervalInput = document.getElementById("setting-summaryInterval") as HTMLInputElement | null
+      const autoSummarizeCheckbox = document.getElementById("setting-autoSummarizeEnabled") as HTMLInputElement | null
       const scopeRadio = document.querySelector('input[name="reflectionScope"]:checked') as HTMLInputElement | null
 
       return {
@@ -199,7 +199,7 @@ export function createLlmSettingsModule(deps: any) {
         timeoutMs: currentSettings.timeoutMs,
         temperature: currentSettings.temperature,
         maxTokens: this.dom.settingMaxTokens
-          ? Math.max(100, Number(this.dom.settingMaxTokens.value) || 2048)
+          ? Math.max(1000, Number(this.dom.settingMaxTokens.value) || 2048)
           : currentSettings.maxTokens,
         independentModelEnabled: independentModelCheckbox
           ? independentModelCheckbox.checked
@@ -212,9 +212,9 @@ export function createLlmSettingsModule(deps: any) {
         contextLength: contextLengthInput
           ? Math.max(2, Math.min(20, Math.round(Number(contextLengthInput.value) || 5)))
           : currentSettings.contextLength || 5,
-        summaryInterval: summaryIntervalInput
-          ? Math.max(0, Math.min(50, Math.round(Number(summaryIntervalInput.value) || 0)))
-          : currentSettings.summaryInterval || 0,
+        autoSummarizeEnabled: autoSummarizeCheckbox
+          ? autoSummarizeCheckbox.checked
+          : currentSettings.autoSummarizeEnabled !== false,
         reflectionScope: scopeRadio ? scopeRadio.value : currentSettings.reflectionScope || "current"
       }
     },
