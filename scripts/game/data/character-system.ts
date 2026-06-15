@@ -7,6 +7,8 @@
  * @exports window.CharacterSystem - 角色系统运行时管理单例（兼容）
  */
 
+import { CHARACTERS } from "./characters"
+
 const STORAGE_KEY = "mobao_selected_character_v1"
 
 let _activeCharacter: any = null
@@ -18,7 +20,7 @@ export function getActiveCharacter(): any {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const id = JSON.parse(raw)
-      const pool = ((window as any).CharacterData && (window as any).CharacterData.CHARACTERS) || []
+      const pool = CHARACTERS || []
       const found = pool.find((c: any) => c.id === id)
       if (found) {
         _activeCharacter = found

@@ -6,6 +6,7 @@
  *              从 scene-llm.js 拆分而来。
  */
 import { tryExtractDecisionJson } from './llm-error.js'
+import { QUALITY_CONFIG } from '../../game/data/artifacts'
 import type { Player, SkillDef, ItemDef } from "../../../types/game"
 
 interface LlmPromptDeps {
