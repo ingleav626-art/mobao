@@ -23,16 +23,16 @@ import { ITEM_DEFS } from "../data/items"
 import { GAME_SETTINGS } from "./settings"
 
 export const SkillItemManagerMixin: Record<string, Function> = {
-  useSkill(skillId) {
-    if (!this.canUseIntelActions()) {
+  useSkill(skillId: string) {
+    if (!(this as unknown as { canUseIntelActions(): boolean }).canUseIntelActions()) {
       return
     }
 
-    if (!this.consumeAction("技能")) {
+    if (!(this as unknown as { consumeAction(actionType: string): boolean }).consumeAction("技能")) {
       return
     }
 
-    let context = this.buildSkillContext()
+    let context = (this as unknown as { buildSkillContext(): { revealOutline(opts: Record<string, unknown>): void; revealQuality(opts: Record<string, unknown>): void; revealAll(opts: Record<string, unknown>): void } }).buildSkillContext()
     if (getOutlineBonus) {
       const outlineBonus = getOutlineBonus()
       const qualityBonus = getQualityBonus()
@@ -40,43 +40,43 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       if (outlineBonus > 0 || qualityBonus > 0 || sortStrategy) {
         const baseContext = context
         context = {
-          revealOutline: (opts) =>
+          revealOutline: (opts: Record<string, unknown>) =>
             baseContext.revealOutline({
               ...opts,
-              count: (opts.count || 0) + outlineBonus,
+              count: ((opts.count as number) || 0) + outlineBonus,
               sortStrategy: opts.sortStrategy || sortStrategy
             }),
-          revealQuality: (opts) =>
+          revealQuality: (opts: Record<string, unknown>) =>
             baseContext.revealQuality({
               ...opts,
-              count: (opts.count || 0) + qualityBonus,
+              count: ((opts.count as number) || 0) + qualityBonus,
               sortStrategy: opts.sortStrategy || sortStrategy
             }),
-          revealAll: (opts) => baseContext.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy })
+          revealAll: (opts: Record<string, unknown>) => baseContext.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy })
         }
       }
     }
-    const result = this.skillManager.use(skillId, context)
+    const result = (this as unknown as { skillManager: { use(id: string, ctx: unknown): { ok: boolean; message: string } } }).skillManager.use(skillId, context)
     if (!result.ok) {
-      this.actionsLeft += 1
-      this.writeLog(result.message)
-      this.updateHud()
+      (this as unknown as { actionsLeft: number }).actionsLeft += 1;
+      (this as unknown as { writeLog(msg: string): void }).writeLog(result.message);
+      (this as unknown as { updateHud(): void }).updateHud()
       return
     }
 
-    this.recordPlayerUsage(this.isLanMode ? this.lanMySlotId : "p2", skillId)
-    const skillDef = SKILL_DEFS.find((s) => s.id === skillId)
-    this.addPrivateIntelEntry({
+    (this as unknown as { recordPlayerUsage(playerId: string, itemId: string): void }).recordPlayerUsage((this as unknown as { isLanMode: boolean; lanMySlotId: string }).isLanMode ? (this as unknown as { lanMySlotId: string }).lanMySlotId : "p2", skillId);
+    const skillDef = SKILL_DEFS.find((s: { id: string; name: string; description: string }) => s.id === skillId);
+    (this as unknown as { addPrivateIntelEntry(entry: { source: string; text: string }): void }).addPrivateIntelEntry({
       source: skillDef ? skillDef.name : skillId,
       text: skillDef ? skillDef.description : "技能效果"
-    })
-    this.writeLog(result.message)
-    this.updateHud()
-    if (this.isLanMode && this.lanBridge) {
-      this.lanBridge.send({
+    });
+    (this as unknown as { writeLog(msg: string): void }).writeLog(result.message);
+      (this as unknown as { updateHud(): void }).updateHud()
+    if ((this as unknown as { isLanMode: boolean; lanBridge: { send(msg: unknown): void; playerId: string } }).isLanMode && (this as unknown as { lanBridge: { send(msg: unknown): void; playerId: string } }).lanBridge) {
+      (this as unknown as { lanBridge: { send(msg: unknown): void; playerId: string } }).lanBridge.send({
         type: "lan:player-action",
-        playerId: this.lanBridge.playerId,
-        playerName: this.players.find((p) => p.id === (this.lanMySlotId || "p2"))?.name || "玩家",
+        playerId: (this as unknown as { lanBridge: { send(msg: unknown): void; playerId: string } }).lanBridge.playerId,
+        playerName: (this as unknown as { players: Array<{ id: string; name: string }> }).players.find((p: { id: string; name: string }) => p.id === ((this as unknown as { lanMySlotId: string }).lanMySlotId || "p2"))?.name || "玩家",
         actionId: skillId,
         actionType: "skill",
         itemName: skillDef ? skillDef.name : skillId
@@ -84,18 +84,18 @@ export const SkillItemManagerMixin: Record<string, Function> = {
     }
   },
 
-  useItem(itemId) {
-    if (!this.canUseIntelActions()) {
-      this.closeItemDrawer()
+  useItem(itemId: string) {
+    if (!(this as unknown as { canUseIntelActions(): boolean }).canUseIntelActions()) {
+      (this as unknown as { closeItemDrawer(): void }).closeItemDrawer()
       return
     }
 
-    if (!this.consumeAction("道具")) {
-      this.closeItemDrawer()
+    if (!(this as unknown as { consumeAction(actionType: string): boolean }).consumeAction("道具")) {
+      (this as unknown as { closeItemDrawer(): void }).closeItemDrawer()
       return
     }
 
-    let itemContext = this.buildSkillContext()
+    let itemContext = (this as unknown as { buildSkillContext(): { revealOutline(opts: Record<string, unknown>): void; revealQuality(opts: Record<string, unknown>): void; revealAll(opts: Record<string, unknown>): void } }).buildSkillContext()
     if (getOutlineBonus) {
       const outlineBonus = getOutlineBonus()
       const qualityBonus = getQualityBonus()
@@ -103,28 +103,28 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       if (outlineBonus > 0 || qualityBonus > 0 || sortStrategy) {
         const baseItemContext = itemContext
         itemContext = {
-          revealOutline: (opts) =>
+          revealOutline: (opts: Record<string, unknown>) =>
             baseItemContext.revealOutline({
               ...opts,
-              count: (opts.count || 0) + outlineBonus,
+              count: ((opts.count as number) || 0) + outlineBonus,
               sortStrategy: opts.sortStrategy || sortStrategy
             }),
-          revealQuality: (opts) =>
+          revealQuality: (opts: Record<string, unknown>) =>
             baseItemContext.revealQuality({
               ...opts,
-              count: (opts.count || 0) + qualityBonus,
+              count: ((opts.count as number) || 0) + qualityBonus,
               sortStrategy: opts.sortStrategy || sortStrategy
             }),
-          revealAll: (opts) => baseItemContext.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy })
+          revealAll: (opts: Record<string, unknown>) => baseItemContext.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy })
         }
       }
     }
-    const result = this.itemManager.use(itemId, itemContext)
+    const result = (this as unknown as { itemManager: { use(id: string, ctx: unknown): { ok: boolean; message: string } } }).itemManager.use(itemId, itemContext)
     if (!result.ok) {
-      this.actionsLeft += 1
-      this.writeLog(result.message)
-      this.updateHud()
-      this.closeItemDrawer()
+      (this as unknown as { actionsLeft: number }).actionsLeft += 1;
+      (this as unknown as { writeLog(msg: string): void }).writeLog(result.message);
+      (this as unknown as { updateHud(): void }).updateHud();
+      (this as unknown as { closeItemDrawer(): void }).closeItemDrawer()
       return
     }
 
@@ -132,20 +132,20 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       MobaoShopBridge.consumeItem(itemId)
     }
 
-    this.recordPlayerUsage(this.isLanMode ? this.lanMySlotId : "p2", itemId)
-    const itemDef = ITEM_DEFS.find((i) => i.id === itemId)
-    this.addPrivateIntelEntry({
+    (this as unknown as { recordPlayerUsage(playerId: string, itemId: string): void }).recordPlayerUsage((this as unknown as { isLanMode: boolean; lanMySlotId: string }).isLanMode ? (this as unknown as { lanMySlotId: string }).lanMySlotId : "p2", itemId);
+    const itemDef = ITEM_DEFS.find((i: { id: string; name: string; description: string }) => i.id === itemId);
+    (this as unknown as { addPrivateIntelEntry(entry: { source: string; text: string }): void }).addPrivateIntelEntry({
       source: itemDef ? itemDef.name : itemId,
       text: itemDef ? itemDef.description : "道具效果"
-    })
-    this.writeLog(result.message)
-    this.updateHud()
-    this.closeItemDrawer()
-    if (this.isLanMode && this.lanBridge) {
-      this.lanBridge.send({
+    });
+    (this as unknown as { writeLog(msg: string): void }).writeLog(result.message);
+    (this as unknown as { updateHud(): void }).updateHud();
+    (this as unknown as { closeItemDrawer(): void }).closeItemDrawer()
+    if ((this as unknown as { isLanMode: boolean; lanBridge: { send(msg: unknown): void; playerId: string } }).isLanMode && (this as unknown as { lanBridge: { send(msg: unknown): void; playerId: string } }).lanBridge) {
+      (this as unknown as { lanBridge: { send(msg: unknown): void; playerId: string } }).lanBridge.send({
         type: "lan:player-action",
-        playerId: this.lanBridge.playerId,
-        playerName: this.players.find((p) => p.id === (this.lanMySlotId || "p2"))?.name || "玩家",
+        playerId: (this as unknown as { lanBridge: { send(msg: unknown): void; playerId: string } }).lanBridge.playerId,
+        playerName: (this as unknown as { players: Array<{ id: string; name: string }> }).players.find((p: { id: string; name: string }) => p.id === ((this as unknown as { lanMySlotId: string }).lanMySlotId || "p2"))?.name || "玩家",
         actionId: itemId,
         actionType: "item",
         itemName: itemDef ? itemDef.name : itemId
@@ -153,28 +153,28 @@ export const SkillItemManagerMixin: Record<string, Function> = {
     }
   },
 
-  consumeAction(actionType) {
-    if (this.round > GAME_SETTINGS.maxRounds) {
-      this.writeLog("所有回合已结束，请重新随机开局。")
+  consumeAction(actionType: string) {
+    if ((this as unknown as { round: number }).round > GAME_SETTINGS.maxRounds) {
+      (this as unknown as { writeLog(msg: string): void }).writeLog("所有回合已结束，请重新随机开局。")
       return false
     }
 
-    if (this.actionsLeft <= 0) {
-      this.writeLog(`本回合行动次数已耗尽，无法继续使用${actionType}。`)
+    if ((this as unknown as { actionsLeft: number }).actionsLeft <= 0) {
+      (this as unknown as { writeLog(msg: string): void }).writeLog(`本回合行动次数已耗尽，无法继续使用${actionType}。`)
       return false
     }
 
-    this.actionsLeft -= 1
+    (this as unknown as { actionsLeft: number }).actionsLeft -= 1
     return true
   },
 
-  getItemInfo(itemId) {
+  getItemInfo(itemId: string) {
     if (ITEM_DEFS) {
-      const itemDef = ITEM_DEFS.find((item) => item.id === itemId)
+      const itemDef = ITEM_DEFS.find((item: { id: string; name: string; description: string }) => item.id === itemId)
       if (itemDef) return { label: itemDef.name, tip: itemDef.description }
     }
     if (SKILL_DEFS) {
-      const skillDef = SKILL_DEFS.find((skill) => skill.id === itemId)
+      const skillDef = SKILL_DEFS.find((skill: { id: string; name: string; description: string }) => skill.id === itemId)
       if (skillDef) return { label: skillDef.name, tip: skillDef.description }
     }
     return { label: "未知道具", tip: "未知道具：暂无说明。" }
