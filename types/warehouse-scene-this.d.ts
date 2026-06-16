@@ -63,6 +63,7 @@ export interface WarehouseSceneThis {
   tweens: Phaser.TweenManager
   input: Phaser.InputPlugin
   scene: Phaser.Scene["scene"]
+  scale: Phaser.Scale.ScaleManager
 
   // 核心属性（来自 WarehouseCoreMixin）
   gridLayer: Phaser.GameObjects.Graphics | null
