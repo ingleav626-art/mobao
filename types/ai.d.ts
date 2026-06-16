@@ -147,6 +147,10 @@ export interface IntelAggregate {
   spreadRatio: number     // 离散度
   upperEdge: number       // 上边缘
   lowerEdge: number       // 下边缘
+  mean?: number           // 平均值
+  std?: number            // 标准差
+  iqr?: number            // 四分位距
+  count?: number          // 数量
 }
 
 /** 高价值藏品追踪 */
