@@ -244,6 +244,11 @@
     font-size: 12px;
   }
 
+  .settle-actions .settle-reflection-status {
+    align-self: center;
+    text-align: center;
+  }
+
   .item-drawer-head {
     font-size: 12px;
   }
