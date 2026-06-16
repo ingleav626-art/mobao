@@ -141,7 +141,12 @@ export interface WarehouseSceneThis {
   aiCrossGameMessagesByPlayer: Record<string, ConversationMessage[]>
   aiReflectionPending: Record<string, unknown>
   runSerial: number
-  currentRunLog: unknown
+  currentRunLog: {
+    runNo?: number
+    aiThoughtLogs?: unknown[]
+    roundLogsByRound?: Record<string, unknown>
+    roundPanelTexts?: Record<string, string>
+  }
   aiConversationCache: Record<string, unknown>
   pendingNextRunAiSummaryByPlayer: Record<string, unknown>
   aiEngine: AuctionAiEngine | null
