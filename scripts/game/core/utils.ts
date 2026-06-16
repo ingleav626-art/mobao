@@ -10,6 +10,8 @@
  * @requires core/utils - 工具函数库
  */
 
+import type { AiPrivateIntelPool } from "../../types/ai"
+
 export function shuffle<T>(list: T[]): T[] {
   const arr = [...list]
   for (let i = arr.length - 1; i > 0; i -= 1) {
@@ -216,7 +218,7 @@ export function pickFirstDefined(...values: any[]): any {
   return null
 }
 
-export function createEmptyAiPrivateIntelPool(): any {
+export function createEmptyAiPrivateIntelPool(): AiPrivateIntelPool {
   return {
     knownOutlineIds: new Set(),
     knownQualityIds: new Set(),

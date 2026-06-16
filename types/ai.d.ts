@@ -217,6 +217,53 @@ export interface ConversationMessage {
 
 // ==================== AI 记忆存储 ====================
 
+/** AI 私有情报池 */
+export interface AiPrivateIntelPool {
+  knownOutlineIds: Set<string>
+  knownQualityIds: Set<string>
+  outlineSignals: AiIntelSignal[]
+  qualitySignals: AiIntelSignal[]
+  signalHistory: AiIntelSignal[]
+  latestSignalStats: AiSignalStats | null
+  aggregateStats: AiSignalStats | null
+  knownCellStates: Record<string, unknown>
+  itemKnowledge: Record<string, AiItemKnowledge>
+  highValueTrackByItemId: Record<string, unknown>
+  highValueTracks: unknown[]
+  nextTrackIndex: number
+}
+
+/** AI 情报信号 */
+export interface AiIntelSignal {
+  qualityKey?: string
+  itemId?: string
+  sampleCell?: { x: number; y: number }
+  category?: string
+  timestamp?: number
+  revealed?: number
+  signalStats?: AiSignalStats
+}
+
+/** AI 信号统计 */
+export interface AiSignalStats {
+  mean: number
+  spreadRatio: number
+  upperEdge: number
+  lowerEdge: number
+  std: number
+  iqr: number
+  count: number
+}
+
+/** AI 物品知识 */
+export interface AiItemKnowledge {
+  qualityKey?: string
+  sizeTag?: string
+  category?: string
+  estimatedValue?: number
+  confidence?: number
+}
+
 /** AI 记忆存储 */
 export interface AiMemoryStorage {
   conversations: Record<string, ConversationMessage[]>

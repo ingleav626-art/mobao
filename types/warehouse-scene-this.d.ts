@@ -24,6 +24,7 @@ import type {
   BidDecision,
   Personality,
   AiPrivateIntel,
+  AiItemKnowledge,
   IntelSummary,
   ToolEffect,
   ActionCandidate,
@@ -196,6 +197,19 @@ export interface WarehouseSceneThis {
     itemCount: number
     roundCount: number
     players: string[]
+    logs: Array<{
+      round: number
+      bids: Record<string, number>
+      winner: string
+      winnerBid: number
+    }>
+    finishedAt?: number
+    winnerProfit?: number
+    playerProfit?: number
+    dividendTicketInfo?: {
+      dividendPerPlayer: number
+      ticketPerPlayer: number
+    }
   }>
   battleRecordReplayActive: boolean
   battleRecordReplayRecordId: string | null
@@ -204,6 +218,7 @@ export interface WarehouseSceneThis {
     bids: Record<string, number>
     winner: string
     winnerBid: number
+    page?: number
   } | null
 
   // 结算属性（来自 SettlementManagerMixin）
@@ -382,7 +397,7 @@ export interface WarehouseSceneThis {
   pickPrivateRevealTargets(options: { playerId: string; mode: string; count: number; category: string; allowCategoryFallback: boolean; sortStrategy: string }): Artifact[]
   getHighValuePriceThreshold(): number
   isHighValueArtifact(item: Artifact): boolean
-  ensureAiItemKnowledge(playerId: string, itemId: string): unknown
+  ensureAiItemKnowledge(playerId: string, itemId: string): AiItemKnowledge
   getAiNeighborStateLabel(playerId: string, x: number, y: number): string
   isWarehouseCellOccupied(x: number, y: number): boolean
   markAiKnownCellState(playerId: string, x: number, y: number, state: string): void
