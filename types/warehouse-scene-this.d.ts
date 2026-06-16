@@ -504,7 +504,7 @@ export interface WarehouseSceneThis {
 
   // LLM 方法（来自 LlmDecisionMixin）
   getLlmSettings(): LlmSettings
-  getLlmProvider(): { id: string; name: string; apiKey?: string; endpoint?: string; model?: string } | null
+  getLlmProvider(): { id: string; name: string; apiKey?: string; endpoint?: string; model?: string; requestChat?(options: unknown): Promise<unknown> } | null
   canUseLlmDecisionForPlayer(playerId: string): boolean
   pushRunSettlementContextToAi(context: unknown): void
   hasAppliedMoneyForRun(): boolean
@@ -590,7 +590,7 @@ export interface WarehouseSceneThis {
   normalizeAiLlmPlan(playerId: string, decision: unknown, raw: string): unknown
   requestAiLlmPlan(player: unknown): Promise<unknown>
   buildAiToolResultSummary(result: unknown, actionType: string, actionId: string): string
-  requestAiLlmErrorCorrection(player: unknown, plan: unknown, error: unknown, history: unknown[], messages: unknown[]): Promise<unknown>
+  requestAiLlmErrorCorrection(player: Player, plan: LlmPlan, error: LlmErrorInfo, history: LlmDecision[], messages: ConversationMessage[]): Promise<LlmPlan | null>
   prepareAiLlmRoundPlans(): void
   processAiDecisions(): void
   pushAiRoundSummary(summary: unknown): void
