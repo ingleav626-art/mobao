@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file game/ai/intel.js
  * @module game/ai/intel
@@ -56,7 +58,7 @@ import { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } from "../data/artifacts"
 import { CHARACTERS } from "../data/characters"
 import { getActiveCharacter } from "../data/character-system"
 
-export const AiIntelMixin = {
+export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
   /**
    * 构建规则AI可调用的揭示上下文，委托给场景的批量揭示方法
    * @returns {{ revealOutline: Function, revealQuality: Function, revealAll: Function }}
