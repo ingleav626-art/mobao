@@ -212,6 +212,7 @@ export interface WarehouseSceneThis {
         h: number
         trueValue: number
       }>
+      itemCount?: number
     }
     logs: Array<{
       round: number
