@@ -1,6 +1,6 @@
 /**
- * @file shop/index.js
- * @module shop
+ * @file shop/index.ts
+ * @module game/shop
  * @description 商店页面 UI 管理。采用 IIFE + 揭示模块模式，挂载到 window.MobaoShopPage。
  *              管理商店的完整交互流程，包括道具浏览、搜索筛选、购买、库存查看、
  *              限时特惠等。通过 MobaoShopBridge 与后端数据层交互。
@@ -32,6 +32,9 @@
  *
  * @exports window.MobaoShopPage - 商店页面单例
  *   { init, open, close, updateMoneyDisplay, renderAllItems, renderInventory, renderLimitedOffers, ITEM_CATEGORIES }
+ *
+ * @requires bridge/shop - 商店数据 Bridge
+ * @requires game/animations - 动效工具
  */
 import { MobaoShopBridge } from "../bridge/shop"
 import { MobaoAnimations } from "../animations"

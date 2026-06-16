@@ -1,6 +1,6 @@
 /**
- * @file lan/index.js
- * @module lan
+ * @file lan/index.ts
+ * @module game/lan
  * @description 联机房间 UI 与事件处理 Mixin。管理联机大厅的完整生命周期，
  *              包括服务器连接、房间创建/加入、玩家槽位管理、角色选择、道具携带、
  *              地图选择、以及游戏过程中的 WebSocket 事件监听。

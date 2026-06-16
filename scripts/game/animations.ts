@@ -1,6 +1,6 @@
 /**
  * @file animations.ts
- * @module animations
+ * @module game/animations
  * @description 前端动效工具函数库。挂载到 window.MobaoAnimations。
  *              提供项目通用的 UI 动画效果，包括涟漪、数字滚动、卡片入场、脉冲、
  *              覆盖层开关、回合过渡、暂停视觉等。无外部依赖，纯 DOM + CSS 动画。
@@ -43,6 +43,8 @@
  *    - bindAllButtonEffects(buttons): 批量绑定涟漪+缩放
  *
  * @exports window.MobaoAnimations - 动效工具库单例
+ *
+ * @requires core/utils - 工具函数
  */
 
 /* ---- 1. 按钮点击涟漪 ---- */

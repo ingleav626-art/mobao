@@ -19,6 +19,8 @@
  *   底部有"向下滑动查看更多"提示，滚动到底部自动隐藏
  *
  * @exports CarouselMixin - 轮播组件 Mixin，混入 Phaser Scene
+ *
+ * @requires data/map-profiles - 地图配置数据
  */
 import { getAllProfiles, getSelectedProfileId, setSelectedProfileId, getProfile } from "../data/map-profiles"
 

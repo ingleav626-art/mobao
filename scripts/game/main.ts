@@ -1,4 +1,5 @@
 /// <reference types="phaser" />
+import type { WarehouseSceneThis } from "../../types/warehouse-scene-this"
 import type {
   Player,
   Artifact,

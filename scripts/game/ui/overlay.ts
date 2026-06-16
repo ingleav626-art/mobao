@@ -13,6 +13,10 @@
  *   - 确认对话框：showGameConfirm / hideGameConfirm
  *
  * @exports UiOverlayMixin - 弹窗与覆盖层 Mixin，混入 Phaser Scene
+ *
+ * @requires core/utils - 工具函数
+ * @requires core/settings - 游戏设置
+ * @requires core/constants - 常量定义
  */
 import { clamp, rgbHex } from "../core/utils"
 import { GAME_SETTINGS, saveGameSettings, normalizeGameSettings, defaultGameSettings } from "../core/settings"

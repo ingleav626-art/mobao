@@ -5,6 +5,8 @@
  *              使用双视频 A/B 切换实现无缝循环，支持移动端适配。
  *
  * @exports LanLive2dMixin - 包含 startLanLive2dLoop 和 stopLanLive2dLoop 方法
+ *
+ * @requires core/utils - 工具函数
  */
 
 interface Live2dState {
