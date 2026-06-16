@@ -1,6 +1,6 @@
 /**
- * @file audio/audio-ui.js
- * @module audio/ui
+ * @file audio/audio-ui.ts
+ * @module audio/audio-ui
  * @description 音频 UI 交互层。采用对象字面量单例模式，挂载到 window.AudioUI。
  *              监听 DOM 交互事件（点击、键盘），自动为 UI 元素播放对应音效。
  *              提供 API 供业务代码主动触发特定音效。

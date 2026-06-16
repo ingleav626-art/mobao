@@ -1,9 +1,11 @@
 /**
  * @file mobile/mobile-handler.ts
- * @module mobile/handler
+ * @module mobile/mobile-handler
  * @description 移动端适配处理器。采用 IIFE + 对象字面量单例模式。
  *              解决移动端（特别是 Android WebView）的键盘遮挡、输入框定位、
  *              横竖屏切换、自定义下拉框、触觉反馈等兼容性问题。
+ *
+ * @exports MobileHandler - 移动端适配处理器单例
  */
 "use strict"
 

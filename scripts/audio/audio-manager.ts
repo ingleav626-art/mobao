@@ -1,6 +1,6 @@
 /**
- * @file audio/audio-manager.js
- * @module audio/manager
+ * @file audio/audio-manager.ts
+ * @module audio/audio-manager
  * @description 音频管理器。采用对象字面量单例模式，挂载到 window.AudioManager。
  *              管理游戏所有音效（SFX）和背景音乐（BGM）的加载、播放、控制和持久化设置。
  *
