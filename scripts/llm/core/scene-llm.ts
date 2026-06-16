@@ -12,6 +12,10 @@
  *
  * @exports window.MobaoSceneLlm
  * @exports createSceneLlmBridge
+ *
+ * @requires llm/core/llm-settings - 设置模块
+ * @requires llm/core/llm-prompt - Prompt 构建模块
+ * @requires llm/core/llm-decision - 决策模块
  */
 import { createLlmSettingsModule } from './llm-settings.js'
 import { createLlmPromptModule } from './llm-prompt.js'

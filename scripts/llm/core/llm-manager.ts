@@ -1,6 +1,6 @@
 /**
- * @file llm/core/llm-manager.js
- * @module llm/core/manager
+ * @file llm/core/llm-manager.ts
+ * @module llm/core/llm-manager
  * @description LLM 多 Provider 管理器。采用 IIFE 模式，挂载到 window.LlmManager。
  *              统一管理多个 LLM Provider（DeepSeek/OpenAI/Qwen/GLM/Kimi/自定义），
  *              提供注册、切换、请求转发、Token 监控和自定义 Provider 持久化。
@@ -266,6 +266,12 @@ function saveCustomProviders(list: any[]): void {
   } catch (_error) { }
 }
 
+/**
+ * 注册LLM Provider到管理器
+ * @param {Object} provider - Provider实例，必须包含id和requestChat方法
+ * @returns {void}
+ * @throws {Error} Provider格式不正确时抛出异常
+ */
 function registerProvider(provider: any): void {
   if (!provider || typeof provider !== "object") {
     throw new Error("Provider must be an object")
@@ -337,6 +343,11 @@ function registerProvider(provider: any): void {
   }
 }
 
+/**
+ * 注销LLM Provider
+ * @param {string} providerId - Provider ID
+ * @returns {boolean} 注销成功返回true，Provider不存在返回false
+ */
 function unregisterProvider(providerId: string): boolean {
   if (!providers.has(providerId)) {
     return false
@@ -348,6 +359,11 @@ function unregisterProvider(providerId: string): boolean {
   return true
 }
 
+/**
+ * 获取LLM Provider实例
+ * @param {string} [providerId] - Provider ID（不传则返回当前活跃的Provider）
+ * @returns {Object|null} Provider实例，不存在返回null
+ */
 function getProvider(providerId?: string): any {
   if (providerId) {
     const p = providers.get(providerId) || null
@@ -363,6 +379,11 @@ function getActiveProviderId(): string | null {
   return activeProviderId
 }
 
+/**
+ * 设置当前活跃的LLM Provider
+ * @param {string} providerId - Provider ID
+ * @returns {boolean} 设置成功返回true，Provider不存在返回false
+ */
 function setActiveProvider(providerId: string): boolean {
   console.log("[LlmManager.setActiveProvider] providerId:", providerId, "exists:", providers.has(providerId))
   if (!providers.has(providerId)) {
@@ -424,6 +445,12 @@ async function requestChat(options: any): Promise<any> {
   return provider.requestChat(options)
 }
 
+/**
+ * 测试指定LLM Provider的连接
+ * @param {string} providerId - Provider ID
+ * @param {Object} [overrideSettings] - 覆盖的设置参数
+ * @returns {Promise<Object>} 测试结果 { ok, message?, error? }
+ */
 async function testConnection(providerId: string, overrideSettings?: any): Promise<any> {
   const provider = getProvider(providerId)
   if (!provider) {
@@ -436,6 +463,16 @@ async function testConnection(providerId: string, overrideSettings?: any): Promi
   return provider.testConnection(overrideSettings)
 }
 
+/**
+ * 创建基础LLM Provider（含chat/testConnection/设置管理）
+ * @param {Object} config - Provider配置
+ * @param {string} config.id - Provider唯一ID
+ * @param {string} config.name - 显示名称
+ * @param {string} [config.description] - 描述
+ * @param {string} [config.storageKey] - 设置存储键
+ * @param {Function} [config.defaultSettings] - 默认设置工厂函数
+ * @returns {Object} Provider实例
+ */
 function createBaseProvider(config: any): any {
   const id = config.id
   const name = config.name || id
@@ -605,7 +642,15 @@ function createBaseProvider(config: any): any {
 function createOpenAICompatibleProvider(config: any): any {
   const base = createBaseProvider(config)
 
-  async function requestChat(options: any): Promise<any> {
+/**
+ * 向当前活跃的LLM Provider发送聊天请求
+ * @param {Object} options - 请求选项
+ * @param {Array} options.messages - 消息数组 [{role, content}]
+ * @param {number} [options.temperature] - 温度参数
+ * @param {number} [options.max_tokens] - 最大token数
+ * @returns {Promise<Object>} 响应结果 { ok, content, usage?, error? }
+ */
+async function requestChat(options: any): Promise<any> {
     const callStartTime = Date.now()
     const callId = `${base.id}-${callStartTime}-${Math.random().toString(16).slice(2, 6)}`
     console.log(`[requestChat] ${callId} START, provider: ${base.id}, model: ${options.settings?.model || "unknown"}`)

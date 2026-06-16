@@ -83,6 +83,26 @@ interface ToolResult {
 }
 
 export function createLlmPromptModule(deps: LlmPromptDeps) {
+  // ─── LLM Prompt 结构 ───
+  //
+  // 两段式Prompt:
+  //   1. 系统Prompt (System): 角色身份 + 游戏规则 + 工具说明
+  //   2. 用户Prompt (User): 当前状态 + 情报信息 + 可用工具
+  //
+  // 决策流程:
+  //   a. 构建初始Prompt (isInitialRound=true)
+  //   b. LLM返回JSON: { bid, skill, item, thought }
+  //   c. 若执行了工具，构建follow-up Prompt追问
+  //   d. LLM根据工具结果更新出价
+  //
+  // 纠错机制:
+  //   - JSON解析失败时尝试extractDecisionJson修复
+  //   - 最多重试2次，仍失败则回退到规则AI结果
+  //
+  // 关键变量:
+  //   isInitialRound - 是否首轮（首轮prompt更详细）
+  //   compact - 是否压缩prompt（非首轮减少token消耗）
+
   const {
     GAME_SETTINGS,
     SKILL_DEFS,

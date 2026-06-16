@@ -3,6 +3,8 @@
  * @module llm/core/llm-error
  * @description LLM 错误处理模块。提供 JSON 解析、错误分类、Toast 通知、Badge 显示等能力。
  *              从 scene-llm.js 拆分而来，不依赖 deps 注入。
+ *
+ * @exports safeParseJson, tryExtractDecisionJson, parseLlmError, showAiErrorToast - 错误处理工具
  */
 export function safeParseJson(text: string): any {
   try {

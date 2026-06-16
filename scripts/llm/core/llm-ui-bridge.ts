@@ -1,6 +1,6 @@
 /**
- * @file llm/core/llm-ui-bridge.js
- * @module llm/core/ui-bridge
+ * @file llm/core/llm-ui-bridge.ts
+ * @module llm/core/llm-ui-bridge
  * @description LLM 设置 UI 桥接层。采用 IIFE 模式，挂载到 window.LlmUiBridge。
  *              连接 LlmManager 后端与设置面板 DOM，处理 Provider 切换、表单读写、
  *              连接测试、自定义 Provider 增删等 UI 交互。
@@ -285,10 +285,16 @@ function updateUiForProvider(providerId: string): void {
 }
 
 function refreshProviderSelect(selectValue?: string): void {
+  console.log("[LlmUiBridge] refreshProviderSelect() 被调用, selectValue:", selectValue)
   const els = getElements()
-  if (!els.providerSelect) return
+  if (!els.providerSelect) {
+    console.warn("[LlmUiBridge] refreshProviderSelect - providerSelect 元素未找到！")
+    return
+  }
 
-  (els.providerSelect as HTMLSelectElement).innerHTML = ""
+  console.log("[LlmUiBridge] refreshProviderSelect - 清空并重建下拉选项")
+  const selectElement = els.providerSelect as HTMLSelectElement
+  selectElement.innerHTML = ""
 
   const optgroup1 = document.createElement("optgroup")
   optgroup1.label = "预定义模型"
@@ -302,9 +308,11 @@ function refreshProviderSelect(selectValue?: string): void {
   })
 
   els.providerSelect.appendChild(optgroup1)
+  console.log("[LlmUiBridge] refreshProviderSelect - 已添加预定义模型选项")
 
   if (LlmManager) {
     const customList = LlmManager.loadCustomProviders()
+    console.log("[LlmUiBridge] refreshProviderSelect - 自定义模型数量:", customList.length)
     if (customList.length > 0) {
       const optgroup2 = document.createElement("optgroup")
       optgroup2.label = "自定义模型"
@@ -317,15 +325,18 @@ function refreshProviderSelect(selectValue?: string): void {
       })
 
       els.providerSelect!.appendChild(optgroup2)
+      console.log("[LlmUiBridge] refreshProviderSelect - 已添加自定义模型选项")
     }
   }
 
   if (selectValue && els.providerSelect.querySelector('option[value="' + selectValue + '"]')) {
     const select = els.providerSelect as HTMLSelectElement
+    console.log("[LlmUiBridge] refreshProviderSelect - 设置选中值为:", selectValue)
     select.value = ""
     select.value = selectValue
     select.dispatchEvent(new Event("change", { bubbles: false }))
   }
+  console.log("[LlmUiBridge] refreshProviderSelect - 完成")
 }
 
 function loadProviderSettings(providerId: string): void {
@@ -503,13 +514,18 @@ async function testConnection(providerId: string): Promise<any> {
 }
 
 function showAddProviderModal(): void {
+  console.log("[LlmUiBridge] showAddProviderModal() 被调用")
   const els = getElements()
+  console.log("[LlmUiBridge] showAddProviderModal - customProviderModal:", els.customProviderModal ? "找到" : "未找到")
   if (els.customProviderModal) {
+    console.log("[LlmUiBridge] 显示自定义 Provider 弹窗")
     els.customProviderModal.classList.remove("hidden")
     els.customProviderModal.removeAttribute("hidden")
     if (els.customProviderName) (els.customProviderName as HTMLInputElement).value = ""
     if (els.customProviderEndpoint) (els.customProviderEndpoint as HTMLInputElement).value = ""
     if (els.customProviderModel) (els.customProviderModel as HTMLInputElement).value = ""
+  } else {
+    console.error("[LlmUiBridge] customProviderModal 元素未找到，无法显示弹窗！")
   }
 }
 
@@ -697,7 +713,17 @@ function deleteCurrentProvider(): void {
 }
 
 function initialize(): void {
+  console.log("[LlmUiBridge] initialize() 开始执行")
   const els = getElements()
+  console.log("[LlmUiBridge] getElements() 结果:", {
+    providerSelect: els.providerSelect ? "找到" : "未找到",
+    addProviderBtn: els.addProviderBtn ? "找到" : "未找到",
+    deleteProviderBtn: els.deleteProviderBtn ? "找到" : "未找到",
+    testBtn: els.testBtn ? "找到" : "未找到",
+    customProviderModal: els.customProviderModal ? "找到" : "未找到",
+    customProviderConfirm: els.customProviderConfirm ? "找到" : "未找到",
+    customProviderCancel: els.customProviderCancel ? "找到" : "未找到"
+  })
 
   if (LlmManager && LlmManager.initializeCustomProviders) {
     LlmManager.initializeCustomProviders()
@@ -705,12 +731,16 @@ function initialize(): void {
 
   const managerSettings = LlmManager ? LlmManager.getActiveProviderId() : null
   const initialProviderId = managerSettings || "deepseek"
+  console.log("[LlmUiBridge] initialProviderId:", initialProviderId)
 
   let isInitializing = true
 
   if (els.providerSelect) {
+    console.log("[LlmUiBridge] 为 providerSelect 绑定 change 事件")
     els.providerSelect.addEventListener("change", function () {
+      console.log("[LlmUiBridge] providerSelect change 事件触发, isInitializing:", isInitializing)
       if (isInitializing) {
+        console.log("[LlmUiBridge] 初始化中，跳过 change 处理")
         return
       }
 
@@ -720,11 +750,14 @@ function initialize(): void {
       }
 
       const providerId = (this as HTMLSelectElement).value
+      console.log("[LlmUiBridge] 切换到 provider:", providerId)
       loadProviderSettings(providerId)
       if (LlmManager) {
         LlmManager.setActiveProvider(providerId)
       }
     })
+  } else {
+    console.warn("[LlmUiBridge] providerSelect 元素未找到！")
   }
 
   refreshProviderSelect(initialProviderId)
@@ -775,32 +808,57 @@ function initialize(): void {
   }
 
   if (els.testBtn) {
-    els.testBtn.addEventListener("click", function () {
+    console.log("[LlmUiBridge] 为 testBtn 绑定 click 事件")
+    els.testBtn.addEventListener("click", function (e) {
+      console.log("[LlmUiBridge] testBtn click 事件触发", e)
       const providerId = getCurrentProviderId()
+      console.log("[LlmUiBridge] 测试连接 providerId:", providerId)
       testConnection(providerId)
     })
+  } else {
+    console.warn("[LlmUiBridge] testBtn 元素未找到！")
   }
 
   if (els.addProviderBtn) {
-    els.addProviderBtn.addEventListener("click", showAddProviderModal)
+    console.log("[LlmUiBridge] 为 addProviderBtn 绑定 click 事件")
+    els.addProviderBtn.addEventListener("click", function (e) {
+      console.log("[LlmUiBridge] addProviderBtn click 事件触发", e)
+      showAddProviderModal()
+    })
+  } else {
+    console.warn("[LlmUiBridge] addProviderBtn 元素未找到！")
   }
 
   if (els.deleteProviderBtn) {
-    els.deleteProviderBtn.addEventListener("click", deleteCurrentProvider)
+    console.log("[LlmUiBridge] 为 deleteProviderBtn 绑定 click 事件")
+    els.deleteProviderBtn.addEventListener("click", function (e) {
+      console.log("[LlmUiBridge] deleteProviderBtn click 事件触发", e)
+      deleteCurrentProvider()
+    })
+  } else {
+    console.warn("[LlmUiBridge] deleteProviderBtn 元素未找到！")
   }
 
   if (els.customProviderConfirm) {
+    console.log("[LlmUiBridge] 为 customProviderConfirm 绑定 click 事件")
     els.customProviderConfirm.addEventListener("click", function (e) {
+      console.log("[LlmUiBridge] customProviderConfirm click 事件触发", e)
       e.stopPropagation()
       addCustomProvider()
     })
+  } else {
+    console.warn("[LlmUiBridge] customProviderConfirm 元素未找到！")
   }
 
   if (els.customProviderCancel) {
+    console.log("[LlmUiBridge] 为 customProviderCancel 绑定 click 事件")
     els.customProviderCancel.addEventListener("click", function (e) {
+      console.log("[LlmUiBridge] customProviderCancel click 事件触发", e)
       e.stopPropagation()
       hideAddProviderModal()
     })
+  } else {
+    console.warn("[LlmUiBridge] customProviderCancel 元素未找到！")
   }
 
   const customProviderCancel2 = document.getElementById("customProviderCancel2")

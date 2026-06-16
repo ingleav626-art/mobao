@@ -3,6 +3,9 @@
  * @module llm/core/llm-decision
  * @description LLM 决策流程模块。负责 LLM 请求、追问、纠错、批量决策、遥测、面板渲染。
  *              从 scene-llm.js 拆分而来。
+ *
+ * @requires llm/core/prompts - LLM Prompt 模板
+ * @requires llm/core/llm-error - 错误处理
  */
 import { LLM_DECISION_SYSTEM_PROMPT } from './prompts.js'
 import { parseLlmError, showAiErrorToast, setPlayerLlmError, clearPlayerLlmErrors } from './llm-error.js'
