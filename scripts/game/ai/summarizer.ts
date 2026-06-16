@@ -8,6 +8,8 @@
  * 总结内容：基于最近 N 局的历史记录，生成精炼的经验总结
  *
  * @exports window.MobaoSummarizer
+ *
+ * @requires game/ai/memory - AI记忆系统
  */
 
 export interface SummaryResult {

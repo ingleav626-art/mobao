@@ -31,6 +31,9 @@
  * 混入后 scene 将获得：aiReflectionState, aiReflectionStateDetail,
  * triggerAiReflection, applyMemoryOperations, updateCrossGameMemory,
  * updateReflectionStatusUI, proceedToNewRun
+ *
+ * @requires game/ai/memory - AI记忆系统
+ * @requires llm/core/scene-llm - LLM决策桥接
  */
 
 import { AudioManager } from "../../audio/audio-manager"

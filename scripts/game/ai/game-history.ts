@@ -9,6 +9,8 @@
  *   GameHistoryStore: { records: GameRecord[], version: string }
  *
  * @exports window.MobaoGameHistory
+ *
+ * @requires core/constants - 常量定义
  */
 
 const GAME_HISTORY_STORAGE_KEY = "mobao_ai_game_history_v1"

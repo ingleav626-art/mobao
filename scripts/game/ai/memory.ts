@@ -30,6 +30,9 @@
  *   pendingNextRunAiSummary, runSerial,
  *   loadAiMemoryFromStorage, saveAiMemoryToStorage, restoreAiMemoryFromStorage,
  *   getAiConversationMessages, pushAiRoundSummary, updateLastAiRoundResult, 等
+ *
+ * @requires core/constants - 常量定义
+ * @requires core/utils - 工具函数
  */
 import { AI_MEMORY_STORAGE_KEY } from "../core/constants"
 import { formatBidRevealNumber } from "../core/utils"

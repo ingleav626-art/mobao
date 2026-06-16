@@ -293,7 +293,20 @@ export class AuctionAiEngine {
     this.lastDecisionLog = null
   }
 
-  // 确保AI状态存在，并根据人格参数初始化锚点等信息。
+  /**
+   * 批量计算所有AI玩家的出价决策
+   * @param {BuildAIBidsContext} context - 出价上下文
+   * @param {Array} context.aiPlayers - AI玩家列表
+   * @param {number} context.clueRate - 线索揭示率 (0-1)
+   * @param {number} context.round - 当前轮次
+   * @param {number} context.maxRounds - 最大轮数
+   * @param {number} context.currentBid - 当前最高出价
+   * @param {Object} [context.lastRoundBids={}] - 上轮出价记录
+   * @param {number} [context.bidStep=10000] - 出价步长
+   * @param {Object} [context.aiIntelMap={}] - 各AI情报摘要
+   * @param {Object} [context.aiToolEffectMap={}] - 各AI工具效果
+   * @returns {Object<string, number>} 各AI玩家ID到出价值的映射
+   */
   buildAIBids(context: BuildAIBidsContext) {
     const {
       aiPlayers, // 当前拍卖中的AI玩家列表，由主场景传入
@@ -395,7 +408,13 @@ export class AuctionAiEngine {
     return bidMap
   }
 
-  // 计算单个AI玩家的出价决策，基于其人格、当前信息和市场状态，得到一个包含最终出价和相关决策信息的对象。
+  /**
+   * 计算单个AI玩家的出价决策。基于人格参数、情报信息和市场状态，执行8步出价算法：
+   * 1. 市场参考价 → 2. 信心计算 → 3. 感知价值 → 4. 心理预期 →
+   * 5. 过热评估 → 6. 价格上限 → 7. 最终出价 → 8. 多样性调整
+   * @param {ComputeSingleDecisionArgs} args - 决策参数
+   * @returns {DecisionResult} 包含finalBid和决策元数据的结果对象
+   */
   computeSingleDecision(args: ComputeSingleDecisionArgs): DecisionResult {
     const {
       playerId,
@@ -412,6 +431,26 @@ export class AuctionAiEngine {
       bidStep,
       toolEffect
     } = args
+
+    // ─── 出价算法8步流程 ───
+    //
+    // 步骤1: 市场参考价 marketRef ← 当前出价 + 上轮出价的加权均值
+    // 步骤2: 信心 confidence ← 线索率 + 质量率 + 不确定性 + 轮次进度 + 工具效果
+    // 步骤3: 感知价值 perceivedValue ← 锚点出价 × 系数 + 趋势 + 压力 + 噪声
+    // 步骤4: 心理预期 psychExpectedBid ← 向目标预期逐步适应
+    // 步骤5: 过热评估 ← 当前出价超过心理预期时触发回撤
+    // 步骤6: 价格上限 hardCap ← min(感知上限, 锚点上限, 心理上限, 市场上限)
+    // 步骤7: 最终出价 ← max(当前出价, 感知价值 × 调整) 对齐到步长
+    // 步骤8: 群体多样性调整 ← 确保AI出价不扎堆
+    //
+    // 关键变量:
+    //   confidence - 信心分数 (0-1)，影响出价积极性
+    //   perceivedValue - 感知价值，基于锚点和情报的估值
+    //   hardCap - 价格上限，防止非理性出价
+    //
+    // 注意事项:
+    //   - 人格参数(激进/纪律/跟风)会影响各步骤的权重
+    //   - 不确定性高时AI会更保守
 
     // 确保AI玩家的状态存在，如果不存在则根据人格和出价步长初始化一个新的状态对象，包含锚点出价、心理预期出价和上次出价等信息。
     const state = this.ensureState(playerId, persona, bidStep)
@@ -806,6 +845,16 @@ export class AuctionAiEngine {
     }
   }
 
+  /**
+   * 规划AI情报动作。根据当前情报状态和可用资源，选择最优的技能/道具使用策略
+   * @param {PlanIntelActionArgs} args - 情报规划参数
+   * @param {string} args.playerId - 玩家ID
+   * @param {number} args.round - 当前轮次
+   * @param {number} args.maxRounds - 最大轮数
+   * @param {Object} [args.intelSummary={}] - 情报摘要
+   * @param {Object} [args.resources={}] - 可用资源（技能/道具）
+   * @returns {IntelActionResult} 情报动作结果 { type, itemId?, skillId?, reason }
+   */
   planIntelAction(args: PlanIntelActionArgs): IntelActionResult {
     const { playerId, round, maxRounds, intelSummary = {}, resources = {} } = args
 
@@ -935,6 +984,16 @@ export class AuctionAiEngine {
     }
   }
 
+  /**
+   * 计算工具（技能/道具）使用后的效果评估
+   * @param {Object} args - 工具效果参数
+   * @param {string} [args.actionType="none"] - 动作类型 (skill/item/none)
+   * @param {string} [args.actionId="none"] - 动作ID
+   * @param {number} [args.roundProgress=0] - 轮次进度 (0-1)
+   * @param {IntelSummaryInput} [args.intelSummary] - 情报摘要
+   * @param {Object} [args.signalStats] - 信号统计数据
+   * @returns {ToolEffect} 工具效果评估结果
+   */
   buildToolEffect(args: {
     actionType?: string
     actionId?: string

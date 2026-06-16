@@ -14,17 +14,20 @@
  * @exports WalletMixin - AI钱包管理 Mixin，混入 Phaser Scene
  * @exports AI_WALLET_INITIAL - AI初始资金常量
  *
+ * @requires core/constants - 常量定义
+ *
  * 混入方式：Object.assign(scene, MobaoAi.WalletMixin)
  * 混入后 scene 将获得：aiWallets, loadAiWalletsFromStorage, saveAiWalletsToStorage,
  *   resetAiWallets, initAiWallets, getAiWallet, getAiMinimumBid, normalizeAiBidValue
  */
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { GAME_SETTINGS } from "../core/settings"
 import { clamp, roundToStep } from "../core/utils"
 
 export const AI_WALLET_INITIAL = 1000000
 const AI_WALLET_STORAGE_KEY = "mobao_ai_wallets_v1"
 
-export const AiWalletMixin: Record<string, unknown> = {
+export const AiWalletMixin: ThisType<WarehouseSceneThis> = {
   loadAiWalletsFromStorage(): Record<string, number> {
     try {
       const raw = localStorage.getItem(AI_WALLET_STORAGE_KEY)
