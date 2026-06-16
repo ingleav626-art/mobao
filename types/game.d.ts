@@ -128,6 +128,7 @@ export interface SkillDef {
 export interface ItemDef {
   id: string              // "item-outline-lamp"
   name: string            // "道具-轮廓探灯"
+  label: string           // 显示标签
   description: string
   type?: string           // 道具类型
   cost?: number           // 商店价格

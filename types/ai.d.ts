@@ -113,11 +113,30 @@ export interface ToolEffect {
 
 // ==================== 情报分析 ====================
 
+/** AI 单件藏品知识 */
+export interface AiItemKnowledge {
+  revealCount: number
+  lastSeenRound: number
+  category: string | null
+  qualityKey: QualityLevel | null
+  sizeTag: string | null
+  knownCells: Set<string>
+}
+
 /** AI 私有情报（每个AI玩家的探查结果汇总） */
 export interface AiPrivateIntel {
-  aggregate: IntelAggregate       // 汇总指标
-  highValueTracks: HighValueTrack[]  // 高价值追踪
-  [playerId: string]: any
+  outlineSignals: unknown[]
+  qualitySignals: unknown[]
+  signalHistory: unknown[]
+  aggregateStats: IntelAggregate | null
+  latestSignalStats: IntelAggregate | null
+  knownCellStates: Record<string, string>
+  itemKnowledge: Record<string, AiItemKnowledge>
+  highValueTrackByItemId: Record<string, string>
+  highValueTracks: HighValueTrack[]
+  nextTrackIndex: number
+  knownOutlineIds: Set<string>
+  knownQualityIds: Set<string>
 }
 
 /** 情报汇总指标 */
@@ -194,6 +213,19 @@ export interface ConversationMessage {
   item?: string
   thought?: string
   result?: string
+}
+
+// ==================== AI 记忆存储 ====================
+
+/** AI 记忆存储 */
+export interface AiMemoryStorage {
+  conversations: Record<string, ConversationMessage[]>
+  crossGameMemory: CrossGameMemory[]
+  crossGameMessages: Record<string, ConversationMessage[]>
+  pendingSummaryByPlayer: Record<string, unknown>
+  pendingSummary?: unknown
+  runSerial: number
+  savedAt: number
 }
 
 // ==================== 反思系统 ====================
