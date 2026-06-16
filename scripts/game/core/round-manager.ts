@@ -29,22 +29,22 @@ export const RoundManagerMixin: Record<string, Function> = {
     (this as unknown as { roundPaused: boolean }).roundPaused = false;
     (this as unknown as { actionsLeft: number }).actionsLeft = GAME_SETTINGS.actionsPerRound;
     (this as unknown as { roundTimeLeft: number }).roundTimeLeft = GAME_SETTINGS.roundSeconds;
-      (this as unknown as { playerBidSubmitted: boolean }).playerBidSubmitted = false;
-        (this as unknown as { playerRoundBid: number }).playerRoundBid = 0;
-          (this as unknown as { clearCurrentRoundUsage(): void }).clearCurrentRoundUsage();
-          (this as unknown as { resetAiRoundResources(): void }).resetAiRoundResources();
-          (this as unknown as { aiLlmRoundPlans: Record<string, unknown> }).aiLlmRoundPlans = {};
-            (this as unknown as { aiRoundDecisionPromise: Promise<unknown> | null }).aiRoundDecisionPromise = null;
-              (this as unknown as { resetRoundBidDisplay(): void }).resetRoundBidDisplay();
-              (this as unknown as { resetRoundBidReadyState(): void }).resetRoundBidReadyState();
-              (this as unknown as { closeBidKeypad(): void }).closeBidKeypad();
-              (this as unknown as { dom: { bidInput: HTMLInputElement } }).dom.bidInput.value = (this as unknown as { round: number }).round <= 1 ? "" : "0";
-                (this as unknown as { dom: { bidInput: HTMLInputElement } }).dom.bidInput.placeholder = (this as unknown as { round: number }).round <= 1 ? "点击出价" : "";
-                  (this as unknown as { syncPauseButton(): void }).syncPauseButton();
-                  (this as unknown as { startRoundTimer(): void }).startRoundTimer();
+    (this as unknown as { playerBidSubmitted: boolean }).playerBidSubmitted = false;
+    (this as unknown as { playerRoundBid: number }).playerRoundBid = 0;
+    (this as unknown as { clearCurrentRoundUsage(): void }).clearCurrentRoundUsage();
+    (this as unknown as { resetAiRoundResources(): void }).resetAiRoundResources();
+    (this as unknown as { aiLlmRoundPlans: Record<string, unknown> }).aiLlmRoundPlans = {};
+    (this as unknown as { aiRoundDecisionPromise: Promise<unknown> | null }).aiRoundDecisionPromise = null;
+    (this as unknown as { resetRoundBidDisplay(): void }).resetRoundBidDisplay();
+    (this as unknown as { resetRoundBidReadyState(): void }).resetRoundBidReadyState();
+    (this as unknown as { closeBidKeypad(): void }).closeBidKeypad();
+    (this as unknown as { dom: { bidInput: HTMLInputElement } }).dom.bidInput.value = (this as unknown as { round: number }).round <= 1 ? "" : "0";
+    (this as unknown as { dom: { bidInput: HTMLInputElement } }).dom.bidInput.placeholder = (this as unknown as { round: number }).round <= 1 ? "点击出价" : "";
+    (this as unknown as { syncPauseButton(): void }).syncPauseButton();
+    (this as unknown as { startRoundTimer(): void }).startRoundTimer();
     if (!(this as unknown as { isLanMode: boolean }).isLanMode || (this as unknown as { lanIsHost: boolean }).lanIsHost) {
       console.log("[startRound] calling kickoffAiRoundDecisions, round:", (this as unknown as { round: number }).round);
-        (this as unknown as { kickoffAiRoundDecisions(): void }).kickoffAiRoundDecisions()
+      (this as unknown as { kickoffAiRoundDecisions(): void }).kickoffAiRoundDecisions()
     } else {
       console.log(
         "[startRound] SKIPPED kickoffAiRoundDecisions, isLanMode:",
@@ -57,36 +57,36 @@ export const RoundManagerMixin: Record<string, Function> = {
 
   startRoundTimer() {
     (this as unknown as { stopRoundTimer(): void }).stopRoundTimer();
-      (this as unknown as { roundTimerId: number | null }).roundTimerId = window.setInterval(() => {
-        if ((this as unknown as { roundResolving: boolean }).roundResolving || (this as unknown as { settled: boolean }).settled) {
-          (this as unknown as { stopRoundTimer(): void }).stopRoundTimer()
-          return
-        }
+    (this as unknown as { roundTimerId: number | null }).roundTimerId = window.setInterval(() => {
+      if ((this as unknown as { roundResolving: boolean }).roundResolving || (this as unknown as { settled: boolean }).settled) {
+        (this as unknown as { stopRoundTimer(): void }).stopRoundTimer()
+        return
+      }
 
-        if ((this as unknown as { roundPaused: boolean }).roundPaused) {
-          return
-        }
+      if ((this as unknown as { roundPaused: boolean }).roundPaused) {
+        return
+      }
 
-        (this as unknown as { roundTimeLeft: number }).roundTimeLeft -= 1;
-          (this as unknown as { updateHud(): void }).updateHud();
-        if ((this as unknown as { roundTimeLeft: number }).roundTimeLeft === 5 && AudioUI) {
-          AudioUI.playCountdown()
+      (this as unknown as { roundTimeLeft: number }).roundTimeLeft -= 1;
+      (this as unknown as { updateHud(): void }).updateHud();
+      if ((this as unknown as { roundTimeLeft: number }).roundTimeLeft === 5 && AudioUI) {
+        AudioUI.playCountdown()
+      }
+      if ((this as unknown as { roundTimeLeft: number }).roundTimeLeft <= 0) {
+        if ((this as unknown as { isLanMode: boolean }).isLanMode && (this as unknown as { lanBridge: unknown }).lanBridge) {
+          (this as unknown as { stopRoundTimer(): void }).stopRoundTimer();
+          (this as unknown as { writeLog(msg: string): void }).writeLog("联机模式：回合时间到，等待主机结算")
+        } else {
+          (this as unknown as { resolveRoundBids(reason: string): void }).resolveRoundBids("timeout")
         }
-        if ((this as unknown as { roundTimeLeft: number }).roundTimeLeft <= 0) {
-          if ((this as unknown as { isLanMode: boolean }).isLanMode && (this as unknown as { lanBridge: unknown }).lanBridge) {
-            (this as unknown as { stopRoundTimer(): void }).stopRoundTimer();
-              (this as unknown as { writeLog(msg: string): void }).writeLog("联机模式：回合时间到，等待主机结算")
-          } else {
-            (this as unknown as { resolveRoundBids(reason: string): void }).resolveRoundBids("timeout")
-          }
-        }
-      }, 1000)
+      }
+    }, 1000)
   },
 
   stopRoundTimer() {
     if ((this as unknown as { roundTimerId: number | null }).roundTimerId) {
       window.clearInterval((this as unknown as { roundTimerId: number | null }).roundTimerId!);
-        (this as unknown as { roundTimerId: number | null }).roundTimerId = null
+      (this as unknown as { roundTimerId: number | null }).roundTimerId = null
     }
   },
 

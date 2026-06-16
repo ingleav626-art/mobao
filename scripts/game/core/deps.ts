@@ -14,6 +14,11 @@
  *   - 显式依赖，IDE 可追踪引用
  *   - 单一入口，排查变量不可见问题时只需检查此处
  *   - 不依赖 window 全局作用域
+ *
+ * @requires core/deps - 依赖注入容器
+ *
+ * @exports Deps - 依赖注入容器对象
+ * @exports initDeps - 初始化依赖注入容器函数
  */
 
 /** @type {{ LLM_BRIDGE?: object, BATTLE_RECORD_BRIDGE?: object, SETTLEMENT_BRIDGE?: object }} */

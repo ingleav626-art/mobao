@@ -6,6 +6,8 @@
  *
  * @exports window.MobaoUtils - 工具函数库单例（兼容）
  * @exports shuffle, delay, clamp, ... - 命名导出
+ *
+ * @requires core/utils - 工具函数库
  */
 
 export function shuffle<T>(list: T[]): T[] {

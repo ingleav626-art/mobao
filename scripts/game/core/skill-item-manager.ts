@@ -14,6 +14,8 @@
  * @requires window.MobaoShopBridge - 商店桥接（道具消耗同步）
  * @requires SKILL_DEFS - 技能定义（全局）
  * @requires ITEM_DEFS - 道具定义（全局）
+ *
+ * @exports SkillItemManagerMixin - 技能与道具使用管理 Mixin
  */
 
 import { getOutlineBonus, getQualityBonus, getOutlineSortStrategy } from "../data/character-system"
@@ -71,7 +73,7 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       text: skillDef ? skillDef.description : "技能效果"
     });
     (this as unknown as { writeLog(msg: string): void }).writeLog(result.message);
-      (this as unknown as { updateHud(): void }).updateHud()
+    (this as unknown as { updateHud(): void }).updateHud()
     if ((this as unknown as { isLanMode: boolean; lanBridge: { send(msg: unknown): void; playerId: string } }).isLanMode && (this as unknown as { lanBridge: { send(msg: unknown): void; playerId: string } }).lanBridge) {
       (this as unknown as { lanBridge: { send(msg: unknown): void; playerId: string } }).lanBridge.send({
         type: "lan:player-action",

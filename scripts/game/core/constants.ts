@@ -18,18 +18,17 @@
  *   - SETTINGS_STORAGE_KEY = "mobao_settings_v2"
  *   - PLAYER_MONEY_STORAGE_KEY = "mobao_player_money_v1"
  *   - AI_LLM_SWITCH_STORAGE_KEY = "mobao_ai_llm_switch_v1"
- *   - BATTLE_RECORD_STORAGE_KEY = "mobao_battle_records_v1"
  *   - AI_MEMORY_STORAGE_KEY = "mobao_ai_memory_v1"
+ *   - AI_WALLET_STORAGE_KEY = "mobao_ai_wallets_v1"
+ *   - APP_STATE_STORAGE_KEY = "mobao_app_state_v1"
+ *   - SELECTED_MAP_STORAGE_KEY = "mobao_selected_map_v1"
+ *   - SELECTED_CHARACTER_STORAGE_KEY = "mobao_selected_character_v1"
+ *   - SHOP_INVENTORY_STORAGE_KEY = "mobao_shop_inventory_v1"
+ *   - SHOP_REFRESH_DATE_STORAGE_KEY = "mobao_shop_refresh_date_v1"
+ *   - SHOP_LIMITED_OFFER_STORAGE_KEY = "mobao_shop_limited_offer_v1"
+ *   - CARRY_ITEMS_STORAGE_KEY = "mobao_carry_items_v1"
  *
- * 游戏参数：
- *   - DEFAULT_START_MONEY = 3,000,000
- *
- * 品质系统：
- *   - QUALITY_COLORS: 品质颜色 { poor: 0x8b7355, ..., legendary: 0xffd700 }
- *   - QUALITY_ORDER: 品质排序 ["poor", "normal", "fine", "rare", "legendary"]
- *   - QUALITY_LABELS: 品质标签 { poor: "粗", ..., legendary: "绝" }
- *
- * @exports window.MobaoConstants - 全局常量对象
+ * @exports MobaoConstants - 全局常量对象
  */
 
 export const GRID_COLS: number = 12

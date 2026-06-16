@@ -4,6 +4,8 @@
  * @description 游戏设置与玩家资金管理。管理游戏规则参数的持久化存储、规范化校验、以及玩家资金的读写。
  *
  * @exports window.MobaoSettings - 设置管理单例（兼容）
+ *
+ * @requires core/settings - 游戏设置管理
  */
 
 export interface GameSettingsData {

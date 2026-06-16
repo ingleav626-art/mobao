@@ -8,6 +8,8 @@
  *
  * @exports window.MobaoAppState - 应用状态管理单例（兼容）
  * @exports load, save, patch, get, set, reset, recordGameFinished - 命名导出
+ *
+ * @requires core/app-state - 应用全局状态管理
  */
 
 export interface AppStateData {
