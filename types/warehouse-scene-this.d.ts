@@ -133,7 +133,7 @@ export interface WarehouseSceneThis {
   aiLlmPlayerEnabled: boolean
   aiFoldState: Record<string, boolean>
   aiConversationByPlayer: Record<string, ConversationMessage[]>
-  aiCrossGameMemory: CrossGameMemory[]
+  aiCrossGameMemory: Record<string, CrossGameMemory>
   runLogHistory: unknown[]
   lastAiDecisionTelemetry: unknown
   llmEverUsedThisRun: boolean
