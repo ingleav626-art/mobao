@@ -144,6 +144,8 @@ export interface WarehouseSceneThis {
   aiReflectionPending: Record<string, unknown>
   runSerial: number
   currentRunLog: unknown
+  aiConversationCache: Record<string, unknown>
+  pendingNextRunAiSummaryByPlayer: Record<string, unknown>
 
   // AI 属性（来自 AiIntelMixin）
   aiResourceState: Record<string, { skills: Record<string, number>; items: Record<string, number> }>
@@ -198,6 +200,16 @@ export interface WarehouseSceneThis {
   privateIntelEntries: unknown[]
   publicInfoEntries: unknown[]
   currentPublicEvent: unknown
+
+  // Lobby 属性（来自 CharacterSelectMixin）
+  _carryItems: CarryItem[]
+  _MAX_CARRY_ITEMS: number
+  _carryPickerEl: HTMLElement | null
+  _autoReplenish: boolean
+  _live2dVideoState: boolean
+  characterPageEl: HTMLElement | null
+  selectedCharacter: string | null
+  keypadValue: string
 
   // HUD 属性
   _hudRoundText: HTMLElement | null
@@ -315,6 +327,7 @@ export interface WarehouseSceneThis {
   getAiResourceSnapshot(playerId: string): unknown
   getAiAvailableActionState(playerId: string): unknown
   buildAiPrivateRevealContext(playerId: string, item: Artifact, mode: string): unknown
+  getActionDefById(actionId: string): ActionDef
 
   // AI 方法（来自 AiMemoryMixin）
   pushAiMemory(playerId: string, memory: CrossGameMemory): void

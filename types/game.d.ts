@@ -134,6 +134,13 @@ export interface ItemDef {
   execute: (context: RevealContext) => RevealResult
 }
 
+/** 携带道具 */
+export interface CarryItem {
+  id: string              // 道具ID
+  name: string            // 道具名称
+  icon: string            // 道具图标
+}
+
 /** 揭示操作上下文 */
 export interface RevealContext {
   count?: number

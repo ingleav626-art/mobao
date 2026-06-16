@@ -202,3 +202,11 @@ export interface ReflectionAdjustment {
   delta: number       // 调整幅度
   reason: string      // 调整原因
 }
+
+/** 动作定义（技能/道具） */
+export interface ActionDef {
+  id: string          // 动作ID "skill-outline-scan"
+  type: string        // 动作类型 "skill" | "item"
+  name: string        // 动作名称 "技能-拓影侦测"
+  description: string // 动作描述
+}
