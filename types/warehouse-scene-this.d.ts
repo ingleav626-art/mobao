@@ -238,6 +238,7 @@ export interface WarehouseSceneThis {
     winner: string
     winnerBid: number
     page?: number
+    recordId?: string
   } | null
 
   // 结算属性（来自 SettlementManagerMixin）
