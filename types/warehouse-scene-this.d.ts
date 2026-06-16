@@ -541,7 +541,7 @@ export interface WarehouseSceneThis {
   recordRoundHistory(): void
   renderQualityVisual(item: Artifact): void
   _handleCardKeydown(event: KeyboardEvent): void
-  requestAiLlmFollowupBid(playerId: string): void
+  requestAiLlmFollowupBid(playerId: string, currentPlan: LlmPlan, toolSummary: string): Promise<LlmPlan | null>
   revealRoundBidsSequential(bids?: unknown[]): Promise<void>
   normalizeAiBidValue(bid: number): number
   exportAiMemoryToJson(): string
