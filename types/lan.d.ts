@@ -235,3 +235,38 @@ export interface ReconnectState {
   lastRoomCode: string | null
   pendingMessages: RoomMessage[]
 }
+
+/** LanBridge 接口 */
+export interface LanBridge {
+  // 属性
+  ws: WebSocket | null
+  connected: boolean
+  playerId: string | null
+  playerName: string | null
+  roomCode: string | null
+  isHost: boolean
+  players: unknown[]
+  _listeners: Record<string, Function[]>
+
+  // 方法
+  on(event: string, fn: Function): Function
+  _emit(event: string, data: unknown): void
+  connect(url: string, playerName: string): Promise<void>
+  disconnect(): void
+  send(msg: unknown): boolean
+  createRoom(options: unknown): void
+  joinRoom(code: string, password?: string): void
+  listRooms(): void
+  reconnect(url: string, roomCode: string, playerId: string): Promise<unknown>
+  requestFullSync(): void
+  sendFullSync(targetPlayerId: string, syncData: unknown): void
+  leaveRoom(): void
+  startGame(options: unknown): void
+  broadcastRoundStart(round: number, maxRounds: number, currentBid: number, roundSeconds: number): void
+  submitBid(bid: number): void
+  broadcastRoundResult(round: number, bids: unknown[], reason?: string): void
+  broadcastSettle(data: unknown): void
+  broadcastSettleFinal(wallets: unknown, profitDetails: unknown): void
+  togglePause(paused: boolean, roundTimeLeft?: number): void
+  sendChat(text: string): void
+}

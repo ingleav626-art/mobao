@@ -156,7 +156,7 @@ export interface WarehouseSceneThis {
 
   // 联机属性（来自 LanIndexMixin）
   isLanMode: boolean
-  lanBridge: unknown
+  lanBridge: LanBridge | null
   lanIsHost: boolean
   lanMySlotId: string | null
   lanRoom: Room | null
@@ -171,6 +171,8 @@ export interface WarehouseSceneThis {
   lanLastPlayerId: string | null
   lanReconnectAttempts: number
   lanMaxReconnectAttempts: number
+  lanHostWallets: Record<string, number>
+  lanHostBids: Record<string, number>
   _activeSkillId: string | null
   _gameConfirmCallback: (() => void) | null
   _gameCancelCallback: (() => void) | null
@@ -361,6 +363,7 @@ export interface WarehouseSceneThis {
   useItem(itemId: string): void
 
   // LLM 方法（来自 LlmDecisionMixin）
+  getLlmSettings(): Record<string, unknown>
   pushRunSettlementContextToAi(context: unknown): void
   hasAppliedMoneyForRun(): boolean
   markMoneyAppliedForRun(): void
