@@ -64,6 +64,11 @@ interface BattleRecord {
   [key: string]: unknown
 }
 
+/**
+ * 创建战绩记录桥接器。管理最近20局的战绩记录，支持详情查看和日志渲染
+ * @param {BattleRecordDeps} deps - 依赖注入对象
+ * @returns {Record<string, unknown>} 战绩记录方法集合
+ */
 export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string, unknown> {
   const { BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber } = deps
 
@@ -215,6 +220,10 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
   }
 
   const methods = {
+    /**
+     * 打开战绩记录面板
+     * @returns {void}
+     */
     openBattleRecordPanel() {
       if (!this.dom.battleRecordOverlay) {
         return
@@ -265,6 +274,11 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
         })
     },
 
+    /**
+     * 保存对局战绩记录
+     * @param {Object} result - 对局结果 { mode, winnerId, profit, ... }
+     * @returns {void}
+     */
     saveBattleRecord(result) {
       const hasLlm = typeof this.canUseLlmDecision === "function" && this.canUseLlmDecision()
       const runLog = this.currentRunLog
@@ -353,6 +367,10 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       ].join("")
     },
 
+    /**
+     * 渲染战绩记录面板内容
+     * @returns {void}
+     */
     renderBattleRecordPanel() {
       if (!this.dom.battleRecordContent) {
         return

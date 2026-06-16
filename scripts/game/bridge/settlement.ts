@@ -52,6 +52,11 @@ interface SettlementDeps {
   [key: string]: unknown
 }
 
+/**
+ * 创建结算桥接器。管理游戏结束后的结算流程，包括藏品揭示、利润计算、庆祝特效等
+ * @param {SettlementDeps} deps - 依赖注入对象
+ * @returns {{ methods: Record<string, unknown> }} 结算方法集合
+ */
 export function createSettlementBridge(deps: SettlementDeps): { methods: Record<string, unknown> } {
   const {
     MARGIN,
@@ -67,6 +72,10 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       return document.body.classList.contains("settlement-mode")
     },
 
+    /**
+     * 逐个揭示仓库中所有藏品的真实信息（结算阶段）
+     * @returns {Promise<void>}
+     */
     async revealAllArtifactsForSettlement() {
       const runToken = Date.now() + Math.random()
       this.settlementRunToken = runToken
@@ -308,6 +317,11 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       this.activeSettlementSpinner = null
     },
 
+    /**
+     * 播放结算最终庆祝特效（粒子爆炸+彩带）
+     * @param {number} winnerProfit - 赢家利润（负数则不播放）
+     * @returns {void}
+     */
     playSettlementFinalEffect(winnerProfit: number) {
       if (winnerProfit <= 0) {
         return
@@ -534,6 +548,13 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       }
     },
 
+    /**
+     * 进入结算页面，显示赢家信息和结算面板
+     * @param {Object} winnerPlayer - 赢家玩家对象 { id, name, ... }
+     * @param {number} winnerBid - 赢家出价
+     * @param {string} reasonText - 获胜原因描述
+     * @returns {void}
+     */
     enterSettlementPage(winnerPlayer: { id?: string; name?: string;[key: string]: unknown }, winnerBid: number, reasonText: string) {
       this.settlementSession = {
         winnerId: winnerPlayer.id,

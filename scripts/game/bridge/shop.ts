@@ -204,6 +204,11 @@ function getRemainingDaily(itemId: string): number {
   return Math.max(0, shopItem.maxDaily - bought)
 }
 
+/**
+ * 购买道具
+ * @param {string} itemId - 道具ID
+ * @returns {{ ok: boolean, message: string, newMoney?: number, newInventory?: Record<string, number> }}
+ */
 function purchaseItem(itemId: string): { ok: boolean; message: string; newMoney?: number; newInventory?: Record<string, number> } {
   const shopItem = SHOP_ITEMS.find((s) => s.id === itemId)
   if (!shopItem) return { ok: false, message: "商品不存在" }
@@ -234,6 +239,11 @@ function purchaseItem(itemId: string): { ok: boolean; message: string; newMoney?
   return { ok: true, message: "购买成功", newMoney, newInventory: inv }
 }
 
+/**
+ * 消耗道具（使用时扣减库存）
+ * @param {string} itemId - 道具ID
+ * @returns {{ ok: boolean, message?: string, newInventory?: Record<string, number> }}
+ */
 function consumeItem(itemId: string): { ok: boolean; message?: string; newInventory?: Record<string, number> } {
   const inv = loadInventory()
   const invKey = getItemStorageKey(itemId)
@@ -251,6 +261,10 @@ function getItemCount(itemId: string): number {
   return inv[invKey] || 0
 }
 
+/**
+ * 获取完整的道具库存
+ * @returns {Record<string, number>} 道具ID到数量的映射
+ */
 function getFullInventory(): Record<string, number> {
   return loadInventory()
 }
