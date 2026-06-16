@@ -1,4 +1,5 @@
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { AiMemoryStorage } from '../../../types/ai'
 
 /**
  * @file memory.js
@@ -70,14 +71,14 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     }
   },
 
-  loadAiMemoryFromStorage(): Record<string, unknown> | null {
+  loadAiMemoryFromStorage(): AiMemoryStorage | null {
     try {
       const storageKey = this.getAiMemoryStorageKey()
       const raw = window.localStorage.getItem(storageKey)
       if (!raw) return null
       const parsed = JSON.parse(raw)
       if (!parsed || typeof parsed !== "object") return null
-      return parsed
+      return parsed as AiMemoryStorage
     } catch (_error) {
       return null
     }
