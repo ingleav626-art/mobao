@@ -187,10 +187,24 @@ export interface WarehouseSceneThis {
   _gameCancelCallback: (() => void) | null
 
   // 战绩属性
-  battleRecords: unknown[]
+  battleRecords: Array<{
+    id: string
+    timestamp: number
+    winner: string
+    winnerBid: number
+    totalValue: number
+    itemCount: number
+    roundCount: number
+    players: string[]
+  }>
   battleRecordReplayActive: boolean
   battleRecordReplayRecordId: string | null
-  battleRecordLogView: unknown
+  battleRecordLogView: {
+    round: number
+    bids: Record<string, number>
+    winner: string
+    winnerBid: number
+  } | null
 
   // 结算属性（来自 SettlementManagerMixin）
   settlementSession: {
@@ -211,27 +225,44 @@ export interface WarehouseSceneThis {
   settlementRevealRunning: boolean
 
   // UI 属性
-  privateIntelEntries: unknown[]
-  publicInfoEntries: unknown[]
-  currentPublicEvent: unknown
-  playerRoundHistory: Record<string, unknown>
-  playerUsageHistory: Record<string, unknown>
-  currentRoundUsage: Record<string, unknown>
-  playerHistoryPanels: Record<string, unknown>
-  battleRecordLogView: unknown
-  aiThoughtLogs: unknown[]
+  privateIntelEntries: Array<{
+    playerId: string
+    intel: unknown
+  }>
+  publicInfoEntries: Array<{
+    playerId: string
+    info: unknown
+  }>
+  currentPublicEvent: {
+    category: string
+    id: string
+    text: string
+  } | null
+  playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>
+  playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>
+  currentRoundUsage: Record<string, string[]>
+  playerHistoryPanels: Record<string, HTMLElement>
+  aiThoughtLogs: Array<{
+    playerId: string
+    thought: string
+    timestamp: number
+  }>
+  aiThoughtLogs: Array<{
+    playerId: string
+    thought: string
+    timestamp: number
+  }>
   settlementPreRevealed: boolean
-  pendingSettlementSummary: unknown
 
   // AI 决策属性
   _aiDecisionSummaryWaiting: boolean
   aiConversationCache: Record<string, unknown[]>
-  aiRoundDecisionPromise: Promise<unknown> | null
+  aiRoundDecisionPromise: Promise<void> | null
 
   // LLM 属性
-  lastAiIntelActions: unknown[]
-  aiLlmRoundPlans: Record<string, unknown>
-  aiRoundEffects: unknown
+  lastAiIntelActions: Record<string, unknown>
+  aiLlmRoundPlans: Record<string, LlmPlan | null>
+  aiRoundEffects: Record<string, unknown>
 
   // 联机属性
   lanHostBids: Record<string, number>
