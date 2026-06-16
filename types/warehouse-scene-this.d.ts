@@ -123,11 +123,6 @@ export interface WarehouseSceneThis {
     getItemState(): Record<string, unknown>
     useItem(itemId: string): void
   }
-  aiEngine: {
-    think(): void
-    decide(): void
-  }
-
   // AI 属性（来自 AiWalletMixin）
   aiWallets: Record<string, number>
   aiLlmPlayerEnabled: boolean
