@@ -41,6 +41,7 @@ import type {
   LlmRoundPayload,
   LlmTelemetry,
   LlmErrorInfo,
+  AiModelConfig,
 } from "./llm"
 import type {
   Room,
@@ -379,7 +380,7 @@ export interface WarehouseSceneThis {
   getAiIntel(playerId: string): AiPrivateIntel | undefined
   summarizeIntel(playerId: string): IntelSummary
   getAiIntelSummary(playerId: string): IntelSummary
-  ensureAiPrivateIntel(playerId: string): AiPrivateIntel
+  ensureAiPrivateIntel(playerId: string): AiPrivateIntelPool
   revealOutlineBatch(count: number, category: string, allowCategoryFallback: boolean, sortStrategy: string): unknown
   revealQualityBatch(count: number, category: string, allowCategoryFallback: boolean, sortStrategy: string): unknown
   revealArtifactFullyBatch(options: { count: number; sortStrategy: string; category: string; allowCategoryFallback: boolean }): unknown
@@ -580,7 +581,7 @@ export interface WarehouseSceneThis {
   renderAiModelConfigContent(): void
   canUseLlmDecision(): boolean
   isAiLlmEnabledForPlayer(playerId: string): boolean
-  getAiModelConfigForPlayer(playerId: string): Record<string, unknown>
+  getAiModelConfigForPlayer(playerId: string): AiModelConfig | null
   getAiIndexFromPlayerId(playerId: string): number
   buildAiLlmRoundPayload(player: unknown): unknown
   buildAiIncrementalPayload(player: unknown): unknown
@@ -596,7 +597,7 @@ export interface WarehouseSceneThis {
   pushAiRoundSummary(summary: unknown): void
   buildAiActionConstraintBlock(playerId: string): unknown
   requestChat(messages: unknown[], options?: unknown): Promise<unknown>
-  getAiModelConfig(): unknown
+  getAiModelConfig(): AiModelConfig | null
   isAiMultiGameMemoryEnabled(): boolean
   getAiCrossGameMemoryCount(): number
   getAiInGameHistoryCount(): number
