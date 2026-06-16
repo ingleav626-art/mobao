@@ -88,6 +88,10 @@ const RECONNECT_GRACE_MS = 30000;
 const rooms = new Map();
 const clients = new Map();
 
+/**
+ * 生成6位随机房间码（排除易混淆字符 I/O/0/1）
+ * @returns {string} 唯一的房间码
+ */
 function genRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
@@ -97,16 +101,33 @@ function genRoomCode() {
   return rooms.has(code) ? genRoomCode() : code;
 }
 
+/**
+ * 生成唯一玩家ID（格式: p + 8位十六进制）
+ * @returns {string} 玩家ID
+ */
 function genPlayerId() {
   return "p" + crypto.randomBytes(4).toString("hex");
 }
 
+/**
+ * 向单个客户端发送JSON消息
+ * @param {WebSocket} ws - WebSocket 连接实例
+ * @param {Object} obj - 要发送的消息对象（会被 JSON.stringify）
+ * @returns {void}
+ */
 function sendJson(ws, obj) {
   if (ws.readyState === 1) {
     ws.send(JSON.stringify(obj));
   }
 }
 
+/**
+ * 向房间内所有客户端广播消息（可排除某个客户端）
+ * @param {Object} room - 房间对象 { seats: Array<{id: string}> }
+ * @param {Object} msg - 要广播的消息对象
+ * @param {string} [excludeId] - 要排除的玩家ID（可选）
+ * @returns {void}
+ */
 function broadcastToRoom(room, msg, excludeId) {
   if (!room) return;
   for (const seat of room.seats) {
@@ -120,6 +141,12 @@ function logRoom(roomCode, action, detail) {
   console.log(`[room:${roomCode}] ${action}${detail ? " | " + detail : ""}`);
 }
 
+/**
+ * 移除玩家并清理房间状态
+ * @param {WebSocket} ws - WebSocket 连接实例
+ * @param {boolean} [immediate=false] - 是否立即移除（false则进入grace period）
+ * @returns {void}
+ */
 function removePlayer(ws, immediate) {
   if (!ws.playerId) return;
   clients.delete(ws.playerId);
@@ -237,6 +264,12 @@ function removePlayer(ws, immediate) {
   ws.playerId = null;
 }
 
+/**
+ * 安排断线玩家的grace period清理任务
+ * @param {Object} room - 房间对象
+ * @param {string} playerId - 断线玩家的ID
+ * @returns {void}
+ */
 function scheduleGraceCleanup(room, playerId) {
   setTimeout(() => {
     if (!rooms.has(room.code)) return;
@@ -262,7 +295,28 @@ function scheduleGraceCleanup(room, playerId) {
   }, RECONNECT_GRACE_MS);
 }
 
+/**
+ * 消息路由入口，按 msg.type 前缀分发到对应处理器
+ * @param {WebSocket} ws - WebSocket 连接实例
+ * @param {Object} msg - 解析后的 JSON 消息 { type: string, ... }
+ * @returns {void}
+ */
 function handleMessage(ws, msg) {
+  // ─── 消息路由规则 ───
+  //
+  // 前缀分发:
+  //   room:*  → handleRoomMessage  房间管理（创建/加入/离开/配置）
+  //   game:*  → handleRoomMessage  游戏逻辑（出价/技能/结算）
+  //   lan:*   → handleLanRelay     联机中继（角色选择/地图/同步）
+  //   ping    → handleRoomMessage  心跳
+  //   chat    → handleRoomMessage  聊天消息
+  //
+  // 房间生命周期:
+  //   创建(WAITING) → 游戏中(PLAYING) → 结算(SETTLED) → 销毁
+  //
+  // 断线重连:
+  //   grace period (30s) → 房主迁移 → 重连恢复
+
   if (!msg || !msg.type) return;
 
   if (msg.type.startsWith("room:") || msg.type.startsWith("game:") || msg.type === "ping" || msg.type === "chat") {
@@ -274,6 +328,12 @@ function handleMessage(ws, msg) {
   }
 }
 
+/**
+ * 房间消息处理器。处理 room:*, game:*, ping, chat 类型消息
+ * @param {WebSocket} ws - WebSocket 连接实例
+ * @param {Object} msg - 消息对象 { type: string, ... }
+ * @returns {void}
+ */
 function handleRoomMessage(ws, msg) {
   switch (msg.type) {
     case "room:create": {
@@ -771,6 +831,12 @@ function handleRoomMessage(ws, msg) {
   }
 }
 
+/**
+ * 联机数据中继处理器。处理 lan:* 类型消息（角色选择/地图/出价/技能/结算等）
+ * @param {WebSocket} ws - WebSocket 连接实例
+ * @param {Object} msg - 消息对象 { type: "lan:*", ... }
+ * @returns {void}
+ */
 function handleLanRelay(ws, msg) {
   if (!ws.playerId || !ws.roomCode) return;
   const room = rooms.get(ws.roomCode);
@@ -1039,6 +1105,10 @@ function handleLanRelay(ws, msg) {
   }
 }
 
+/**
+ * 获取本机所有非内部IPv4地址
+ * @returns {string[]} IP地址数组
+ */
 function getLocalIPs() {
   const os = require("os");
   const nets = os.networkInterfaces();
@@ -1053,6 +1123,10 @@ function getLocalIPs() {
   return results;
 }
 
+/**
+ * 构建公开房间列表JSON（仅返回waiting状态的房间）
+ * @returns {Array<Object>} 房间列表 [{ code, roomName, hostName, playerCount, maxPlayers, hasPassword }]
+ */
 function buildRoomListJSON() {
   const roomList = [];
   for (const [code, room] of rooms) {

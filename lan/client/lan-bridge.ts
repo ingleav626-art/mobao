@@ -1,9 +1,12 @@
 /**
  * @file lan/client/lan-bridge.ts
- * @module lan/bridge
+ * @module lan/client/lan-bridge
  * @description 联机通信桥客户端。采用 IIFE + 构造函数模式，挂载到 window.LanBridge。
  *              封装 WebSocket 连接管理、消息收发、事件系统和原生桥接，
  *              是前端 UI 与联机服务器之间的唯一通信通道。
+ *
+ * @requires lan/shared/protocol - 通信协议常量
+ * @exports LanBridge - 联机通信桥构造函数
  */
 (function setupLanBridge(global: any) {
   var TAG = "[LanBridge]";
@@ -27,6 +30,12 @@
     this._listeners = {} as Record<string, Function[]>;
   }
 
+  /**
+   * 注册事件监听器
+   * @param {string} event - 事件名称
+   * @param {Function} fn - 回调函数
+   * @returns {Function} 取消监听的函数
+   */
   LanBridge.prototype.on = function (event: string, fn: Function) {
     if (!this._listeners[event]) this._listeners[event] = [];
     this._listeners[event].push(fn);
@@ -36,6 +45,12 @@
     };
   };
 
+  /**
+   * 触发本地事件，通知所有注册的监听器
+   * @param {string} event - 事件名称
+   * @param {any} data - 事件数据
+   * @returns {void}
+   */
   LanBridge.prototype._emit = function (event: string, data: any) {
     var fns = this._listeners[event] || [];
     for (var i = 0; i < fns.length; i++) {
@@ -43,6 +58,12 @@
     }
   };
 
+  /**
+   * 建立WebSocket连接
+   * @param {string} url - WebSocket服务器地址 (ws://host:port)
+   * @param {string} playerName - 玩家昵称
+   * @returns {Promise<void>} 连接成功resolve，失败reject
+   */
   LanBridge.prototype.connect = function (url: string, playerName: string) {
     var self = this;
     return new Promise<void>(function (resolve, reject) {
@@ -99,6 +120,11 @@
     LanBridgeLog("info", "Disconnected");
   };
 
+  /**
+   * 发送消息到服务端
+   * @param {Object} msg - 消息对象（会被JSON.stringify）
+   * @returns {boolean} 发送成功返回true，失败返回false
+   */
   LanBridge.prototype.send = function (msg: any) {
     if (!this.ws || (this.ws as WebSocket).readyState !== 1) {
       LanBridgeLog("error", "Cannot send, readyState=" + (this.ws ? (this.ws as WebSocket).readyState : "null"));
@@ -275,7 +301,27 @@
     this.send({ type: "lan:ping", ts: Date.now() });
   };
 
+  /**
+   * 处理服务端消息，按type分发到对应事件
+   * @param {Object} msg - 解析后的JSON消息 { type: string, ... }
+   * @returns {void}
+   */
   LanBridge.prototype._handleMessage = function (msg: any) {
+    // ─── 消息处理链 ───
+    //
+    // ws.onmessage → JSON.parse → _handleMessage → switch(type) → _emit(event, data)
+    //
+    // 事件映射:
+    //   room:created    → room:created     房间创建成功
+    //   room:joined     → room:joined      加入房间成功
+    //   room:player-*   → room:player-*    玩家状态变更
+    //   game:init       → game:init        游戏初始化
+    //   round:start     → round:start      回合开始
+    //   round:result    → round:result     回合结果
+    //   game:settle     → game:settle      游戏结算
+    //   lan:*           → lan:*            联机同步事件
+    //   error           → error            错误消息
+
     switch (msg.type) {
       case "room:created":
         this.playerId = msg.playerId;
