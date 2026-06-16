@@ -170,6 +170,7 @@ export interface WarehouseSceneThis {
   // 联机属性（来自 LanIndexMixin）
   isLanMode: boolean
   lanBridge: LanBridge | null
+  lanStatusEl: HTMLElement | null
   lanIsHost: boolean
   lanMySlotId: string | null
   lanRoom: Room | null
@@ -470,6 +471,7 @@ export interface WarehouseSceneThis {
   setPlayerBidReady(slotId: string, ready: boolean): void
   updateLobbyMoneyDisplay(): void
   areAllPlayersBidReady(): boolean
+  tryAutoReconnect(savedPlayerId: string | null, savedRoomCode: string | null, savedPlayerName: string | null, savedIsHost: boolean): void
   addPublicInfoEntry(entry: unknown): void
   refreshPlayerHistoryUI(): void
   syncPauseButton(): void
