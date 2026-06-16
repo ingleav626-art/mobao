@@ -197,14 +197,40 @@ export interface IntelActionPlan {
 
 /** 跨局记忆条目 */
 export interface CrossGameMemory {
-  runId: number                // 局号
-  result: string               // 结果 "win" | "lose" | "fold"
-  profit: number               // 盈亏
-  bidAmount: number            // 最终出价
-  trueValue: number            // 真实总价
-  keyObservation: string       // 关键观察
-  lesson: string               // 教训
-  timestamp: number            // 时间戳
+  runId?: number               // 局号
+  result?: string              // 结果 "win" | "lose" | "fold"
+  profit?: number              // 盈亏
+  bidAmount?: number           // 最终出价
+  trueValue?: number           // 真实总价
+  keyObservation?: string      // 关键观察
+  lesson?: string              // 教训
+  timestamp?: number           // 时间戳
+  stats?: CrossGameStats       // 统计数据
+  lessons?: string[]           // 教训列表
+  strategies?: string[]        // 策略列表
+  praises?: string[]           // 赞扬列表
+}
+
+/** 跨局统计数据 */
+export interface CrossGameStats {
+  totalGames: number
+  warehouseValueMax: number
+  warehouseValueMin: number
+  warehouseValueAvg: number
+  winRate: number
+  avgProfit: number
+  totalCellsMax: number
+  totalCellsMin: number
+  totalCellsAvg: number
+  totalItemsMax: number
+  totalItemsMin: number
+  totalItemsAvg: number
+  legendaryMax: number
+  legendaryMin: number
+  legendaryAvg: number
+  rareMax: number
+  rareMin: number
+  rareAvg: number
 }
 
 /** 多轮对话消息 */
