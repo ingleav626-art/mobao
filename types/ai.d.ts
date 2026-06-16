@@ -210,3 +210,53 @@ export interface ActionDef {
   name: string        // 动作名称 "技能-拓影侦测"
   description: string // 动作描述
 }
+
+/** AI 出价引擎 */
+export interface AuctionAiEngine {
+  // 属性
+  personalityMap: Record<string, Personality>
+  aiState: Map<string, AiState>
+  runMeta: { startingBid: number; itemCount: number }
+  lastDecisionLog: Record<string, unknown> | null
+
+  // 方法
+  resetForNewRun(context: { startingBid?: number; itemCount?: number }): void
+  buildAIBids(context: {
+    aiPlayers: Array<{ id: string }>
+    clueRate: number
+    round: number
+    maxRounds: number
+    currentBid: number
+    lastRoundBids?: Record<string, number>
+    bidStep?: number
+    aiIntelMap?: Record<string, unknown>
+    aiToolEffectMap?: Record<string, unknown>
+  }): Record<string, number>
+  computeSingleDecision(args: {
+    playerId: string
+    clueRate: number
+    qualityRate: number
+    uncertainty: number
+    spreadRatio?: number
+    upperEdge?: number
+    lowerEdge?: number
+    roundProgress: number
+    currentBid: number
+    marketRef: number
+    persona: Personality
+    lastRoundBids?: Record<string, number>
+    bidStep: number
+    toolEffect: unknown
+  }): unknown
+  planIntelAction(args: {
+    playerId: string
+    round: number
+    maxRounds: number
+    persona: Personality
+    pool: unknown
+    roundProgress: number
+    currentBid: number
+    marketRef: number
+  }): unknown
+  getLastDecisionLog(): Record<string, unknown> | null
+}

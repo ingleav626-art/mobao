@@ -146,6 +146,7 @@ export interface WarehouseSceneThis {
   currentRunLog: unknown
   aiConversationCache: Record<string, unknown>
   pendingNextRunAiSummaryByPlayer: Record<string, unknown>
+  aiEngine: AuctionAiEngine | null
 
   // AI 属性（来自 AiIntelMixin）
   aiResourceState: Record<string, { skills: Record<string, number>; items: Record<string, number> }>
@@ -210,6 +211,7 @@ export interface WarehouseSceneThis {
   characterPageEl: HTMLElement | null
   selectedCharacter: string | null
   keypadValue: string
+  _pauseSnapshotTimeLeft: number | null
 
   // HUD 属性
   _hudRoundText: HTMLElement | null
@@ -349,6 +351,9 @@ export interface WarehouseSceneThis {
   lanBroadcastBid(bid: number): void
   lanHandleBidSubmit(msg: BidSubmitMessage): void
   lanSyncState(): void
+  setOnlineStatus(text: string, status: string): void
+  setPlayerBidReady(slotId: string, ready: boolean): void
+  updateLobbyMoneyDisplay(): void
 
   // 结算方法（来自 SettlementManagerMixin）
   enterSettlementPage(winnerPlayer: Player, winnerBid: number, reasonText: string): void
@@ -377,6 +382,8 @@ export interface WarehouseSceneThis {
 
   // LLM 方法（来自 LlmDecisionMixin）
   getLlmSettings(): Record<string, unknown>
+  getLlmProvider(): string | null
+  canUseLlmDecisionForPlayer(playerId: string): boolean
   pushRunSettlementContextToAi(context: unknown): void
   hasAppliedMoneyForRun(): boolean
   markMoneyAppliedForRun(): void
@@ -387,6 +394,9 @@ export interface WarehouseSceneThis {
   clearBattleRecords(): void
 
   // 其他方法
+  exitLobby(): void
+  renderCollectionGrid(): void
+  renderCarryItems(): void
   exportAiMemoryToJson(): string
   importAiMemoryFromJson(json: string): void
 }
