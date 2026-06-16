@@ -3,6 +3,9 @@
  * @module llm/providers/deepseek-provider
  * @description DeepSeek Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
+ *
+ * @requires llm/core/llm-manager - LLM 管理器
+ * @exports DeepSeekProvider - DeepSeek Provider
  */
 "use strict"
 

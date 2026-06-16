@@ -3,6 +3,9 @@
  * @module llm/providers/qwen-provider
  * @description 通义千问 Provider 插件。基于 LlmManager 的 createOpenAICompatibleProvider 工厂
  *              创建，注册到 LlmManager 的 provider 体系中。
+ *
+ * @requires llm/core/llm-manager - LLM 管理器
+ * @exports QwenProvider - 通义千问 Provider
  */
 "use strict"
 

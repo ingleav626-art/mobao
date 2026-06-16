@@ -3,6 +3,8 @@
  * @module llm/providers/deepseek-llm
  * @description DeepSeek LLM 客户端（旧版独立实现）。采用 IIFE 模式，挂载到 window.DeepSeekLLM。
  *              提供完整的 DeepSeek API 调用、设置管理、Token 监控和日志功能。
+ *
+ * @exports window.DeepSeekLLM - DeepSeek LLM 客户端单例
  */
 "use strict"
 
