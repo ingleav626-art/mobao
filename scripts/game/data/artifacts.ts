@@ -36,6 +36,9 @@
  *
  * @exports window.ArtifactData - 藏品数据与管理（兼容）
  * @exports QUALITY_CONFIG, ARTIFACT_LIBRARY, ArtifactManager, ... - 命名导出
+ *
+ * @requires core/constants - 常量定义
+ * @requires core/utils - 工具函数
  */
 export const QUALITY_CONFIG: Record<string, { label: string; color: number; glow: number; weight: number }> = {
   poor: { label: "粗品", color: 0x9f9f9f, glow: 0xdcdcdc, weight: 28 },

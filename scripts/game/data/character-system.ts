@@ -5,6 +5,8 @@
  *              与 characters.ts（纯数据定义）配合使用，本文件负责运行时逻辑。
  *
  * @exports window.CharacterSystem - 角色系统运行时管理单例（兼容）
+ *
+ * @requires data/characters - 角色数据定义
  */
 
 import { CHARACTERS } from "./characters"

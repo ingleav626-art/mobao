@@ -5,6 +5,9 @@
  *              事件基于仓库分析按优先级排序生成。
  *
  * @exports window.PublicEventSystem - 公共事件系统单例（兼容）
+ *
+ * @requires data/artifacts - 藏品数据
+ * @requires core/constants - 常量定义
  */
 
 export const QUALITY_LABELS: Record<string, string> = {

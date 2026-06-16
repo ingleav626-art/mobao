@@ -11,6 +11,8 @@
  *
  * @exports window.MobaoMapProfiles - 地图配置单例（兼容）
  * @exports MAP_PROFILES, getProfile, ... - 命名导出
+ *
+ * @requires core/app-state - 应用状态
  */
 
 import type { MapProfile } from '../../../types/game'
