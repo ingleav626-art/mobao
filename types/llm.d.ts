@@ -122,6 +122,16 @@ export interface LlmPlan {
   rawContent: string             // LLM 原始响应文本
   stage: 'initial' | 'followup_after_tool' | 'error_correction'
   toolUsed: boolean              // 本阶段是否使用了工具
+  failed?: boolean               // 是否失败
+  hasBidDecision?: boolean       // 是否有出价决策
+  actionType?: string            // 动作类型 "skill" | "item" | "none"
+  actionId?: string              // 动作ID
+  correctionAttempt?: number     // 纠错尝试次数
+  userPrompt?: string            // 用户提示
+  modelResponse?: string         // 模型响应
+  elapsedMs?: number             // 耗时（毫秒）
+  followupActionRejected?: boolean // 后续动作是否被拒绝
+  error?: string                 // 错误信息
 }
 
 // ==================== LLM 请求/响应 ====================

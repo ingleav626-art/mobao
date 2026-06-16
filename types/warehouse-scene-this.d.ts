@@ -151,6 +151,8 @@ export interface WarehouseSceneThis {
   aiRoundDecisionPromise: Promise<void> | null
   lastAiIntelActions: Record<string, unknown>
   isAiMultiGameMemoryEnabled: boolean
+  pendingSettlementSummary: Record<string, unknown> | null
+  _aiMemoryTouchBound: boolean
 
   // AI 属性（来自 AiIntelMixin）
   aiResourceState: Record<string, { skills: Record<string, number>; items: Record<string, number> }>
@@ -212,6 +214,29 @@ export interface WarehouseSceneThis {
   privateIntelEntries: unknown[]
   publicInfoEntries: unknown[]
   currentPublicEvent: unknown
+  playerRoundHistory: Record<string, unknown>
+  playerUsageHistory: Record<string, unknown>
+  currentRoundUsage: Record<string, unknown>
+  playerHistoryPanels: Record<string, unknown>
+  battleRecordLogView: unknown
+  aiThoughtLogs: unknown[]
+  settlementPreRevealed: boolean
+  pendingSettlementSummary: unknown
+
+  // AI 决策属性
+  _aiDecisionSummaryWaiting: boolean
+  aiConversationCache: Record<string, unknown[]>
+  aiRoundDecisionPromise: Promise<unknown> | null
+
+  // LLM 属性
+  lastAiIntelActions: unknown[]
+  aiLlmRoundPlans: Record<string, unknown>
+  aiRoundEffects: unknown
+
+  // 联机属性
+  lanHostBids: Record<string, number>
+  lanHostWallets: Record<string, number>
+  _pauseSnapshotTimeLeft: number
 
   // Lobby 属性（来自 CharacterSelectMixin）
   _carryItems: CarryItem[]
@@ -348,6 +373,14 @@ export interface WarehouseSceneThis {
   // AI 方法（来自 AiMemoryMixin）
   pushAiMemory(playerId: string, memory: CrossGameMemory): void
   getAiMemory(playerId: string): CrossGameMemory[]
+  getAiMemoryStorageKey(): string
+  loadAiMemoryFromStorage(): void
+  ensureAiConversationBucket(playerId: string): unknown[]
+  updateLastAiRoundResult(playerId: string, result: unknown): void
+  getQualityCounts(): Record<string, number>
+  getTotalOccupiedCells(): number
+  isAiReflectionEnabled(): boolean
+  setupAiMemoryTouchScroll(): void
   clearAiMemory(playerId: string): void
 
   // AI 方法（来自 AiDecisionMixin）
@@ -368,6 +401,37 @@ export interface WarehouseSceneThis {
   setOnlineStatus(text: string, status: string): void
   setPlayerBidReady(slotId: string, ready: boolean): void
   updateLobbyMoneyDisplay(): void
+  areAllPlayersBidReady(): boolean
+  addPublicInfoEntry(entry: unknown): void
+  refreshPlayerHistoryUI(): void
+  syncPauseButton(): void
+  hideLanPauseOverlay(): void
+  showLanPauseOverlay(): void
+  showLanRestartVoteDialog(): void
+  showLanRestartDeclinedDialog(): void
+  removeLanRestartDialog(): void
+  enterLanRoom(): void
+  exitLanRoom(): void
+  onLanForeground(): void
+  lanBuildFullSyncData(targetPlayerId: string): unknown
+  lanRestoreWarehouseFromSync(syncData: unknown): void
+  lanResolveRound(reason: string): void
+  lanComputeAiBids(): unknown
+  lanOnRoundStart(msg: unknown): void
+  lanBroadcastRoundStart(): void
+  startLanRun(): void
+  lanOnAllBidsIn(msg: unknown): Promise<void>
+  lanOnRoundTimeout(): Promise<void>
+  lanOnRoundResult(msg: unknown): void
+  lanDoFinishAuction(winner: unknown, mode: string): void
+  lanOnSettle(msg: unknown): void
+  lanOnSettleFinal(msg: unknown): void
+  lanOnRestartGo(): void
+  lanOnFullSync(syncData: unknown): void
+  lanAttemptReconnect(playerId: string, roomCode: string, playerName: string, isHost: boolean): void
+  startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB: HTMLVideoElement): void
+  stopLanLive2dLoop(): void
+  toggleLanPause(): void
 
   // 结算方法（来自 SettlementManagerMixin）
   enterSettlementPage(winnerPlayer: Player, winnerBid: number, reasonText: string): void
@@ -390,13 +454,16 @@ export interface WarehouseSceneThis {
 
   // 技能道具方法（来自 SkillItemManagerMixin）
   syncItemManagerFromShop(): void
+  getSkillInfo(skillId: string): SkillDef | null
+  getItemInfo(itemId: string): ItemDef | null
   activateSkill(skillId: string): void
   deactivateSkill(skillId: string): void
   useItem(itemId: string): void
+  processAiDecisions(): void
 
   // LLM 方法（来自 LlmDecisionMixin）
-  getLlmSettings(): Record<string, unknown>
-  getLlmProvider(): string | null
+  getLlmSettings(): LlmSettings
+  getLlmProvider(): { id: string; name: string; apiKey?: string; endpoint?: string; model?: string } | null
   canUseLlmDecisionForPlayer(playerId: string): boolean
   pushRunSettlementContextToAi(context: unknown): void
   hasAppliedMoneyForRun(): boolean
@@ -412,16 +479,15 @@ export interface WarehouseSceneThis {
   renderCollectionGrid(): void
   renderCarryItems(): void
   showPlayerInfoPopover(title: string, htmlContent: string, x: number, y: number): void
+  hideInfoPopup(): void
+  updateKeypadDirectHint(): void
   waitUntilResumed(): Promise<void>
   extractAiDecisionObject(response: string): unknown
   finishAuction(): void
   recordPlayerUsage(playerId: string, actionId: string): void
-  hideLanPauseOverlay(): void
   saveAiMemoryToStorage(): void
   syncBidKeypadScreen(): void
   _stopLive2dLoop(): void
-  showLanPauseOverlay(): void
-  onNewRound(): void
   closeSettingsOverlay(): void
   formatAiIntelActionPublicLine(playerId: string, action: unknown): string
   _rebuildCustomSelect(el: HTMLElement): void
@@ -430,10 +496,168 @@ export interface WarehouseSceneThis {
   renderQualityVisual(item: Artifact): void
   _handleCardKeydown(event: KeyboardEvent): void
   requestAiLlmFollowupBid(playerId: string): void
-  enterLanRoom(): void
-  revealRoundBidsSequential(): void
-  removeLanRestartDialog(): void
+  revealRoundBidsSequential(bids?: unknown[]): Promise<void>
   normalizeAiBidValue(bid: number): number
   exportAiMemoryToJson(): string
   importAiMemoryFromJson(json: string): void
+
+  // 联机同步方法（来自 LanSyncMixin）
+  buildWarehouseSnapshotForSync(): unknown
+  initPlayersUI(): void
+  rebuildWarehouseCellIndex(): void
+  refreshRevealScrollHints(): void
+  renderPublicInfoPanel(): void
+
+  // 游戏流程方法（来自 LanGameFlowMixin）
+  captureAiDecisionTelemetry(bids: unknown[]): void
+  recordAiThoughtLogs(telemetry: unknown): void
+  renderAiLogicPanel(): void
+  resetPlayerHistoryState(): void
+  getLastRoundBidMap(): Record<string, number>
+  beginRunTracking(): void
+  resetForNewRun(): void
+  applyCharacterToPlayer(playerId: string, character: unknown): void
+  spawnRandomItems(): void
+  setupWarehouseAuction(): void
+  drawUnknownWarehouse(): void
+  guardWarehouseCapacity(): void
+  makeRunToken(): number
+  cleanupGameScene(): void
+
+  // AI 初始化方法
+  initAiWallets(): void
+  initAiIntelSystems(): void
+  buildAiIntelSnapshot(playerId: string): unknown
+  buildAIBids(): unknown
+
+  // AI 决策方法（来自 LlmDecision）
+  buildAiDecisionPanelSnapshot(): unknown
+  renderAiLogicPanelForLlm(telemetry: unknown): string
+  loadAiModelConfigs(): void
+  saveAiModelConfigs(configs: unknown): void
+  closeAiModelConfigOverlay(): void
+  renderAiModelConfigContent(): void
+  canUseLlmDecision(): boolean
+  isAiLlmEnabledForPlayer(playerId: string): boolean
+  getAiModelConfigForPlayer(playerId: string): Record<string, unknown>
+  getAiIndexFromPlayerId(playerId: string): number
+  buildAiLlmRoundPayload(player: unknown): unknown
+  buildAiIncrementalPayload(player: unknown): unknown
+  buildAiFollowupRoundPayload(player: unknown, plan: unknown, summary: string): unknown
+  buildAiDecisionUserPrompt(payload: unknown, blocks?: string[]): string
+  buildAiDecisionMessages(payload: unknown): unknown[]
+  normalizeAiLlmPlan(playerId: string, decision: unknown, raw: string): unknown
+  requestAiLlmPlan(player: unknown): Promise<unknown>
+  buildAiToolResultSummary(result: unknown, actionType: string, actionId: string): string
+  requestAiLlmErrorCorrection(player: unknown, plan: unknown, error: unknown, history: unknown[], messages: unknown[]): Promise<unknown>
+  prepareAiLlmRoundPlans(): void
+  processAiDecisions(): void
+  pushAiRoundSummary(summary: unknown): void
+  buildAiActionConstraintBlock(playerId: string): unknown
+  requestChat(messages: unknown[], options?: unknown): Promise<unknown>
+  getAiModelConfig(): unknown
+  isAiMultiGameMemoryEnabled(): boolean
+  getAiCrossGameMemoryCount(): number
+  getAiInGameHistoryCount(): number
+  getAiFirstRoundExtraBlocks(playerId: string): string[]
+
+  // AI 情报方法
+  processSingleAiIntelAction(playerId: string, plan: unknown, llmPlan: unknown, roundProgress: number, batchId: string, batchStartTime: number): unknown
+  buildToolEffect(playerId: string, actionType: string, actionId: string): unknown
+  executeAiIntelAction(playerId: string, plan: unknown): unknown
+  planIntelAction(playerId: string, available: unknown): unknown
+  getAiConversationMessages(playerId: string): unknown[]
+  ensureAiConversationBucket(playerId: string): void
+  getItemInfo(itemId: string): unknown
+
+  // AI 记忆方法
+  loadAiMemoryFromStorage(): void
+  setupAiMemoryTouchScroll(): void
+  getAiMemoryStorageKey(playerId: string): string
+  ensureAiCrossGameMemory(): void
+  isAiReflectionEnabled(): boolean
+  updateLastAiRoundResult(playerId: string, result: unknown): void
+  updateReflectionStatusUI(): void
+
+  // 大厅方法（来自 LobbyIndexMixin）
+  showLobbyMain(): void
+  applyMapProfile(profileId: string): void
+  closeCollectionOverlay(): void
+  initCollectionPanel(): void
+  getCollectionCategories(): unknown[]
+  getQualityCounts(): unknown
+  hidePlayerInfoPopover(): void
+  hideInfoPopup(): void
+
+  // 角色选择方法
+  renderSelectedCharacterPreview(characterId: string): void
+  confirmCharacterSelection(): void
+  initCharacterSelect(): void
+  renderCharacterList(): void
+  bindCharacterSelectEvents(): void
+  selectCharacter(id: string): void
+  _showCarryConfirm(): void
+  _saveCarryItems(): void
+  _loadCarryItems(): void
+  openCarryItemPicker(): void
+  removeCarryItem(itemId: string): void
+  executeReplenish(): void
+  calcReplenishCost(): number
+  _bindAutoReplenishToggle(): void
+  _saveAutoReplenish(): void
+  _loadAutoReplenish(): void
+  _destroyCustomSelect(): void
+  _cardGlowHandler(item: unknown): void
+  bindCardGlowEffect(): void
+  _startLive2dLoop(characterId: string): void
+  _doStartSoloGame(): void
+  _lastRevealedValue: number
+  _lastDisplayProfit: number
+  _aiMemoryTouchBound: boolean
+  _aiDecisionSummaryWaiting: boolean
+  updateCharacterMoneyDisplay(): void
+  updateKeypadDirectHint(): void
+
+  // 战绩方法
+  closeBattleRecordPanel(): void
+  renderBattleRecordPanel(): void
+  renderBattleRecordSummary(): void
+  renderBattleRecordLogView(record: unknown): void
+  getLastDecisionLog(round: number): unknown
+  restoreWarehouseFromBattleRecord(record: unknown): void
+  buildWarehouseSnapshotForRecord(): unknown
+  openBattleRecordPanel(): void
+
+  // 商店方法
+  _showCarryConfirm(): void
+  _saveCarryItems(): void
+  _loadCarryItems(): void
+  openCarryItemPicker(): void
+  removeCarryItem(itemId: string): void
+  executeReplenish(): void
+  calcReplenishCost(): number
+  _bindAutoReplenishToggle(): void
+  _saveAutoReplenish(): void
+  _loadAutoReplenish(): void
+
+  // 竞价方法（来自 BiddingMixin）
+  markRoundRanking(bids: unknown[]): void
+  buildRoundBids(): unknown
+  setPlayerBidDisplay(playerId: string, bid: number): void
+  setPlayerBidReady(slotId: string, ready: boolean): void
+
+  // 仓库方法（来自 WarehouseCoreMixin）
+  getTotalOccupiedCells(): number
+  getQualityCounts(): unknown
+  cleanupGameScene(): void
+
+  // 结算方法
+  updateSettlementPanelMetrics(revealedValue: number, winnerProfit: number): void
+  playSettlementFinalEffect(winnerProfit: number): void
+  triggerSettlementFinalAnimation(winnerProfit: number, isSelfWinner: boolean): void
+
+  // 音频方法
+  playSfx(key: string): void
+  playMusic(key: string): void
+  stopMusic(): void
 }

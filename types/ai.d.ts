@@ -132,11 +132,14 @@ export interface IntelAggregate {
 
 /** 高价值藏品追踪 */
 export interface HighValueTrack {
+  trackId: string
+  itemId: string
   sizeTag: string           // 尺寸标签 "2x2"
   qualityKey: QualityLevel
   estimateMin: number       // 最低估价
   estimateMax: number       // 最高估价
   confidence: number        // 追踪置信度
+  lastSeenRound: number
 }
 
 /** AI 情报总结（传给 AI 决策引擎的简化版） */
@@ -185,6 +188,12 @@ export interface CrossGameMemory {
 export interface ConversationMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
+  round?: number
+  bid?: number | null
+  skill?: string
+  item?: string
+  thought?: string
+  result?: string
 }
 
 // ==================== 反思系统 ====================
@@ -258,5 +267,6 @@ export interface AuctionAiEngine {
     currentBid: number
     marketRef: number
   }): unknown
+  buildToolEffect(args: { actionType: string; actionId?: string }): unknown
   getLastDecisionLog(): Record<string, unknown> | null
 }
