@@ -47,6 +47,7 @@ export interface ArtifactRevealState {
   outline: boolean                          // 轮廓是否揭示
   qualityCell: { x: number; y: number } | null  // 品质格坐标
   exact: boolean                            // 是否完全揭示
+  settlementPreRevealed?: boolean           // 结算前是否已揭示
 }
 
 /** 藏品渲染视图 */
