@@ -189,21 +189,38 @@ export interface WarehouseSceneThis {
     id: string
     timestamp: number
     winner: string
+    winnerName?: string
     winnerBid: number
     totalValue: number
     itemCount: number
     roundCount: number
     players: string[]
+    warehouse?: {
+      items: Array<{
+        name: string
+        category: string
+        qualityKey: string
+        x: number
+        y: number
+        w: number
+        h: number
+        trueValue: number
+      }>
+    }
     logs: Array<{
       round: number
       bids: Record<string, number>
       winner: string
       winnerBid: number
+      aiDecisionPanelText?: string
+      recordId?: string
     }>
     finishedAt?: number
     winnerProfit?: number
     playerProfit?: number
+    reasonText?: string
     dividendTicketInfo?: {
+      mechanism?: string
       dividendPerPlayer: number
       ticketPerPlayer: number
     }
