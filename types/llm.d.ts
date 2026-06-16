@@ -135,6 +135,53 @@ export interface LlmPlan {
   error?: string                 // 错误信息
 }
 
+/** LLM 扩展计划（normalizeAiLlmPlan 返回值，含额外字段） */
+export interface LlmPlanResult {
+  source: string
+  bid: number
+  folded: boolean
+  hasBidDecision: boolean
+  actionType: string
+  actionId: string
+  target: string
+  thought: string
+  rawSkill: string
+  rawItem: string
+  rawContent: string
+  elapsedMs?: number
+  model?: string
+  configuredModel?: string
+  systemPrompt?: string
+  userPrompt?: string
+  modelResponse?: string
+  reasoningContent?: string
+  requestStage?: string
+  historyMessagesCount?: number
+  crossGameMemoryCount?: number
+  inGameHistoryCount?: number
+  historyMessagesPreview?: string
+  crossGameMemoryText?: string
+  cacheHitTokens?: number
+  cacheMissTokens?: number
+  cacheHitRate?: number
+  usage?: LlmChatResult['usage']
+  failed?: boolean
+  error?: string
+  controlMode?: string
+  actionExecuted?: boolean
+  toolActionId?: string
+  toolActionType?: string
+  followupPrompt?: string
+  followupResponse?: string
+  followupError?: string
+  followupActionRejected?: boolean
+  toolResultSummary?: string
+  errorCorrectionPrompt?: string
+  errorCorrectionResponse?: string
+  correctionAttempt?: number
+  originalError?: string
+}
+
 // ==================== LLM 请求/响应 ====================
 
 /** LLM 请求选项 */
@@ -217,6 +264,38 @@ export interface RoundTelemetry {
   totalLatency: number
   totalTokens: number
   cacheHitRate: number
+}
+
+/** LLM AI 模型配置（独立模型配置） */
+export interface AiModelConfig {
+  apiKey: string
+  endpoint: string
+  model: string
+  maxTokens?: number
+  timeoutMs?: number
+  thinkingEnabled?: boolean
+}
+
+/** LLM requestChat 返回结果 */
+export interface LlmChatResult {
+  ok: boolean
+  requestId?: string
+  status?: number
+  elapsedMs?: number
+  content: string
+  reasoningContent?: string
+  model?: string
+  error?: string
+  code?: string
+  usage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+    prompt_cache_hit_tokens?: number
+    prompt_cache_miss_tokens?: number
+  } | null
+  meta?: Record<string, unknown>
+  raw?: unknown
 }
 
 // ==================== LLM Bridge 方法签名 ====================
