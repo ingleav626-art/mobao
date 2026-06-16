@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file lobby/index.ts
  * @module lobby/index
@@ -105,7 +107,7 @@ interface LobbySceneLike {
 export { LobbyCarouselMixin as CarouselMixin } from "./carousel"
 export { CharacterSelectMixin } from "./character-select"
 
-export const LobbyIndexMixin = {
+export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
   bindLobbyEvents() {
     const soloBtn = document.getElementById("lobbySoloBtn")
     const onlineBtn = document.getElementById("lobbyOnlineBtn")

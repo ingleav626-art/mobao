@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file skill-item-manager.js
  * @module core/skill-item-manager

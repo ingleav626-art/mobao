@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file decision.js
  * @module ai/decision
@@ -58,7 +60,7 @@ type DecisionEntry = {
   [key: string]: unknown
 }
 
-export const AiDecisionMixin: Record<string, unknown> = {
+export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
   buildAiDecisionPanelSnapshot(telemetry: Record<string, unknown>): string | null {
     if (!telemetry || (telemetry as { mode?: string }).mode !== "llm" || !Array.isArray((telemetry as { entries?: unknown[] }).entries)) {
       return null

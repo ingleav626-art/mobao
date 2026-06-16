@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file lobby/carousel.js
  * @module lobby/carousel
@@ -24,7 +26,7 @@
  */
 import { getAllProfiles, getSelectedProfileId, setSelectedProfileId, getProfile } from "../data/map-profiles"
 
-export const LobbyCarouselMixin: Record<string, unknown> = {
+export const LobbyCarouselMixin: ThisType<WarehouseSceneThis> = {
   renderCarousel(): void {
     const track = document.getElementById("carouselTrack")
     if (!track) {

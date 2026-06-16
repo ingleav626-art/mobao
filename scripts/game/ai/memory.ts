@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file memory.js
  * @module ai/memory
@@ -38,7 +40,7 @@ import { AI_MEMORY_STORAGE_KEY } from "../core/constants"
 import { formatBidRevealNumber } from "../core/utils"
 import { MobaoGameHistory, GameRecord } from "./game-history"
 
-export const AiMemoryMixin: Record<string, unknown> = {
+export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
   getAiMemoryStorageKey(): string {
     if (this.isLanMode) {
       return AI_MEMORY_STORAGE_KEY + "_lan"

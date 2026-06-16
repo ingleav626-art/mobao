@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file ui/overlay.ts
  * @module ui/overlay
@@ -31,7 +33,7 @@ import { LlmManager } from "../../llm/core/llm-manager"
 import { MobaoAnimations } from "../animations"
 import { MobaoShopPage } from "../shop/index"
 
-export const UiOverlayMixin = {
+export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
   showInfoPopup(title: string, sourceScrollEl: HTMLElement | null) {
     ; (this as any).dom.infoPopupTitle.textContent = title
     if (sourceScrollEl) {

@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file lobby/character-select.ts
  * @module lobby/character-select
@@ -96,7 +98,7 @@ import { getUnlockedCharacters, getCharacterById } from "../data/characters"
 import { getActiveCharacter, selectCharacter } from "../data/character-system"
 import { MobaoShopBridge } from "../bridge/shop"
 
-export const CharacterSelectMixin = {
+export const CharacterSelectMixin: ThisType<WarehouseSceneThis> = {
   selectedCharacter: null as SelectedCharacter | null,
   characterPageEl: null as HTMLElement | null,
   _carryItems: [] as CarryItem[],

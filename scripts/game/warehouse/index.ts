@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file warehouse/index.ts
  * @module game/warehouse
@@ -134,7 +136,7 @@ import { toSizeTag, ARTIFACT_LIBRARY, QUALITY_CONFIG } from "../data/artifacts"
 
 const ARTIFACT_IMAGE_BASE_PATH = "assets/images/artifacts/thumbs/"
 
-export const WarehouseCoreMixin = {
+export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
   preloadArtifactImages() {
     if (!ARTIFACT_LIBRARY || !Array.isArray(ARTIFACT_LIBRARY)) {
       return
@@ -525,7 +527,7 @@ export const WarehouseCoreMixin = {
   }
 }
 
-export const WarehouseRevealMixin = {
+export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
   /**
    * 批量揭示藏品轮廓
    * @param {number} count - 要揭示的数量
@@ -1272,7 +1274,7 @@ export const WarehouseRevealMixin = {
   }
 }
 
-export const WarehousePreviewMixin = {
+export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
   positionPreview(canvasX: number, canvasY: number) {
     ; (this as WarehouseSceneLike).previewAnchor = { x: canvasX, y: canvasY }
     const pop = (this as WarehouseSceneLike).dom.previewPopover

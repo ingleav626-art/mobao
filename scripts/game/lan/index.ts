@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file lan/index.ts
  * @module game/lan
@@ -54,7 +56,7 @@ import { LanLive2dMixin } from "./live2d.js"
 import { LanEventsMixin } from "./events.js"
 import { initLanLobbyImpl } from "./lobby.js"
 
-export const LanIndexMixin = {
+export const LanIndexMixin: ThisType<WarehouseSceneThis> = {
   initLanLobby() {
     initLanLobbyImpl.call(this);
   },

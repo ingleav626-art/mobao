@@ -72,6 +72,7 @@ export interface WarehouseSceneThis {
   roundTimeLeft: number
   currentBid: number
   bidLeader: string | null
+  secondHighestBid: number
   settled: boolean
   isSettlementRevealMode: boolean
   settlementRevealRunning: boolean
@@ -89,6 +90,7 @@ export interface WarehouseSceneThis {
     getCandidatesByRevealState(state: Record<string, unknown>): Artifact[]
     getLibraryStats(): { total: number }
     createRandomArtifactForSlot(options: Record<string, unknown>): Artifact
+    getSignalPriceStats(signals: unknown[]): { aggregate: unknown; latest: unknown }
   }
   _mapCategoryWeights: Record<string, number> | null
   _mapQualityWeights: Record<string, number> | null
@@ -99,6 +101,16 @@ export interface WarehouseSceneThis {
   playerRoundBid: number
   aiMaxBid: number
   previewOpenTick: number
+  roundTimerId: number | null
+  settlementRunToken: number
+  activeSettlementSpinner: unknown
+  moneySettledRunToken: number | null
+  _lastDisplayedMoney: number | null
+  playerRoundHistory: Record<string, unknown>
+  playerUsageHistory: Record<string, unknown>
+  currentRoundUsage: Record<string, unknown>
+  playerHistoryPanels: Record<string, unknown>
+  deepSeekTesting: boolean
 
   // 管理器属性
   skillManager: {
@@ -122,6 +134,16 @@ export interface WarehouseSceneThis {
   aiConversationByPlayer: Record<string, ConversationMessage[]>
   aiCrossGameMemory: CrossGameMemory[]
   runLogHistory: unknown[]
+  lastAiDecisionTelemetry: unknown
+  llmEverUsedThisRun: boolean
+  aiReflectionState: string
+  aiReflectionTotal: number
+  aiReflectionCompleted: number
+  _reflectionBeforeUnload: (() => void) | null
+  aiCrossGameMessagesByPlayer: Record<string, ConversationMessage[]>
+  aiReflectionPending: Record<string, unknown>
+  runSerial: number
+  currentRunLog: unknown
 
   // AI 属性（来自 AiIntelMixin）
   aiResourceState: Record<string, { skills: Record<string, number>; items: Record<string, number> }>
@@ -140,6 +162,23 @@ export interface WarehouseSceneThis {
   lanPlayers: LanPlayer[]
   lanAiPlayers: unknown[]
   lanAiLlmEnabled: boolean
+  lanIdToSlotId: Record<string, string>
+  slotIdToLanId: Record<string, string>
+  lanReconnecting: boolean
+  lanLastServerUrl: string | null
+  lanLastRoomCode: string | null
+  lanLastPlayerId: string | null
+  lanReconnectAttempts: number
+  lanMaxReconnectAttempts: number
+  _activeSkillId: string | null
+  _gameConfirmCallback: (() => void) | null
+  _gameCancelCallback: (() => void) | null
+
+  // 战绩属性
+  battleRecords: unknown[]
+  battleRecordReplayActive: boolean
+  battleRecordReplayRecordId: string | null
+  battleRecordLogView: unknown
 
   // 结算属性（来自 SettlementManagerMixin）
   settlementSession: {

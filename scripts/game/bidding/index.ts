@@ -1,3 +1,5 @@
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+
 /**
  * @file bidding/index.js
  * @module bidding
@@ -38,7 +40,7 @@ import { GAME_SETTINGS } from "../core/settings"
 import { AudioUI } from "../../audio/audio-ui"
 import { MobaoAnimations } from "../animations"
 
-export const BiddingMixin: Record<string, unknown> = {
+export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   setPlayerBidReady(playerId: string, ready: boolean): void {
     this.roundBidReadyState[playerId] = Boolean(ready)
     const cardEl = document.getElementById(`playerCard-${playerId}`)
