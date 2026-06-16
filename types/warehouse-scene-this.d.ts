@@ -110,7 +110,6 @@ export interface WarehouseSceneThis {
   _lastDisplayedMoney: number | null
   playerRoundHistory: Record<string, unknown>
   playerUsageHistory: Record<string, unknown>
-  currentRoundUsage: Record<string, unknown>
   playerHistoryPanels: Record<string, unknown>
   deepSeekTesting: boolean
 
