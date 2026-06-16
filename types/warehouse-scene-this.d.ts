@@ -37,11 +37,13 @@ import type {
   LlmBridgeMethods,
   LlmDecision,
   LlmPlan,
+  LlmPlanResult,
   LlmSettings,
   LlmRoundPayload,
   LlmTelemetry,
   LlmErrorInfo,
   AiModelConfig,
+  LlmChatResult,
 } from "./llm"
 import type {
   Room,
@@ -415,7 +417,7 @@ export interface WarehouseSceneThis {
   pushAiMemory(playerId: string, memory: CrossGameMemory): void
   getAiMemory(playerId: string): CrossGameMemory[]
   getAiMemoryStorageKey(): string
-  loadAiMemoryFromStorage(): void
+  loadAiMemoryFromStorage(): AiMemoryStorage | null
   ensureAiConversationBucket(playerId: string): unknown[]
   updateLastAiRoundResult(playerId: string, result: unknown): void
   getQualityCounts(): Record<string, number>
@@ -504,7 +506,7 @@ export interface WarehouseSceneThis {
 
   // LLM 方法（来自 LlmDecisionMixin）
   getLlmSettings(): LlmSettings
-  getLlmProvider(): { id: string; name: string; apiKey?: string; endpoint?: string; model?: string; requestChat?(options: unknown): Promise<unknown> } | null
+  getLlmProvider(): { id: string; name: string; apiKey?: string; endpoint?: string; model?: string; requestChat?(options: unknown): Promise<LlmChatResult> } | null
   canUseLlmDecisionForPlayer(playerId: string): boolean
   pushRunSettlementContextToAi(context: unknown): void
   hasAppliedMoneyForRun(): boolean
@@ -587,7 +589,7 @@ export interface WarehouseSceneThis {
   buildAiFollowupRoundPayload(player: unknown, plan: unknown, summary: string): unknown
   buildAiDecisionUserPrompt(payload: unknown, blocks?: string[]): string
   buildAiDecisionMessages(payload: unknown): unknown[]
-  normalizeAiLlmPlan(playerId: string, decision: unknown, raw: string): unknown
+  normalizeAiLlmPlan(playerId: string, decision: unknown, raw: string): LlmPlanResult
   requestAiLlmPlan(player: unknown): Promise<unknown>
   buildAiToolResultSummary(result: unknown, actionType: string, actionId: string): string
   requestAiLlmErrorCorrection(player: Player, plan: LlmPlan, error: LlmErrorInfo, history: LlmDecision[], messages: ConversationMessage[]): Promise<LlmPlan | null>
@@ -612,7 +614,7 @@ export interface WarehouseSceneThis {
   getItemInfo(itemId: string): unknown
 
   // AI 记忆方法
-  loadAiMemoryFromStorage(): void
+  loadAiMemoryFromStorage(): AiMemoryStorage | null
   setupAiMemoryTouchScroll(): void
   getAiMemoryStorageKey(playerId: string): string
   ensureAiCrossGameMemory(): void

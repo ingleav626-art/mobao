@@ -202,7 +202,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     return this.aiConversationByPlayer[playerId]
   },
 
-  ensureAiCrossGameMemory(playerId: string): Record<string, unknown> {
+  ensureAiCrossGameMemory(playerId: string): CrossGameMemory {
     if (!this.aiCrossGameMemory[playerId]) {
       this.aiCrossGameMemory[playerId] = {
         stats: {
