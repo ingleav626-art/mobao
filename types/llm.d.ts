@@ -133,6 +133,9 @@ export interface LlmPlan {
   elapsedMs?: number             // 耗时（毫秒）
   followupActionRejected?: boolean // 后续动作是否被拒绝
   error?: string                 // 错误信息
+  model?: string                 // 使用的模型名称
+  choices?: unknown[]            // LLM 返回的选项列表
+  message?: string               // 消息内容
 }
 
 /** LLM 扩展计划（normalizeAiLlmPlan 返回值，含额外字段） */
@@ -295,7 +298,11 @@ export interface LlmChatResult {
     prompt_cache_miss_tokens?: number
   } | null
   meta?: Record<string, unknown>
-  raw?: unknown
+  raw?: {
+    choices?: Array<{ finish_reason?: string; [key: string]: unknown }>
+    usage?: Record<string, unknown>
+    [key: string]: unknown
+  }
 }
 
 // ==================== LLM Bridge 方法签名 ====================

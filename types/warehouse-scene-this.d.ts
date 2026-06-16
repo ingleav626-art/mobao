@@ -111,8 +111,8 @@ export interface WarehouseSceneThis {
   activeSettlementSpinner: unknown
   moneySettledRunToken: number | null
   _lastDisplayedMoney: number | null
-  playerRoundHistory: Record<string, unknown>
-  playerUsageHistory: Record<string, unknown>
+  playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>
+  playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>
   playerHistoryPanels: Record<string, unknown>
   deepSeekTesting: boolean
 
@@ -121,6 +121,8 @@ export interface WarehouseSceneThis {
     getSkillState(): Record<string, unknown>
     activateSkill(skillId: string): void
     deactivateSkill(skillId: string): void
+    onNewRound(round: number): void
+    resetForNewRun(): void
   }
   itemManager: {
     getItemState(): Record<string, unknown>
@@ -194,15 +196,25 @@ export interface WarehouseSceneThis {
   // 战绩属性
   battleRecords: Array<{
     id: string
-    timestamp: number
+    timestamp?: number
+    finishedAt?: string | number
+    round?: number
+    mode?: string
+    winnerId?: string
     winner: string
     winnerName?: string
     winnerBid: number
     totalValue: number
+    winnerProfit?: number
+    playerProfit?: number
+    playerWon?: boolean
     itemCount: number
-    roundCount: number
+    roundCount?: number
     players: string[]
+    reasonText?: string
     warehouse?: {
+      cols?: number
+      rows?: number
       items: Array<{
         name: string
         category: string
@@ -215,23 +227,19 @@ export interface WarehouseSceneThis {
       }>
       itemCount?: number
     }
-    logs: Array<{
-      round: number
-      bids: Record<string, number>
-      winner: string
-      winnerBid: number
+    logs?: {
       aiDecisionPanelText?: string
-      recordId?: string
-    }>
-    finishedAt?: number
-    winnerProfit?: number
-    playerProfit?: number
-    reasonText?: string
+      runNo?: number | null
+      aiThoughtLogs?: unknown[]
+      roundLogsByRound?: Record<string, unknown>
+      roundPanelTexts?: Record<string, string>
+    } | null
+    logsRound?: number
     dividendTicketInfo?: {
       mechanism?: string
       dividendPerPlayer: number
       ticketPerPlayer: number
-    }
+    } | null
   }>
   battleRecordReplayActive: boolean
   battleRecordReplayRecordId: string | null
@@ -314,7 +322,7 @@ export interface WarehouseSceneThis {
   _autoReplenish: boolean
   _live2dVideoState: boolean
   characterPageEl: HTMLElement | null
-  selectedCharacter: string | null
+  selectedCharacter: Character | null
   keypadValue: string
   _pauseSnapshotTimeLeft: number | null
   _loadingLock: boolean
@@ -552,7 +560,7 @@ export interface WarehouseSceneThis {
   hideInfoPopup(): void
   updateKeypadDirectHint(): void
   waitUntilResumed(): Promise<void>
-  extractAiDecisionObject(response: string): unknown
+  extractAiDecisionObject(response: string): { bid?: number | string; skill?: string; item?: string; thought?: string } | null
   finishAuction(): void
   recordPlayerUsage(playerId: string, actionId: string): void
   saveAiMemoryToStorage(): void
@@ -616,7 +624,7 @@ export interface WarehouseSceneThis {
   buildAiFollowupRoundPayload(player: unknown, plan: unknown, summary: string): unknown
   buildAiDecisionUserPrompt(payload: unknown, blocks?: string[]): string
   buildAiDecisionMessages(payload: unknown): unknown[]
-  normalizeAiLlmPlan(playerId: string, decision: unknown, raw: string): LlmPlanResult
+  normalizeAiLlmPlan(playerId: string, decision: unknown, raw: string, options?: { allowAction?: boolean }): LlmPlanResult
   requestAiLlmPlan(player: unknown): Promise<unknown>
   buildAiToolResultSummary(result: unknown, actionType: string, actionId: string): string
   requestAiLlmErrorCorrection(player: Player, plan: LlmPlan, error: LlmErrorInfo, history: LlmDecision[], messages: ConversationMessage[]): Promise<LlmPlan | null>
