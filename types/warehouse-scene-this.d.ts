@@ -151,7 +151,8 @@ export interface WarehouseSceneThis {
   lastAiIntelActions: unknown[]
   aiLlmRoundPlans: unknown
   highValuePriceThreshold: number | null
-  aiCharacterAssignments: Record<string, { characterId: string; skillId: string; skillName: string; passive: boolean }>
+  aiCharacterAssignments: Record<string, { characterId: string; skillId: string; skillName: string; passive: boolean; characterName?: string }>
+  aiErrorCorrectionHistory: unknown[]
 
   // 联机属性（来自 LanIndexMixin）
   isLanMode: boolean
@@ -281,6 +282,7 @@ export interface WarehouseSceneThis {
   updateAiIntel(playerId: string, intel: AiPrivateIntel): void
   getAiIntel(playerId: string): AiPrivateIntel | undefined
   summarizeIntel(playerId: string): IntelSummary
+  getAiIntelSummary(playerId: string): IntelSummary
   ensureAiPrivateIntel(playerId: string): AiPrivateIntel
   revealOutlineBatch(count: number, category: string, allowCategoryFallback: boolean, sortStrategy: string): unknown
   revealQualityBatch(count: number, category: string, allowCategoryFallback: boolean, sortStrategy: string): unknown
@@ -306,6 +308,11 @@ export interface WarehouseSceneThis {
   scanNeighborIntelAroundCell(playerId: string, x: number, y: number): void
   markAllItemCellsAsOccupied(playerId: string, item: Artifact): void
   scanItemBoundaryNeighbors(playerId: string, item: Artifact): void
+  buildAiAggregateIntelBlock(playerId: string): unknown
+  buildAiHighValueTrackBlock(playerId: string): unknown
+  getAiResourceSnapshot(playerId: string): unknown
+  getAiAvailableActionState(playerId: string): unknown
+  buildAiPrivateRevealContext(playerId: string, item: Artifact, mode: string): unknown
 
   // AI 方法（来自 AiMemoryMixin）
   pushAiMemory(playerId: string, memory: CrossGameMemory): void
