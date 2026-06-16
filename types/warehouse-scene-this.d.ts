@@ -147,6 +147,10 @@ export interface WarehouseSceneThis {
   aiConversationCache: Record<string, unknown>
   pendingNextRunAiSummaryByPlayer: Record<string, unknown>
   aiEngine: AuctionAiEngine | null
+  aiLlmRoundPlans: Record<string, LlmPlan | null>
+  aiRoundDecisionPromise: Promise<void> | null
+  lastAiIntelActions: Record<string, unknown>
+  isAiMultiGameMemoryEnabled: boolean
 
   // AI 属性（来自 AiIntelMixin）
   aiResourceState: Record<string, { skills: Record<string, number>; items: Record<string, number> }>
@@ -188,14 +192,21 @@ export interface WarehouseSceneThis {
 
   // 结算属性（来自 SettlementManagerMixin）
   settlementSession: {
-    winnerPlayer: Player
-    winnerBid: number
-    reasonText: string
-    revealedItems: Artifact[]
-    totalValue: number
-    winnerProfit: number
-    selfProfit: number
+    runToken: number | string
+    phase: string
+    winnerPlayer?: Player
+    winnerBid?: number
+    reasonText?: string
+    revealedItems?: Artifact[]
+    totalValue?: number
+    winnerProfit?: number
+    selfProfit?: number
   } | null
+  settlementRunToken: number | string | null
+  activeSettlementSpinner: HTMLElement | null
+  isSettlementRevealMode: boolean
+  settlementRevealSkipRequested: boolean
+  settlementRevealRunning: boolean
 
   // UI 属性
   privateIntelEntries: unknown[]
@@ -212,6 +223,9 @@ export interface WarehouseSceneThis {
   selectedCharacter: string | null
   keypadValue: string
   _pauseSnapshotTimeLeft: number | null
+  _loadingLock: boolean
+  _carryConfirmCleanup: (() => void) | null
+  roundBidReadyState: Record<string, boolean>
 
   // HUD 属性
   _hudRoundText: HTMLElement | null
@@ -397,6 +411,29 @@ export interface WarehouseSceneThis {
   exitLobby(): void
   renderCollectionGrid(): void
   renderCarryItems(): void
+  showPlayerInfoPopover(title: string, htmlContent: string, x: number, y: number): void
+  waitUntilResumed(): Promise<void>
+  extractAiDecisionObject(response: string): unknown
+  finishAuction(): void
+  recordPlayerUsage(playerId: string, actionId: string): void
+  hideLanPauseOverlay(): void
+  saveAiMemoryToStorage(): void
+  syncBidKeypadScreen(): void
+  _stopLive2dLoop(): void
+  showLanPauseOverlay(): void
+  onNewRound(): void
+  closeSettingsOverlay(): void
+  formatAiIntelActionPublicLine(playerId: string, action: unknown): string
+  _rebuildCustomSelect(el: HTMLElement): void
+  closeCarryItemPicker(): void
+  recordRoundHistory(): void
+  renderQualityVisual(item: Artifact): void
+  _handleCardKeydown(event: KeyboardEvent): void
+  requestAiLlmFollowupBid(playerId: string): void
+  enterLanRoom(): void
+  revealRoundBidsSequential(): void
+  removeLanRestartDialog(): void
+  normalizeAiBidValue(bid: number): number
   exportAiMemoryToJson(): string
   importAiMemoryFromJson(json: string): void
 }
