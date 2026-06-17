@@ -3,18 +3,10 @@
  * @description LanBridge 模块类型声明
  */
 
-declare module "lan/client/lan-bridge" {
-  import type { LanBridge } from "../../types/lan"
-  global {
-    const LanBridge: LanBridge
-  }
-  export { }
+import type { LanBridge } from "../../types/lan"
+
+declare global {
+  const LanBridge: LanBridge
 }
 
-declare module "lan/client/lan-bridge.js" {
-  import type { LanBridge } from "../../types/lan"
-  global {
-    const LanBridge: LanBridge
-  }
-  export { }
-}
+export { }

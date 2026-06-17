@@ -406,7 +406,7 @@ export interface WarehouseSceneThis {
   playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>
   playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>
   currentRoundUsage: Record<string, string[]>
-  playerHistoryPanels: Record<string, HTMLElement>
+  playerHistoryPanels: Record<string, HTMLElement | null>
   aiThoughtLogs: Array<{
     playerId: string
     thought: string
