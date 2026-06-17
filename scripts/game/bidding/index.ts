@@ -107,14 +107,14 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
     this.updateKeypadDirectHint()
     this.dom.bidKeypad?.classList.remove("hidden")
     if (this.input) {
-      (this.input as Phaser.InputPlugin & { enabled: boolean }).enabled = false
+      (this.input as Phaser.Input.InputPlugin & { enabled: boolean }).enabled = false
     }
   },
 
   closeBidKeypad(): void {
     this.dom.bidKeypad?.classList.add("hidden")
     if (this.input) {
-      (this.input as Phaser.InputPlugin & { enabled: boolean }).enabled = true
+      (this.input as Phaser.Input.InputPlugin & { enabled: boolean }).enabled = true
     }
   },
 

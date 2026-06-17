@@ -314,9 +314,9 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       ; this.activeSettlementSpinner.destroy()
         ; this.activeSettlementSpinner = null
     }
-    ; (this.tweens as Phaser.TweenManager & { killAll(): void }).killAll()
+    ; (this.tweens as Phaser.Tweens.TweenManager & { killAll(): void }).killAll()
       ; this.items = []
-      ; (this.time as Phaser.TimePlugin & { removeAllEvents(): void }).removeAllEvents()
+      ; (this.time as Phaser.Time.Clock & { removeAllEvents(): void }).removeAllEvents()
   },
 
   enterLobby() {

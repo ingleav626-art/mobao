@@ -43,12 +43,12 @@ import type { Artifact, ArtifactDef, ArtifactRevealState, QualityLevel, QualityC
 /** Mixin this 类型：WarehouseScene 运行时完整接口（属性+方法） */
 interface WarehouseSceneLike {
   // Phaser Scene
-  textures: Phaser.TextureManager
-  load: Phaser.LoaderPlugin
+  textures: Phaser.Textures.TextureManager
+  load: Phaser.Loader.LoaderPlugin
   add: Phaser.Scene["add"]
-  time: Phaser.TimePlugin
-  tweens: Phaser.TweenManager
-  input: Phaser.InputPlugin
+  time: Phaser.Time.Clock
+  tweens: Phaser.Tweens.TweenManager
+  input: Phaser.Input.InputPlugin
 
   // 核心属性
   gridLayer: Phaser.GameObjects.Graphics | null
@@ -1273,8 +1273,8 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
     const x = MARGIN + col * CELL_SIZE
     const y = MARGIN + row * CELL_SIZE
 
-    ; (this as WarehouseSceneLike).revealCellLayer!.fillStyle(0xf1e6cc, 0.2)
-    ; (this as WarehouseSceneLike).revealCellLayer!.fillRect(x, y, CELL_SIZE, CELL_SIZE)
+      ; (this as WarehouseSceneLike).revealCellLayer!.fillStyle(0xf1e6cc, 0.2)
+      ; (this as WarehouseSceneLike).revealCellLayer!.fillRect(x, y, CELL_SIZE, CELL_SIZE)
   }
 }
 
