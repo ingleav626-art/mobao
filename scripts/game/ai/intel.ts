@@ -340,7 +340,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
         category: string | null;
         allowCategoryFallback?: boolean;
         sortStrategy: string | null;
-      }) => this.revealOutlineBatch(count, category, allowCategoryFallback, sortStrategy),
+      }) => this.revealPrivateIntelBatch(playerId, "outline", count, category, allowCategoryFallback, sortStrategy ?? ""),
       revealQuality: ({ count, category, allowCategoryFallback = false, sortStrategy }: {
         count: number;
         category: string | null;
@@ -584,7 +584,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     const pool = this.ensureAiPrivateIntel(playerId)
     const trackId = pool.highValueTrackByItemId[item.id]
     if (trackId) {
-    const track: HighValueTrack | undefined = pool.highValueTracks.find((entry: HighValueTrack) => entry.itemId === item.id)
+      const track: HighValueTrack | undefined = pool.highValueTracks.find((entry: HighValueTrack) => entry.itemId === item.id)
       if (track) {
         track.lastSeenRound = this.round
         const revealState = {
@@ -650,7 +650,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @returns {{ ok: boolean, revealed: number, signals: Array, signalStats: Object,
    *              trackUpdates: Array, bottomCell: Object|null, message?: string }}
    */
-  revealPrivateIntelBatch(playerId: string, mode: string, count: number, category: string, allowCategoryFallback = false, sortStrategy: string) {
+  revealPrivateIntelBatch(playerId: string, mode: string, count: number, category: string | null, allowCategoryFallback = false, sortStrategy: string | null) {
     const targets = this.pickPrivateRevealTargets({
       playerId,
       mode,
@@ -727,7 +727,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       (item) => !pool.knownOutlineIds.has(item.id) || !pool.knownQualityIds.has(item.id)
     )
 
-    const sortByArea = (arr: Artifact[], strategy: string) => {
+    const sortByArea = (arr: Artifact[], strategy: string | null) => {
       const shuffled = shuffle(arr)
       if (strategy === "smallestFirst") {
         return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
@@ -822,7 +822,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {string} [params.sortStrategy] - 排序策略
    * @returns {Array<Object>} 选中的藏品对象数组
    */
-  pickPrivateRevealTargets({ playerId, mode, count, category, allowCategoryFallback = false, sortStrategy }: { playerId: string; mode: string; count: number; category: string; allowCategoryFallback?: boolean; sortStrategy: string }) {
+  pickPrivateRevealTargets({ playerId, mode, count, category, allowCategoryFallback = false, sortStrategy }: { playerId: string; mode: string; count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const knownSet = mode === "outline" ? pool.knownOutlineIds : pool.knownQualityIds
 
@@ -837,7 +837,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       return isUnknown(item)
     })
 
-    const sortByArea = (arr: Artifact[], strategy: string) => {
+    const sortByArea = (arr: Artifact[], strategy: string | null) => {
       const shuffled = shuffle(arr)
       if (strategy === "smallestFirst") {
         return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
