@@ -9,4 +9,4 @@ declare global {
   const LanBridge: LanBridge
 }
 
-export { }
+export {}

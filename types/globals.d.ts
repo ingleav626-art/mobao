@@ -42,7 +42,7 @@ declare var CharacterSystem: {
   getOutlineSortStrategy(): string
   applyPassiveEffect(params: { profit: number }): { profit: number; bonus?: number; label?: string }
   resetForNewGame(): void
-  getActiveCharacter(): { id: string; name: string; skillId: string; skillName: string; passive?: any } | null
+  getActiveCharacter(): { id: string; name: string; skillId: string; skillName: string; passive?: Record<string, unknown> } | null
   selectCharacter(id: string): void
   getDisplayName(playerId?: string): string
   getAvatarLabel(playerId?: string): string
@@ -52,11 +52,11 @@ declare var CharacterSystem: {
 declare var Overlay: Record<string, any>
 
 declare var SkillSystem: {
-  SKILL_DEFS: Array<{ id: string; name: string; description: string; maxPerRound: number; execute?: Function }>
+  SKILL_DEFS: Array<{ id: string; name: string; description: string; maxPerRound: number; execute?: (context: Record<string, unknown>) => Record<string, unknown> }>
 }
 
 declare var ItemSystem: {
-  ITEM_DEFS: Array<{ id: string; name: string; description: string; initialCount?: number; maxPerRound?: number; execute?: Function }>
+  ITEM_DEFS: Array<{ id: string; name: string; description: string; initialCount?: number; maxPerRound?: number; execute?: (context: Record<string, unknown>) => Record<string, unknown> }>
 }
 
 declare var MobileHandler: Record<string, any>
@@ -85,12 +85,12 @@ declare var MobaoConstants: {
 }
 
 declare var MobaoUtils: {
-  createEmptyAiPrivateIntelPool(): any
+  createEmptyAiPrivateIntelPool(): Record<string, unknown>
   clamp(val: number, min: number, max: number): number
   formatTrackIndex(idx: number): string
   shuffle<T>(arr: T[]): T[]
   formatCompactNumber(val: number): string
-  compactOneLine(obj: any, maxLen: number): string
+  compactOneLine(obj: string, maxLen: number): string
   toCellKey(x: number, y: number): string
   fromCellKey(key: string): { x: number; y: number }
   sizeTagToCellCount(tag: string): number
@@ -128,7 +128,7 @@ declare class LanBridge {
   static getLocalServerUrl(): string | null
   static getNativeServerUrl(): string | null
   static getNativeWiFiIP(): string | null
-  static discoverRoomsNative(): Array<{ serverIp: string; rooms: any[] }> | null
+  static discoverRoomsNative(): Array<{ serverIp: string; rooms: Record<string, unknown>[] }> | null
   connect(url: string, name: string): Promise<void>
   disconnect(): void
   createRoom(options: Record<string, any>): void
@@ -136,15 +136,15 @@ declare class LanBridge {
   leaveRoom(): void
   startGame(options: Record<string, any>): void
   listRooms(): void
-  reconnect(url: string, roomCode: string, playerId: string): Promise<any>
+  reconnect(url: string, roomCode: string, playerId: string): Promise<Record<string, unknown>>
   send(data: Record<string, any>): void
   sendFullSync(playerId: string, data: Record<string, any>): void
   requestFullSync(): void
   on(event: string, handler: (data: any) => void): void
-  broadcastRoundResult(round: number, bids: any[], reason: string): void
+  broadcastRoundResult(round: number, bids: Array<Record<string, unknown>>, reason: string): void
   broadcastRoundStart(round: number, maxRounds: number, currentBid: number, roundSeconds: number): void
   broadcastSettle(data: Record<string, any>): void
-  broadcastSettleFinal(wallets: Record<string, number>, profitDetails: any[]): void
+  broadcastSettleFinal(wallets: Record<string, number>, profitDetails: Array<Record<string, unknown>>): void
   togglePause(paused: boolean, timeLeft: number): void
   submitBid(bid: number): void
   sendChat(text: string): void

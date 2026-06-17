@@ -1320,7 +1320,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       this.writeLog(`[AI纠错] ${player.name} 工具执行失败: ${errorDetail}`)
 
       if (!this.currentRunLog) {
-        this.currentRunLog = { aiThoughtLogs: [], actionLogs: [] }
+        this.currentRunLog = { runNo: 0, startedAt: Date.now(), aiThoughtLogs: [], actionLogs: [], roundLogsByRound: {}, roundPanelTexts: {} }
       }
       const errorLogEntry = {
         round: this.round,

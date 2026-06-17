@@ -38,6 +38,13 @@ export interface Room {
   createdAt: number
 }
 
+/** 创建房间选项 */
+export interface RoomCreateOptions {
+  roomName?: string
+  visibility?: 'public' | 'private'
+  password?: string
+}
+
 /** 房间摘要（大厅列表展示用） */
 export interface RoomSummary {
   code: string

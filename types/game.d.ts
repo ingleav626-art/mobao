@@ -157,6 +157,12 @@ export interface RevealContext {
   revealAll?: (opts: RevealContext) => RevealResult
 }
 
+export interface SkillContext {
+  revealOutline(opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }): unknown
+  revealQuality(opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }): unknown
+  revealAll(opts: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }): unknown
+}
+
 /** 揭示操作结果 */
 export interface RevealResult {
   ok: boolean

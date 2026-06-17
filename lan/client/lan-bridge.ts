@@ -134,8 +134,12 @@
     return true;
   };
 
-  LanBridge.prototype.createRoom = function (options: any) {
-    var opts = options || {};
+  /**
+   * 创建房间
+   * @param options 房间选项（结构不确定，使用 unknown 强制类型检查）
+   */
+  LanBridge.prototype.createRoom = function (options: unknown) {
+    var opts = (options || {}) as { roomName?: string; visibility?: string; password?: string };
     LanBridgeLog("info", "Creating room...");
     this.send({
       type: "room:create",
@@ -660,4 +664,4 @@
   global.LanBridge = LanBridge;
 })(window);
 
-export {}
+export { }

@@ -18,6 +18,7 @@ import type {
   RevealResult,
   PassiveEffect,
   DepsContainer,
+  SkillContext,
 } from "./game"
 import type {
   BidContext,
@@ -104,6 +105,8 @@ export interface WarehouseSceneThis {
   playerMoney: number
   players: Player[]
   aiPrivateIntel: Record<string, AiPrivateIntelPool>
+  /** AI LLM 错误记录（动态添加，用于存储各玩家的 LLM 错误信息） */
+  _aiLlmErrors: Record<string, { message: string; brief: string; detail: string; level: string; timestamp: number }>
   dom: {
     hudRound: HTMLElement | null
     hudTimer: HTMLElement | null
@@ -132,7 +135,7 @@ export interface WarehouseSceneThis {
     itemDrawerCloseBtn: HTMLElement | null
     itemDrawerList: HTMLElement | null
     skillBtn: HTMLElement | null
-    bidInput: HTMLElement | null
+    bidInput: HTMLInputElement | null
     settleBtn: HTMLElement | null
     gameRoot: HTMLElement | null
     gameConfirmOverlay: HTMLElement | null
@@ -241,11 +244,13 @@ export interface WarehouseSceneThis {
     deactivateSkill(skillId: string): void
     onNewRound(round?: number): void
     resetForNewRun(): void
+    use(id: string, ctx: unknown): { ok: boolean; message: string }
   }
   itemManager: {
     getItemState(): Record<string, unknown>
     useItem(itemId: string): void
     items: Array<{ id: string; count?: number }>
+    use(id: string, ctx: unknown): { ok: boolean; message: string }
   }
   // AI 属性（来自 AiWalletMixin）
   aiWallets: Record<string, number>
@@ -264,11 +269,12 @@ export interface WarehouseSceneThis {
   aiReflectionPending: Record<string, unknown>
   runSerial: number
   currentRunLog: {
-    runNo?: number
-    aiThoughtLogs?: unknown[]
-    actionLogs?: unknown[]
-    roundLogsByRound?: Record<string, unknown>
-    roundPanelTexts?: Record<string, string>
+    runNo: number
+    startedAt: number
+    actionLogs: string[]
+    aiThoughtLogs: unknown[]
+    roundLogsByRound: Record<string, string[]>
+    roundPanelTexts: Record<string, string>
   }
   aiConversationCache: Record<string, unknown>
   pendingNextRunAiSummaryByPlayer: Record<string, unknown>
@@ -517,7 +523,9 @@ export interface WarehouseSceneThis {
   getAiWallet(id: string): number
   setAiWallet(id: string, value: number): void
   saveAiWalletsToStorage(): void
-  loadAiWalletsFromStorage(): void
+  loadAiWalletsFromStorage(): Record<string, number>
+  getAiMinimumBid(playerId: string, wallet: number | null): number
+  resetAiWallets(): void
 
   // AI 方法（来自 AiIntelMixin）
   updateAiIntel(playerId: string, intel: AiPrivateIntelPool): void
@@ -534,7 +542,7 @@ export interface WarehouseSceneThis {
   ensureAiHighValueTrack(playerId: string, item: Artifact): { trackId: string; created: boolean } | null
   updateAiItemKnowledge(playerId: string, item: Artifact, signal: { sampleCell?: { x: number; y: number } } | null, mode: string): AiItemKnowledge & { trackUpdate?: { trackId: string; revealLevel: string; confirmed: { quality: string; category: string; exactArtifact: string | null }; candidates: { total: number; truncated: boolean } } }
   buildTrackCandidatePreview(revealState: { qualityKey: string | null; category: string | null; sizeTag: string | null }): { total: number; truncated: boolean; list: Artifact[] }
-  pickPrivateRevealTargets(options: { playerId: string; mode: string; count: number; category: string; allowCategoryFallback?: boolean; sortStrategy: string }): Artifact[]
+  pickPrivateRevealTargets(options: { playerId: string; mode: string; count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }): Artifact[]
   getHighValuePriceThreshold(): number
   isHighValueArtifact(item: Artifact): boolean
   ensureAiItemKnowledge(playerId: string, itemId: string): AiItemKnowledge
@@ -634,23 +642,34 @@ export interface WarehouseSceneThis {
   playSettlementSearchEffect(item: Artifact, runToken: unknown): Promise<void>
 
   // 回合管理方法（来自 RoundManagerMixin）
+  startRoundTimer(): void
   stopRoundTimer(): void
   resumeRoundTimer(): void
   pauseRoundTimer(): void
   resetRoundTimer(): void
+  resetRoundBidDisplay(): void
+  resetRoundBidReadyState(): void
+  clearCurrentRoundUsage(): void
+  resetAiRoundResources(): void
+  kickoffAiRoundDecisions(): void
 
   // 技能道具方法（来自 SkillItemManagerMixin）
   syncItemManagerFromShop(): void
   getSkillInfo(skillId: string): SkillDef | null
-  getItemInfo(itemId: string): ItemDef | null
+  getItemInfo(itemId: string): { label: string; tip: string }
   activateSkill(skillId: string): void
   deactivateSkill(skillId: string): void
   useItem(itemId: string): void
+  useSkill(skillId: string): void
   processAiDecisions(): void
+  consumeAction(actionType: string): boolean
+  canUseIntelActions(): boolean
+  buildSkillContext(): SkillContext
+  addPrivateIntelEntry(entry: { source: string; text: string }): void
 
   // LLM 方法（来自 LlmDecisionMixin）
   getLlmSettings(): LlmSettings
-  getLlmProvider(): { id: string; name: string; apiKey?: string; endpoint?: string; model?: string; requestChat?(options: unknown): Promise<LlmChatResult> } | null
+  getLlmProvider(): { id: string; name: string; apiKey?: string; endpoint?: string; model?: string; requestChat?(options: unknown): Promise<LlmChatResult>; saveSettings?(settings: Record<string, any>): void; applySettings?(settings: Record<string, any>): void } | null
   canUseLlmDecisionForPlayer(playerId: string): boolean
   pushRunSettlementContextToAi(context: unknown): void
   hasAppliedMoneyForRun(): boolean
@@ -719,6 +738,7 @@ export interface WarehouseSceneThis {
   buildAIBids(): unknown
 
   // AI 决策方法（来自 LlmDecision）
+  compactPanelTextForSnapshot(text: string, limit?: number): string
   buildAiDecisionPanelSnapshot(telemetry?: Record<string, unknown>): unknown
   renderAiLogicPanelForLlm(telemetry: unknown): string
   loadAiModelConfigs(): Record<string, string>
@@ -779,6 +799,8 @@ export interface WarehouseSceneThis {
   hideAllLobbySubPages(): void
   startSoloGame(): void
   carouselScroll(dir: number): void
+  bindCarouselTouch(): void
+  updateCarouselPosition(): void
   renderCarousel(): void
   renderMapDetail(): void
   initLanLobby(): void
@@ -791,7 +813,7 @@ export interface WarehouseSceneThis {
   applyMapProfile(profileId?: string): void
   closeCollectionOverlay(): void
   initCollectionPanel(): void
-  getCollectionCategories(): unknown[]
+  getCollectionCategories(): string[]
   getQualityCounts(): unknown
   hidePlayerInfoPopover(): void
   hideInfoPopup(): void
@@ -871,6 +893,19 @@ export interface WarehouseSceneThis {
   // 设置相关属性
   settingsInputId(field: string): string
   AI_MODEL_CONFIGS_STORAGE_KEY: string
+  _settingsInitialValues: string | null
+
+  // 设置相关方法
+  fillSettingsForm(settings: Record<string, any>): void
+  fillLlmSettingsForm(settings: Record<string, any>): void
+  setSettingsStatus(text: string, saved: boolean): void
+  readSettingsForm(): Record<string, any>
+  readLlmSettingsForm(): Record<string, any>
+  saveSettingsFromOverlay(): void
+  setLlmSettingsStatus(text: string, state: string): void
+  pushRunStartContextToAi(): void
+  toggleRoundPause(): void
+  renderAiThoughtLog(): void
 
   // 出价相关属性
   playerBid(): void
