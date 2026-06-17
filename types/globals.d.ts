@@ -116,9 +116,13 @@ declare var CharacterData: {
 
 declare class LanBridge {
   ws: { url: string; readyState: number } | null
-  playerId: string
-  roomCode: string
+  playerId: string | null
+  playerName: string | null
+  roomCode: string | null
   connected: boolean
+  isHost: boolean
+  players: unknown[]
+  _listeners: Record<string, Function[]>
   static isNative(): boolean
   static startNativeServer(): boolean
   static getLocalServerUrl(): string | null
@@ -129,6 +133,9 @@ declare class LanBridge {
   disconnect(): void
   createRoom(options: Record<string, any>): void
   joinRoom(code: string, password?: string): void
+  leaveRoom(): void
+  startGame(options: Record<string, any>): void
+  listRooms(): void
   reconnect(url: string, roomCode: string, playerId: string): Promise<any>
   send(data: Record<string, any>): void
   sendFullSync(playerId: string, data: Record<string, any>): void
@@ -139,6 +146,8 @@ declare class LanBridge {
   broadcastSettle(data: Record<string, any>): void
   broadcastSettleFinal(wallets: Record<string, number>, profitDetails: any[]): void
   togglePause(paused: boolean, timeLeft: number): void
+  submitBid(bid: number): void
+  sendChat(text: string): void
 }
 
 // ==================== Window 属性 ====================

@@ -12,6 +12,7 @@
 import { tryExtractDecisionJson } from './llm-error.js'
 import { QUALITY_CONFIG } from '../../game/data/artifacts'
 import type { Player, SkillDef, ItemDef } from "../../../types/game"
+import type { LlmPlanResult } from "../../../types/llm"
 
 interface LlmPromptDeps {
   GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number;[key: string]: unknown }
@@ -573,7 +574,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       return { actionId: null as string | null, target }
     },
 
-    normalizeAiLlmPlan(playerId: string, decision: LlmDecision | null, rawContent: string, options: { allowAction?: boolean } = {}) {
+    normalizeAiLlmPlan(playerId: string, decision: LlmDecision | null, rawContent: string, options: { allowAction?: boolean } = {}): LlmPlanResult {
       const bidRaw = pickFirstDefined(decision && decision.bid, decision && decision.出价, decision && decision.报价)
       const skillRaw = pickFirstDefined(
         decision && decision.skill,

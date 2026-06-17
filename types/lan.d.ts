@@ -60,6 +60,7 @@ export interface LanPlayer {
   characterId: string | null
   carryItems: string[]
   avatar?: string
+  llm?: boolean
 }
 
 /** 联机槽位映射 */

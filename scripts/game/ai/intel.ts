@@ -1,4 +1,7 @@
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { Artifact, RevealResult, Player } from '../../../types/game'
+import type { AiItemKnowledge, AiIntelSignal, AiSignalStats, IntelAggregate, IntelSummary, ActionDef, IntelActionPlan, HighValueTrack } from '../../../types/ai'
+import type { LlmPlan, LlmPlanResult } from '../../../types/llm'
 
 /**
  * @file game/ai/intel.js
@@ -40,6 +43,7 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  *   lastAiIntelActions, aiLlmRoundPlans, aiFoldState, aiCharacterAssignments,
  *   initAiIntelSystems, getAiIntelSummary, buildAiIntelSnapshot, 等一系列方法
  */
+
 import {
   createEmptyAiPrivateIntelPool,
   clamp,
@@ -58,6 +62,8 @@ import { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } from "../data/artifacts"
 import { CHARACTERS } from "../data/characters"
 import { getActiveCharacter } from "../data/character-system"
 
+
+
 export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
   /**
    * 构建规则AI可调用的揭示上下文，委托给场景的批量揭示方法
@@ -65,12 +71,24 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    */
   buildSkillContext() {
     return {
-      revealOutline: ({ count, category, allowCategoryFallback = false, sortStrategy }) =>
-        this.revealOutlineBatch(count, category, allowCategoryFallback, sortStrategy),
-      revealQuality: ({ count, category, allowCategoryFallback = false, sortStrategy }) =>
-        this.revealQualityBatch(count, category, allowCategoryFallback, sortStrategy),
-      revealAll: ({ count, sortStrategy, category, allowCategoryFallback }) =>
-        this.revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback })
+      revealOutline: ({ count, category, allowCategoryFallback = false, sortStrategy }: {
+        count: number;
+        category: string | null;
+        allowCategoryFallback?: boolean;
+        sortStrategy: string | null;
+      }) => this.revealOutlineBatch(count, category, allowCategoryFallback, sortStrategy),
+      revealQuality: ({ count, category, allowCategoryFallback = false, sortStrategy }: {
+        count: number;
+        category: string | null;
+        allowCategoryFallback?: boolean;
+        sortStrategy: string | null;
+      }) => this.revealQualityBatch(count, category, allowCategoryFallback, sortStrategy),
+      revealAll: ({ count, sortStrategy, category, allowCategoryFallback }: {
+        count: number;
+        sortStrategy: string;
+        category: string | null;
+        allowCategoryFallback: boolean;
+      }) => this.revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback })
     }
   },
 
@@ -118,7 +136,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
 
       const shuffledItems = shuffle([...allItems])
       const selectedItems = shuffledItems.slice(0, 4)
-      const itemEntries = {}
+      const itemEntries: Record<string, number> = {}
       selectedItems.forEach((item) => {
         itemEntries[item.id] = item.initialCount
       })
@@ -203,7 +221,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {string|number} playerId - AI玩家ID
    * @returns {Object} 私有情报池对象
    */
-  ensureAiPrivateIntel(playerId) {
+  ensureAiPrivateIntel(playerId: string) {
     if (this.aiPrivateIntel[playerId]) {
       return this.aiPrivateIntel[playerId]
     }
@@ -228,7 +246,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    *              signalCount: number, meanEstimate: number, spreadRatio: number,
    *              upperEdge: number, lowerEdge: number, std: number, iqr: number }}
    */
-  getAiIntelSummary(playerId) {
+  getAiIntelSummary(playerId: string) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const total = Math.max(1, this.items.length)
     const outlineCount = pool.outlineSignals.length
@@ -281,7 +299,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @returns {Object<string, IntelSummary>}
    */
   buildAiIntelSnapshot() {
-    const map = {}
+    const map: Record<string, IntelSummary> = {}
     this.players
       .filter((player) => !player.isHuman)
       .forEach((player) => {
@@ -295,7 +313,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {string|number} playerId - AI玩家ID
    * @returns {{ skills: Object<string,number>, items: Object<string,number> }}
    */
-  getAiResourceSnapshot(playerId) {
+  getAiResourceSnapshot(playerId: string) {
     const resourceState = this.aiResourceState[playerId]
     if (!resourceState) {
       return {
@@ -315,19 +333,33 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {string|number} playerId - AI玩家ID
    * @returns {{ revealOutline: Function, revealQuality: Function, revealAll: Function }}
    */
-  buildAiPrivateRevealContext(playerId) {
+  buildAiPrivateRevealContext(playerId: string) {
     return {
-      revealOutline: ({ count, category, allowCategoryFallback = false, sortStrategy }) =>
-        this.revealPrivateIntelBatch(playerId, "outline", count, category, allowCategoryFallback, sortStrategy),
-      revealQuality: ({ count, category, allowCategoryFallback = false, sortStrategy }) =>
+      revealOutline: ({ count, category, allowCategoryFallback = false, sortStrategy }: {
+        count: number;
+        category: string | null;
+        allowCategoryFallback?: boolean;
+        sortStrategy: string | null;
+      }) => this.revealOutlineBatch(count, category, allowCategoryFallback, sortStrategy),
+      revealQuality: ({ count, category, allowCategoryFallback = false, sortStrategy }: {
+        count: number;
+        category: string | null;
+        allowCategoryFallback?: boolean;
+        sortStrategy: string;
+      }) =>
         this.revealPrivateIntelBatch(playerId, "quality", count, category, allowCategoryFallback, sortStrategy),
-      revealAll: ({ count, sortStrategy, category, allowCategoryFallback }) =>
+      revealAll: ({ count, sortStrategy, category, allowCategoryFallback }: {
+        count: number;
+        sortStrategy: string;
+        category: string | null;
+        allowCategoryFallback: boolean;
+      }) =>
         this.revealPrivateIntelFully(playerId, { count, sortStrategy, category, allowCategoryFallback })
     }
   },
 
-  pickRandomItemCell(item) {
-    const cells = []
+  pickRandomItemCell(item: Artifact) {
+    const cells: { x: number; y: number }[] = []
     for (let y = item.y; y < item.y + item.h; y += 1) {
       for (let x = item.x; x < item.x + item.w; x += 1) {
         cells.push({ x, y })
@@ -336,13 +368,13 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     return cells.length > 0 ? cells[Math.floor(Math.random() * cells.length)] : null
   },
 
-  markAiKnownCellState(playerId, x, y, state) {
+  markAiKnownCellState(playerId: string, x: number, y: number, state: string) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const key = toCellKey(x, y)
     pool.knownCellStates[key] = state || "empty"
   },
 
-  scanNeighborIntelAroundCell(playerId, x, y) {
+  scanNeighborIntelAroundCell(playerId: string, x: number, y: number) {
     const offsets = [
       [-1, -1],
       [0, -1],
@@ -365,7 +397,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     })
   },
 
-  markAllItemCellsAsOccupied(playerId, item) {
+  markAllItemCellsAsOccupied(playerId: string, item: Artifact) {
     for (let y = item.y; y < item.y + item.h; y += 1) {
       for (let x = item.x; x < item.x + item.w; x += 1) {
         if (this.isInBoundsCell(x, y)) {
@@ -375,7 +407,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     }
   },
 
-  scanItemBoundaryNeighbors(playerId, item) {
+  scanItemBoundaryNeighbors(playerId: string, item: Artifact) {
     const scanned = new Set()
     for (let y = item.y; y < item.y + item.h; y += 1) {
       for (let x = item.x; x < item.x + item.w; x += 1) {
@@ -419,7 +451,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {"outline"|"quality"} mode - 揭示模式
    * @returns {Object} 信号对象 { itemId, round, mode, category?, sizeTag?, qualityKey?, sampleCell? }
    */
-  buildAiPrivateSignal(playerId, item, mode) {
+  buildAiPrivateSignal(playerId: string, item: Artifact, mode: string) {
     const cell = this.pickRandomItemCell(item)
     const baseSignal = {
       itemId: item.id,
@@ -451,7 +483,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     return baseSignal
   },
 
-  ensureAiItemKnowledge(playerId, itemId) {
+  ensureAiItemKnowledge(playerId: string, itemId: string) {
     const pool = this.ensureAiPrivateIntel(playerId)
     if (!pool.itemKnowledge[itemId]) {
       pool.itemKnowledge[itemId] = {
@@ -467,7 +499,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
   },
 
   getHighValuePriceThreshold() {
-    if (Number.isFinite(this.highValuePriceThreshold) && this.highValuePriceThreshold > 0) {
+    if (this.highValuePriceThreshold !== null && Number.isFinite(this.highValuePriceThreshold) && this.highValuePriceThreshold > 0) {
       return this.highValuePriceThreshold
     }
 
@@ -486,7 +518,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     return this.highValuePriceThreshold
   },
 
-  isHighValueArtifact(item) {
+  isHighValueArtifact(item: Artifact) {
     const threshold = this.getHighValuePriceThreshold()
     return item.qualityKey === "legendary" || (Number(item.basePrice) || 0) >= threshold
   },
@@ -498,7 +530,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {Object} item - 藏品对象
    * @returns {{ trackId: string, created: boolean }|null} 非高价值返回null
    */
-  ensureAiHighValueTrack(playerId, item) {
+  ensureAiHighValueTrack(playerId: string, item: Artifact) {
     if (!this.isHighValueArtifact(item)) {
       return null
     }
@@ -518,7 +550,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       return { trackId, created: true }
     }
 
-    const track = pool.highValueTracks.find((entry) => entry.itemId === item.id)
+    const track: HighValueTrack | undefined = pool.highValueTracks.find((entry: HighValueTrack) => entry.itemId === item.id)
     if (track) {
       track.lastSeenRound = this.round
     }
@@ -533,7 +565,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {"outline"|"quality"} mode - 揭示模式
    * @returns {Object} 更新后的知识对象，可能包含 trackUpdate
    */
-  updateAiItemKnowledge(playerId, item, signal, mode) {
+  updateAiItemKnowledge(playerId: string, item: Artifact, signal: { sampleCell?: { x: number; y: number } } | null, mode: string): AiItemKnowledge & { trackUpdate?: { trackId: string; revealLevel: string; confirmed: { quality: string; category: string; exactArtifact: string | null }; candidates: { total: number; truncated: boolean } } } {
     const intel = this.ensureAiItemKnowledge(playerId, item.id)
     intel.revealCount += 1
     intel.lastSeenRound = this.round
@@ -552,7 +584,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     const pool = this.ensureAiPrivateIntel(playerId)
     const trackId = pool.highValueTrackByItemId[item.id]
     if (trackId) {
-      const track = pool.highValueTracks.find((entry) => entry.itemId === item.id)
+    const track: HighValueTrack | undefined = pool.highValueTracks.find((entry: HighValueTrack) => entry.itemId === item.id)
       if (track) {
         track.lastSeenRound = this.round
         const revealState = {
@@ -618,7 +650,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @returns {{ ok: boolean, revealed: number, signals: Array, signalStats: Object,
    *              trackUpdates: Array, bottomCell: Object|null, message?: string }}
    */
-  revealPrivateIntelBatch(playerId, mode, count, category, allowCategoryFallback = false, sortStrategy) {
+  revealPrivateIntelBatch(playerId: string, mode: string, count: number, category: string, allowCategoryFallback = false, sortStrategy: string) {
     const targets = this.pickPrivateRevealTargets({
       playerId,
       mode,
@@ -633,8 +665,8 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     }
 
     const pool = this.ensureAiPrivateIntel(playerId)
-    const signals = []
-    const trackUpdates = []
+    const signals: AiIntelSignal[] = []
+    const trackUpdates: Array<{ trackId: string; created?: boolean; revealLevel?: string; confirmed?: { quality: string; category: string; exactArtifact: string | null }; candidates?: { total: number; truncated: boolean } }> = []
 
     targets.forEach((item) => {
       const signal = this.buildAiPrivateSignal(playerId, item, mode)
@@ -689,18 +721,18 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {boolean} [options.allowCategoryFallback] - 品类不足时是否回退
    * @returns {{ ok: boolean, revealed: number, signals: Array, trackUpdates: Array, message?: string }}
    */
-  revealPrivateIntelFully(playerId, { count, sortStrategy, category, allowCategoryFallback }) {
+  revealPrivateIntelFully(playerId: string, { count, sortStrategy, category, allowCategoryFallback }: { count: number; sortStrategy: string; category: string; allowCategoryFallback: boolean }) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const unrevealed = this.items.filter(
       (item) => !pool.knownOutlineIds.has(item.id) || !pool.knownQualityIds.has(item.id)
     )
 
-    const sortByArea = (arr: Array<Record<string, unknown>>, strategy: string) => {
+    const sortByArea = (arr: Artifact[], strategy: string) => {
       const shuffled = shuffle(arr)
       if (strategy === "smallestFirst") {
-        return shuffled.sort((a, b) => Number(a.w) * Number(a.h) - Number(b.w) * Number(b.h))
+        return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
       } else if (strategy === "largestFirst") {
-        return shuffled.sort((a, b) => Number(b.w) * Number(b.h) - Number(a.w) * Number(a.h))
+        return shuffled.sort((a, b) => b.w * b.h - a.w * a.h)
       }
       return shuffled
     }
@@ -724,8 +756,8 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       return { ok: false, revealed: 0, message: "没有可完全揭示的藏品。" }
     }
 
-    const signals = []
-    const trackUpdates = []
+    const signals: AiIntelSignal[] = []
+    const trackUpdates: Array<{ trackId: string; created?: boolean; revealLevel?: string; confirmed?: { quality: string; category: string; exactArtifact: string | null }; candidates?: { total: number; truncated: boolean } }> = []
 
     targets.forEach((item) => {
       const outlineSignal = this.buildAiPrivateSignal(playerId, item, "outline")
@@ -790,11 +822,11 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {string} [params.sortStrategy] - 排序策略
    * @returns {Array<Object>} 选中的藏品对象数组
    */
-  pickPrivateRevealTargets({ playerId, mode, count, category, allowCategoryFallback = false, sortStrategy }) {
+  pickPrivateRevealTargets({ playerId, mode, count, category, allowCategoryFallback = false, sortStrategy }: { playerId: string; mode: string; count: number; category: string; allowCategoryFallback?: boolean; sortStrategy: string }) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const knownSet = mode === "outline" ? pool.knownOutlineIds : pool.knownQualityIds
 
-    const isUnknown = (item) => {
+    const isUnknown = (item: Artifact) => {
       return !knownSet.has(item.id)
     }
 
@@ -805,36 +837,36 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       return isUnknown(item)
     })
 
-    const sortByArea = (arr: Array<Record<string, unknown>>, strategy: string) => {
+    const sortByArea = (arr: Artifact[], strategy: string) => {
       const shuffled = shuffle(arr)
       if (strategy === "smallestFirst") {
-        return shuffled.sort((a, b) => Number(a.w) * Number(a.h) - Number(b.w) * Number(b.h))
+        return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
       } else if (strategy === "largestFirst") {
-        return shuffled.sort((a, b) => Number(b.w) * Number(b.h) - Number(a.w) * Number(a.h))
+        return shuffled.sort((a, b) => b.w * b.h - a.w * a.h)
       }
       return shuffled
     }
 
     let selected = sortByArea(primary, sortStrategy).slice(0, count)
     if (selected.length < count && allowCategoryFallback && category) {
-      const existed = new Set(selected.map((item: Record<string, unknown>) => item.id as string))
-      const fallback = this.items.filter((item: Record<string, unknown>) => !existed.has(item.id as string) && isUnknown(item))
+      const existed = new Set(selected.map((item) => item.id))
+      const fallback = this.items.filter((item) => !existed.has(item.id) && isUnknown(item))
       selected = selected.concat(sortByArea(fallback, sortStrategy).slice(0, count - selected.length))
     }
 
     return selected
   },
 
-  getPlayerById(playerId) {
+  getPlayerById(playerId: number | string) {
     return this.players.find((entry) => entry.id === playerId) || null
   },
 
-  getAiNeighborStateLabel(playerId, x, y) {
+  getAiNeighborStateLabel(playerId: string | number, x: number, y: number) {
     if (!this.isInBoundsCell(x, y)) {
       return "越界"
     }
 
-    const pool = this.ensureAiPrivateIntel(playerId)
+    const pool = this.ensureAiPrivateIntel(String(playerId))
     const key = toCellKey(x, y)
     const raw = pool.knownCellStates[key]
     if (raw === "occupied") {
@@ -846,7 +878,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     return "尚未探明"
   },
 
-  buildNeighborSnapshot(playerId, cell) {
+  buildNeighborSnapshot(playerId: string, cell: { x: number; y: number } | null) {
     if (!cell) {
       return null
     }
@@ -863,12 +895,12 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     }
   },
 
-  buildAiAggregateIntelBlock(playerId) {
+  buildAiAggregateIntelBlock(playerId: string) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const qualityMap: Record<string, { count: number; deepestRow: number; estimatedCellCount: number; estimatedCellSamples: number; knownQualityCount: number; highQualityCount: number; qualityLabel: string; qualityKey: string }> = {}
     const categoryMap: Record<string, { count: number; deepestRow: number; estimatedCellCount: number; estimatedCellSamples: number; knownQualityCount: number; highQualityCount: number; category: string }> = {}
 
-    pool.qualitySignals.forEach((signal) => {
+    pool.qualitySignals.forEach((signal: AiIntelSignal) => {
       if (!signal || !signal.qualityKey) {
         return
       }
@@ -889,15 +921,15 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       if (signal.sampleCell && Number.isFinite(signal.sampleCell.y)) {
         qualityMap[key].deepestRow = Math.max(qualityMap[key].deepestRow, signal.sampleCell.y + 1)
       }
-      const knowledge = pool.itemKnowledge[signal.itemId]
-      const sizeCells = knowledge ? sizeTagToCellCount(knowledge.sizeTag) : null
-      if (Number.isFinite(sizeCells) && sizeCells > 0) {
+      const knowledge = signal.itemId ? pool.itemKnowledge[signal.itemId] : undefined
+      const sizeCells = knowledge && knowledge.sizeTag ? sizeTagToCellCount(knowledge.sizeTag) : null
+      if (sizeCells !== null && Number.isFinite(sizeCells) && sizeCells > 0) {
         qualityMap[key].estimatedCellCount += sizeCells
         qualityMap[key].estimatedCellSamples += 1
       }
     })
 
-    pool.outlineSignals.forEach((signal) => {
+    pool.outlineSignals.forEach((signal: AiIntelSignal) => {
       if (!signal || !signal.category) {
         return
       }
@@ -914,7 +946,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
         }
       }
       categoryMap[key].count += 1
-      const knowledge = pool.itemKnowledge[signal.itemId]
+      const knowledge = signal.itemId ? pool.itemKnowledge[signal.itemId] : undefined
       if (knowledge && knowledge.qualityKey) {
         categoryMap[key].knownQualityCount += 1
         if (knowledge.qualityKey === "rare" || knowledge.qualityKey === "legendary") {
@@ -956,8 +988,9 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {Object} revealState - 已知信息 { qualityKey, category, sizeTag }
    * @returns {{ total: number, truncated: boolean, list: Array }}
    */
-  buildTrackCandidatePreview(revealState) {
-    let candidates = this.artifactManager.getCandidatesByRevealState(revealState)
+  buildTrackCandidatePreview(revealState: { qualityKey: string | null; category: string | null; sizeTag: string | null }) {
+    type CandidateItem = { name: string; basePrice: number; w: number; h: number; expectedPrice: number; previewSizeTag: string; qualityKey: string }
+    let candidates: CandidateItem[] = (this.artifactManager.getCandidatesByRevealState(revealState) as CandidateItem[])
     if (!candidates || candidates.length === 0) {
       const threshold = this.getHighValuePriceThreshold()
       candidates = ARTIFACT_LIBRARY.filter(
@@ -989,16 +1022,16 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     }
   },
 
-  buildAiHighValueTrackBlock(playerId) {
+  buildAiHighValueTrackBlock(playerId: string) {
     const pool = this.ensureAiPrivateIntel(playerId)
     const tracks = pool.highValueTracks || []
 
-    return tracks.map((track) => {
+    return tracks.map((track: HighValueTrack) => {
       const item = this.items.find((entry) => entry.id === track.itemId)
       const knowledge = pool.itemKnowledge[track.itemId] || null
       const knownCells =
         knowledge && knowledge.knownCells
-          ? [...knowledge.knownCells].map((cellKey) => fromCellKey(cellKey)).filter(Boolean)
+          ? [...knowledge.knownCells].map((cellKey) => fromCellKey(cellKey)).filter((c): c is { x: number; y: number } => c !== null)
           : []
       const anchorCell = knownCells[0] || null
 
@@ -1053,14 +1086,14 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     })
   },
 
-  buildAiPrivateIntelBlock(playerId) {
+  buildAiPrivateIntelBlock(playerId: string) {
     return {
       aggregate: this.buildAiAggregateIntelBlock(playerId),
       highValueTracks: this.buildAiHighValueTrackBlock(playerId)
     }
   },
 
-  getAiAvailableActionState(playerId) {
+  getAiAvailableActionState(playerId: string) {
     const resource = this.getAiResourceSnapshot(playerId)
     const availableSkillIds = SKILL_DEFS.filter((entry) => Number(resource.skills[entry.id] || 0) > 0).map(
       (entry) => entry.id
@@ -1079,7 +1112,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     }
   },
 
-  buildAiActionConstraintBlock(playerId) {
+  buildAiActionConstraintBlock(playerId: string) {
     const actionState = this.getAiAvailableActionState(playerId)
     return {
       canBid: true,
@@ -1094,7 +1127,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     }
   },
 
-  executeAiIntelAction(playerId, plan) {
+  executeAiIntelAction(playerId: string, plan: IntelActionPlan): RevealResult & { signalStats?: { aggregate: AiSignalStats; latest: AiSignalStats } } {
     const resourceState = this.aiResourceState[playerId]
     if (!resourceState || !plan || plan.actionType === "none") {
       return { ok: false, revealed: 0, message: "未执行AI情报行动。" }
@@ -1168,7 +1201,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
     return Promise.all(
       aiPlayers.map(async (player) => {
         try {
-          await this.processSingleAiIntelAction(player, roundProgress, batchId, batchStartTime)
+          await this.processSingleAiIntelAction(player, undefined, undefined, roundProgress, batchId, batchStartTime)
         } catch (error) {
           console.error(`[processSingleAiIntelAction] ${player.id} error:`, error)
         } finally {
@@ -1207,10 +1240,10 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       })
   },
 
-  async processSingleAiIntelAction(player, plan, llmPlan, roundProgress, batchId, batchStartTime) {
+  async processSingleAiIntelAction(player: Player, plan?: IntelActionPlan, llmPlan?: LlmPlanResult | null, roundProgress?: number, batchId?: string, batchStartTime?: number) {
     const startTime = Date.now()
     console.log(
-      `[processSingleAiIntelAction] ${player.id}-${startTime} START, delay from batch start: ${startTime - batchStartTime}ms`
+      `[processSingleAiIntelAction] ${player.id}-${startTime} START, delay from batch start: ${startTime - (batchStartTime || 0)}ms`
     )
     console.log(
       `[processSingleAiIntelAction] ${player.id} plan:`,
@@ -1254,31 +1287,33 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
         maxRounds: GAME_SETTINGS.maxRounds,
         intelSummary,
         resources
-      })
+      }) as IntelActionPlan
     }
 
-    const result = this.executeAiIntelAction(player.id, plan)
+    const activePlan = plan as IntelActionPlan
+    const result = this.executeAiIntelAction(player.id, activePlan)
     console.log(`[processSingleAiIntelAction] ${player.id} executeAiIntelAction result:`, {
       ok: result.ok,
-      actionType: plan.actionType,
-      actionId: plan.actionId,
+      actionType: activePlan.actionType,
+      actionId: activePlan.actionId,
       message: result.message
     })
-    const effectiveActionType = result.ok ? plan.actionType : "none"
-    const effectiveActionId = result.ok ? plan.actionId : "none"
+    const effectiveActionType = result.ok ? activePlan.actionType : "none"
+    const effectiveActionId = result.ok ? activePlan.actionId : "none"
     const effect = this.aiEngine.buildToolEffect({
       playerId: player.id,
       actionType: effectiveActionType,
       actionId: effectiveActionId,
-      roundProgress,
+      roundProgress: roundProgress || 0,
       intelSummary: this.getAiIntelSummary(player.id),
       signalStats: result.ok ? result.signalStats : null,
-      planScore: plan.score || 0
+      planScore: activePlan.score || 0
     })
 
     this.aiRoundEffects[player.id] = effect
 
-    if (!result.ok && plan.actionType !== "none" && llmBidReady && this.canUseLlmDecisionForPlayer(player.id)) {
+    if (!result.ok && activePlan.actionType !== "none" && llmBidReady && this.canUseLlmDecisionForPlayer(player.id)) {
+      const activeLlmPlan = llmPlan as LlmPlan
       const correctionHistory = this.aiErrorCorrectionHistory[player.id] || []
       const errorDetail = result.message || "未知错误"
 
@@ -1290,16 +1325,16 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       const errorLogEntry = {
         round: this.round,
         playerName: player.name,
-        thought: `[工具报错] 错误: ${errorDetail}\n原始决策: skill=${plan.actionType === "skill" ? plan.actionId : "无"}, item=${plan.actionType === "item" ? plan.actionId : "无"}`,
+        thought: `[工具报错] 错误: ${errorDetail}\n原始决策: skill=${activePlan.actionType === "skill" ? activePlan.actionId : "无"}, item=${activePlan.actionType === "item" ? activePlan.actionId : "无"}`,
         controlMode: "error-correction",
         error: errorDetail,
         at: Date.now()
       }
-      this.currentRunLog.aiThoughtLogs.push(errorLogEntry)
+      this.currentRunLog?.aiThoughtLogs?.push(errorLogEntry)
 
       const correctionPlan = await this.requestAiLlmErrorCorrection(
         player,
-        llmPlan,
+        activeLlmPlan,
         errorDetail,
         correctionHistory,
         this.getAiConversationMessages ? this.getAiConversationMessages(player.id) : []
@@ -1311,7 +1346,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       this.aiErrorCorrectionHistory[player.id].push({
         error: errorDetail,
         aiResponse:
-          correctionPlan && !correctionPlan.failed ? `出价${correctionPlan.bid}` : correctionPlan.error || "失败",
+          correctionPlan && !correctionPlan.failed ? `出价${correctionPlan.bid}` : (correctionPlan?.error || "失败"),
         at: Date.now()
       })
 
@@ -1326,7 +1361,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
           lockedByLlm: true
         })
 
-        if (correctionResult.ok) {
+        if (correctionResult.ok && llmPlan) {
           llmPlan.bid = correctionPlan.bid
           llmPlan.hasBidDecision = true
           llmPlan.actionType = correctionPlan.actionType
@@ -1346,7 +1381,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
             correctionAttempt: correctionPlan.correctionAttempt,
             at: Date.now()
           }
-          this.currentRunLog.aiThoughtLogs.push(correctionLogEntry)
+          this.currentRunLog?.aiThoughtLogs?.push(correctionLogEntry)
 
           if (correctionPlan.actionType !== "none" && correctionPlan.actionId !== "none") {
             this.recordPlayerUsage(player.id, correctionPlan.actionId)
@@ -1365,7 +1400,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
               text: actionDef.description
             })
 
-            if (this.isLanMode && this.lanIsHost) {
+            if (this.isLanMode && this.lanIsHost && this.lanBridge) {
               this.lanBridge.send({
                 type: "lan:ai-item-use",
                 aiPlayerId: player.lanId || player.id,
@@ -1439,10 +1474,12 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
             error: correctionResult.message,
             at: Date.now()
           }
-          this.currentRunLog.aiThoughtLogs.push(failLogEntry)
-          llmPlan.controlMode = "rule-fallback-after-correction"
-          if (!llmPlan.error) {
-            llmPlan.error = `纠错后执行失败: ${correctionResult.message || "未知"}`
+          this.currentRunLog?.aiThoughtLogs?.push(failLogEntry)
+          if (llmPlan) {
+            llmPlan.controlMode = "rule-fallback-after-correction"
+            if (!llmPlan.error) {
+              llmPlan.error = `纠错后执行失败: ${correctionResult.message || "未知"}`
+            }
           }
         }
       } else {
@@ -1454,10 +1491,12 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
           error: correctionPlan ? correctionPlan.error : "纠错请求失败",
           at: Date.now()
         }
-        this.currentRunLog.aiThoughtLogs.push(skipLogEntry)
-        llmPlan.controlMode = "rule-fallback-correction-skipped"
-        if (!llmPlan.error) {
-          llmPlan.error = correctionPlan ? `纠错跳过: ${correctionPlan.error || "已达最大纠错次数"}` : "纠错请求失败"
+        this.currentRunLog?.aiThoughtLogs?.push(skipLogEntry)
+        if (llmPlan) {
+          llmPlan.controlMode = "rule-fallback-correction-skipped"
+          if (!llmPlan.error) {
+            llmPlan.error = correctionPlan ? `纠错跳过: ${correctionPlan.error || "已达最大纠错次数"}` : "纠错请求失败"
+          }
         }
       }
       console.log(
@@ -1466,50 +1505,50 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
       return
     }
 
-    if (!result.ok || plan.actionType === "none") {
+    if (!result.ok || activePlan.actionType === "none") {
       console.log(
         `[processSingleAiIntelAction] ${player.id}-${startTime} END (no action), elapsed: ${Date.now() - startTime}ms`
       )
       return
     }
 
-    this.recordPlayerUsage(player.id, plan.actionId)
-    const toolSummary = this.buildAiToolResultSummary(result, plan.actionType, plan.actionId)
+    this.recordPlayerUsage(player.id, activePlan.actionId)
+    const toolSummary = this.buildAiToolResultSummary(result, activePlan.actionType, activePlan.actionId)
     this.lastAiIntelActions.push({
       playerId: player.id,
       playerName: player.name,
-      actionType: plan.actionType,
-      actionId: plan.actionId,
+      actionType: activePlan.actionType,
+      actionId: activePlan.actionId,
       revealed: result.revealed,
       detail: toolSummary,
-      score: plan.score || 0,
+      score: activePlan.score || 0,
       effectTag: effect.tag || "",
       signalStats: result.signalStats ? result.signalStats.aggregate : null
     })
 
-    const actionDef = this.getActionDefById(plan.actionId)
+    const actionDef = this.getActionDefById(activePlan.actionId)
     this.addPublicInfoEntry({
       source: `${player.name}-${actionDef.name}`,
       text: actionDef.description
     })
 
-    if (this.isLanMode && this.lanIsHost) {
+    if (this.isLanMode && this.lanIsHost && this.lanBridge) {
       this.lanBridge.send({
         type: "lan:ai-item-use",
         aiPlayerId: player.lanId || player.id,
         aiPlayerName: player.name,
-        actionId: plan.actionId,
-        actionType: plan.actionType,
+        actionId: activePlan.actionId,
+        actionType: activePlan.actionType,
         itemName: actionDef.name,
         itemDesc: actionDef.description
       })
     }
 
-    if (llmBidReady && llmPlan.actionId === plan.actionId) {
+    if (llmBidReady && llmPlan && llmPlan.actionId === activePlan.actionId) {
       llmPlan.actionExecuted = true
       llmPlan.toolResultSummary = toolSummary
-      llmPlan.toolActionType = plan.actionType
-      llmPlan.toolActionId = plan.actionId
+      llmPlan.toolActionType = activePlan.actionType
+      llmPlan.toolActionId = activePlan.actionId
       llmPlan.controlMode = "llm"
 
       if (this.canUseLlmDecisionForPlayer(player.id)) {
@@ -1561,7 +1600,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
    * @param {Object} entry - 动作记录 { playerName, actionId, actionType, revealed, signalStats, effectTag, detail }
    * @returns {string} 格式化的日志文本
    */
-  formatAiIntelActionPublicLine(entry) {
+  formatAiIntelActionPublicLine(entry: { playerName: string; actionId: string; revealed: number; signalStats: AiSignalStats | null; effectTag: string; detail: string }) {
     const info = this.getItemInfo(entry.actionId)
     const revealText = entry.revealed > 0 ? `私有线索+${entry.revealed}` : "未命中"
     const stats = entry.signalStats
@@ -1571,7 +1610,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
         : ""
     const tag = entry.effectTag ? `，${entry.effectTag}` : ""
     const detail = entry.detail ? `，结果:${compactOneLine(entry.detail, 100)}` : ""
-    return `${entry.playerName} 使用${info.label}（${revealText}${statsText}${tag}${detail}）`
+    return `${entry.playerName} 使用${info?.label || "未知"}（${revealText}${statsText}${tag}${detail}）`
   },
 
   /**

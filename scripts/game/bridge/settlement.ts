@@ -41,6 +41,8 @@
 import { AudioUI } from "../../audio/audio-ui"
 import { AudioManager } from "../../audio/audio-manager"
 import { applyPassiveEffect } from "../data/character-system"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { Artifact } from "../../../types/game"
 
 interface SettlementDeps {
   MARGIN: number
@@ -57,7 +59,7 @@ interface SettlementDeps {
  * @param {SettlementDeps} deps - 依赖注入对象
  * @returns {{ methods: Record<string, unknown> }} 结算方法集合
  */
-export function createSettlementBridge(deps: SettlementDeps): { methods: Record<string, unknown> } {
+export function createSettlementBridge(deps: SettlementDeps) {
   const {
     MARGIN,
     CELL_SIZE,
@@ -67,7 +69,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
     settlementSearchDurationByQuality
   } = deps
 
-  const methods = {
+  const methods: ThisType<WarehouseSceneThis> = {
     isSettlementPageActive() {
       return document.body.classList.contains("settlement-mode")
     },
@@ -94,7 +96,10 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
         .filter((item) => item.revealed.settlementPreRevealed)
         .reduce((sum, item) => sum + item.trueValue, 0)
 
-      this.updateSettlementPanelMetrics(revealedValue, revealedValue - this.settlementSession.winnerBid)
+      this.updateSettlementPanelMetrics(
+        revealedValue,
+        revealedValue - (this.settlementSession?.winnerBid ?? 0)
+      )
       this.setSettlementProgress(
         `正在揭示藏品 ${revealedCount}/${totalCount}，点击游戏区可跳过。`,
         revealedCount / totalCount
@@ -135,7 +140,10 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
             }
           }
           revealedValue = this.warehouseTrueValue
-          this.updateSettlementPanelMetrics(revealedValue, revealedValue - this.settlementSession.winnerBid)
+          this.updateSettlementPanelMetrics(
+            revealedValue,
+            revealedValue - (this.settlementSession?.winnerBid ?? 0)
+          )
           this.setSettlementProgress(`已快速揭示全部藏品 ${totalCount}/${totalCount}`, 1)
           break
         }
@@ -167,7 +175,10 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
 
         revealedValue += item.trueValue
         revealedCount += 1
-        this.updateSettlementPanelMetrics(revealedValue, revealedValue - this.settlementSession.winnerBid)
+        this.updateSettlementPanelMetrics(
+          revealedValue,
+          revealedValue - (this.settlementSession?.winnerBid ?? 0)
+        )
         this.setSettlementProgress(
           `正在揭示藏品 ${revealedCount}/${totalCount}：${item.name}`,
           revealedCount / totalCount
@@ -188,18 +199,18 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       this.isSettlementRevealMode = false
     },
 
-    async playSettlementRevealStep(item) {
+    async playSettlementRevealStep(item: Artifact) {
       const duration = settlementRevealDelayByQuality(item.qualityKey)
       if (!item.view) {
         await delay(duration)
         return
       }
 
-      const targets = [item.view.silhouette, item.view.border]
+      const targets: Phaser.GameObjects.GameObject[] = [item.view.silhouette, item.view.border]
 
       // Quality-colored glow flash: brief overlay in quality color that fades out
       const qualityColor = item.quality ? item.quality.color : 0x9f9f9f
-      let glowOverlay
+      let glowOverlay: Phaser.GameObjects.Rectangle | undefined
       if (item.revealed.outline && item.w * item.h > 0) {
         const gx = MARGIN + item.x * CELL_SIZE
         const gy = MARGIN + item.y * CELL_SIZE
@@ -215,7 +226,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
           yoyo: true,
           ease: "Quad.easeOut",
           onComplete: function () {
-            if (glowOverlay && !glowOverlay.destroyed) glowOverlay.destroy()
+            if (glowOverlay && !glowOverlay.isDestroyed) glowOverlay.destroy()
           }
         })
       }
@@ -224,10 +235,10 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       const shouldShowArtifactImage = (isFullyRevealed || this.isSettlementRevealMode) && item.key
       const textureKey = `artifact-${item.key}`
       if (shouldShowArtifactImage && !item.view.artifactImage && this.textures.exists(textureKey)) {
-        let markerX
-        let markerY
-        let markerW
-        let markerH
+        let markerX: number | undefined
+        let markerY: number | undefined
+        let markerW: number | undefined
+        let markerH: number | undefined
         if (item.revealed.outline && item.w * item.h > 1) {
           markerX = MARGIN + item.x * CELL_SIZE
           markerY = MARGIN + item.y * CELL_SIZE
@@ -239,7 +250,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
           markerW = CELL_SIZE
           markerH = CELL_SIZE
         }
-        if (markerW != null) {
+        if (markerX != null && markerY != null && markerW != null && markerH != null) {
           const artifactImage = this.add.image(markerX + markerW / 2, markerY + markerH / 2, textureKey)
           artifactImage.setOrigin(0.5, 0.5)
           artifactImage.setDisplaySize(markerW, markerH)
@@ -260,8 +271,8 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
             scaleY: { from: 0.3, to: 1.2 },
             duration: duration * 0.4,
             ease: "Quad.easeOut",
-            onComplete: function () {
-              if (halo && !halo.destroyed) {
+            onComplete: () => {
+              if (halo && !halo.isDestroyed) {
                 this.tweens.add({
                   targets: halo,
                   alpha: 0,
@@ -269,12 +280,12 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
                   scaleY: 1.5,
                   duration: duration * 0.4,
                   ease: "Sine.easeIn",
-                  onComplete: function () {
-                    if (halo && !halo.destroyed) halo.destroy()
+                  onComplete: function (this: WarehouseSceneThis) {
+                    if (halo && !halo.isDestroyed) halo.destroy()
                   }
                 })
               }
-            }.bind(this)
+            }
           })
         }
       }
@@ -286,7 +297,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       })
     },
 
-    async playSettlementSearchEffect(item, runToken) {
+    async playSettlementSearchEffect(item: Artifact, runToken: number) {
       if (!item.view) {
         return
       }
@@ -308,7 +319,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       })
 
       if (runToken !== this.settlementRunToken) {
-        if (spinner && !spinner.destroyed) spinner.destroy()
+        if (spinner && !spinner.isDestroyed) spinner.destroy()
         this.activeSettlementSpinner = null
         return
       }
@@ -373,7 +384,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
             delay: burstDelay,
             ease: "Quad.easeOut",
             onComplete: () => {
-              if (particle && !particle.destroyed) {
+              if (particle && !particle.isDestroyed) {
                 particle.destroy()
               }
             }
@@ -406,7 +417,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
             delay: burstDelay + Math.random() * 60,
             ease: "Quad.easeOut",
             onComplete: () => {
-              if (star && !star.destroyed) {
+              if (star && !star.isDestroyed) {
                 star.destroy()
               }
             }
@@ -441,7 +452,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
           delay,
           ease: "Sine.easeOut",
           onComplete: () => {
-            if (particle && !particle.destroyed) {
+            if (particle && !particle.isDestroyed) {
               particle.destroy()
             }
           }
@@ -476,7 +487,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
           delay,
           ease: "Sine.easeOut",
           onComplete: () => {
-            if (star && !star.destroyed) {
+            if (star && !star.isDestroyed) {
               star.destroy()
             }
           }
@@ -502,7 +513,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
           yoyo: true,
           ease: "Quad.easeOut",
           onComplete: () => {
-            if (sparkle && !sparkle.destroyed) {
+            if (sparkle && !sparkle.isDestroyed) {
               sparkle.destroy()
             }
           }
@@ -534,15 +545,20 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       if (winnerProfit > 0) {
         profitEl.classList.add("profit-animate-bounce")
         profitEl.classList.add("profit-animate-spark")
-        this.dom.settlementPage.classList.remove("settle-glow", "settle-glow-enhanced")
-        void this.dom.settlementPage.offsetWidth
-        this.dom.settlementPage.classList.add("settle-glow-enhanced")
+        const settlePage = this.dom.settlementPage
+        if (settlePage) {
+          settlePage.classList.remove("settle-glow", "settle-glow-enhanced")
+          void settlePage.offsetWidth
+          settlePage.classList.add("settle-glow-enhanced")
+        }
         this.playSettlementFinalEffect(winnerProfit)
 
         // Screen shake when winner profits
-        this.dom.settlementPage.classList.remove("settle-screen-shake")
-        void this.dom.settlementPage.offsetWidth
-        this.dom.settlementPage.classList.add("settle-screen-shake")
+        if (settlePage) {
+          settlePage.classList.remove("settle-screen-shake")
+          void settlePage.offsetWidth
+          settlePage.classList.add("settle-screen-shake")
+        }
       } else if (winnerProfit < 0) {
         profitEl.classList.add("profit-animate-shake")
       }
@@ -564,11 +580,16 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       }
 
       document.body.classList.add("settlement-mode")
-      this.dom.settlementPage.classList.remove("hidden")
-      this.dom.settlementPage.classList.add("settle-slide-in")
-      this.dom.settlementPage.classList.remove("settle-glow")
-      this.dom.settleWinnerName.textContent = `${winnerPlayer.name}（${reasonText}）`
-      this.dom.settleWinnerBid.textContent = String(winnerBid)
+      const settlePage = this.dom.settlementPage
+      if (settlePage) {
+        settlePage.classList.remove("hidden")
+        settlePage.classList.add("settle-slide-in")
+        settlePage.classList.remove("settle-glow")
+      }
+      const winnerNameEl = this.dom.settleWinnerName
+      if (winnerNameEl) winnerNameEl.textContent = `${winnerPlayer.name}（${reasonText}）`
+      const winnerBidEl = this.dom.settleWinnerBid
+      if (winnerBidEl) winnerBidEl.textContent = String(winnerBid)
       if (this.dom.settleBackBtn) {
         const label = this.battleRecordReplayActive ? "返回战绩列表" : this.isLanMode ? "返回房间" : "返回大厅"
         this.dom.settleBackBtn.textContent = label
@@ -598,6 +619,7 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       // 结算页面卡片渐次入场
       if (typeof MobaoAnimations !== "undefined") {
         const settlePage = this.dom.settlementPage
+        if (!settlePage) return
         const metaElements = settlePage.querySelectorAll(".settle-meta")
         const actionButtons = settlePage.querySelectorAll(".settle-actions button")
         const staggerTargets = []
@@ -631,13 +653,16 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
     exitSettlementPage() {
       this.cancelSettlementReveal()
       document.body.classList.remove("settlement-mode")
-      this.dom.settlementPage.classList.add("hidden")
-      this.dom.settlementPage.classList.remove(
-        "settle-slide-in",
-        "settle-glow",
-        "settle-glow-enhanced",
-        "settle-screen-shake"
-      )
+      const settlePage = this.dom.settlementPage
+      if (settlePage) {
+        settlePage.classList.add("hidden")
+        settlePage.classList.remove(
+          "settle-slide-in",
+          "settle-glow",
+          "settle-glow-enhanced",
+          "settle-screen-shake"
+        )
+      }
       const profitEl = this.dom.settleWinnerProfit
       if (profitEl) {
         profitEl.classList.remove("profit-animate-bounce", "profit-animate-shake", "profit-animate-spark")
@@ -662,7 +687,8 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
     },
 
     setSettlementProgress(text: string, progress: number) {
-      this.dom.settleProgressText.textContent = text
+      const progressTextEl = this.dom.settleProgressText
+      if (progressTextEl) progressTextEl.textContent = text
       const fillEl = this.dom.settleProgressFill
       if (fillEl) {
         const pct = typeof progress === "number" ? Math.round(Math.max(0, Math.min(1, progress)) * 100) : null
@@ -678,7 +704,8 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
 
     updateSettlementPanelMetrics(revealedValue: number, winnerProfit: number) {
       this._lastRevealedValue = revealedValue
-      this.dom.settleRevealedValue.textContent = String(revealedValue)
+      const revealedValueEl = this.dom.settleRevealedValue
+      if (revealedValueEl) revealedValueEl.textContent = String(revealedValue)
       let displayProfit = winnerProfit
       let passiveLabel = ""
       if (winnerProfit > 0) {
@@ -694,7 +721,8 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       }
       this._lastDisplayProfit = displayProfit
       const profitEl = this.dom.settleWinnerProfit
-      if (profitEl && typeof MobaoAnimations !== "undefined") {
+      if (!profitEl) return
+      if (typeof MobaoAnimations !== "undefined") {
         MobaoAnimations.scrollToNumber(profitEl, displayProfit, {
           duration: 250,
           prefix: displayProfit >= 0 ? "+" : "",
@@ -719,7 +747,8 @@ export function createSettlementBridge(deps: SettlementDeps): { methods: Record<
       }
       this.dom.settleSelfProfitRow.classList.remove("hidden")
       const displayLabel = label || "自身利润"
-      this.dom.settleSelfProfitRow.querySelector("span").textContent = displayLabel
+      const spanEl = this.dom.settleSelfProfitRow.querySelector("span")
+      if (spanEl) spanEl.textContent = displayLabel
       const profitEl = this.dom.settleSelfProfit
       if (typeof MobaoAnimations !== "undefined") {
         MobaoAnimations.scrollToNumber(profitEl, selfProfit, {

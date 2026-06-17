@@ -84,16 +84,7 @@ interface Live2dVideoState {
   SWITCH_TIME: number
 }
 
-interface SelectedCharacter {
-  id: string
-  name: string
-  skillName?: string
-  skillDesc?: string
-  live2d?: string | null
-  passive?: { label: string } | null
-  avatar?: string | null
-}
-
+import type { Character as SelectedCharacter } from '../../../types/game'
 import { getUnlockedCharacters, getCharacterById } from "../data/characters"
 import { getActiveCharacter, selectCharacter } from "../data/character-system"
 import { MobaoShopBridge } from "../bridge/shop"
@@ -160,7 +151,7 @@ export const CharacterSelectMixin: ThisType<WarehouseSceneThis> = {
       mapNameEl.textContent = mapProfile.name || "未知仓库"
     }
 
-    ; (this as { hideAllLobbySubPages(): void }).hideAllLobbySubPages()
+    this.hideAllLobbySubPages()
     this.characterPageEl!.classList.remove("hidden")
     this.characterPageEl!.classList.add("lobby-subpage-entering")
     this.characterPageEl!.addEventListener(
@@ -646,7 +637,7 @@ export const CharacterSelectMixin: ThisType<WarehouseSceneThis> = {
     } catch (_e) { }
 
     const inv: Record<string, number> = bridge.getFullInventory()
-    items.forEach((item) => {
+    items.forEach((item: { id: string }) => {
       const key = bridge.getItemStorageKey(item.id) as string
       inv[key] = (inv[key] || 0) + 1
     })

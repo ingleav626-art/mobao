@@ -13,21 +13,24 @@ import { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } from "../core/constants"
 import { GAME_SETTINGS, savePlayerMoney } from "../core/settings"
 import { getSelectedProfileId, getProfile, setSelectedProfileId } from "../data/map-profiles"
 import { pickRandomPublicEvent } from "../data/public-events"
-import { getActiveCharacter, resetForNewGame } from "../data/character-system"
+import { resetForNewGame } from "../data/character-system"
 import { CHARACTERS } from "../data/characters"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { IntelSummary } from "../../../types/ai"
 
-export const LanGameFlowMixin = {
-  lanResolveRound(reason) {
+export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
+  lanResolveRound(reason: string) {
     if (this.roundResolving || this.settled) return
     this.roundResolving = true
     this.stopRoundTimer()
     const allBids = this.players.map((p) => {
-      const bid = this.lanHostBids[p.lanId] || 0
-      const wallet = this.lanHostWallets[p.lanId] || DEFAULT_START_MONEY
-      return { playerId: p.lanId, bid: Math.min(Math.max(0, bid), wallet) }
+      const lanId = p.lanId || p.id
+      const bid = this.lanHostBids[lanId] || 0
+      const wallet = this.lanHostWallets[lanId] || DEFAULT_START_MONEY
+      return { playerId: lanId, bid: Math.min(Math.max(0, bid), wallet) }
     })
 
-    this.lanBridge.broadcastRoundResult(this.round, allBids, reason)
+    this.lanBridge?.broadcastRoundResult(this.round, allBids, reason)
 
     const slotBids = this.players.map((p) => {
       const found = allBids.find((b) => b.playerId === p.lanId)
@@ -58,7 +61,7 @@ export const LanGameFlowMixin = {
       const mode = this.round === GAME_SETTINGS.maxRounds ? "final" : "direct"
       const winnerSlotId = this.lanIdToSlotId[first.playerId] || first.playerId
       const winner = { playerId: winnerSlotId, bid: first.bid }
-      this.lanBridge.broadcastSettle({
+      this.lanBridge?.broadcastSettle({
         winnerId: first.playerId,
         winnerName: this.players.find((p) => p.lanId === first.playerId)?.name || "?",
         winnerBid: first.bid,
@@ -86,18 +89,18 @@ export const LanGameFlowMixin = {
     const clueRate =
       this.items.length === 0 ? 0 : this.items.filter((item) => this.hasAnyInfo(item)).length / this.items.length
     const slotLastBids = this.getLastRoundBidMap()
-    const lastRoundBids = {}
+    const lastRoundBids: Record<string, number> = {}
     for (const sid in slotLastBids) {
       const lanId = this.slotIdToLanId[sid]
       if (lanId) lastRoundBids[lanId] = slotLastBids[sid]
     }
     const aiIntelMap = this.buildAiIntelSnapshot()
-    const remappedIntel = {}
+    const remappedIntel: Record<string, IntelSummary> = {}
     for (const sid in aiIntelMap) {
       const lanId = this.slotIdToLanId[sid]
       if (lanId) remappedIntel[lanId] = aiIntelMap[sid]
     }
-    const remappedEffects = {}
+    const remappedEffects: Record<string, unknown> = {}
     for (const sid in this.aiRoundEffects) {
       const lanId = this.slotIdToLanId[sid]
       if (lanId) remappedEffects[lanId] = this.aiRoundEffects[sid]
@@ -145,7 +148,7 @@ export const LanGameFlowMixin = {
     return ruleBids
   },
 
-  lanOnRoundStart(msg) {
+  lanOnRoundStart(msg: { round: number; currentBid?: number; ts?: number; roundSeconds?: number }) {
     this.round = msg.round
     this.currentBid = msg.currentBid || 0
     this.playerBidSubmitted = false
@@ -162,7 +165,7 @@ export const LanGameFlowMixin = {
   },
 
   lanBroadcastRoundStart() {
-    this.lanBridge.broadcastRoundStart(
+    this.lanBridge?.broadcastRoundStart(
       this.round,
       GAME_SETTINGS.maxRounds,
       this.currentBid,
@@ -243,7 +246,7 @@ export const LanGameFlowMixin = {
 
     if (this.lanIsHost) {
       const warehouseData = this.buildWarehouseSnapshotForSync()
-      this.lanBridge.send({
+      this.lanBridge?.send({
         type: "game:warehouse-sync",
         warehouse: warehouseData,
         warehouseTrueValue: this.warehouseTrueValue,
@@ -256,10 +259,10 @@ export const LanGameFlowMixin = {
       id: "p" + (i + 1),
       lanId: p.id,
       name: p.name,
-      avatar: p.isAI ? "AI" : p.id === this.lanBridge.playerId ? "你" : p.name.substring(0, 2),
+      avatar: p.isAI ? "AI" : p.id === this.lanBridge?.playerId ? "你" : p.name.substring(0, 2),
       isHuman: !p.isAI,
       isAI: !!p.isAI,
-      isSelf: !p.isAI && p.id === this.lanBridge.playerId,
+      isSelf: !p.isAI && p.id === this.lanBridge?.playerId,
       characterId: p.characterId || null,
       carryItems: p.carryItems || []
     }))
@@ -267,19 +270,20 @@ export const LanGameFlowMixin = {
     this.lanIdToSlotId = {}
     this.slotIdToLanId = {}
     this.players.forEach((p) => {
-      this.lanIdToSlotId[p.lanId] = p.id
-      this.slotIdToLanId[p.id] = p.lanId
+      if (p.lanId) {
+        this.lanIdToSlotId[p.lanId] = p.id
+        this.slotIdToLanId[p.id] = p.lanId
+      }
     })
 
-    this.lanMySlotId = this.lanIdToSlotId[this.lanBridge.playerId] || "p2"
+    const myPlayerId = this.lanBridge?.playerId
+    this.lanMySlotId = (myPlayerId ? this.lanIdToSlotId[myPlayerId] : undefined) || "p2"
 
     this.initPlayersUI()
 
     // 应用角色选择到玩家数据
-    if (getActiveCharacter) {
-      resetForNewGame()
-      this.applyCharacterToPlayer()
-    }
+    resetForNewGame()
+    this.applyCharacterToPlayer()
     // 为其他玩家设置角色信息（从 lanPlayers 同步，game:start 已包含 characterId）
     this.players.forEach((p) => {
       if (p.characterId && !p.isSelf) {
@@ -328,7 +332,7 @@ export const LanGameFlowMixin = {
     this.writeLog("联机游戏已开始！" + (this.lanIsHost ? "（你是主机）" : ""))
   },
 
-  async lanOnAllBidsIn(msg) {
+  async lanOnAllBidsIn(msg: Record<string, unknown>) {
     if (this.lanIsHost && this.aiRoundDecisionPromise) {
       await this.aiRoundDecisionPromise
     }
@@ -337,15 +341,17 @@ export const LanGameFlowMixin = {
     for (const aid in aiBids) {
       this.lanHostBids[aid] = aiBids[aid]
     }
-    if (this.lanHostBids[this.lanBridge.playerId] === undefined) {
-      this.lanHostBids[this.lanBridge.playerId] = this.playerRoundBid
+    const myPid = this.lanBridge?.playerId
+    if (myPid != null && this.lanHostBids[myPid] === undefined) {
+      this.lanHostBids[myPid] = this.playerRoundBid
     }
     this.lanResolveRound("all-in")
   },
 
   async lanOnRoundTimeout() {
-    if (this.lanHostBids[this.lanBridge.playerId] === undefined) {
-      this.lanHostBids[this.lanBridge.playerId] = this.playerRoundBid || 0
+    const myPid = this.lanBridge?.playerId
+    if (myPid != null && this.lanHostBids[myPid] === undefined) {
+      this.lanHostBids[myPid] = this.playerRoundBid || 0
     }
     if (this.lanIsHost && this.aiRoundDecisionPromise) {
       await this.aiRoundDecisionPromise
@@ -358,7 +364,7 @@ export const LanGameFlowMixin = {
     this.lanResolveRound("timeout")
   },
 
-  lanOnRoundResult(msg) {
+  lanOnRoundResult(msg: { bids?: Array<{ playerId: string; bid: number }> }) {
     const roundBids = msg.bids || []
     this.revealRoundBidsSequential(
       this.players.map((p) => {
@@ -375,31 +381,33 @@ export const LanGameFlowMixin = {
     })
   },
 
-  lanDoFinishAuction(winner, mode) {
+  lanDoFinishAuction(winner: { playerId: string; bid: number }, mode: string) {
     this.finishAuction(winner, mode)
-    if (this.lanHostWallets[this.lanBridge.playerId] !== undefined) {
-      this.lanHostWallets[this.lanBridge.playerId] = this.playerMoney
+    const myPid = this.lanBridge?.playerId
+    if (myPid != null && this.lanHostWallets[myPid] !== undefined) {
+      this.lanHostWallets[myPid] = this.playerMoney
     }
-    const finalWallets = {}
-    const profitDetails = []
+    const finalWallets: Record<string, number> = {}
+    const profitDetails: Array<{ playerId: string; playerName: string; bid: number; value: number; profit: number }> = []
     this.players.forEach((p) => {
-      const bid = this.lanHostBids[p.lanId] || 0
+      const lanId = p.lanId || p.id
+      const bid = this.lanHostBids[lanId] || 0
       if (p.id === winner.playerId) {
-        finalWallets[p.lanId] = this.lanHostWallets[p.lanId] - bid + this.warehouseTrueValue
+        finalWallets[lanId] = this.lanHostWallets[lanId] - bid + this.warehouseTrueValue
         profitDetails.push({
-          playerId: p.lanId,
+          playerId: lanId,
           playerName: p.name,
           bid,
           value: this.warehouseTrueValue,
           profit: this.warehouseTrueValue - bid
         })
       } else {
-        finalWallets[p.lanId] = this.lanHostWallets[p.lanId]
-        profitDetails.push({ playerId: p.lanId, playerName: p.name, bid: 0, value: 0, profit: 0 })
+        finalWallets[lanId] = this.lanHostWallets[lanId]
+        profitDetails.push({ playerId: lanId, playerName: p.name, bid: 0, value: 0, profit: 0 })
       }
     })
     setTimeout(() => {
-      this.lanBridge.broadcastSettleFinal(finalWallets, profitDetails)
+      this.lanBridge?.broadcastSettleFinal(finalWallets, profitDetails)
     }, 1500)
   }
 }

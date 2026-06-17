@@ -16,28 +16,44 @@
  * @exports initLanLobbyImpl
  */
 
-/**
- * 初始化联机大厅。作为 initLanLobby 的独立实现，通过 .call(this) 调用。
- * @this {object} scene - 混入了 LanIndexMixin 的场景对象
- */
 import { getCharacterById, getUnlockedCharacters, getSelectedCharacter } from "../data/characters"
 import { getProfile, setSelectedProfileId, getAllProfiles } from "../data/map-profiles"
 import { MobaoShopPage } from "../shop/index"
 import { MobaoShopBridge } from "../bridge/shop"
-import { LanBridge } from "../../../lan/client/lan-bridge"
 
-export function initLanLobbyImpl() {
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { CarryItem } from "../../../types/game"
+
+interface LanRoomInfo {
+  code: string
+  name?: string
+  roomName?: string
+  hostName: string
+  visibility?: string
+  playerCount: number
+  maxPlayers: number
+  aiCount?: number
+  [key: string]: unknown
+}
+
+interface LanServerInfo {
+  serverIp: string
+  serverPort: number
+  rooms: LanRoomInfo[]
+}
+
+export function initLanLobbyImpl(this: WarehouseSceneThis) {
   console.log('[LAN] initLanLobby called, LanBridge=' + !!LanBridge);
   if (!LanBridge) return;
 
-  this.lanBridge = new LanBridge();
+  this.lanBridge = new LanBridge() as WarehouseSceneThis['lanBridge'];
   this.isLanMode = false;
   this.lanHostWallets = {};
   this.lanHostBids = {};
   this.lanAiPlayers = [];
 
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
-  const bridge = this.lanBridge;
+  const bridge = this.lanBridge!;
 
   // 先定义 setOnlineStatus 方法
   const statusEl = $("lobbyOnlineStatus");
@@ -117,8 +133,8 @@ export function initLanLobbyImpl() {
   const alertCloseBtn = $("lanAlertCloseBtn");
   const alertOkBtn = $("lanAlertOkBtn");
 
-  var lanSelectedCharacterId = null;
-  var lanCarryItems = [];
+  var lanSelectedCharacterId: string | null = null;
+  var lanCarryItems: CarryItem[] = [];
   var lanSelectedMapId = "default";
 
   console.log('[LAN] DOM elements: createBtn=' + !!createBtn + ', joinBtn=' + !!joinBtn + ', createConfirmBtn=' + !!createConfirmBtn + ', createPanel=' + !!createPanel);
@@ -126,7 +142,7 @@ export function initLanLobbyImpl() {
   if (!createBtn || !joinBtn) return;
 
   // 创建弹窗函数
-  const showLanAlert = (title, message) => {
+  const showLanAlert = (title: string, message: string) => {
     if (!alertOverlay) return;
     if (alertTitle) alertTitle.textContent = title || "提示";
     if (alertMessage) alertMessage.textContent = message || "";
@@ -153,16 +169,16 @@ export function initLanLobbyImpl() {
   if (playerName) playerName.value = savedName;
 
   var selectedVisibility = "public";
-  var discoveredServers = [];
-  var pendingJoinServerIp = null;
-  var pendingJoinRoomCode = null;
+  var discoveredServers: LanServerInfo[] = [];
+  var pendingJoinServerIp: string | null = null;
+  var pendingJoinRoomCode: string | null = null;
 
   const isNative = LanBridge.isNative();
 
   if (isNative) {
     if (serverField) serverField.classList.add("hidden");
     var toggleBtn = $("lobbyToggleServerBtn");
-    if (toggleBtn) toggleBtn.parentElement.classList.add("hidden");
+    if (toggleBtn) toggleBtn.parentElement?.classList.add("hidden");
     // Listen for native server errors (e.g., port conflict)
     window.onNativeServerError = function (errorMsg) {
       setOnlineStatus("服务器错误: " + errorMsg, "error");
@@ -182,7 +198,7 @@ export function initLanLobbyImpl() {
 
   const setOnlineStatus = this.setOnlineStatus;
 
-  const showPanel = (panel) => {
+  const showPanel = (panel: HTMLElement | null) => {
     if (connectPanel) connectPanel.classList.add("hidden");
     if (createPanel) createPanel.classList.add("hidden");
     if (joinPanel) joinPanel.classList.add("hidden");
@@ -238,7 +254,7 @@ export function initLanLobbyImpl() {
     doTry();
   };
 
-  const autoConnectAndCreate = (options) => {
+  const autoConnectAndCreate = (options: { serverIp?: string; roomCode?: string; password?: string }) => {
     const name = getPlayerName();
     console.log('[LAN] autoConnectAndCreate called, isNative=' + isNative + ', name=' + name);
     if (isNative) {
@@ -315,7 +331,7 @@ export function initLanLobbyImpl() {
         var pc = new RTCPeerConnection({ iceServers: [] });
         pc.createDataChannel("");
         pc.createOffer().then(function (offer) { return pc.setLocalDescription(offer); }).catch(function () { });
-        var found = [];
+        var found: string[] = [];
         var timer = setTimeout(function () {
           pc.close();
           resolve(found);
@@ -334,7 +350,7 @@ export function initLanLobbyImpl() {
     });
   };
 
-  const scanSubnet = (subnet, found, onDone) => {
+  const scanSubnet = (subnet: string, found: Array<{ serverIp: string; serverPort?: number; rooms: unknown[] }>, onDone: () => void) => {
     var pending = 0;
     for (var i = 1; i <= 254; i++) {
       var addr = subnet + i;
@@ -375,7 +391,7 @@ export function initLanLobbyImpl() {
     // Always run subnet scan to find other players' servers
     setOnlineStatus("正在扫描房间...", "");
     var nativeIp = LanBridge.getNativeWiFiIP ? LanBridge.getNativeWiFiIP() : null;
-    var found = [];
+    var found: LanServerInfo[] = [];
     var localDone = false;
     var scanDone = false;
 
@@ -411,7 +427,7 @@ export function initLanLobbyImpl() {
       if (result && result.length > 0) {
         result.forEach(function (server) {
           var exists = found.some(function (f) { return f.serverIp === server.serverIp; });
-          if (!exists) found.push(server);
+          if (!exists) found.push({ serverIp: server.serverIp, serverPort: 9720, rooms: server.rooms as LanRoomInfo[] });
         });
       }
       finishScan();
@@ -433,7 +449,7 @@ export function initLanLobbyImpl() {
     }
 
     var done = false;
-    var found = [];
+    var found: LanServerInfo[] = [];
 
     var finishScan = function () {
       if (done) return;
@@ -444,7 +460,7 @@ export function initLanLobbyImpl() {
     };
 
     var currentHost = window.location.hostname;
-    var serverBase = null;
+    var serverBase: string | null = null;
     if (currentHost && currentHost !== "localhost" && currentHost !== "127.0.0.1" && currentHost.indexOf(".") > 0) {
       serverBase = "http://" + currentHost + ":9720";
     } else if (serverUrl && serverUrl.value) {
@@ -457,10 +473,11 @@ export function initLanLobbyImpl() {
     var localServerBase = "http://localhost:9720";
 
     if (serverBase) {
-      fetch(serverBase + "/rooms", { mode: "cors" })
+      var base = serverBase;
+      fetch(base + "/rooms", { mode: "cors" })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          processRoomData(data, serverBase.replace("http://", "").split(":")[0], found);
+          processRoomData(data, base.replace("http://", "").split(":")[0], found);
           finishScan();
         })
         .catch(function () {
@@ -481,17 +498,17 @@ export function initLanLobbyImpl() {
     setTimeout(finishScan, 10000);
   };
 
-  const processRoomData = (data, serverIp, found) => {
+  const processRoomData = (data: { rooms?: Array<{ code: string; name: string; hostName: string; playerCount: number; maxPlayers: number }>; remoteRooms?: Array<{ code: string; name: string; hostName: string; playerCount: number; maxPlayers: number; serverIp: string }> }, serverIp: string, found: LanServerInfo[]) => {
     if (data && data.rooms && data.rooms.length > 0) {
       var exists = found.some(function (f) { return f.serverIp === serverIp; });
       if (!exists) found.push({ serverIp: serverIp, serverPort: 9720, rooms: data.rooms });
     }
     if (data && data.remoteRooms && data.remoteRooms.length > 0) {
-      var grouped = {};
+      var grouped: Record<string, LanServerInfo> = {};
       data.remoteRooms.forEach(function (room) {
         var ip = room.serverIp;
         if (!grouped[ip]) grouped[ip] = { serverIp: ip, serverPort: 9720, rooms: [] };
-        var r = Object.assign({}, room);
+        var r = Object.assign({}, room) as Omit<typeof room, 'serverIp'> & { serverIp?: string };
         delete r.serverIp;
         grouped[ip].rooms.push(r);
       });
@@ -502,11 +519,11 @@ export function initLanLobbyImpl() {
     }
   };
 
-  const dedupFound = (found) => {
-    var seen = {};
+  const dedupFound = (found: LanServerInfo[]) => {
+    var seen: Record<string, boolean> = {};
     for (var i = found.length - 1; i >= 0; i--) {
       var server = found[i];
-      var dedupRooms = [];
+      var dedupRooms: LanRoomInfo[] = [];
       (server.rooms || []).forEach(function (room) {
         var key = server.serverIp + ":" + room.code;
         if (!seen[key]) {
@@ -523,8 +540,8 @@ export function initLanLobbyImpl() {
     }
   };
 
-  const fallbackScan = (found, finishScan) => {
-    var subnets = [];
+  const fallbackScan = (found: LanServerInfo[], finishScan: () => void) => {
+    var subnets: string[] = [];
     var commonSubnets = ["192.168.1.", "192.168.0.", "192.168.31.", "192.168.43.", "10.0.0.", "192.168.2.", "192.168.3.", "192.168.50.", "192.168.10.", "172.16.0.", "172.17.0.", "172.18.0.", "172.19.0.", "172.20.0.", "10.0.1.", "10.1.0."];
 
     detectLocalIP().then(function (ips) {
@@ -550,7 +567,7 @@ export function initLanLobbyImpl() {
 
   const renderRoomList = () => {
     if (!joinList) return;
-    var allRooms = [];
+    var allRooms: Array<{ serverIp: string; serverPort: number; code: string; roomName?: string; hostName: string; visibility?: string; playerCount: number; aiCount: number; maxPlayers: number }> = [];
     discoveredServers.forEach(function (server) {
       (server.rooms || []).forEach(function (room) {
         allRooms.push({
@@ -594,11 +611,11 @@ export function initLanLobbyImpl() {
 
     joinList.querySelectorAll(".lobby-room-item-join").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var code = btn.getAttribute("data-code");
-        var ip = btn.getAttribute("data-ip");
-        var vis = btn.getAttribute("data-vis");
-        var total = parseInt(btn.getAttribute("data-total"), 10);
-        var max = parseInt(btn.getAttribute("data-max"), 10);
+        var code = btn.getAttribute("data-code") || "";
+        var ip = btn.getAttribute("data-ip") || "";
+        var vis = btn.getAttribute("data-vis") || "";
+        var total = parseInt(btn.getAttribute("data-total") || "0", 10);
+        var max = parseInt(btn.getAttribute("data-max") || "0", 10);
 
         // 检查房间是否已满
         if (total >= max) {
@@ -612,7 +629,7 @@ export function initLanLobbyImpl() {
           if (joinPasswordField) joinPasswordField.classList.remove("hidden");
           if (joinPassword) joinPassword.focus();
         } else {
-          autoConnectAndJoin(ip, code);
+          if (ip && code) autoConnectAndJoin(ip, code);
         }
       });
     });
@@ -683,18 +700,18 @@ export function initLanLobbyImpl() {
     return '<span class="lan-avatar-emoji">👤</span>';
   };
 
-  const bindSlotActions = (container) => {
+  const bindSlotActions = (container: HTMLElement) => {
     container.querySelectorAll("[data-kick]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", (e: Event) => {
         e.stopPropagation();
         const kickId = btn.getAttribute("data-kick");
         if (kickId) bridge.send({ type: "room:kick", playerId: kickId });
       });
     });
     container.querySelectorAll("[data-add-ai]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", (e: Event) => {
         e.stopPropagation();
-        const slotIdx = parseInt(btn.getAttribute("data-add-ai"), 10);
+        const slotIdx = parseInt(btn.getAttribute("data-add-ai") || "", 10);
         if (isNaN(slotIdx)) return;
 
         // 检查是否可以添加AI（总人数不超过4）
@@ -717,20 +734,20 @@ export function initLanLobbyImpl() {
       });
     });
     container.querySelectorAll("[data-remove-ai]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", (e: Event) => {
         e.stopPropagation();
-        const slotIdx = parseInt(btn.getAttribute("data-remove-ai"), 10);
+        const slotIdx = parseInt(btn.getAttribute("data-remove-ai") || "", 10);
         if (isNaN(slotIdx)) return;
         lanSlotConfig[slotIdx] = { type: "empty" };
         renderSlots();
         broadcastSlotState();
       });
     });
-    container.querySelectorAll(".slot-llm-check").forEach((chk) => {
+    container.querySelectorAll(".slot-llm-check").forEach((chk: Element) => {
       chk.addEventListener("change", () => {
-        const slotIdx = parseInt(chk.getAttribute("data-ai-slot"), 10);
+        const slotIdx = parseInt((chk as HTMLInputElement).getAttribute("data-ai-slot") || "", 10);
         if (!isNaN(slotIdx) && lanSlotConfig[slotIdx].type === "ai") {
-          lanSlotConfig[slotIdx].llm = chk.checked;
+          lanSlotConfig[slotIdx].llm = (chk as HTMLInputElement).checked;
         }
         broadcastSlotState();
       });
@@ -755,7 +772,7 @@ export function initLanLobbyImpl() {
 
     characterList.querySelectorAll(".lan-char-card").forEach((card) => {
       card.addEventListener("click", () => {
-        lanSelectedCharacterId = (card as HTMLElement).dataset.charId;
+        lanSelectedCharacterId = (card as HTMLElement).dataset.charId ?? null;
         renderLanCharacterList();
         updateLanPortrait();
         var mySlot = lanSlotConfig.find((s) => s.id === (bridge ? bridge.playerId : null));
@@ -789,8 +806,8 @@ export function initLanLobbyImpl() {
     portraitName.classList.remove("hidden");
     portraitName.textContent = char.name;
     if (char.live2d) {
-      var videoA = document.getElementById("lanLive2dVideoA");
-      var videoB = document.getElementById("lanLive2dVideoB");
+      var videoA = document.getElementById("lanLive2dVideoA") as HTMLVideoElement | null;
+      var videoB = document.getElementById("lanLive2dVideoB") as HTMLVideoElement | null;
       if (videoA && videoB) {
         this.startLanLive2dLoop(char.live2d, videoA, videoB);
       }
@@ -800,13 +817,13 @@ export function initLanLobbyImpl() {
   };
 
 
-  const openOverlay = (overlay) => {
+  const openOverlay = (overlay: HTMLElement | null) => {
     if (!overlay) return;
     overlay.classList.remove("hidden");
     requestAnimationFrame(() => overlay.classList.add("visible"));
   };
 
-  const closeOverlay = (overlay) => {
+  const closeOverlay = (overlay: HTMLElement | null) => {
     if (!overlay) return;
     overlay.classList.remove("visible");
     setTimeout(() => overlay.classList.add("hidden"), 260);
@@ -856,7 +873,8 @@ export function initLanLobbyImpl() {
     var body = document.getElementById("lanMapSelectBody");
     if (!body || !getAllProfiles) return;
     var profiles = getAllProfiles();
-    body.innerHTML = "";
+    var bodyEl = body;
+    bodyEl.innerHTML = "";
     profiles.forEach(function (profile) {
       var card = document.createElement("div");
       card.className = "lan-map-item" + (profile.id === lanSelectedMapId ? " selected" : "");
@@ -877,7 +895,7 @@ export function initLanLobbyImpl() {
         }
         renderLanMapList();
       });
-      body.appendChild(card);
+      bodyEl.appendChild(card);
     });
   };
 
@@ -943,7 +961,7 @@ export function initLanLobbyImpl() {
   };
 
   // 复用单机道具选择器逻辑，操作 lanCarryItems
-  var lanCarryPickerEl = null;
+  var lanCarryPickerEl: HTMLElement | null = null;
   var LAN_MAX_CARRY = 3;
 
   const openLanCarryItemPicker = () => {
@@ -997,8 +1015,10 @@ export function initLanLobbyImpl() {
         '<button class="carry-picker-confirm" type="button">确认携带</button>' +
         '</div>';
 
-      panel.querySelector(".carry-picker-close").addEventListener("click", function () { closeLanCarryItemPicker(); });
-      panel.querySelector(".carry-picker-confirm").addEventListener("click", function () {
+      const closeBtn = panel.querySelector(".carry-picker-close")
+      if (closeBtn) closeBtn.addEventListener("click", function () { closeLanCarryItemPicker(); });
+      const confirmBtn = panel.querySelector(".carry-picker-confirm")
+      if (confirmBtn) confirmBtn.addEventListener("click", function () {
         lanCarryItems = available.filter(function (item) { return pickerSelected.has(item.id); })
           .map(function (item) { return { id: item.id, name: item.name, icon: item.icon }; });
         closeLanCarryItemPicker();
@@ -1009,7 +1029,7 @@ export function initLanLobbyImpl() {
       });
       panel.querySelectorAll(".carry-picker-item").forEach(function (el) {
         el.addEventListener("click", function () {
-          var itemId = (el as HTMLElement).dataset.itemId;
+          var itemId = (el as HTMLElement).dataset.itemId || "";
           if (existingIds.has(itemId)) return;
           if (pickerSelected.has(itemId)) { pickerSelected.delete(itemId); }
           else { if (pickerSelected.size >= LAN_MAX_CARRY) return; pickerSelected.add(itemId); }
@@ -1050,7 +1070,7 @@ export function initLanLobbyImpl() {
     }
   };
 
-  const updateModeMapCardState = (isHost) => {
+  const updateModeMapCardState = (isHost: boolean) => {
     if (modeCard) {
       if (isHost) modeCard.classList.remove("disabled");
       else modeCard.classList.add("disabled");
@@ -1061,7 +1081,7 @@ export function initLanLobbyImpl() {
     }
   };
 
-  const syncSlotsFromPlayers = (players, resetAi = false) => {
+  const syncSlotsFromPlayers = (players: Array<{ id: string; name: string; isHost: boolean; characterId?: string | null }>, resetAi = false) => {
     const hostPlayer = (players || []).find((p) => p.isHost);
     const clientPlayers = (players || []).filter((p) => !p.isHost);
     const aiSlots = resetAi ? [] : lanSlotConfig.filter((s) => s.type === "ai");
@@ -1146,7 +1166,7 @@ export function initLanLobbyImpl() {
   if (visibilityToggle) {
     visibilityToggle.querySelectorAll(".lobby-visibility-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        selectedVisibility = btn.getAttribute("data-vis");
+        selectedVisibility = btn.getAttribute("data-vis") || "public";
         visibilityToggle.querySelectorAll(".lobby-visibility-btn").forEach((b) => {
           b.classList.toggle("active", b.getAttribute("data-vis") === selectedVisibility);
         });

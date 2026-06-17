@@ -1,5 +1,5 @@
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
-import type { AiMemoryStorage } from '../../../types/ai'
+import type { AiMemoryStorage, CrossGameMemory, CrossGameStats, ConversationMessage, ConversationBucketEntry } from '../../../types/ai'
 
 /**
  * @file memory.js
@@ -195,7 +195,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     }
   },
 
-  ensureAiConversationBucket(playerId: string): unknown[] {
+  ensureAiConversationBucket(playerId: string): ConversationBucketEntry[] {
     if (!this.aiConversationByPlayer[playerId]) {
       this.aiConversationByPlayer[playerId] = []
     }
@@ -258,13 +258,13 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     return this.items.reduce((sum, item) => sum + item.w * item.h, 0)
   },
 
-  getAiConversationMessages(playerId: string): Array<Record<string, string>> {
+  getAiConversationMessages(playerId: string): ConversationMessage[] {
     const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : null
     const useMultiGame = Boolean(settings && settings.multiGameMemoryEnabled)
 
     if (!useMultiGame) return []
 
-    const result: Array<Record<string, string>> = []
+    const result: ConversationMessage[] = []
 
     const playerSummary = this.pendingNextRunAiSummaryByPlayer?.[playerId]
     if (playerSummary) {
@@ -290,12 +290,12 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
       return
     }
     const bucket = this.ensureAiConversationBucket(playerId)
-    const entry = {
+    const entry: ConversationBucketEntry = {
       run: this.runSerial || 0,
       round: this.round || 0,
-      bid: plan && plan.bid != null ? plan.bid : null,
-      skill: plan && plan.actionType === "skill" && plan.actionId ? plan.actionId : "无",
-      item: plan && plan.actionType === "item" && plan.actionId ? plan.actionId : "无",
+      bid: plan && plan.bid != null ? plan.bid as number : null,
+      skill: String(plan && plan.actionType === "skill" && plan.actionId ? plan.actionId : "无"),
+      item: String(plan && plan.actionType === "item" && plan.actionId ? plan.actionId : "无"),
       thought: plan && plan.thought ? String(plan.thought).slice(0, 120) : "",
       result: ""
     }
@@ -457,7 +457,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
       this.saveAiMemoryToStorage()
       return { ok: true }
     } catch (error) {
-      return { ok: false, error: "JSON解析失败: " + (error.message || "未知错误") }
+      return { ok: false, error: "JSON解析失败: " + ((error instanceof Error ? error.message : String(error)) || "未知错误") }
     }
   },
 
@@ -471,7 +471,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     const winnerProfit = Math.round(Number(result && result.winnerProfit) || 0)
     const reasonText = result && result.reasonText ? String(result.reasonText) : "结算"
     const dtInfo = result && result.dividendTicketInfo ? result.dividendTicketInfo as { mechanism?: string; dividendPerPlayer?: number; ticketPerPlayer?: number } : null
-    const mechanism = dtInfo ? dtInfo.mechanism : "none"
+    const mechanism: string = dtInfo?.mechanism ?? "none"
     const dividendAmt = dtInfo ? Math.round(Number(dtInfo.dividendPerPlayer) || 0) : 0
     const ticketAmt = dtInfo ? Math.round(Number(dtInfo.ticketPerPlayer) || 0) : 0
 
@@ -545,7 +545,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     this.players.filter((p) => !p.isHuman).forEach((p) => {
       const cached = this.aiConversationCache && this.aiConversationCache[p.id]
       if (Array.isArray(cached) && cached.length > 2) {
-        const gameMessages = cached.slice(2)
+        const gameMessages = cached.slice(2) as ConversationMessage[]
         if (!this.aiCrossGameMessagesByPlayer[p.id]) {
           this.aiCrossGameMessagesByPlayer[p.id] = []
         }
@@ -568,13 +568,13 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     const winnerProfit = Math.round(Number(result && result.winnerProfit) || 0)
     const reasonText = result && result.reasonText ? result.reasonText : "结算"
     const dtInfo = result && result.dividendTicketInfo ? result.dividendTicketInfo as { mechanism?: string; dividendPerPlayer?: number; ticketPerPlayer?: number } : null
-    const mechanism = dtInfo ? dtInfo.mechanism : "none"
+    const mechanism: string = dtInfo?.mechanism ?? "none"
     const dividendAmt = dtInfo ? Math.round(Number(dtInfo.dividendPerPlayer) || 0) : 0
     const ticketAmt = dtInfo ? Math.round(Number(dtInfo.ticketPerPlayer) || 0) : 0
     const qualityCounts = this.getQualityCounts()
     const totalItems = this.items.length
     const totalCells = this.getTotalOccupiedCells()
-    const roundBids = []
+    const roundBids: Array<{ round: number; playerId: string; playerName: string; bid: number }> = []
     this.players.forEach((player) => {
       const history = this.playerRoundHistory[player.id] || []
       history.forEach((entry) => {
@@ -615,7 +615,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     const targetId = playerId || this.players.find((p) => !p.isHuman)?.id || ""
     const playerSummary = this.pendingNextRunAiSummaryByPlayer?.[targetId]
     if (playerSummary) {
-      blocks.push(playerSummary)
+      blocks.push(String(playerSummary))
     }
 
     if (this.currentPublicEvent) {
@@ -642,7 +642,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
         const color = colors[idx % colors.length]
         let inner = ""
 
-        const stats = memory.stats || {}
+        const stats: CrossGameStats = memory.stats || { totalGames: 0, warehouseValueMax: 0, warehouseValueMin: 0, warehouseValueAvg: 0, winRate: 0, avgProfit: 0, totalCellsMax: 0, totalCellsMin: 0, totalCellsAvg: 0, totalItemsMax: 0, totalItemsMin: 0, totalItemsAvg: 0, legendaryMax: 0, legendaryMin: 0, legendaryAvg: 0, rareMax: 0, rareMin: 0, rareAvg: 0 }
         const praises = memory.praises || []
         const strategies = memory.strategies || []
         const lessons = memory.lessons || []

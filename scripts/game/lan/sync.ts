@@ -16,10 +16,13 @@ import { CHARACTERS } from "../data/characters"
 import { QUALITY_CONFIG } from "../data/artifacts"
 import { patch as patchAppState } from "../core/app-state"
 import { pickRandomPublicEvent } from "../data/public-events"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { QualityLevel, ArtifactView, Artifact } from "../../../types/game"
+import type { LanPlayer } from "../../../types/lan"
 
-export const LanSyncMixin = {
-  lanBuildFullSyncData(targetPlayerId) {
-    var wallets = {}
+export const LanSyncMixin: ThisType<WarehouseSceneThis> = {
+  lanBuildFullSyncData(targetPlayerId: string) {
+    var wallets: Record<string, number> = {}
     this.players.forEach((p) => {
       var lanId = this.slotIdToLanId[p.id]
       if (lanId) {
@@ -31,7 +34,7 @@ export const LanSyncMixin = {
       }
     })
 
-    var bids = {}
+    var bids: Record<string, number> = {}
     if (this.lanIsHost) {
       for (var aid in this.lanHostBids) {
         if (this.lanHostBids[aid] !== undefined) {
@@ -40,7 +43,7 @@ export const LanSyncMixin = {
       }
     }
 
-    var playerCharacters = {}
+    var playerCharacters: Record<string, string> = {}
     this.players.forEach((p) => {
       var lanId = this.slotIdToLanId[p.id]
       if (lanId && p.characterId) {
@@ -68,7 +71,7 @@ export const LanSyncMixin = {
     }
   },
 
-  lanOnFullSync(msg) {
+  lanOnFullSync(msg: Record<string, unknown>) {
     if (this.lanIsHost) return
     this.writeLog("收到全量状态同步")
 
@@ -82,23 +85,23 @@ export const LanSyncMixin = {
     }
 
     if (msg.round != null) {
-      this.round = msg.round
+      this.round = msg.round as number
     }
     if (msg.maxRounds != null) {
-      GAME_SETTINGS.maxRounds = msg.maxRounds
+      GAME_SETTINGS.maxRounds = msg.maxRounds as number
     }
     if (msg.currentBid != null) {
-      this.currentBid = msg.currentBid
+      this.currentBid = msg.currentBid as number
     }
     if (msg.warehouseTrueValue != null) {
-      this.warehouseTrueValue = msg.warehouseTrueValue
+      this.warehouseTrueValue = msg.warehouseTrueValue as number
     }
 
     if (msg.roundTimeLeft != null) {
-      this.roundTimeLeft = msg.roundTimeLeft
+      this.roundTimeLeft = msg.roundTimeLeft as number
     }
     if (msg.isPaused != null) {
-      this.roundPaused = msg.isPaused
+      this.roundPaused = msg.isPaused as boolean
       if (msg.isPaused) {
         this.showLanPauseOverlay()
       } else {
@@ -106,29 +109,31 @@ export const LanSyncMixin = {
       }
     }
     if (msg.settled != null) {
-      this.settled = msg.settled
+      this.settled = msg.settled as boolean
     }
     if (msg.playerBidSubmitted != null) {
-      this.playerBidSubmitted = msg.playerBidSubmitted
+      this.playerBidSubmitted = msg.playerBidSubmitted as boolean
     }
     if (msg.playerRoundBid != null) {
-      this.playerRoundBid = msg.playerRoundBid
+      this.playerRoundBid = msg.playerRoundBid as number
     }
 
     if (msg.wallets) {
-      for (var lanId in msg.wallets) {
+      var walletsMap = msg.wallets as Record<string, number>
+      for (var lanId in walletsMap) {
         var slotId = this.lanIdToSlotId[lanId]
         if (slotId) {
           var p = this.players.find(function (pl) {
             return pl.id === slotId
           })
-          if (p) p.money = msg.wallets[lanId]
+          if (p) p.money = walletsMap[lanId]
         }
       }
     }
 
     if (msg.bids) {
-      for (var bidLanId in msg.bids) {
+      var bidsMap = msg.bids as Record<string, number>
+      for (var bidLanId in bidsMap) {
         var bidSlotId = this.lanIdToSlotId[bidLanId]
         if (bidSlotId) {
           this.setPlayerBidReady(bidSlotId, true)
@@ -137,17 +142,19 @@ export const LanSyncMixin = {
     }
 
     if (msg.playerCharacters) {
-      for (var charLanId in msg.playerCharacters) {
+      var charactersMap = msg.playerCharacters as Record<string, string>
+      for (var charLanId in charactersMap) {
         var charSlotId = this.lanIdToSlotId[charLanId]
         if (charSlotId) {
           var cp = this.players.find(function (pl) {
             return pl.id === charSlotId
           })
           if (cp) {
-            cp.characterId = msg.playerCharacters[charLanId]
+            cp.characterId = charactersMap[charLanId]
             if (CHARACTERS) {
+              var cpRef = cp
               var charInfo = CHARACTERS.find(function (c) {
-                return c.id === cp.characterId
+                return c.id === cpRef.characterId
               })
               if (charInfo) {
                 cp.characterName = charInfo.name
@@ -160,14 +167,14 @@ export const LanSyncMixin = {
     }
 
     if (msg.mapProfileId) {
-      var lanSelectedMapId = msg.mapProfileId
+      var lanSelectedMapId = msg.mapProfileId as string
       if (setSelectedProfileId) {
         setSelectedProfileId(lanSelectedMapId)
       }
     }
 
     if (msg.publicInfoEntries) {
-      this.publicInfoEntries = msg.publicInfoEntries
+      this.publicInfoEntries = msg.publicInfoEntries as typeof this.publicInfoEntries
       this.renderPublicInfoPanel()
     }
 
@@ -176,8 +183,8 @@ export const LanSyncMixin = {
     this.refreshRevealScrollHints()
   },
 
-  lanRestoreWarehouseFromSync(msg) {
-    const warehouseData = msg.warehouse || []
+  lanRestoreWarehouseFromSync(msg: Record<string, unknown>) {
+    const warehouseData = (msg.warehouse || []) as Record<string, unknown>[]
     if (warehouseData.length === 0) return
 
     if (this.itemLayer) {
@@ -190,8 +197,8 @@ export const LanSyncMixin = {
 
     const qualityConfig = QUALITY_CONFIG
     warehouseData.forEach((saved, idx) => {
-      const qualityKey = saved.qualityKey && qualityConfig[saved.qualityKey] ? saved.qualityKey : "normal"
-      const quality = qualityConfig[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff }
+      const qualityKey = saved.qualityKey && qualityConfig[saved.qualityKey as string] ? (saved.qualityKey as string) : "normal"
+      const quality = qualityConfig[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff, weight: 1 }
       const safeW = Math.max(1, Math.round(Number(saved.w) || 1))
       const safeH = Math.max(1, Math.round(Number(saved.h) || 1))
       const safeX = Math.max(0, Math.round(Number(saved.x) || 0))
@@ -200,29 +207,33 @@ export const LanSyncMixin = {
 
       const item = {
         id: String(saved.id || `sync-item-${idx}`),
-        key: saved.key || "synced",
-        category: saved.category || "未知",
-        name: saved.name || `藏品${idx + 1}`,
+        key: (saved.key as string) || "synced",
+        majorCategory: (saved.majorCategory as string) || "未知",
+        category: (saved.category as string) || "未知",
+        name: (saved.name as string) || `藏品${idx + 1}`,
         basePrice: trueValue,
         trueValue,
-        qualityKey,
+        qualityKey: qualityKey as QualityLevel,
         quality,
         w: safeW,
         h: safeH,
         x: safeX,
         y: safeY,
-        revealed: { outline: false, qualityCell: null, exact: false }
+        revealed: { outline: false, qualityCell: null, exact: false },
+        expectedPrice: trueValue,
+        previewSizeTag: `${safeW}x${safeH}`,
+        view: {} as ArtifactView
       }
 
-      this.renderItem(item)
-      this.items.push(item)
+      this.renderItem(item as Artifact)
+      this.items.push(item as Artifact)
       this.warehouseTrueValue += item.trueValue
     })
 
     this.rebuildWarehouseCellIndex()
-    this.warehouseTrueValue = msg.warehouseTrueValue || this.warehouseTrueValue
-    this.currentBid = msg.currentBid || this.currentBid
-    this.aiMaxBid = msg.aiMaxBid || this.aiMaxBid
+    this.warehouseTrueValue = (msg.warehouseTrueValue as number) || this.warehouseTrueValue
+    this.currentBid = (msg.currentBid as number) || this.currentBid
+    this.aiMaxBid = (msg.aiMaxBid as number) || this.aiMaxBid
 
     if (pickRandomPublicEvent && this.items.length > 0) {
       this.currentPublicEvent = pickRandomPublicEvent(this.items, GRID_COLS, GRID_ROWS)
@@ -251,15 +262,18 @@ export const LanSyncMixin = {
     this.writeLog(
       "重连尝试 " + this.lanReconnectAttempts + "/" + this.lanMaxReconnectAttempts + " (" + delay + "ms后)"
     )
+    const lastServerUrl = this.lanLastServerUrl
+    const lastRoomCode = this.lanLastRoomCode
+    const lastPlayerId = this.lanLastPlayerId
     setTimeout(() => {
-      if (!this.lanReconnecting) return
+      if (!this.lanReconnecting || !this.lanBridge) return
       this.lanBridge
-        .reconnect(this.lanLastServerUrl, this.lanLastRoomCode, this.lanLastPlayerId)
+        .reconnect(lastServerUrl, lastRoomCode, lastPlayerId)
         .then(() => {
           this.lanReconnecting = false
           this.lanReconnectAttempts = 0
           this.writeLog("重连成功！")
-          if (!this.lanIsHost) {
+          if (!this.lanIsHost && this.lanBridge) {
             this.lanBridge.requestFullSync()
           }
         })
@@ -270,7 +284,7 @@ export const LanSyncMixin = {
     }, delay)
   },
 
-  toggleLanPause(pause) {
+  toggleLanPause(pause: boolean) {
     if (!this.isLanMode || !this.lanIsHost) return
     if (this.settled || this.roundResolving) return
 
@@ -319,9 +333,10 @@ export const LanSyncMixin = {
     this.lanAttemptReconnect()
   },
 
-  tryAutoReconnect(playerId, roomCode, playerName, isHost) {
+  tryAutoReconnect(playerId: string, roomCode: string, playerName: string, isHost: boolean) {
     const bridge = this.lanBridge
-    const $ = (id) => document.getElementById(id)
+    if (!bridge) return
+    const $ = (id: string) => document.getElementById(id)
     const connectPanel = $("lobbyOnlineConnect")
     const roomPanel = $("lobbyOnlineRoom")
 
@@ -334,13 +349,14 @@ export const LanSyncMixin = {
 
     bridge
       .reconnect("ws://localhost:9720", roomCode, playerId)
-      .then((msg) => {
+      .then((result) => {
+        const msg = result as Record<string, unknown>
         this.writeLog(`重连成功 | room=${msg.roomCode} | state=${msg.roomState}`)
         // 清除重连失败标记
         localStorage.removeItem("mobao_lan_reconnect_failed")
         this.isLanMode = true
-        this.lanIsHost = msg.isHost
-        this.lanPlayers = msg.players || []
+        this.lanIsHost = msg.isHost as boolean
+        this.lanPlayers = (msg.players || []) as LanPlayer[]
 
         // 根据房间状态恢复界面
         if (msg.roomState === "waiting") {

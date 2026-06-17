@@ -10,7 +10,7 @@
  * @requires core/utils - 工具函数库
  */
 
-import type { AiPrivateIntelPool } from "../../types/ai"
+import type { AiPrivateIntelPool } from "../../../types/ai"
 
 export function shuffle<T>(list: T[]): T[] {
   const arr = [...list]

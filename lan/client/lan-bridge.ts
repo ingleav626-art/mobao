@@ -660,4 +660,4 @@
   global.LanBridge = LanBridge;
 })(window);
 
-export { LanBridge };
+export {}

@@ -9,11 +9,20 @@
  * @exports LanReconnectMixin
  */
 import { patch as patchAppState } from "../core/app-state"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { LanPlayer } from "../../../types/lan"
 
-export const LanReconnectMixin = {
-  tryAutoReconnect(playerId, roomCode, playerName, isHost) {
+interface ReconnectResponse {
+  roomCode: string
+  roomState: string
+  isHost: boolean
+  players: LanPlayer[]
+}
+
+export const LanReconnectMixin: ThisType<WarehouseSceneThis> = {
+  tryAutoReconnect(playerId: string, roomCode: string, playerName: string, isHost: boolean) {
     const bridge = this.lanBridge;
-    const $ = (id) => document.getElementById(id);
+    const $ = (id: string): HTMLElement | null => document.getElementById(id);
     const connectPanel = $("lobbyOnlineConnect");
     const roomPanel = $("lobbyOnlineRoom");
 
@@ -24,8 +33,9 @@ export const LanReconnectMixin = {
     if (roomPanel) roomPanel.classList.remove("hidden");
     this.setOnlineStatus("正在重连...", "connecting");
 
-    bridge.reconnect("ws://localhost:9720", roomCode, playerId)
-      .then((msg) => {
+    bridge?.reconnect("ws://localhost:9720", roomCode, playerId)
+      .then((raw: unknown) => {
+        const msg = raw as ReconnectResponse
         this.writeLog(`重连成功 | room=${msg.roomCode} | state=${msg.roomState}`);
         // 清除重连失败标记
         localStorage.removeItem("mobao_lan_reconnect_failed");

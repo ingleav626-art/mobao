@@ -131,11 +131,44 @@ export interface LlmPlan {
   userPrompt?: string            // 用户提示
   modelResponse?: string         // 模型响应
   elapsedMs?: number             // 耗时（毫秒）
-  followupActionRejected?: boolean // 后续动作是否被拒绝
+  followupActionRejected?: boolean | string // 后续动作是否被拒绝
   error?: string                 // 错误信息
   model?: string                 // 使用的模型名称
   choices?: unknown[]            // LLM 返回的选项列表
   message?: string               // 消息内容
+  // LlmPlanResult 扩展属性（normalizeAiLlmPlan 返回值包含这些字段）
+  source?: string
+  folded?: boolean
+  target?: string
+  rawSkill?: string
+  rawItem?: string
+  configuredModel?: string
+  systemPrompt?: string
+  reasoningContent?: string
+  requestStage?: string
+  historyMessagesCount?: number
+  crossGameMemoryCount?: number
+  inGameHistoryCount?: number
+  historyMessagesPreview?: string
+  crossGameMemoryText?: string
+  cacheHitTokens?: number
+  cacheMissTokens?: number
+  cacheHitRate?: number
+  usage?: LlmChatResult['usage']
+  controlMode?: string
+  actionExecuted?: boolean
+  toolActionId?: string
+  toolActionType?: string
+  followupPrompt?: string
+  followupResponse?: string
+  followupError?: string
+  followupElapsedMs?: number
+  followupActionRejected?: boolean | string
+  toolResultSummary?: string
+  errorCorrectionPrompt?: string
+  errorCorrectionResponse?: string
+  correctionAttempt?: number
+  originalError?: string
 }
 
 /** LLM 扩展计划（normalizeAiLlmPlan 返回值，含额外字段） */
@@ -151,6 +184,7 @@ export interface LlmPlanResult {
   rawSkill: string
   rawItem: string
   rawContent: string
+  ok?: boolean
   elapsedMs?: number
   model?: string
   configuredModel?: string
@@ -177,12 +211,15 @@ export interface LlmPlanResult {
   followupPrompt?: string
   followupResponse?: string
   followupError?: string
-  followupActionRejected?: boolean
+  followupActionRejected?: string | boolean
   toolResultSummary?: string
   errorCorrectionPrompt?: string
   errorCorrectionResponse?: string
   correctionAttempt?: number
+  correctionSkipped?: boolean
   originalError?: string
+  followupElapsedMs?: number
+  followupActionRejected?: boolean | string
 }
 
 // ==================== LLM 请求/响应 ====================
@@ -197,10 +234,17 @@ export interface LlmRequestOptions {
 }
 
 /** LLM 响应结果 */
-export interface LlmResponse {
+export interface LlmChatResult {
   ok: boolean
+  requestId?: string
+  status?: number
+  elapsedMs?: number
   content: string
-  code?: string                   // 错误码
+  reasoningContent?: string
+  model?: string
+  error?: string
+  code?: string
+  stage?: string
   usage?: {
     prompt_tokens: number
     completion_tokens: number
@@ -299,7 +343,7 @@ export interface LlmChatResult {
   } | null
   meta?: Record<string, unknown>
   raw?: {
-    choices?: Array<{ finish_reason?: string; [key: string]: unknown }>
+    choices?: Array<{ finish_reason?: string;[key: string]: unknown }>
     usage?: Record<string, unknown>
     [key: string]: unknown
   }

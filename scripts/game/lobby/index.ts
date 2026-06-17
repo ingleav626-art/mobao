@@ -123,59 +123,59 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     const carouselRightBtn = document.getElementById("carouselRightBtn")
 
     if (soloBtn) {
-      soloBtn.addEventListener("click", () => (this as LobbySceneLike).showLobbySubPage("soloSetup"))
+      soloBtn.addEventListener("click", () => this.showLobbySubPage("soloSetup"))
     }
     if (onlineBtn) {
-      onlineBtn.addEventListener("click", () => (this as LobbySceneLike).showLobbySubPage("onlinePlaceholder"))
+      onlineBtn.addEventListener("click", () => this.showLobbySubPage("onlinePlaceholder"))
     }
     if (lobbySettingsBtn) {
-      lobbySettingsBtn.addEventListener("click", () => (this as LobbySceneLike).openSettingsOverlay())
+      lobbySettingsBtn.addEventListener("click", () => this.openSettingsOverlay())
     }
     if (lobbyCollectionBtn) {
-      lobbyCollectionBtn.addEventListener("click", () => (this as LobbySceneLike).openCollectionOverlay())
+      lobbyCollectionBtn.addEventListener("click", () => this.openCollectionOverlay())
     }
     if (lobbyBattleRecordBtn) {
-      lobbyBattleRecordBtn.addEventListener("click", () => (this as LobbySceneLike).openBattleRecordPanel())
+      lobbyBattleRecordBtn.addEventListener("click", () => this.openBattleRecordPanel())
     }
     if (lobbyShopBtn) {
-      lobbyShopBtn.addEventListener("click", () => (this as LobbySceneLike).openShopOverlay())
+      lobbyShopBtn.addEventListener("click", () => this.openShopOverlay())
     }
     if (lobbySoloBackBtn) {
-      lobbySoloBackBtn.addEventListener("click", () => (this as LobbySceneLike).showLobbyMain())
+      lobbySoloBackBtn.addEventListener("click", () => this.showLobbyMain())
     }
     if (lobbySoloShopBtn) {
-      lobbySoloShopBtn.addEventListener("click", () => (this as LobbySceneLike).openShopOverlay())
+      lobbySoloShopBtn.addEventListener("click", () => this.openShopOverlay())
     }
     if (lobbyOnlineBackBtn) {
       lobbyOnlineBackBtn.addEventListener("click", () => {
         const roomPanel = document.getElementById("lobbyOnlineRoom")
         const isInRoom = roomPanel && !roomPanel.classList.contains("hidden")
         if (isInRoom) {
-          ; (this as LobbySceneLike).showGameConfirm("确定要离开房间吗？", () => {
-            if ((this as LobbySceneLike).lanBridge) {
-              ; (this as LobbySceneLike).lanBridge.leaveRoom()
-                ; (this as LobbySceneLike).lanBridge.disconnect()
+          ; this.showGameConfirm("确定要离开房间吗？", () => {
+            if (this.lanBridge) {
+              ; this.lanBridge.leaveRoom()
+                ; this.lanBridge.disconnect()
             }
-            ; (this as LobbySceneLike).showLobbyMain()
+            ; this.showLobbyMain()
           })
         } else {
-          ; (this as LobbySceneLike).showLobbyMain()
+          ; this.showLobbyMain()
         }
       })
     }
     if (lobbyStartGameBtn) {
-      lobbyStartGameBtn.addEventListener("click", () => (this as LobbySceneLike).goToCharacterSelect())
+      lobbyStartGameBtn.addEventListener("click", () => this.goToCharacterSelect())
     }
     if (carouselLeftBtn) {
-      carouselLeftBtn.addEventListener("click", () => (this as LobbySceneLike).carouselScroll(-1))
+      carouselLeftBtn.addEventListener("click", () => this.carouselScroll(-1))
     }
     if (carouselRightBtn) {
-      carouselRightBtn.addEventListener("click", () => (this as LobbySceneLike).carouselScroll(1))
+      carouselRightBtn.addEventListener("click", () => this.carouselScroll(1))
     }
 
-    ; (this as LobbySceneLike)._carouselOffset = 0
-      ; (this as LobbySceneLike).renderCarousel()
-      ; (this as LobbySceneLike).initLanLobby()
+    ; this._carouselOffset = 0
+      ; this.renderCarousel()
+      ; this.initLanLobby()
   },
 
   showLobbyMain(skipAnimation?: boolean) {
@@ -200,8 +200,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         )
       }
     }
-    ; (this as LobbySceneLike).isLanMode = false
-      ; (this as LobbySceneLike).lanIsHost = false
+    ; this.isLanMode = false
+      ; this.lanIsHost = false
   },
 
   showLobbySubPage(page: string) {
@@ -230,8 +230,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
 
     if (page === "soloSetup") {
       animatePageIn(soloSetup)
-        ; (this as LobbySceneLike).renderCarousel()
-        ; (this as LobbySceneLike).renderMapDetail()
+        ; this.renderCarousel()
+        ; this.renderMapDetail()
       this.updateLobbyMoneyDisplay()
     } else if (page === "onlinePlaceholder") {
       animatePageIn(onlinePlaceholder)
@@ -239,7 +239,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       const roomPanel = document.getElementById("lobbyOnlineRoom")
       const connectPanel = document.getElementById("lobbyOnlineConnect")
       const isInRoom =
-        (this as LobbySceneLike).lanBridge && (this as LobbySceneLike).lanBridge.roomCode && roomPanel && !roomPanel.classList.contains("hidden")
+        this.lanBridge && this.lanBridge.roomCode && roomPanel && !roomPanel.classList.contains("hidden")
 
       if (!isInRoom) {
         if (roomPanel) roomPanel.classList.add("hidden")
@@ -252,17 +252,17 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         ;[onlineMoney, onlineMoneyOuter].forEach((el) => {
           if (!el) return
           const textEl = el.querySelector(".hud-icon") ? el.lastChild : el
-          if (textEl && textEl.nodeType === 3) textEl.textContent = " " + (this as LobbySceneLike).playerMoney.toLocaleString()
+          if (textEl && textEl.nodeType === 3) textEl.textContent = " " + this.playerMoney.toLocaleString()
           else
-            el.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${(this as LobbySceneLike).playerMoney.toLocaleString()}`
+            el.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${this.playerMoney.toLocaleString()}`
         })
     } else if (page === "characterSelect") {
-      ; (this as LobbySceneLike).showCharacterSelectPageWithMap()
+      ; this.showCharacterSelectPageWithMap()
     }
   },
 
   goToCharacterSelect() {
-    ; (this as LobbySceneLike).showLobbySubPage("characterSelect")
+    ; this.showLobbySubPage("characterSelect")
   },
 
   showCharacterSelectPageWithMap() {
@@ -270,11 +270,11 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     if (getProfile) {
       mapProfile = getProfile(getSelectedProfileId()) as unknown as { name?: string; params?: Record<string, unknown> } | null
     }
-    if ((this as LobbySceneLike).showCharacterSelectPage) {
-      ; (this as LobbySceneLike).showCharacterSelectPage(mapProfile)
+    if (this.showCharacterSelectPage) {
+      ; this.showCharacterSelectPage(mapProfile)
     } else {
       console.warn("[Lobby] CharacterSelectMixin not loaded, falling back to start game")
-        ; (this as LobbySceneLike).startSoloGame()
+        ; this.startSoloGame()
     }
   },
 
@@ -297,26 +297,26 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
   },
 
   cleanupGameScene() {
-    ; (this as LobbySceneLike).stopRoundTimer()
-    if ((this as LobbySceneLike).itemLayer) {
-      ; (this as LobbySceneLike).itemLayer.destroy()
-        ; (this as LobbySceneLike).itemLayer = null
+    ; this.stopRoundTimer()
+    if (this.itemLayer) {
+      ; this.itemLayer.destroy()
+        ; this.itemLayer = null
     }
-    if ((this as LobbySceneLike).gridLayer) {
-      ; (this as LobbySceneLike).gridLayer.destroy()
-        ; (this as LobbySceneLike).gridLayer = null
+    if (this.gridLayer) {
+      ; this.gridLayer.destroy()
+        ; this.gridLayer = null
     }
-    if ((this as LobbySceneLike).revealCellLayer) {
-      ; (this as LobbySceneLike).revealCellLayer.destroy()
-        ; (this as LobbySceneLike).revealCellLayer = null
+    if (this.revealCellLayer) {
+      ; this.revealCellLayer.destroy()
+        ; this.revealCellLayer = null
     }
-    if ((this as LobbySceneLike).activeSettlementSpinner) {
-      ; (this as LobbySceneLike).activeSettlementSpinner.destroy()
-        ; (this as LobbySceneLike).activeSettlementSpinner = null
+    if (this.activeSettlementSpinner) {
+      ; this.activeSettlementSpinner.destroy()
+        ; this.activeSettlementSpinner = null
     }
-    ; (this as LobbySceneLike).tweens.killAll()
-      ; (this as LobbySceneLike).items = []
-      ; (this as LobbySceneLike).time.removeAllEvents()
+    ; (this.tweens as Phaser.TweenManager & { killAll(): void }).killAll()
+      ; this.items = []
+      ; (this.time as Phaser.TimePlugin & { removeAllEvents(): void }).removeAllEvents()
   },
 
   enterLobby() {
@@ -338,30 +338,30 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         { once: true }
       )
     }
-    if ((this as LobbySceneLike).game && (this as LobbySceneLike).game.loop) {
-      ; (this as LobbySceneLike).game.loop.sleep()
+    if (this.game && this.game.loop) {
+      ; this.game.loop.sleep()
     }
-    ; (this as LobbySceneLike).isLanMode = false
-      ; (this as LobbySceneLike).lanIsHost = false
-      ; (this as LobbySceneLike).lanPlayers = []
-      ; (this as LobbySceneLike).lanAiPlayers = []
-      ; (this as LobbySceneLike).lanHostWallets = {}
-      ; (this as LobbySceneLike).lanHostBids = {}
-      ; (this as LobbySceneLike).lanAiLlmEnabled = false
-      ; (this as LobbySceneLike).lanIdToSlotId = {}
-      ; (this as LobbySceneLike).slotIdToLanId = {}
-      ; (this as LobbySceneLike).lanMySlotId = null
-      ; (this as LobbySceneLike).aiLlmPlayerEnabled = {}
-      ; (this as LobbySceneLike).players = [
+    ; this.isLanMode = false
+      ; this.lanIsHost = false
+      ; this.lanPlayers = []
+      ; this.lanAiPlayers = []
+      ; this.lanHostWallets = {}
+      ; this.lanHostBids = {}
+      ; this.lanAiLlmEnabled = false
+      ; this.lanIdToSlotId = {}
+      ; this.slotIdToLanId = {}
+      ; this.lanMySlotId = null
+      ; this.aiLlmPlayerEnabled = {}
+      ; this.players = [
         { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
         { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
         { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
         { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
       ]
     if (Deps.LLM_BRIDGE && Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches) {
-      ; (this as LobbySceneLike).aiLlmPlayerEnabled = Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches((this as LobbySceneLike).players)
+      ; this.aiLlmPlayerEnabled = Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players)
     }
-    ; (this as LobbySceneLike).initPlayersUI()
+    ; this.initPlayersUI()
     this.showLobbyMain(true)
     this.updateLobbyMoneyDisplay()
     patchAppState({ appMode: "lobby", gameSource: null })
@@ -385,8 +385,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     const gameArea = document.getElementById("gameArea")
     if (lobbyPage) lobbyPage.classList.remove("hidden")
     if (gameArea) gameArea.classList.add("hidden")
-    if ((this as LobbySceneLike).game && (this as LobbySceneLike).game.loop) {
-      ; (this as LobbySceneLike).game.loop.sleep()
+    if (this.game && this.game.loop) {
+      ; this.game.loop.sleep()
     }
     const connectPanel = document.getElementById("lobbyOnlineConnect")
     const roomPanel = document.getElementById("lobbyOnlineRoom")
@@ -396,23 +396,23 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     if (roomPanel) roomPanel.classList.remove("hidden")
     if (createPanel) createPanel.classList.add("hidden")
     if (joinPanel) joinPanel.classList.add("hidden")
-      ; (this as LobbySceneLike).exitSettlementPage()
+      ; this.exitSettlementPage()
     this.updateLobbyMoneyDisplay()
     patchAppState({ appMode: "lobby", gameSource: null })
     if (typeof AudioManager !== "undefined") {
       AudioManager.stopBgm()
       AudioManager.playBgm("lobby")
     }
-    if ((this as LobbySceneLike).isLanMode && (this as LobbySceneLike).lanIsHost && (this as LobbySceneLike).lanBridge) {
-      const sent = (this as LobbySceneLike).lanBridge.send({ type: "room:return" })
+    if (this.isLanMode && this.lanIsHost && this.lanBridge) {
+      const sent = this.lanBridge.send({ type: "room:return" })
       if (!sent) {
-        ; (this as LobbySceneLike).writeLog("连接已断开，无法通知客机返回房间")
+        ; this.writeLog("连接已断开，无法通知客机返回房间")
       }
     }
   },
 
   exitLobby() {
-    ; (this as LobbySceneLike)._stopLive2dLoop()
+    ; this._stopLive2dLoop()
     const videoA = document.getElementById("overlayLive2dVideoA") as HTMLVideoElement | null
     const videoB = document.getElementById("overlayLive2dVideoB") as HTMLVideoElement | null
     if (videoA) {
@@ -457,8 +457,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       }, 100)
     }
 
-    if ((this as LobbySceneLike).game && (this as LobbySceneLike).game.loop) {
-      ; (this as LobbySceneLike).game.loop.wake()
+    if (this.game && this.game.loop) {
+      ; this.game.loop.wake()
     }
     if (typeof AudioManager !== "undefined") {
       AudioManager.stopBgm()
@@ -470,7 +470,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     patchAppState({ appMode: "game", gameSource: "solo" })
     this.applyMapProfile()
     this.exitLobby()
-      ; (this as LobbySceneLike).startNewRun()
+      ; this.startNewRun()
   },
 
   applyMapProfile() {
@@ -488,12 +488,12 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     if (Number.isFinite(p.directTakeRatio)) {
       GAME_SETTINGS.directTakeRatio = p.directTakeRatio
     }
-    ; (this as LobbySceneLike)._mapQualityWeights = p.qualityWeights || null
-      ; (this as LobbySceneLike)._mapCategoryWeights = p.categoryWeights || null
+    ; this._mapQualityWeights = p.qualityWeights || null
+      ; this._mapCategoryWeights = p.categoryWeights || null
   },
 
   initPlayersUI() {
-    const activeIds = new Set((this as LobbySceneLike).players.map((p: Player) => p.id))
+    const activeIds = new Set(this.players.map((p: Player) => p.id))
       ;["p1", "p2", "p3", "p4"].forEach((slotId) => {
         const cardEl = document.getElementById(`playerCard-${slotId}`)
         if (!cardEl) return
@@ -509,7 +509,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     const personalPanel = document.getElementById("personalPanel")
     const publicPanel = document.getElementById("publicPanel")
     if (leftSide && rightSide) {
-      const playerCount = (this as LobbySceneLike).players.length
+      const playerCount = this.players.length
       const leftSlots = playerCount <= 2 ? ["p1"] : ["p1", "p2"]
       const rightSlots = playerCount <= 1 ? [] : playerCount <= 2 ? ["p2"] : playerCount <= 3 ? ["p3"] : ["p3", "p4"]
 
@@ -526,7 +526,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       if (publicPanel) rightSide.appendChild(publicPanel)
     }
 
-    ; (this as LobbySceneLike).players.forEach((player: Player) => {
+    ; this.players.forEach((player: Player) => {
       const nameEl = document.getElementById(`name-${player.id}`)
       const avatarEl = document.getElementById(`avatar-${player.id}`)
       const cardEl = document.getElementById(`playerCard-${player.id}`)
@@ -534,7 +534,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         nameEl.textContent = player.name
       }
       if (avatarEl) {
-        ; (this as LobbySceneLike).updatePlayerAvatar(player.id, avatarEl)
+        ; this.updatePlayerAvatar(player.id, avatarEl)
       }
 
       if (cardEl) {
@@ -551,11 +551,11 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
             const input = document.createElement("input")
             input.type = "checkbox"
             input.id = toggleId
-            input.checked = (this as LobbySceneLike).isAiLlmEnabledForPlayer(player.id)
+            input.checked = this.isAiLlmEnabledForPlayer(player.id)
             input.addEventListener("change", () => {
-              ; (this as LobbySceneLike).aiLlmPlayerEnabled[player.id] = Boolean(input.checked)
-              Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches((this as LobbySceneLike).aiLlmPlayerEnabled)
-                ; (this as LobbySceneLike).writeLog(
+              ; this.aiLlmPlayerEnabled[player.id] = Boolean(input.checked)
+              Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches(this.aiLlmPlayerEnabled)
+                ; this.writeLog(
                   `${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`
                 )
             })
@@ -569,8 +569,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
             switchEl = input
           }
 
-          switchEl.checked = (this as LobbySceneLike).isAiLlmEnabledForPlayer(player.id)
-          if ((this as LobbySceneLike).isLanMode) {
+          switchEl.checked = this.isAiLlmEnabledForPlayer(player.id)
+          if (this.isLanMode) {
             switchEl.disabled = true
             const labelEl = switchEl.closest(".llm-player-switch")
             if (labelEl) labelEl.classList.add("llm-switch-disabled")
@@ -597,15 +597,15 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         }
       }
 
-      ; (this as LobbySceneLike).playerHistoryPanels[player.id] = document.getElementById(`history-${player.id}`)
+      ; this.playerHistoryPanels[player.id] = document.getElementById(`history-${player.id}`)!
     })
 
-      ; (this as LobbySceneLike).refreshPlayerHistoryUI()
-      ; (this as LobbySceneLike).updatePlayerCharNames()
+      ; this.refreshPlayerHistoryUI()
+      ; this.updatePlayerCharNames()
   },
 
   updatePlayerAvatar(playerId: string, avatarEl: HTMLElement) {
-    const player = (this as LobbySceneLike).players.find((p: Player) => p.id === playerId)
+    const player = this.players.find((p: Player) => p.id === playerId)
     if (!player || !avatarEl) return
 
     if (player.isHuman) {
@@ -616,8 +616,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       }
     }
 
-    if ((this as LobbySceneLike).aiCharacterAssignments && (this as LobbySceneLike).aiCharacterAssignments[playerId]) {
-      const assign = (this as LobbySceneLike).aiCharacterAssignments[playerId]
+    if (this.aiCharacterAssignments && this.aiCharacterAssignments[playerId]) {
+      const assign = this.aiCharacterAssignments[playerId]
       const charData = getCharacterById(assign.characterId)
       if (charData && charData.avatar) {
         avatarEl.innerHTML = `<img src="${charData.avatar}" alt="${charData.name}" class="avatar-img">`
@@ -629,7 +629,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
   },
 
   isAiLlmEnabledForPlayer(playerId: string): boolean {
-    return Boolean((this as LobbySceneLike).aiLlmPlayerEnabled && (this as LobbySceneLike).aiLlmPlayerEnabled[playerId])
+    return Boolean(this.aiLlmPlayerEnabled && this.aiLlmPlayerEnabled[playerId])
   },
 
   initPreviewFilterOptions() {
@@ -638,18 +638,18 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       .concat(categories.map((category: string) => `<option value="${category}">${category}</option>`))
       .join("")
 
-      ; ((this as LobbySceneLike).dom.previewCategorySelect as HTMLElement).innerHTML = options
-      ; ((this as LobbySceneLike).dom.bidInput as HTMLInputElement).step = "1"
-      ; ((this as LobbySceneLike).dom.bidInput as HTMLInputElement).min = "0"
+      ; (this.dom.previewCategorySelect as HTMLElement).innerHTML = options
+      ; (this.dom.bidInput as HTMLInputElement).step = "1"
+      ; (this.dom.bidInput as HTMLInputElement).min = "0"
   },
 
   renderShopContent() {
     if (typeof MobaoShopPage !== "undefined") {
       MobaoShopPage.init({
-        onPurchase: (result: { ok?: boolean; newMoney: number }) => {
+        onPurchase: (result?: { ok?: boolean; message?: string; newMoney?: number }) => {
           if (result && result.ok) {
-            ; (this as LobbySceneLike).playerMoney = result.newMoney
-              ; (this as LobbySceneLike).syncItemManagerFromShop()
+            ; this.playerMoney = result.newMoney ?? 0
+              ; this.syncItemManagerFromShop()
             this.updateLobbyMoneyDisplay()
           }
         }
@@ -676,7 +676,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       }
     } catch (_e) { /* ignore */ }
 
-    ; (this as LobbySceneLike).itemManager.items.forEach((item: { id: string; count?: number }) => {
+    ; this.itemManager.items.forEach((item: { id: string; count?: number }) => {
       const storageKey = bridge.getItemStorageKey(item.id)
       const shopCount = inv[storageKey] || 0
 
@@ -876,7 +876,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
   },
 
   updatePlayerCharNames() {
-    ; (this as LobbySceneLike).players.forEach((player: Player) => {
+    ; this.players.forEach((player: Player) => {
       const avatarEl = document.getElementById(`avatar-${player.id}`)
       if (!avatarEl) return
       let charName = ""
@@ -884,7 +884,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         const char = getActiveCharacter()
         if (char && char.name) charName = char.name
       } else {
-        const charAssign = (this as LobbySceneLike).aiCharacterAssignments && (this as LobbySceneLike).aiCharacterAssignments[player.id]
+        const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[player.id]
         if (charAssign && charAssign.characterName) charName = charAssign.characterName
       }
       let wrap = avatarEl.parentElement

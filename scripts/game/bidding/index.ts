@@ -65,11 +65,11 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
       // processAiDecisions 内部会设置 this.aiRoundDecisionPromise（独立任务的 Promise.all）
       // 这里不要用返回值覆盖它
       await this.processAiDecisions()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[kickoffAiRoundDecisions] ERROR:", error)
-      if (error && error.message === "PAUSE_CANCELLED") return
-      const message = error && error.message ? error.message : "AI回合初始化失败"
-      this.writeLog(`AI回合初始化异常：${message}`)
+      const errMsg = error instanceof Error ? error.message : String(error)
+      if (errMsg === "PAUSE_CANCELLED") return
+      this.writeLog(`AI回合初始化异常：${errMsg}`)
     }
     // indicator 由 processAiDecisions 中的 Promise.all 完成后隐藏
   },
@@ -102,24 +102,24 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
 
     this.closeItemDrawer()
     this.hideInfoPopup()
-    this.keypadValue = String(Math.max(0, Math.round(Number(this.dom.bidInput.value) || 0)))
+    this.keypadValue = String(Math.max(0, Math.round(Number((this.dom.bidInput as HTMLInputElement | null)?.value) || 0)))
     this.syncBidKeypadScreen()
     this.updateKeypadDirectHint()
-    this.dom.bidKeypad.classList.remove("hidden")
+    this.dom.bidKeypad?.classList.remove("hidden")
     if (this.input) {
-      this.input.enabled = false
+      (this.input as Phaser.InputPlugin & { enabled: boolean }).enabled = false
     }
   },
 
   closeBidKeypad(): void {
-    this.dom.bidKeypad.classList.add("hidden")
+    this.dom.bidKeypad?.classList.add("hidden")
     if (this.input) {
-      this.input.enabled = true
+      (this.input as Phaser.InputPlugin & { enabled: boolean }).enabled = true
     }
   },
 
   syncBidKeypadScreen(): void {
-    this.dom.keypadScreen.textContent = this.keypadValue
+    if (this.dom.keypadScreen) this.dom.keypadScreen.textContent = this.keypadValue
     this.updateKeypadDirectHint()
   },
 
@@ -160,7 +160,8 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
 
     if (key === "ok") {
       const bid = Math.max(0, Math.round(Number(this.keypadValue) || 0))
-      this.dom.bidInput.value = String(bid)
+      const bidInput = this.dom.bidInput as HTMLInputElement | null
+      if (bidInput) bidInput.value = String(bid)
       this.closeBidKeypad()
       this.showGameConfirm(`确认出价 ${bid.toLocaleString()} ？`, () => this.playerBid())
       return
@@ -172,14 +173,14 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   },
 
   showGameConfirm(message: string, onConfirm: () => void, onCancel?: () => void): void {
-    this.dom.gameConfirmMsg.textContent = message
+    if (this.dom.gameConfirmMsg) this.dom.gameConfirmMsg.textContent = message
     this._gameConfirmCallback = onConfirm || null
     this._gameCancelCallback = onCancel || null
-    this.dom.gameConfirmOverlay.classList.remove("hidden")
+    this.dom.gameConfirmOverlay?.classList.remove("hidden")
   },
 
   hideGameConfirm(): void {
-    this.dom.gameConfirmOverlay.classList.add("hidden")
+    this.dom.gameConfirmOverlay?.classList.add("hidden")
     this._gameConfirmCallback = null
     this._gameCancelCallback = null
   },
@@ -208,7 +209,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
         this.playerRoundBid = 0
         this.writeLog(reason === "timeout" ? "回合超时：玩家本轮出价记为 0。" : "玩家未提交出价，本轮按 0 处理。")
         const myId = this.isLanMode ? this.lanMySlotId : "p2"
-        this.setPlayerBidReady(myId, true)
+        if (myId) this.setPlayerBidReady(myId, true)
       }
 
       // AI 决策已改为独立并发，不再需要等待
@@ -262,8 +263,8 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
       this.startRound()
       this.updateHud()
       this.writeLog(`进入第 ${this.round} 回合。`)
-    } catch (error) {
-      const message = error && error.message ? error.message : "未知异常"
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "未知异常"
       this.roundResolving = false
       this.writeLog(`回合结算异常：${message}`)
       this.updateHud()
@@ -324,7 +325,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
       }
 
       if (player.isHuman) {
-        const existingBid = this.lanHostBids[player.lanId]
+        const existingBid = player.lanId !== undefined ? this.lanHostBids[player.lanId] : undefined
         return { playerId: player.id, bid: existingBid !== undefined ? existingBid : 0 }
       }
 
@@ -335,7 +336,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   },
 
   getLastRoundBidMap(): Record<string, number> {
-    const map = {}
+    const map: Record<string, number> = {}
     this.players.forEach((player) => {
       const history = this.playerRoundHistory[player.id] || []
       const last = history.length > 0 ? history[history.length - 1] : null
@@ -350,6 +351,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
     for (let i = 0; i < this.players.length; i += 1) {
       const player = this.players[i]
       const bidInfo = roundBids.find((entry) => entry.playerId === player.id)
+      if (!bidInfo) continue
       this.setPlayerBidDisplay(player.id, bidInfo.bid, i + 1)
       this.writeLog(`${player.name} 本轮出价：${bidInfo.bid}`)
       if (AudioUI) {
@@ -401,7 +403,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
       return
     }
 
-    const inputValue = Number(this.dom.bidInput.value)
+    const inputValue = Number((this.dom.bidInput as HTMLInputElement | null)?.value || 0)
     if (!Number.isFinite(inputValue) || inputValue < 0) {
       this.writeLog("请输入有效出价金额（允许 0）。")
       return
@@ -416,7 +418,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
     this.playerBidSubmitted = true
 
     const myId = this.isLanMode ? this.lanMySlotId : "p2"
-    this.setPlayerBidReady(myId, true)
+    if (myId) this.setPlayerBidReady(myId, true)
     this.closeBidKeypad()
     this.writeLog(`玩家已提交本轮密封出价：${this.playerRoundBid}。提交后不可再用道具/技能。`)
     this.updateHud()
@@ -442,8 +444,8 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   },
 
   showSettleOverlay(html: string): void {
-    this.dom.settleCard.innerHTML = html
-    this.dom.settleOverlay.classList.remove("hidden")
+    if (this.dom.settleCard) this.dom.settleCard.innerHTML = html
+    this.dom.settleOverlay?.classList.remove("hidden")
 
     this.tweens.add({
       targets: this.dom.settleCard,

@@ -44,6 +44,7 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  *
  * @exports MobaoLan.LanIndexMixin - 联机大厅 Mixin，混入 Phaser Scene
  */
+
 import { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } from "../core/constants"
 import { savePlayerMoney, GAME_SETTINGS } from "../core/settings"
 import { patch as patchAppState } from "../core/app-state"

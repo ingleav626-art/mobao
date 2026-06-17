@@ -31,7 +31,21 @@ import type {
   CrossGameMemory,
   ReflectionResult,
   ConversationMessage,
+  ConversationBucketEntry,
 } from "./ai"
+import type {
+  LlmBridge,
+  LlmBridgeMethods,
+  LlmDecision,
+  LlmPlan,
+  LlmPlanResult,
+  LlmSettings,
+  LlmRoundPayload,
+  LlmTelemetry,
+  LlmErrorInfo,
+  AiModelConfig,
+  LlmChatResult,
+} from "./llm"
 import type {
   LlmBridge,
   LlmBridgeMethods,
@@ -48,6 +62,7 @@ import type {
 import type {
   Room,
   LanPlayer,
+  LanBridge,
   BidsPerPlayer,
   BidWinner,
   BidSubmitMessage,
@@ -64,6 +79,8 @@ export interface WarehouseSceneThis {
   input: Phaser.InputPlugin
   scene: Phaser.Scene["scene"]
   scale: Phaser.Scale.ScaleManager
+  game: { loop: { sleep(): void; wake(): void } }
+  game: Phaser.Game
 
   // 核心属性（来自 WarehouseCoreMixin）
   gridLayer: Phaser.GameObjects.Graphics | null
@@ -86,8 +103,112 @@ export interface WarehouseSceneThis {
   warehouseTrueValue: number
   playerMoney: number
   players: Player[]
-  aiPrivateIntel: Record<string, AiPrivateIntel>
-  dom: Record<string, HTMLElement | null>
+  aiPrivateIntel: Record<string, AiPrivateIntelPool>
+  dom: {
+    hudRound: HTMLElement | null
+    hudTimer: HTMLElement | null
+    hudMoney: HTMLElement | null
+    aiThinkingIndicator: HTMLElement | null
+    actionLog: HTMLElement | null
+    aiThoughtContent: HTMLElement | null
+    openSettingsBtn: HTMLElement | null
+    rerollBtn: HTMLElement | null
+    nextRoundBtn: HTMLElement | null
+    pauseRoundBtn: HTMLElement | null
+    aiLogicBtn: HTMLElement | null
+    aiLogicOverlay: HTMLElement | null
+    aiLogicPanel: HTMLElement | null
+    aiLogicCloseBtn: HTMLElement | null
+    aiLogicContent: HTMLElement | null
+    aiViewMessagesBtn: HTMLElement | null
+    battleRecordOverlay: HTMLElement | null
+    battleRecordPanel: HTMLElement | null
+    battleRecordCloseBtn: HTMLElement | null
+    battleRecordContent: HTMLElement | null
+    itemOutlineBtn: HTMLElement | null
+    itemQualityBtn: HTMLElement | null
+    itemDrawerToggleBtn: HTMLElement | null
+    itemDrawer: HTMLElement | null
+    itemDrawerCloseBtn: HTMLElement | null
+    itemDrawerList: HTMLElement | null
+    skillBtn: HTMLElement | null
+    bidInput: HTMLElement | null
+    settleBtn: HTMLElement | null
+    gameRoot: HTMLElement | null
+    gameConfirmOverlay: HTMLElement | null
+    gameConfirmMsg: HTMLElement | null
+    gameConfirmCancelBtn: HTMLElement | null
+    gameConfirmOkBtn: HTMLElement | null
+    infoPopupOverlay: HTMLElement | null
+    infoPopupTitle: HTMLElement | null
+    infoPopupCloseBtn: HTMLElement | null
+    infoPopupContent: HTMLElement | null
+    revealHintUp: HTMLElement | null
+    revealHintDown: HTMLElement | null
+    previewPopover: HTMLElement | null
+    previewTitle: HTMLElement | null
+    previewCloseBtn: HTMLElement | null
+    previewFilterRow: HTMLElement | null
+    previewCategorySelect: HTMLElement | null
+    previewHint: HTMLElement | null
+    previewList: HTMLElement | null
+    settleOverlay: HTMLElement | null
+    settleCard: HTMLElement | null
+    settlementPage: HTMLElement | null
+    settleWinnerName: HTMLElement | null
+    settleWinnerBid: HTMLElement | null
+    settleRevealedValue: HTMLElement | null
+    settleWinnerProfit: HTMLElement | null
+    settleSelfProfitRow: HTMLElement | null
+    settleSelfProfit: HTMLElement | null
+    keypadDirectHint: HTMLElement | null
+    settleProgressText: HTMLElement | null
+    settleProgressTrack: HTMLElement | null
+    settleProgressFill: HTMLElement | null
+    settleBackBtn: HTMLElement | null
+    settleReplayBtn: HTMLElement | null
+    settleReflectionStatus: HTMLElement | null
+    settingsOverlay: HTMLElement | null
+    settingsPanel: HTMLElement | null
+    settingsScroll: HTMLElement | null
+    settingsCloseBtn: HTMLElement | null
+    settingsResetBtn: HTMLElement | null
+    settingsSaveBtn: HTMLElement | null
+    settingsReturnLobbyBtn: HTMLElement | null
+    settingsStatusText: HTMLElement | null
+    settingLlmEnabled: HTMLElement | null
+    settingLlmMultiGameMemoryEnabled: HTMLElement | null
+    settingDeepseekApiKey: HTMLElement | null
+    settingDeepseekModel: HTMLElement | null
+    settingMaxTokens: HTMLElement | null
+    settingsTestDeepSeekBtn: HTMLElement | null
+    settingsLlmStatusText: HTMLElement | null
+    clearAiMemoryBtn: HTMLElement | null
+    clearAiContextBtn: HTMLElement | null
+    aiMemoryStatusText: HTMLElement | null
+    viewAiMemoryBtn: HTMLElement | null
+    exportAiMemoryBtn: HTMLElement | null
+    importAiMemoryBtn: HTMLElement | null
+    resetAiWalletBtn: HTMLElement | null
+    aiMemoryOverlay: HTMLElement | null
+    aiMemoryPanel: HTMLElement | null
+    aiMemoryCloseBtn: HTMLElement | null
+    aiMemoryContent: HTMLElement | null
+    settingLlmReflectionEnabled: HTMLElement | null
+    settingLlmThinkingEnabled: HTMLElement | null
+    settingLlmIndependentModelEnabled: HTMLElement | null
+    independentModelConfig: HTMLElement | null
+    configIndependentModelBtn: HTMLElement | null
+    aiModelConfigOverlay: HTMLElement | null
+    aiModelConfigCloseBtn: HTMLElement | null
+    aiModelConfigSaveBtn: HTMLElement | null
+    bidKeypad: HTMLElement | null
+    keypadCloseBtn: HTMLElement | null
+    keypadScreen: HTMLElement | null
+    personalPanelScroll: HTMLElement | null
+    publicInfoScroll: HTMLElement | null
+    [key: string]: HTMLElement | null
+  }
   pendingRevealHintTargets: Artifact[] | null
   pendingRevealHintText: string
   pendingRevealHintSeenIds: Set<string> | null
@@ -95,7 +216,7 @@ export interface WarehouseSceneThis {
     getCandidatesByRevealState(state: Record<string, unknown>): Artifact[]
     getLibraryStats(): { total: number }
     createRandomArtifactForSlot(options: Record<string, unknown>): Artifact
-    getSignalPriceStats(signals: unknown[]): { aggregate: unknown; latest: unknown }
+    getSignalPriceStats(signals: AiIntelSignal[]): { aggregate: AiSignalStats; latest: AiSignalStats }
   }
   _mapCategoryWeights: Record<string, number> | null
   _mapQualityWeights: Record<string, number> | null
@@ -108,12 +229,9 @@ export interface WarehouseSceneThis {
   previewOpenTick: number
   roundTimerId: number | null
   settlementRunToken: number
-  activeSettlementSpinner: unknown
+  activeSettlementSpinner: Phaser.GameObjects.GameObject | null
   moneySettledRunToken: number | null
   _lastDisplayedMoney: number | null
-  playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>
-  playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>
-  playerHistoryPanels: Record<string, unknown>
   deepSeekTesting: boolean
 
   // 管理器属性
@@ -121,53 +239,52 @@ export interface WarehouseSceneThis {
     getSkillState(): Record<string, unknown>
     activateSkill(skillId: string): void
     deactivateSkill(skillId: string): void
-    onNewRound(round: number): void
+    onNewRound(round?: number): void
     resetForNewRun(): void
   }
   itemManager: {
     getItemState(): Record<string, unknown>
     useItem(itemId: string): void
+    items: Array<{ id: string; count?: number }>
   }
   // AI 属性（来自 AiWalletMixin）
   aiWallets: Record<string, number>
-  aiLlmPlayerEnabled: boolean
+  aiLlmPlayerEnabled: Record<string, boolean>
   aiFoldState: Record<string, boolean>
-  aiConversationByPlayer: Record<string, ConversationMessage[]>
+  aiConversationByPlayer: Record<string, ConversationBucketEntry[]>
   aiCrossGameMemory: Record<string, CrossGameMemory>
   runLogHistory: unknown[]
-  lastAiDecisionTelemetry: unknown
+  lastAiDecisionTelemetry: { mode: string; round: number; entries?: Array<Record<string, unknown>> } | null
   llmEverUsedThisRun: boolean
   aiReflectionState: string
   aiReflectionTotal: number
   aiReflectionCompleted: number
   _reflectionBeforeUnload: (() => void) | null
-  aiCrossGameMessagesByPlayer: Record<string, ConversationMessage[]>
+  aiCrossGameMessagesByPlayer: Record<string, ConversationMessage[][]>
   aiReflectionPending: Record<string, unknown>
   runSerial: number
   currentRunLog: {
     runNo?: number
     aiThoughtLogs?: unknown[]
+    actionLogs?: unknown[]
     roundLogsByRound?: Record<string, unknown>
     roundPanelTexts?: Record<string, string>
   }
   aiConversationCache: Record<string, unknown>
   pendingNextRunAiSummaryByPlayer: Record<string, unknown>
   aiEngine: AuctionAiEngine | null
-  aiLlmRoundPlans: Record<string, LlmPlan | null>
-  aiRoundDecisionPromise: Promise<void> | null
-  lastAiIntelActions: Record<string, unknown>
-  isAiMultiGameMemoryEnabled: boolean
-  pendingSettlementSummary: Record<string, unknown> | null
+  pendingSettlementSummary: string | null
   _aiMemoryTouchBound: boolean
 
   // AI 属性（来自 AiIntelMixin）
   aiResourceState: Record<string, { skills: Record<string, number>; items: Record<string, number> }>
-  aiRoundEffects: unknown
-  lastAiIntelActions: unknown[]
-  aiLlmRoundPlans: unknown
+  aiRoundEffects: Record<string, unknown>
+  lastAiIntelActions: Array<{ playerId: string; playerName: string; actionType: string; actionId: string; revealed: number; detail: string; score: number; effectTag: string; signalStats: AiSignalStats | null }>
+  aiLlmRoundPlans: Record<string, LlmPlanResult | null>
+  aiRoundDecisionPromise: Promise<void> | null
   highValuePriceThreshold: number | null
-  aiCharacterAssignments: Record<string, { characterId: string; skillId: string; skillName: string; passive: boolean; characterName?: string }>
-  aiErrorCorrectionHistory: unknown[]
+  aiCharacterAssignments: Record<string, { characterId: string; skillId: string; skillName: string; passive: PassiveEffect | null; characterName?: string }>
+  aiErrorCorrectionHistory: Record<string, Array<{ error: string; aiResponse: string; at: number }>>
 
   // 联机属性（来自 LanIndexMixin）
   isLanMode: boolean
@@ -177,7 +294,7 @@ export interface WarehouseSceneThis {
   lanMySlotId: string | null
   lanRoom: Room | null
   lanPlayers: LanPlayer[]
-  lanAiPlayers: unknown[]
+  lanAiPlayers: (LanPlayer & { llm?: boolean })[]
   lanAiLlmEnabled: boolean
   lanIdToSlotId: Record<string, string>
   slotIdToLanId: Record<string, string>
@@ -244,18 +361,20 @@ export interface WarehouseSceneThis {
   battleRecordReplayActive: boolean
   battleRecordReplayRecordId: string | null
   battleRecordLogView: {
-    round: number
-    bids: Record<string, number>
-    winner: string
-    winnerBid: number
+    round?: number
+    bids?: Record<string, number>
+    winner?: string
+    winnerBid?: number
     page?: number
     recordId?: string
   } | null
 
   // 结算属性（来自 SettlementManagerMixin）
   settlementSession: {
-    runToken: number | string
-    phase: string
+    runToken?: number | string
+    phase?: string
+    winnerId?: string
+    winnerName?: string
     winnerPlayer?: Player
     winnerBid?: number
     reasonText?: string
@@ -265,7 +384,7 @@ export interface WarehouseSceneThis {
     selfProfit?: number
   } | null
   settlementRunToken: number | string | null
-  activeSettlementSpinner: HTMLElement | null
+  activeSettlementSpinner: Phaser.GameObjects.GameObject | null
   isSettlementRevealMode: boolean
   settlementRevealSkipRequested: boolean
   settlementRevealRunning: boolean
@@ -276,8 +395,8 @@ export interface WarehouseSceneThis {
     intel: unknown
   }>
   publicInfoEntries: Array<{
-    playerId: string
-    info: unknown
+    source: string
+    text: string
   }>
   currentPublicEvent: {
     category: string
@@ -293,34 +412,24 @@ export interface WarehouseSceneThis {
     thought: string
     timestamp: number
   }>
-  aiThoughtLogs: Array<{
-    playerId: string
-    thought: string
-    timestamp: number
-  }>
   settlementPreRevealed: boolean
 
   // AI 决策属性
   _aiDecisionSummaryWaiting: boolean
-  aiConversationCache: Record<string, unknown[]>
-  aiRoundDecisionPromise: Promise<void> | null
-
-  // LLM 属性
-  lastAiIntelActions: Record<string, unknown>
-  aiLlmRoundPlans: Record<string, LlmPlan | null>
-  aiRoundEffects: Record<string, unknown>
 
   // 联机属性
   lanHostBids: Record<string, number>
   lanHostWallets: Record<string, number>
-  _pauseSnapshotTimeLeft: number
-
   // Lobby 属性（来自 CharacterSelectMixin）
   _carryItems: CarryItem[]
   _MAX_CARRY_ITEMS: number
   _carryPickerEl: HTMLElement | null
   _autoReplenish: boolean
-  _live2dVideoState: boolean
+  _live2dVideoState: {
+    running: boolean
+    rafId: number | null
+    loadTimeout: ReturnType<typeof setTimeout> | null
+  } | null
   characterPageEl: HTMLElement | null
   selectedCharacter: Character | null
   keypadValue: string
@@ -343,7 +452,7 @@ export interface WarehouseSceneThis {
   preloadArtifactImages(): void
   startNewRun(): void
   startRound(): void
-  resolveRoundBids(reason: string): void
+  resolveRoundBids(reason?: string, forceSettle?: boolean): Promise<void>
   handleBidSubmit(): void
   settleCurrentRun(): void
   renderItemDrawer(): void
@@ -354,28 +463,28 @@ export interface WarehouseSceneThis {
   drawGridLines(): void
 
   // 仓库方法（来自 WarehouseCoreMixin）
-  findFirstEmptySlot(w: number, h: number): { x: number; y: number } | null
-  placeItem(item: Artifact, x: number, y: number): void
+  findFirstEmptySlot(occupancy: boolean[][]): { col: number; row: number } | null
+  placeItem(item: Artifact, slot: { col: number; row: number }, occupancy: boolean[][]): void
   renderItem(item: Artifact): void
   isInBoundsCell(x: number, y: number): boolean
-  onArtifactClicked(item: Artifact): void
+  onArtifactClicked(item: Artifact, pointer: { x: number; y: number }): void
   renderSettlementItemPreview(item: Artifact): void
   getItemKnownText(item: Artifact): string
 
   // 揭示方法（来自 WarehouseRevealMixin）
-  pickRevealTargets(item: Artifact, count: number): Artifact[]
-  revealOutline(item: Artifact): void
-  showRevealScrollHintsForTargets(targets: Artifact[]): void
-  pickBottomCellFromTargets(targets: Artifact[]): { x: number; y: number } | null
-  revealQualityCell(item: Artifact, cell: { x: number; y: number }): void
+  pickRevealTargets(opts: { mode: string; count: number; category: string | null; allowCategoryFallback: boolean; sortStrategy: string | null }): Artifact[]
+  revealOutline(item: Artifact, options?: Record<string, unknown>): void
+  showRevealScrollHintsForTargets(targets: Artifact[], message: string): void
+  pickBottomCellFromTargets(targets: Artifact[]): { x: number; y: number; col: number; row: number } | null
+  revealQualityCell(item: Artifact, options?: Record<string, unknown>): void
   revealCell(x: number, y: number): void
-  renderQualityVisual(item: Artifact): void
+  renderQualityVisual(item: Artifact, options?: Record<string, unknown>): void
   playFullRevealEffect(item: Artifact): void
-  revealArtifactFully(item: Artifact): void
+  revealArtifactFully(item: Artifact, options?: Record<string, unknown>): { ok: boolean; item?: Artifact; message: string }
   playOutlineRevealEffect(item: Artifact): void
-  syncQualityMarkersForOutlinedItem(item: Artifact): void
+  syncQualityMarkersForOutlinedItem(item: Artifact, options?: Record<string, unknown>): void
   playQualityRevealEffect(item: Artifact): void
-  clearQualityVisual(item: Artifact): void
+  clearQualityVisual(item: Artifact, keepImage?: boolean): void
 
   // 预览方法（来自 WarehousePreviewMixin）
   applyPreviewPosition(): void
@@ -411,21 +520,21 @@ export interface WarehouseSceneThis {
   loadAiWalletsFromStorage(): void
 
   // AI 方法（来自 AiIntelMixin）
-  updateAiIntel(playerId: string, intel: AiPrivateIntel): void
-  getAiIntel(playerId: string): AiPrivateIntel | undefined
+  updateAiIntel(playerId: string, intel: AiPrivateIntelPool): void
+  getAiIntel(playerId: string): AiPrivateIntelPool | undefined
   summarizeIntel(playerId: string): IntelSummary
   getAiIntelSummary(playerId: string): IntelSummary
   ensureAiPrivateIntel(playerId: string): AiPrivateIntelPool
-  revealOutlineBatch(count: number, category: string, allowCategoryFallback: boolean, sortStrategy: string): unknown
-  revealQualityBatch(count: number, category: string, allowCategoryFallback: boolean, sortStrategy: string): unknown
-  revealArtifactFullyBatch(options: { count: number; sortStrategy: string; category: string; allowCategoryFallback: boolean }): unknown
-  revealPrivateIntelBatch(playerId: string, mode: string, count: number, category: string, allowCategoryFallback: boolean, sortStrategy: string): unknown
-  revealPrivateIntelFully(playerId: string, options: { count: number; sortStrategy: string; category: string; allowCategoryFallback: boolean }): unknown
-  buildAiPrivateSignal(playerId: string, item: Artifact, mode: string): unknown
+  revealOutlineBatch(count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string | null): unknown
+  revealQualityBatch(count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string | null): unknown
+  revealArtifactFullyBatch(options: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }): unknown
+  revealPrivateIntelBatch(playerId: string, mode: string, count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string): unknown
+  revealPrivateIntelFully(playerId: string, options: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }): unknown
+  buildAiPrivateSignal(playerId: string, item: Artifact, mode: string): AiIntelSignal
   ensureAiHighValueTrack(playerId: string, item: Artifact): { trackId: string; created: boolean } | null
-  updateAiItemKnowledge(playerId: string, item: Artifact, signal: unknown, mode: string): unknown
-  buildTrackCandidatePreview(revealState: unknown): unknown
-  pickPrivateRevealTargets(options: { playerId: string; mode: string; count: number; category: string; allowCategoryFallback: boolean; sortStrategy: string }): Artifact[]
+  updateAiItemKnowledge(playerId: string, item: Artifact, signal: { sampleCell?: { x: number; y: number } } | null, mode: string): AiItemKnowledge & { trackUpdate?: { trackId: string; revealLevel: string; confirmed: { quality: string; category: string; exactArtifact: string | null }; candidates: { total: number; truncated: boolean } } }
+  buildTrackCandidatePreview(revealState: { qualityKey: string | null; category: string | null; sizeTag: string | null }): { total: number; truncated: boolean; list: Artifact[] }
+  pickPrivateRevealTargets(options: { playerId: string; mode: string; count: number; category: string; allowCategoryFallback?: boolean; sortStrategy: string }): Artifact[]
   getHighValuePriceThreshold(): number
   isHighValueArtifact(item: Artifact): boolean
   ensureAiItemKnowledge(playerId: string, itemId: string): AiItemKnowledge
@@ -436,15 +545,15 @@ export interface WarehouseSceneThis {
   updatePlayerAvatar(playerId: string, avatarEl: HTMLElement): void
   refreshAllPlayerAvatars(): void
   getPlayerById(playerId: string): Player | null
-  buildNeighborSnapshot(playerId: string, cell: unknown): unknown
+  buildNeighborSnapshot(playerId: string, cell: { x: number; y: number } | null): { 上: string; 下: string; 左: string; 右: string; 左上: string; 右上: string; 左下: string; 右下: string } | null
   scanNeighborIntelAroundCell(playerId: string, x: number, y: number): void
   markAllItemCellsAsOccupied(playerId: string, item: Artifact): void
   scanItemBoundaryNeighbors(playerId: string, item: Artifact): void
   buildAiAggregateIntelBlock(playerId: string): unknown
   buildAiHighValueTrackBlock(playerId: string): unknown
-  getAiResourceSnapshot(playerId: string): unknown
-  getAiAvailableActionState(playerId: string): unknown
-  buildAiPrivateRevealContext(playerId: string, item: Artifact, mode: string): unknown
+  getAiResourceSnapshot(playerId: string): { skills: Record<string, number>; items: Record<string, number> }
+  getAiAvailableActionState(playerId: string): { availableSkillIds: string[]; availableItemIds: string[]; availableSkillNames: string[]; availableItemNames: string[] }
+  buildAiPrivateRevealContext(playerId: string): { revealOutline: (opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }) => unknown; revealQuality: (opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string }) => unknown; revealAll: (opts: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }) => unknown }
   getActionDefById(actionId: string): ActionDef
 
   // AI 方法（来自 AiMemoryMixin）
@@ -452,7 +561,7 @@ export interface WarehouseSceneThis {
   getAiMemory(playerId: string): CrossGameMemory[]
   getAiMemoryStorageKey(): string
   loadAiMemoryFromStorage(): AiMemoryStorage | null
-  ensureAiConversationBucket(playerId: string): unknown[]
+  ensureAiConversationBucket(playerId: string): ConversationBucketEntry[]
   updateLastAiRoundResult(playerId: string, result: unknown): void
   getQualityCounts(): Record<string, number>
   getTotalOccupiedCells(): number
@@ -470,7 +579,7 @@ export interface WarehouseSceneThis {
   clearBids(): void
 
   // 联机方法（来自 LanIndexMixin）
-  bindLanEvents(): void
+  bindLanEvents(bridge: LanBridge, ctx: Record<string, unknown>): void
   lanStartGame(): void
   lanBroadcastBid(bid: number): void
   lanHandleBidSubmit(msg: BidSubmitMessage): void
@@ -485,8 +594,8 @@ export interface WarehouseSceneThis {
   syncPauseButton(): void
   hideLanPauseOverlay(): void
   showLanPauseOverlay(): void
-  showLanRestartVoteDialog(): void
-  showLanRestartDeclinedDialog(): void
+  showLanRestartVoteDialog(hostName: string): void
+  showLanRestartDeclinedDialog(declinerName: string): void
   removeLanRestartDialog(): void
   enterLanRoom(): void
   exitLanRoom(): void
@@ -494,28 +603,28 @@ export interface WarehouseSceneThis {
   lanBuildFullSyncData(targetPlayerId: string): unknown
   lanRestoreWarehouseFromSync(syncData: unknown): void
   lanResolveRound(reason: string): void
-  lanComputeAiBids(): unknown
-  lanOnRoundStart(msg: unknown): void
+  lanComputeAiBids(): Record<string, number>
+  lanOnRoundStart(msg: { round: number; currentBid?: number; ts?: number; roundSeconds?: number }): void
   lanBroadcastRoundStart(): void
   startLanRun(): void
   lanOnAllBidsIn(msg: unknown): Promise<void>
   lanOnRoundTimeout(): Promise<void>
-  lanOnRoundResult(msg: unknown): void
-  lanDoFinishAuction(winner: unknown, mode: string): void
+  lanOnRoundResult(msg: { bids?: Array<{ playerId: string; bid: number }> }): void
+  lanDoFinishAuction(winner: { playerId: string; bid: number }, mode: string): void
   lanOnSettle(msg: unknown): void
   lanOnSettleFinal(msg: unknown): void
-  lanOnRestartGo(): void
+  lanOnRestartGo(msg: RoomMessage): void
   lanOnFullSync(syncData: unknown): void
-  lanAttemptReconnect(playerId: string, roomCode: string, playerName: string, isHost: boolean): void
+  lanAttemptReconnect(): void
   startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB: HTMLVideoElement): void
   stopLanLive2dLoop(): void
-  toggleLanPause(): void
+  toggleLanPause(pause: boolean): void
 
   // 结算方法（来自 SettlementManagerMixin）
   enterSettlementPage(winnerPlayer: Player, winnerBid: number, reasonText: string): void
   exitSettlementPage(): void
   cancelSettlementReveal(): void
-  setSettlementProgress(text: string, progress: number): void
+  setSettlementProgress(text: string, progress?: number): void
   updateSettlementPanelMetrics(revealedValue: number, winnerProfit: number): void
   showSelfProfit(selfProfit: number, label: string): void
   playSettlementFinalEffect(winnerProfit: number): void
@@ -557,25 +666,26 @@ export interface WarehouseSceneThis {
   renderCollectionGrid(): void
   renderCarryItems(): void
   showPlayerInfoPopover(title: string, htmlContent: string, x: number, y: number): void
+  positionPlayerInfoPopover(x: number, y: number): void
   hideInfoPopup(): void
   updateKeypadDirectHint(): void
   waitUntilResumed(): Promise<void>
   extractAiDecisionObject(response: string): { bid?: number | string; skill?: string; item?: string; thought?: string } | null
-  finishAuction(): void
+  finishAuction(winner: { playerId: string; bid: number }, mode: string): void
   recordPlayerUsage(playerId: string, actionId: string): void
   saveAiMemoryToStorage(): void
   syncBidKeypadScreen(): void
   _stopLive2dLoop(): void
-  closeSettingsOverlay(): void
-  formatAiIntelActionPublicLine(playerId: string, action: unknown): string
-  _rebuildCustomSelect(el: HTMLElement): void
+  closeSettingsOverlay(keepStatus?: boolean, keepInitial?: boolean): void
+  formatAiIntelActionPublicLine(entry: { playerId: string; playerName: string; actionType: string; actionId: string; revealed: number; detail: string; score: number; effectTag: string; signalStats: AiSignalStats | null }): string
+  _rebuildCustomSelect(el: HTMLSelectElement): void
   closeCarryItemPicker(): void
-  recordRoundHistory(): void
-  renderQualityVisual(item: Artifact): void
+  recordRoundHistory(roundBids: Array<{ playerId: string; bid: number }>): void
+  renderQualityVisual(item: Artifact, options?: Record<string, unknown>): void
   _handleCardKeydown(event: KeyboardEvent): void
-  requestAiLlmFollowupBid(playerId: string, currentPlan: LlmPlan, toolSummary: string): Promise<LlmPlan | null>
+  requestAiLlmFollowupBid(player: Player, currentPlan: LlmPlanResult | null, toolSummary: string): Promise<LlmPlanResult | null>
   revealRoundBidsSequential(bids?: unknown[]): Promise<void>
-  normalizeAiBidValue(bid: number): number
+  normalizeAiBidValue(playerId: string, bid: number, wallet?: number | null): number
   exportAiMemoryToJson(): string
   importAiMemoryFromJson(json: string): void
 
@@ -594,7 +704,7 @@ export interface WarehouseSceneThis {
   getLastRoundBidMap(): Record<string, number>
   beginRunTracking(): void
   resetForNewRun(): void
-  applyCharacterToPlayer(playerId: string, character: unknown): void
+  applyCharacterToPlayer(): void
   spawnRandomItems(): void
   setupWarehouseAuction(): void
   drawUnknownWarehouse(): void
@@ -605,13 +715,13 @@ export interface WarehouseSceneThis {
   // AI 初始化方法
   initAiWallets(): void
   initAiIntelSystems(): void
-  buildAiIntelSnapshot(playerId: string): unknown
+  buildAiIntelSnapshot(): Record<string, IntelSummary>
   buildAIBids(): unknown
 
   // AI 决策方法（来自 LlmDecision）
-  buildAiDecisionPanelSnapshot(): unknown
+  buildAiDecisionPanelSnapshot(telemetry?: Record<string, unknown>): unknown
   renderAiLogicPanelForLlm(telemetry: unknown): string
-  loadAiModelConfigs(): void
+  loadAiModelConfigs(): Record<string, string>
   saveAiModelConfigs(configs: unknown): void
   closeAiModelConfigOverlay(): void
   renderAiModelConfigContent(): void
@@ -622,72 +732,92 @@ export interface WarehouseSceneThis {
   buildAiLlmRoundPayload(player: unknown): unknown
   buildAiIncrementalPayload(player: unknown): unknown
   buildAiFollowupRoundPayload(player: unknown, plan: unknown, summary: string): unknown
-  buildAiDecisionUserPrompt(payload: unknown, blocks?: string[]): string
-  buildAiDecisionMessages(payload: unknown): unknown[]
+  buildAiDecisionUserPrompt(payload: unknown, blocks?: string[], options?: { requestStage?: string; isFirstRound?: boolean }): string
+  buildAiDecisionMessages(payload: unknown, options?: { requestStage?: string; isFirstRound?: boolean; systemPrompt?: string; historyMessages?: unknown[]; extraBlocks?: unknown[] }): unknown[]
   normalizeAiLlmPlan(playerId: string, decision: unknown, raw: string, options?: { allowAction?: boolean }): LlmPlanResult
-  requestAiLlmPlan(player: unknown): Promise<unknown>
+  requestAiLlmPlan(player: unknown, options?: Record<string, unknown>): Promise<LlmPlanResult | null>
   buildAiToolResultSummary(result: unknown, actionType: string, actionId: string): string
-  requestAiLlmErrorCorrection(player: Player, plan: LlmPlan, error: LlmErrorInfo, history: LlmDecision[], messages: ConversationMessage[]): Promise<LlmPlan | null>
+  requestAiLlmFollowupBid(player: Player, plan: LlmPlan, summary: string): Promise<LlmPlanResult | null>
+  requestAiLlmErrorCorrection(player: Player, plan: LlmPlan, error: string, history: Array<{ error: string; aiResponse: string; at: number }>, messages: ConversationMessage[]): Promise<LlmPlanResult | null>
   prepareAiLlmRoundPlans(): void
   processAiDecisions(): void
-  pushAiRoundSummary(summary: unknown): void
-  buildAiActionConstraintBlock(playerId: string): unknown
+  pushAiRoundSummary(playerId: string, plan: LlmPlanResult): void
+  buildAiActionConstraintBlock(playerId: string): { canBid: boolean; canFold: boolean; availableSkills: string[]; availableItems: string[]; notes: string[]; _internal: { availableSkillIds: string[]; availableItemIds: string[]; availableSkillNames: string[]; availableItemNames: string[] } }
   requestChat(messages: unknown[], options?: unknown): Promise<unknown>
-  getAiModelConfig(): AiModelConfig | null
+  getAiModelConfig(aiIndex?: number): AiModelConfig | null
   isAiMultiGameMemoryEnabled(): boolean
-  getAiCrossGameMemoryCount(): number
-  getAiInGameHistoryCount(): number
+  getAiCrossGameMemoryCount(playerId?: string): number
+  getAiInGameHistoryCount(playerId?: string): number
   getAiFirstRoundExtraBlocks(playerId: string): string[]
 
   // AI 情报方法
-  processSingleAiIntelAction(playerId: string, plan: unknown, llmPlan: unknown, roundProgress: number, batchId: string, batchStartTime: number): unknown
-  buildToolEffect(playerId: string, actionType: string, actionId: string): unknown
-  executeAiIntelAction(playerId: string, plan: unknown): unknown
-  planIntelAction(playerId: string, available: unknown): unknown
-  getAiConversationMessages(playerId: string): unknown[]
-  ensureAiConversationBucket(playerId: string): void
+  processSingleAiIntelAction(player: Player, plan?: IntelActionPlan, llmPlan?: LlmPlanResult | null, roundProgress?: number, batchId?: string, batchStartTime?: number): Promise<void>
+  buildToolEffect(args: { playerId: string; actionType: string; actionId: string; roundProgress: number; intelSummary: IntelSummary; signalStats: AiSignalStats | null; planScore: number }): ToolEffect
+  executeAiIntelAction(playerId: string, plan: IntelActionPlan): RevealResult & { signalStats?: { aggregate: AiSignalStats; latest: AiSignalStats } }
+  planIntelAction(args: { playerId: string; round: number; maxRounds: number; intelSummary: IntelSummary; resources: { skills: Record<string, number>; items: Record<string, number> } }): IntelActionPlan
+  getAiConversationMessages(playerId: string): ConversationMessage[]
   getItemInfo(itemId: string): unknown
 
   // AI 记忆方法
   loadAiMemoryFromStorage(): AiMemoryStorage | null
   setupAiMemoryTouchScroll(): void
-  getAiMemoryStorageKey(playerId: string): string
-  ensureAiCrossGameMemory(): void
+  ensureAiCrossGameMemory(playerId: string): CrossGameMemory
   isAiReflectionEnabled(): boolean
   updateLastAiRoundResult(playerId: string, result: unknown): void
   updateReflectionStatusUI(): void
 
   // 大厅方法（来自 LobbyIndexMixin）
-  showLobbyMain(): void
-  applyMapProfile(profileId: string): void
+  showLobbyMain(skipAnimation?: boolean): void
+  showLobbySubPage(page: string): void
+  openSettingsOverlay(): void
+  openCollectionOverlay(): void
+  openBattleRecordPanel(): void
+  openShopOverlay(): void
+  goToCharacterSelect(): void
+  showCharacterSelectPageWithMap(): void
+  showCharacterSelectPage(mapProfile: { name?: string; params?: Record<string, unknown> } | null): void
+  hideAllLobbySubPages(): void
+  startSoloGame(): void
+  carouselScroll(dir: number): void
+  renderCarousel(): void
+  renderMapDetail(): void
+  initLanLobby(): void
+  initPlayersUI(): void
+  updatePlayerAvatar(playerId: string, avatarEl: HTMLElement | null): void
+  isAiLlmEnabledForPlayer(playerId: string): boolean
+  refreshPlayerHistoryUI(): void
+  updatePlayerCharNames(): void
+  bindLobbyEvents(): void
+  applyMapProfile(profileId?: string): void
   closeCollectionOverlay(): void
   initCollectionPanel(): void
   getCollectionCategories(): unknown[]
   getQualityCounts(): unknown
   hidePlayerInfoPopover(): void
   hideInfoPopup(): void
+  _carouselOffset: number
 
   // 角色选择方法
-  renderSelectedCharacterPreview(characterId: string): void
+  renderSelectedCharacterPreview(): void
   confirmCharacterSelection(): void
   initCharacterSelect(): void
   renderCharacterList(): void
   bindCharacterSelectEvents(): void
   selectCharacter(id: string): void
-  _showCarryConfirm(): void
+  _showCarryConfirm(message: string, onConfirm: (() => void) | null, confirmText?: string): void
   _saveCarryItems(): void
   _loadCarryItems(): void
   openCarryItemPicker(): void
   removeCarryItem(itemId: string): void
-  executeReplenish(): void
-  calcReplenishCost(): number
+  executeReplenish(): { ok: boolean; message: string; newMoney?: number; need?: number; have?: number }
+  calcReplenishCost(): ReplenishCostResult
   _bindAutoReplenishToggle(): void
   _saveAutoReplenish(): void
   _loadAutoReplenish(): void
-  _destroyCustomSelect(): void
+  _destroyCustomSelect(el: HTMLSelectElement): void
   _cardGlowHandler(item: unknown): void
   bindCardGlowEffect(): void
-  _startLive2dLoop(characterId: string): void
+  _startLive2dLoop(src: string, videoA: HTMLVideoElement, videoB: HTMLVideoElement): void
   _doStartSoloGame(): void
   _lastRevealedValue: number
   _lastDisplayProfit: number
@@ -700,28 +830,28 @@ export interface WarehouseSceneThis {
   closeBattleRecordPanel(): void
   renderBattleRecordPanel(): void
   renderBattleRecordSummary(): void
-  renderBattleRecordLogView(record: unknown): void
+  renderBattleRecordLogView(record?: unknown): void
   getLastDecisionLog(round: number): unknown
   restoreWarehouseFromBattleRecord(record: unknown): void
   buildWarehouseSnapshotForRecord(): unknown
   openBattleRecordPanel(): void
 
   // 商店方法
-  _showCarryConfirm(): void
+  _showCarryConfirm(message: string, onConfirm: (() => void) | null, confirmText?: string): void
   _saveCarryItems(): void
   _loadCarryItems(): void
   openCarryItemPicker(): void
   removeCarryItem(itemId: string): void
-  executeReplenish(): void
-  calcReplenishCost(): number
+  executeReplenish(): { ok: boolean; message: string; newMoney?: number; need?: number; have?: number }
+  calcReplenishCost(): ReplenishCostResult
   _bindAutoReplenishToggle(): void
   _saveAutoReplenish(): void
   _loadAutoReplenish(): void
 
   // 竞价方法（来自 BiddingMixin）
   markRoundRanking(bids: unknown[]): void
-  buildRoundBids(): unknown
-  setPlayerBidDisplay(playerId: string, bid: number): void
+  buildRoundBids(): Array<{ playerId: string; bid: number }>
+  setPlayerBidDisplay(playerId: string, bid: number, order?: number): void
   setPlayerBidReady(slotId: string, ready: boolean): void
 
   // 仓库方法（来自 WarehouseCoreMixin）
@@ -738,4 +868,10 @@ export interface WarehouseSceneThis {
   playSfx(key: string): void
   playMusic(key: string): void
   stopMusic(): void
+  // 设置相关属性
+  settingsInputId(field: string): string
+  AI_MODEL_CONFIGS_STORAGE_KEY: string
+
+  // 出价相关属性
+  playerBid(): void
 }

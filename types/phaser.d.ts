@@ -45,6 +45,14 @@ declare namespace Phaser {
     alpha: number
     x: number
     y: number
+    destroyed: boolean
+    isDestroyed: boolean
+    active: boolean
+    visible: boolean
+    name: string
+    type: string
+    scene: Scene
+    data: any
   }
 
   interface Container extends GameObject {
@@ -67,26 +75,60 @@ declare namespace Phaser {
 
   interface Zone extends GameObject {}
 
+  interface Arc extends GameObject {
+    setRadius(radius: number): this
+    setStartAngle(start: number): this
+    setEndAngle(end: number): this
+    setAnticlockwise(anticlockwise: boolean): this
+    setFillStyle(color: number, alpha?: number): this
+    lineStyle(width: number, color: number, alpha?: number): this
+  }
+
+  interface Star extends GameObject {
+    setPointRadius(radius: number): this
+    setPoints(points: number, innerRadius?: number, outerRadius?: number): this
+    setFillStyle(color: number, alpha?: number): this
+    lineStyle(width: number, color: number, alpha?: number): this
+  }
+
+  interface Text extends GameObject {
+    setText(text: string): this
+    setStyle(style: Record<string, any>): this
+    setTextStyle(style: Record<string, any>): this
+    setFontSize(size: number): this
+    setColor(color: string): this
+    text: string
+  }
+
   interface Tween {
     stop(): void
   }
 
   interface TweenManager {
     add(config: Record<string, any>): Tween
+    killAll(): void
   }
 
   interface LoaderPlugin {
-    image(key: string, url: string): void
+    image(key: string, url: string): LoaderPlugin
     start(): void
-    on(event: string, callback: Function): void
+    on(event: string, callback: Function): LoaderPlugin
+    once(event: string, callback: Function): LoaderPlugin
   }
 
   interface InputPlugin {
     setDefaultCursor(cursor: string): void
+    enabled: boolean
   }
 
   interface TimePlugin {
     delayedCall(delay: number, callback: Function, args?: any[], scope?: any): any
+    removeAllEvents(): void
+  }
+
+  interface ScaleManager {
+    width: number
+    height: number
   }
 
   interface Scene {
@@ -96,12 +138,18 @@ declare namespace Phaser {
       image(x: number, y: number, key: string): Image
       container(x: number, y: number): Container
       zone(x: number, y: number, width: number, height: number): Zone
+      arc(x: number, y: number, radius: number, startAngle?: number, endAngle?: number, anticlockwise?: boolean, fillColor?: number, fillAlpha?: number): Arc
+      star(x: number, y: number, points: number, innerRadius?: number, outerRadius?: number, fillColor?: number, fillAlpha?: number): Star
+      text(x: number, y: number, text: string, style?: Record<string, any>): Text
+      circle(x: number, y: number, radius: number, fillColor?: number, fillAlpha?: number): GameObject
+      polygon(x: number, y: number, points: number[][], fillColor?: number, fillAlpha?: number): GameObject
     }
     textures: TextureManager
     load: LoaderPlugin
     tweens: TweenManager
     input: InputPlugin
     time: TimePlugin
+    scene: { [key: string]: any }
   }
 }
 

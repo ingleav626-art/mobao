@@ -38,7 +38,7 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  * @requires core/constants - 常量定义
  * @requires core/utils - 工具函数
  */
-import type { Artifact, ArtifactRevealState, QualityLevel, QualityConfig, RevealResult } from "../../../types/game"
+import type { Artifact, ArtifactDef, ArtifactRevealState, QualityLevel, QualityConfig, RevealResult } from "../../../types/game"
 
 /** Mixin this 类型：WarehouseScene 运行时完整接口（属性+方法） */
 interface WarehouseSceneLike {
@@ -142,7 +142,7 @@ export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
       return
     }
     const toLoad: string[] = []
-    ARTIFACT_LIBRARY.forEach((artifact: Artifact) => {
+    ARTIFACT_LIBRARY.forEach((artifact) => {
       const textureKey = `artifact-${artifact.key}`
       if (!(this as WarehouseSceneLike).textures.exists(textureKey)) {
         ; (this as WarehouseSceneLike).load.image(textureKey, ARTIFACT_IMAGE_BASE_PATH + artifact.key + ".png")
@@ -155,22 +155,22 @@ export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
       return
     }
 
-    console.log(`[藏品图片] 开始加载 ${toLoad.length} 张图片:`, toLoad)
+    console.log(`[藏品图片] 开始加载 ${toLoad.length} 张图片:`, toLoad);
 
-      ; (this as WarehouseSceneLike).load.on("progress", (value: number) => {
-        console.log(`[藏品图片] 加载进度: ${Math.round(value * 100)}%`)
-      })
+    (this as WarehouseSceneLike).load.on("progress", (value: number) => {
+      console.log(`[藏品图片] 加载进度: ${Math.round(value * 100)}%`)
+    });
 
-      ; (this as WarehouseSceneLike).load.on("complete", () => {
-        console.log("[藏品图片] 全部加载完成")
-        ARTIFACT_LIBRARY.forEach((artifact: Artifact) => {
-          const textureKey = `artifact-${artifact.key}`
-          const texture = (this as WarehouseSceneLike).textures.get(textureKey)
-          if (texture && texture.frames) {
-            texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
-          }
-        })
+    (this as WarehouseSceneLike).load.on("complete", () => {
+      console.log("[藏品图片] 全部加载完成")
+      ARTIFACT_LIBRARY.forEach((artifact) => {
+        const textureKey = `artifact-${artifact.key}`
+        const texture = (this as WarehouseSceneLike).textures.get(textureKey)
+        if (texture && texture.frames) {
+          texture.setFilter(Phaser.Textures.FilterMode.LINEAR)
+        }
       })
+    })
 
       ; (this as WarehouseSceneLike).load.on("load", (file: { key: string }) => {
         console.log(`[藏品图片] 已加载: ${file.key}`)
@@ -190,23 +190,23 @@ export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
    */
   drawUnknownWarehouse() {
     if ((this as WarehouseSceneLike).gridLayer) {
-      ; (this as WarehouseSceneLike).gridLayer.destroy()
+      ; (this as WarehouseSceneLike).gridLayer?.destroy()
     }
     if ((this as WarehouseSceneLike).revealCellLayer) {
-      ; (this as WarehouseSceneLike).revealCellLayer.destroy()
+      ; (this as WarehouseSceneLike).revealCellLayer?.destroy()
     }
 
     ; (this as WarehouseSceneLike).gridLayer = (this as WarehouseSceneLike).add.graphics()
 
     for (let col = 1; col < GRID_COLS; col++) {
       const x = MARGIN + col * CELL_SIZE
-        ; (this as WarehouseSceneLike).gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
-        ; (this as WarehouseSceneLike).gridLayer.lineBetween(x, MARGIN, x, MARGIN + GRID_ROWS * CELL_SIZE)
+        ; (this as WarehouseSceneLike).gridLayer!.lineStyle(1, 0x9f8a6a, 0.4)
+        ; (this as WarehouseSceneLike).gridLayer!.lineBetween(x, MARGIN, x, MARGIN + GRID_ROWS * CELL_SIZE)
     }
     for (let row = 1; row < GRID_ROWS; row++) {
       const y = MARGIN + row * CELL_SIZE
-        ; (this as WarehouseSceneLike).gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
-        ; (this as WarehouseSceneLike).gridLayer.lineBetween(MARGIN, y, MARGIN + GRID_COLS * CELL_SIZE, y)
+        ; (this as WarehouseSceneLike).gridLayer!.lineStyle(1, 0x9f8a6a, 0.4)
+        ; (this as WarehouseSceneLike).gridLayer!.lineBetween(MARGIN, y, MARGIN + GRID_COLS * CELL_SIZE, y)
     }
 
     ; (this as WarehouseSceneLike).revealCellLayer = (this as WarehouseSceneLike).add.graphics()
@@ -219,7 +219,7 @@ export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
 
   drawGridLines() {
     if (!(this as WarehouseSceneLike).gridLayer) return
-      ; (this as WarehouseSceneLike).gridLayer.clear()
+      ; (this as WarehouseSceneLike).gridLayer!.clear()
 
     const occupied = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
     for (const item of (this as WarehouseSceneLike).items) {
@@ -241,8 +241,8 @@ export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
         if (!leftOccupied || !rightOccupied) {
           const y1 = MARGIN + row * CELL_SIZE
           const y2 = MARGIN + (row + 1) * CELL_SIZE
-            ; (this as WarehouseSceneLike).gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
-            ; (this as WarehouseSceneLike).gridLayer.lineBetween(x, y1, x, y2)
+            ; (this as WarehouseSceneLike).gridLayer!.lineStyle(1, 0x9f8a6a, 0.4)
+            ; (this as WarehouseSceneLike).gridLayer!.lineBetween(x, y1, x, y2)
         }
       }
     }
@@ -255,8 +255,8 @@ export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
         if (!topOccupied || !bottomOccupied) {
           const x1 = MARGIN + col * CELL_SIZE
           const x2 = MARGIN + (col + 1) * CELL_SIZE
-            ; (this as WarehouseSceneLike).gridLayer.lineStyle(1, 0x9f8a6a, 0.4)
-            ; (this as WarehouseSceneLike).gridLayer.lineBetween(x1, y, x2, y)
+            ; (this as WarehouseSceneLike).gridLayer!.lineStyle(1, 0x9f8a6a, 0.4)
+            ; (this as WarehouseSceneLike).gridLayer!.lineBetween(x1, y, x2, y)
         }
       }
     }
@@ -299,7 +299,7 @@ export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
     //   - 藏品尺寸从1×1到3×2不等，需要矩形放置检测
 
     if ((this as WarehouseSceneLike).itemLayer) {
-      ; (this as WarehouseSceneLike).itemLayer.destroy()
+      ; (this as WarehouseSceneLike).itemLayer?.destroy()
     }
 
     ; (this as WarehouseSceneLike).itemLayer = (this as WarehouseSceneLike).add.container(0, 0)
@@ -456,7 +456,7 @@ export const WarehouseCoreMixin: ThisType<WarehouseSceneThis> = {
       qualityGlowTween: null
     }
 
-      ; (this as WarehouseSceneLike).itemLayer.add([silhouette, border, qualityMarkers, clickZone])
+      ; (this as WarehouseSceneLike).itemLayer!.add([silhouette, border, qualityMarkers, clickZone])
   },
 
   onArtifactClicked(item: Artifact, pointer: { x: number; y: number }) {
@@ -644,8 +644,8 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
     const results: { ok: boolean; item: Artifact; message: string }[] = []
     targets.forEach((item: Artifact) => {
       const result = this.revealArtifactFully(item)
-      if (result.ok) {
-        results.push(result)
+      if (result.ok && result.item) {
+        results.push({ ok: result.ok, item: result.item, message: result.message })
       }
     })
 
@@ -668,12 +668,12 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
     const cy = pixelY + height / 2
 
     if ((this as WarehouseSceneLike).dom && (this as WarehouseSceneLike).dom.gameRoot) {
-      ; (this as WarehouseSceneLike).dom.gameRoot.classList.remove("reveal-flash")
-      void (this as WarehouseSceneLike).dom.gameRoot.offsetWidth
-        ; (this as WarehouseSceneLike).dom.gameRoot.classList.add("reveal-flash")
+      ; (this as WarehouseSceneLike).dom.gameRoot!.classList.remove("reveal-flash")
+      void (this as WarehouseSceneLike).dom.gameRoot!.offsetWidth
+        ; (this as WarehouseSceneLike).dom.gameRoot!.classList.add("reveal-flash")
       setTimeout(() => {
         if ((this as WarehouseSceneLike).dom && (this as WarehouseSceneLike).dom.gameRoot) {
-          ; (this as WarehouseSceneLike).dom.gameRoot.classList.remove("reveal-flash")
+          ; (this as WarehouseSceneLike).dom.gameRoot!.classList.remove("reveal-flash")
         }
       }, 600)
     }
@@ -772,10 +772,10 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
 
   hideRevealScrollHints() {
     if ((this as WarehouseSceneLike).dom.revealHintUp) {
-      ; (this as WarehouseSceneLike).dom.revealHintUp.classList.add("hidden")
+      ; (this as WarehouseSceneLike).dom.revealHintUp!.classList.add("hidden")
     }
     if ((this as WarehouseSceneLike).dom.revealHintDown) {
-      ; (this as WarehouseSceneLike).dom.revealHintDown.classList.add("hidden")
+      ; (this as WarehouseSceneLike).dom.revealHintDown!.classList.add("hidden")
     }
     ; (this as WarehouseSceneLike).pendingRevealHintTargets = null
       ; (this as WarehouseSceneLike).pendingRevealHintText = ""
@@ -794,26 +794,28 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
   },
 
   refreshRevealScrollHints() {
-    if (!(this as WarehouseSceneLike).dom.gameRoot || !(this as WarehouseSceneLike).pendingRevealHintTargets || (this as WarehouseSceneLike).pendingRevealHintTargets.length === 0) {
+    const gameRoot = (this as WarehouseSceneLike).dom.gameRoot
+    const hintTargets = (this as WarehouseSceneLike).pendingRevealHintTargets
+    if (!gameRoot || !hintTargets || hintTargets.length === 0) {
       return
     }
 
-    const canvasEl = (this as WarehouseSceneLike).dom.gameRoot.querySelector("canvas")
-    const canvasRenderHeight = canvasEl ? canvasEl.getBoundingClientRect().height : (this as WarehouseSceneLike).dom.gameRoot.scrollHeight
+    const canvasEl = gameRoot.querySelector("canvas")
+    const canvasRenderHeight = canvasEl ? canvasEl.getBoundingClientRect().height : gameRoot.scrollHeight
     const scaleRatio = canvasRenderHeight > 0 ? canvasRenderHeight / CANVAS_NATIVE_HEIGHT : 1
 
-    const viewportTop = (this as WarehouseSceneLike).dom.gameRoot.scrollTop
-    const viewportBottom = viewportTop + (this as WarehouseSceneLike).dom.gameRoot.clientHeight
+    const viewportTop = gameRoot.scrollTop
+    const viewportBottom = viewportTop + gameRoot.clientHeight
 
-      ; (this as WarehouseSceneLike).pendingRevealHintTargets.forEach((item: Artifact) => {
+      ; hintTargets.forEach((item: Artifact) => {
         const top = (MARGIN + item.y * CELL_SIZE) * scaleRatio
         const bottom = (MARGIN + (item.y + item.h) * CELL_SIZE) * scaleRatio
         if (top < viewportBottom && bottom > viewportTop) {
-          ; (this as WarehouseSceneLike).pendingRevealHintSeenIds.add(item.id)
+          ; (this as WarehouseSceneLike).pendingRevealHintSeenIds!.add(item.id)
         }
       })
 
-    if ((this as WarehouseSceneLike).pendingRevealHintSeenIds.size >= (this as WarehouseSceneLike).pendingRevealHintTargets.length) {
+    if ((this as WarehouseSceneLike).pendingRevealHintSeenIds!.size >= hintTargets.length) {
       this.hideRevealScrollHints()
       return
     }
@@ -821,8 +823,8 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
     let hasAbove = false
     let hasBelow = false
 
-      ; (this as WarehouseSceneLike).pendingRevealHintTargets.forEach((item: Artifact) => {
-        if ((this as WarehouseSceneLike).pendingRevealHintSeenIds.has(item.id)) {
+      ; hintTargets.forEach((item: Artifact) => {
+        if ((this as WarehouseSceneLike).pendingRevealHintSeenIds!.has(item.id)) {
           return
         }
         const top = (MARGIN + item.y * CELL_SIZE) * scaleRatio
@@ -836,14 +838,14 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
 
     const baseTop = viewportTop + 8
     if ((this as WarehouseSceneLike).dom.revealHintUp) {
-      ; (this as WarehouseSceneLike).dom.revealHintUp.style.top = `${baseTop}px`
-        ; (this as WarehouseSceneLike).dom.revealHintUp.textContent = `${(this as WarehouseSceneLike).pendingRevealHintText}（上方）`
-        ; (this as WarehouseSceneLike).dom.revealHintUp.classList.toggle("hidden", !hasAbove)
+      ; (this as WarehouseSceneLike).dom.revealHintUp!.style.top = `${baseTop}px`
+        ; (this as WarehouseSceneLike).dom.revealHintUp!.textContent = `${(this as WarehouseSceneLike).pendingRevealHintText}（上方）`
+        ; (this as WarehouseSceneLike).dom.revealHintUp!.classList.toggle("hidden", !hasAbove)
     }
     if ((this as WarehouseSceneLike).dom.revealHintDown) {
-      ; (this as WarehouseSceneLike).dom.revealHintDown.style.top = `${baseTop + 36}px`
-        ; (this as WarehouseSceneLike).dom.revealHintDown.textContent = `${(this as WarehouseSceneLike).pendingRevealHintText}（下方）`
-        ; (this as WarehouseSceneLike).dom.revealHintDown.classList.toggle("hidden", !hasBelow)
+      ; (this as WarehouseSceneLike).dom.revealHintDown!.style.top = `${baseTop + 36}px`
+        ; (this as WarehouseSceneLike).dom.revealHintDown!.textContent = `${(this as WarehouseSceneLike).pendingRevealHintText}（下方）`
+        ; (this as WarehouseSceneLike).dom.revealHintDown!.classList.toggle("hidden", !hasBelow)
     }
 
     if (!hasAbove && !hasBelow) {
@@ -969,12 +971,13 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
     const cy = pixelY + height / 2
 
     if ((this as WarehouseSceneLike).dom && (this as WarehouseSceneLike).dom.gameRoot) {
-      ; (this as WarehouseSceneLike).dom.gameRoot.classList.remove("reveal-flash")
-      void (this as WarehouseSceneLike).dom.gameRoot.offsetWidth
-        ; (this as WarehouseSceneLike).dom.gameRoot.classList.add("reveal-flash")
+      const root = (this as WarehouseSceneLike).dom.gameRoot!
+        ; root.classList.remove("reveal-flash")
+      void root.offsetWidth
+        ; root.classList.add("reveal-flash")
       setTimeout(() => {
         if ((this as WarehouseSceneLike).dom && (this as WarehouseSceneLike).dom.gameRoot) {
-          ; (this as WarehouseSceneLike).dom.gameRoot.classList.remove("reveal-flash")
+          ; (this as WarehouseSceneLike).dom.gameRoot!.classList.remove("reveal-flash")
         }
       }, 600)
     }
@@ -1039,8 +1042,8 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
       areaW = item.w * CELL_SIZE
       areaH = item.h * CELL_SIZE
     } else {
-      pixelX = MARGIN + item.revealed.qualityCell.x * CELL_SIZE
-      pixelY = MARGIN + item.revealed.qualityCell.y * CELL_SIZE
+      pixelX = MARGIN + item.revealed.qualityCell!.x * CELL_SIZE
+      pixelY = MARGIN + item.revealed.qualityCell!.y * CELL_SIZE
       areaW = CELL_SIZE
       areaH = CELL_SIZE
     }
@@ -1049,12 +1052,13 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
     const cy = pixelY + areaH / 2
 
     if ((this as WarehouseSceneLike).dom && (this as WarehouseSceneLike).dom.gameRoot) {
-      ; (this as WarehouseSceneLike).dom.gameRoot.classList.remove("quality-reveal-flash")
-      void (this as WarehouseSceneLike).dom.gameRoot.offsetWidth
-        ; (this as WarehouseSceneLike).dom.gameRoot.classList.add("quality-reveal-flash")
+      const root = (this as WarehouseSceneLike).dom.gameRoot!
+        ; root.classList.remove("quality-reveal-flash")
+      void root.offsetWidth
+        ; root.classList.add("quality-reveal-flash")
       setTimeout(() => {
         if ((this as WarehouseSceneLike).dom && (this as WarehouseSceneLike).dom.gameRoot) {
-          ; (this as WarehouseSceneLike).dom.gameRoot.classList.remove("quality-reveal-flash")
+          ; (this as WarehouseSceneLike).dom.gameRoot!.classList.remove("quality-reveal-flash")
         }
       }, 700)
     }
@@ -1147,7 +1151,7 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
 
     const hasExistingImage = !!item.view.artifactImage
     const existingScale = hasExistingImage
-      ? { x: item.view.artifactImage.scaleX, y: item.view.artifactImage.scaleY }
+      ? { x: item.view.artifactImage!.scaleX, y: item.view.artifactImage!.scaleY }
       : null
 
     this.clearQualityVisual(item, hasExistingImage)
@@ -1269,15 +1273,15 @@ export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {
     const x = MARGIN + col * CELL_SIZE
     const y = MARGIN + row * CELL_SIZE
 
-      ; (this as WarehouseSceneLike).revealCellLayer.fillStyle(0xf1e6cc, 0.2)
-      ; (this as WarehouseSceneLike).revealCellLayer.fillRect(x, y, CELL_SIZE, CELL_SIZE)
+    ; (this as WarehouseSceneLike).revealCellLayer!.fillStyle(0xf1e6cc, 0.2)
+    ; (this as WarehouseSceneLike).revealCellLayer!.fillRect(x, y, CELL_SIZE, CELL_SIZE)
   }
 }
 
 export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
   positionPreview(canvasX: number, canvasY: number) {
     ; (this as WarehouseSceneLike).previewAnchor = { x: canvasX, y: canvasY }
-    const pop = (this as WarehouseSceneLike).dom.previewPopover
+    const pop = (this as WarehouseSceneLike).dom.previewPopover!
     pop.classList.remove("hidden")
       ; (this as WarehouseSceneLike).previewOpenTick = Date.now()
 
@@ -1285,7 +1289,7 @@ export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
   },
 
   applyPreviewPosition() {
-    const pop = (this as WarehouseSceneLike).dom.previewPopover
+    const pop = (this as WarehouseSceneLike).dom.previewPopover!
     if (pop.classList.contains("hidden") || !(this as WarehouseSceneLike).previewAnchor) {
       return
     }
@@ -1301,7 +1305,7 @@ export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
     const canvasX = (this as WarehouseSceneLike).previewAnchor.x
     const canvasY = (this as WarehouseSceneLike).previewAnchor.y
 
-    const root = (this as WarehouseSceneLike).dom.gameRoot
+    const root = (this as WarehouseSceneLike).dom.gameRoot!
     const pad = 10
     const maxPopoverHeight = Math.min(320, Math.max(180, root.clientHeight - pad * 2))
     pop.style.maxHeight = `${Math.round(maxPopoverHeight)}px`
@@ -1329,7 +1333,7 @@ export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
   },
 
   repositionPreview() {
-    if ((this as WarehouseSceneLike).dom.previewPopover.classList.contains("hidden")) {
+    if ((this as WarehouseSceneLike).dom.previewPopover!.classList.contains("hidden")) {
       return
     }
 
@@ -1340,11 +1344,11 @@ export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
 
   hidePreview() {
     if ((this as WarehouseSceneLike).dom.previewFilterRow) {
-      ; (this as WarehouseSceneLike).dom.previewFilterRow.style.display = "flex"
+      ; (this as WarehouseSceneLike).dom.previewFilterRow!.style.display = "flex"
     }
-    ; (this as WarehouseSceneLike).dom.previewPopover.classList.add("hidden")
-      ; (this as WarehouseSceneLike).dom.previewList.innerHTML = ""
-      ; (this as WarehouseSceneLike).dom.previewHint.textContent = ""
+    ; (this as WarehouseSceneLike).dom.previewPopover!.classList.add("hidden")
+      ; (this as WarehouseSceneLike).dom.previewList!.innerHTML = ""
+      ; (this as WarehouseSceneLike).dom.previewHint!.textContent = ""
       ; (this as WarehouseSceneLike).input.setDefaultCursor("default")
   },
 
@@ -1399,10 +1403,10 @@ export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
 
   renderPreviewCandidates(item: Artifact) {
     if ((this as WarehouseSceneLike).dom.previewFilterRow) {
-      ; (this as WarehouseSceneLike).dom.previewFilterRow.style.display = "flex"
+      ; (this as WarehouseSceneLike).dom.previewFilterRow!.style.display = "flex"
     }
-    ; (this as WarehouseSceneLike).dom.previewTitle.style.display = ""
-      ; (this as WarehouseSceneLike).dom.previewHint.style.display = ""
+    ; (this as WarehouseSceneLike).dom.previewTitle!.style.display = ""
+      ; (this as WarehouseSceneLike).dom.previewHint!.style.display = ""
     const qualityKey = item.revealed.qualityCell ? item.qualityKey : null
     const sizeTag = item.revealed.outline ? toSizeTag(item.w, item.h) : null
     const selectedCategory = ((this as WarehouseSceneLike).dom.previewCategorySelect as HTMLSelectElement).value
@@ -1419,11 +1423,11 @@ export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
     }
 
     const libStats = (this as WarehouseSceneLike).artifactManager.getLibraryStats()
-      ; (this as WarehouseSceneLike).dom.previewTitle.textContent = `可能藏品预览（候选 ${candidates.length}/${libStats.total}）`
-      ; (this as WarehouseSceneLike).dom.previewHint.textContent = `已知线索：${this.getItemKnownText(item)}；藏品库总数 ${libStats.total} 件；若仅有品质线索，候选会接近全库；默认按估算价从高到低。`
+      ; (this as WarehouseSceneLike).dom.previewTitle!.textContent = `可能藏品预览（候选 ${candidates.length}/${libStats.total}）`
+      ; (this as WarehouseSceneLike).dom.previewHint!.textContent = `已知线索：${this.getItemKnownText(item)}；藏品库总数 ${libStats.total} 件；若仅有品质线索，候选会接近全库；默认按估算价从高到低。`
 
     if (candidates.length === 0) {
-      ; (this as WarehouseSceneLike).dom.previewList.innerHTML = '<div class="preview-item">无符合候选</div>'
+      ; (this as WarehouseSceneLike).dom.previewList!.innerHTML = '<div class="preview-item">无符合候选</div>'
       return
     }
 
@@ -1439,20 +1443,20 @@ export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
       })
       .join("")
 
-      ; (this as WarehouseSceneLike).dom.previewList.innerHTML = html
+      ; (this as WarehouseSceneLike).dom.previewList!.innerHTML = html
     this.repositionPreview()
   },
 
   renderSettlementItemPreview(item: Artifact) {
     if ((this as WarehouseSceneLike).dom.previewFilterRow) {
-      ; (this as WarehouseSceneLike).dom.previewFilterRow.style.display = "none"
+      ; (this as WarehouseSceneLike).dom.previewFilterRow!.style.display = "none"
     }
-    ; (this as WarehouseSceneLike).dom.previewTitle.style.display = "none"
-      ; (this as WarehouseSceneLike).dom.previewHint.style.display = "none"
+    ; (this as WarehouseSceneLike).dom.previewTitle!.style.display = "none"
+      ; (this as WarehouseSceneLike).dom.previewHint!.style.display = "none"
     const imgSrc = `assets/images/artifacts/thumbs/${item.key}.png`
     const qualityColor = rgbHex(item.quality.color)
     const qualityLabel = item.quality.label || "未知"
-      ; (this as WarehouseSceneLike).dom.previewList.innerHTML = [
+      ; (this as WarehouseSceneLike).dom.previewList!.innerHTML = [
         '<article class="preview-item settlement-detail">',
         `<div class="preview-thumb" style="background: ${qualityColor}44;"><img src="${imgSrc}" alt="${item.name}" onerror="this.style.display='none'"/></div>`,
         '<div class="settlement-detail-content">',

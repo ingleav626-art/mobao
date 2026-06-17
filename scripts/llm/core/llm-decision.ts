@@ -10,7 +10,9 @@
 import { LLM_DECISION_SYSTEM_PROMPT } from './prompts.js'
 import { parseLlmError, showAiErrorToast, setPlayerLlmError, clearPlayerLlmErrors } from './llm-error.js'
 import type { Player } from "../../../types/game"
-import type { LlmSettings } from "../../../types/llm"
+import type { LlmSettings, AiModelConfig, LlmPlanResult, LlmChatResult, LlmPlan } from "../../../types/llm"
+import type { ConversationMessage, IntelActionPlan } from "../../../types/ai"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 interface RuleDecisionEntry {
   playerId: string
@@ -28,7 +30,6 @@ interface RuleDecisionEntry {
     spreadPenalty?: number
     uncertaintyPenalty?: number
     mood?: number
-    [key: string]: number
   }
   overheatRatio?: number
   overheatThreshold?: number
@@ -51,49 +52,6 @@ interface RoundBidEntry {
   playerId: string
   bid: number
   [key: string]: unknown
-}
-
-interface LlmPlanResult {
-  source: string
-  failed?: boolean
-  hasBidDecision?: boolean
-  bid: number
-  actionType: string
-  actionId: string
-  thought?: string
-  reasoningContent?: string
-  error?: string
-  model?: string
-  configuredModel?: string
-  controlMode?: string
-  folded?: boolean
-  actionExecuted?: boolean
-  toolActionId?: string
-  toolActionType?: string
-  systemPrompt?: string
-  userPrompt?: string
-  modelResponse?: string
-  toolResultSummary?: string
-  followupPrompt?: string
-  followupResponse?: string
-  followupError?: string
-  followupActionRejected?: string
-  correctionAttempt?: number
-  originalError?: string
-  errorCorrectionPrompt?: string
-  errorCorrectionResponse?: string
-  historyMessagesCount?: number
-  crossGameMemoryCount?: number
-  inGameHistoryCount?: number
-  historyMessagesPreview?: string
-  crossGameMemoryText?: string
-  cacheHitTokens?: number
-  cacheMissTokens?: number
-  cacheHitRate?: number
-  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; prompt_cache_hit_tokens?: number; prompt_cache_miss_tokens?: number } | null
-  elapsedMs?: number
-  rawSkill?: string
-  rawItem?: string
 }
 
 interface TelemetryEntry {
@@ -155,7 +113,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
     compactPanelText
   } = deps
 
-  const methods = {
+  const methods: ThisType<WarehouseSceneThis> = {
     canUseLlmDecision(): boolean {
       const provider = typeof this.getLlmProvider === "function" ? this.getLlmProvider() : null
       const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
@@ -201,7 +159,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
       return this.canUseLlmDecision() && this.isAiLlmEnabledForPlayer(playerId)
     },
 
-    getAiModelConfigForPlayer(playerId: string): Record<string, unknown> {
+    getAiModelConfigForPlayer(playerId: string): AiModelConfig | null {
       const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
       console.log(
         "[getAiModelConfigForPlayer] playerId:",
@@ -254,7 +212,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
       return -1
     },
 
-    async requestAiLlmPlan(player: Player, options: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+    async requestAiLlmPlan(player: Player, options: Record<string, unknown> = {}): Promise<LlmPlanResult | null> {
       const requestStartTime = Date.now()
       const batchId = String(options.batchId || "solo")
       const batchStartTime = Number(options.batchStartTime || requestStartTime)
@@ -272,11 +230,11 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           player,
           (options.followupContext || {}) as Record<string, unknown>,
           String(options.followupToolSummary || "")
-        )
+        ) as Record<string, unknown>
       } else if (isFirstRound) {
-        payload = this.buildAiLlmRoundPayload(player)
+        payload = this.buildAiLlmRoundPayload(player) as Record<string, unknown>
       } else {
-        payload = this.buildAiIncrementalPayload(player)
+        payload = this.buildAiIncrementalPayload(player) as Record<string, unknown>
       }
 
       const firstRoundBlocks =
@@ -295,7 +253,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
         typeof this.isAiMultiGameMemoryEnabled === "function" ? this.isAiMultiGameMemoryEnabled() : false
       const historyMessages: Array<Record<string, unknown>> =
         useMultiGameMemory && typeof this.getAiConversationMessages === "function"
-          ? this.getAiConversationMessages(player.id)
+          ? (this.getAiConversationMessages(player.id) as unknown as Array<Record<string, unknown>>)
           : []
       let crossGameMemoryCount = 0
       let inGameHistoryCount = 0
@@ -402,15 +360,15 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
             })
           })
         }
-        messages = [...playerCache, ...incrementalMessages]
+        messages = [...(Array.isArray(playerCache) ? playerCache as Array<Record<string, unknown>> : []), ...incrementalMessages]
       } else {
         messages = this.buildAiDecisionMessages(payload, {
           requestStage,
           isFirstRound,
           systemPrompt,
           historyMessages,
-          extraBlocks: options.extraBlocks || []
-        })
+          extraBlocks: Array.isArray(options.extraBlocks) ? options.extraBlocks : []
+        }) as Array<Record<string, unknown>>
       }
 
       try {
@@ -420,6 +378,14 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           console.log("[requestAiLlmPlan] ERROR: provider is null")
           return {
             source: "llm",
+            bid: 0,
+            folded: false,
+            hasBidDecision: false,
+            target: "",
+            thought: "",
+            rawSkill: "",
+            rawItem: "",
+            rawContent: "",
             failed: true,
             error: "LLM Provider 未初始化",
             actionType: "none",
@@ -482,6 +448,27 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           `[requestAiLlmPlan] ${requestId} CALLING requestChat, model: ${settings.model}, elapsed so far: ${chatStartTime - requestStartTime}ms`
         )
         console.log(`[requestAiLlmPlan] ${requestId} messages count: ${messages.length}, historyMessages count: ${historyMessages.length}, crossGameMemoryCount: ${crossGameMemoryCount}`)
+        if (!provider.requestChat) {
+          console.log("[requestAiLlmPlan] ERROR: provider.requestChat is undefined")
+          return {
+            source: "llm",
+            bid: 0,
+            folded: false,
+            hasBidDecision: false,
+            target: "",
+            thought: "",
+            rawSkill: "",
+            rawItem: "",
+            rawContent: "",
+            failed: true,
+            error: "LLM Provider requestChat 方法未初始化",
+            actionType: "none",
+            actionId: "none",
+            systemPrompt,
+            userPrompt,
+            modelResponse: ""
+          }
+        }
         const result = await provider.requestChat({
           temperature: 0.1,
           maxTokens: requestMaxTokens,
@@ -498,7 +485,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           `[requestAiLlmPlan] ${requestId} requestChat DONE, ok: ${result.ok}, elapsed: ${chatElapsed}ms, total: ${chatEndTime - requestStartTime}ms`
         )
 
-        const usage = result && result.usage ? result.usage : null
+        const usage = result && result.usage ? result.usage : undefined
         const cacheHitTokens = usage && usage.prompt_cache_hit_tokens ? usage.prompt_cache_hit_tokens : 0
         const cacheMissTokens = usage && usage.prompt_cache_miss_tokens ? usage.prompt_cache_miss_tokens : 0
         const totalPromptTokens = cacheHitTokens + cacheMissTokens
@@ -522,10 +509,18 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
             detail.hint ? `hint=${detail.hint}` : ""
           ].filter(Boolean)
           const errorMessage = errorPieces.join(" | ")
-          setPlayerLlmError(this, player.id, errorMessage, result.code)
-          showAiErrorToast(player.name, parseLlmError(errorMessage, result.code).brief)
+          setPlayerLlmError(this, player.id, errorMessage, result.code || "")
+          showAiErrorToast(player.name, parseLlmError(errorMessage, result.code || "").brief)
           return {
             source: "llm",
+            bid: 0,
+            folded: false,
+            hasBidDecision: false,
+            target: "",
+            thought: "",
+            rawSkill: "",
+            rawItem: "",
+            rawContent: "",
             failed: true,
             error: errorMessage,
             actionType: "none",
@@ -536,7 +531,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
             cacheHitTokens: 0,
             cacheMissTokens: 0,
             cacheHitRate: 0,
-            usage: null
+            usage: undefined
           }
         }
 
@@ -553,6 +548,14 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           showAiErrorToast(player.name, parseLlmError(isEmpty, "EMPTY_RESPONSE").brief)
           return {
             source: "llm",
+            bid: 0,
+            folded: false,
+            hasBidDecision: false,
+            target: "",
+            thought: "",
+            rawSkill: "",
+            rawItem: "",
+            rawContent: "",
             failed: true,
             error: isEmpty,
             actionType: "none",
@@ -563,7 +566,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
             cacheHitTokens: 0,
             cacheMissTokens: 0,
             cacheHitRate: 0,
-            usage: null
+            usage: undefined
           }
         }
         if (!responseText.trim() && reasoningContent.trim()) {
@@ -593,9 +596,9 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
             }
           }
         }
-        const plan = this.normalizeAiLlmPlan(player.id, decision, responseText, {
+        const plan: LlmPlanResult = this.normalizeAiLlmPlan(player.id, decision, responseText, {
           allowAction: options.allowAction !== false
-        })
+        }) as LlmPlanResult
         if (rawFinish === "length" && responseText.trim()) {
           setPlayerLlmError(
             this,
@@ -607,7 +610,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           this.writeLog(`${player.name}：输出被截断，决策可能不完整。`)
         }
         if (useMultiGameMemory && requestStage === "initial" && typeof this.pushAiRoundSummary === "function") {
-          this.pushAiRoundSummary(player.id, plan)
+          this.pushAiRoundSummary(player.id, plan as unknown as import("../../../types/llm").LlmPlanResult)
         }
         plan.elapsedMs = result.elapsedMs
         plan.model = result.model || ""
@@ -628,7 +631,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
         plan.cacheHitTokens = cacheHitTokens
         plan.cacheMissTokens = cacheMissTokens
         plan.cacheHitRate = cacheHitRate
-        plan.usage = usage
+        plan.usage = usage as typeof plan.usage
 
         if (
           plan.model &&
@@ -656,6 +659,14 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
         showAiErrorToast(player.name, parseLlmError(message, "EXCEPTION").brief)
         return {
           source: "llm",
+          bid: 0,
+          folded: false,
+          hasBidDecision: false,
+          target: "",
+          thought: "",
+          rawSkill: "",
+          rawItem: "",
+          rawContent: "",
           failed: true,
           error: message,
           actionType: "none",
@@ -666,12 +677,12 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           cacheHitTokens: 0,
           cacheMissTokens: 0,
           cacheHitRate: 0,
-          usage: null
+          usage: undefined
         }
       }
     },
 
-    async requestAiLlmFollowupBid(player: Player, currentPlan: Record<string, unknown>, toolSummary: string): Promise<Record<string, unknown>> {
+    async requestAiLlmFollowupBid(player: Player, currentPlan: LlmPlanResult | null, toolSummary: string): Promise<LlmPlanResult | null> {
       const trackHint = String(toolSummary || "").includes("tracks=")
         ? "若 tracks=none，代表本次探查未直接命中高价值追踪目标，不要把它写成已确认。"
         : ""
@@ -713,16 +724,24 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
         }
       }
 
-      return followupPlan
+      return followupPlan as LlmPlanResult | null
     },
 
-    async requestAiLlmErrorCorrection(player: Player, currentPlan: Record<string, unknown>, errorInfo: string, correctionHistory: Array<Record<string, unknown>>, previousMessages: Array<Record<string, unknown>> = []): Promise<Record<string, unknown>> {
+    async requestAiLlmErrorCorrection(player: Player, currentPlan: Record<string, unknown>, errorInfo: string, correctionHistory: Array<Record<string, unknown>>, previousMessages: Array<Record<string, unknown>> = []): Promise<LlmPlanResult | null> {
       const correctionCount = correctionHistory ? correctionHistory.length : 0
       const maxCorrections = 2
 
       if (correctionCount >= maxCorrections) {
         return {
           source: "llm",
+          bid: 0,
+          folded: false,
+          hasBidDecision: false,
+          target: "",
+          thought: "",
+          rawSkill: "",
+          rawItem: "",
+          rawContent: "",
           failed: true,
           error: `已达最大纠错次数(${maxCorrections})，不再回调`,
           correctionSkipped: true,
@@ -851,8 +870,36 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
         if (!provider) {
           return {
             source: "llm",
+            bid: 0,
+            folded: false,
+            hasBidDecision: false,
+            target: "",
+            thought: "",
+            rawSkill: "",
+            rawItem: "",
+            rawContent: "",
             failed: true,
             error: "LLM Provider 未初始化",
+            actionType: "none",
+            actionId: "none",
+            systemPrompt,
+            userPrompt,
+            modelResponse: ""
+          }
+        }
+        if (!provider.requestChat) {
+          return {
+            source: "llm",
+            bid: 0,
+            folded: false,
+            hasBidDecision: false,
+            target: "",
+            thought: "",
+            rawSkill: "",
+            rawItem: "",
+            rawContent: "",
+            failed: true,
+            error: "LLM Provider requestChat 方法未初始化",
             actionType: "none",
             actionId: "none",
             systemPrompt,
@@ -883,6 +930,14 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           ].filter(Boolean)
           return {
             source: "llm",
+            bid: 0,
+            folded: false,
+            hasBidDecision: false,
+            target: "",
+            thought: "",
+            rawSkill: "",
+            rawItem: "",
+            rawContent: "",
             failed: true,
             error: errorPieces.join(" | "),
             actionType: "none",
@@ -907,6 +962,14 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           showAiErrorToast(player.name, parseLlmError(isEmpty, "EMPTY_RESPONSE").brief)
           return {
             source: "llm",
+            bid: 0,
+            folded: false,
+            hasBidDecision: false,
+            target: "",
+            thought: "",
+            rawSkill: "",
+            rawItem: "",
+            rawContent: "",
             failed: true,
             error: isEmpty,
             actionType: "none",
@@ -938,9 +1001,9 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           }
         }
 
-        const plan = this.normalizeAiLlmPlan(player.id, decision, responseText, {
-          allowAction: true
-        })
+        const plan: LlmPlanResult = this.normalizeAiLlmPlan(player.id, decision, responseText, {
+          allowAction: false
+        }) as LlmPlanResult
         if (rawFinish2 === "length" && responseText.trim()) {
           setPlayerLlmError(
             this,
@@ -966,6 +1029,14 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
         const message = error && (error as Error).message ? (error as Error).message : "LLM请求异常"
         return {
           source: "llm",
+          bid: 0,
+          folded: false,
+          hasBidDecision: false,
+          target: "",
+          thought: "",
+          rawSkill: "",
+          rawItem: "",
+          rawContent: "",
           failed: true,
           error: message,
           actionType: "none",
@@ -1029,7 +1100,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           return
         }
 
-        const actionName = plan.actionId !== "none" ? this.getActionDefById(plan.actionId).name : "无"
+        const actionName = plan.actionId && plan.actionId !== "none" ? this.getActionDefById(plan.actionId).name : "无"
         summary.push(`${player.name}:出价${plan.bid} 计划动作${actionName}`)
       })
 
@@ -1107,16 +1178,16 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
         const taskPromise = (async () => {
           try {
             let plan = null
-            let llmPlan = null
+            let llmPlan: LlmPlanResult | null = null
 
             if (activePlayers.includes(player)) {
               llmPlan = await this.requestAiLlmPlan(player, { batchId, batchStartTime })
-              this.aiLlmRoundPlans[player.id] = llmPlan
+              this.aiLlmRoundPlans[player.id] = llmPlan as unknown as import("../../../types/llm").LlmPlanResult
 
               if (llmPlan && !llmPlan.failed && llmPlan.hasBidDecision) {
                 this.llmEverUsedThisRun = true
                 plan = {
-                  actionType: llmPlan.actionType,
+                  actionType: llmPlan.actionType as IntelActionPlan["actionType"],
                   actionId: llmPlan.actionId,
                   expectedReveal: 0,
                   score: 1,
@@ -1127,7 +1198,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
               }
             }
 
-            await this.processSingleAiIntelAction(player, plan, llmPlan, roundProgress, batchId, startTime)
+            await this.processSingleAiIntelAction(player, plan as unknown as IntelActionPlan | undefined, llmPlan, roundProgress, batchId, startTime)
 
             const endTime = Date.now()
             console.log(`[processAiDecision] ${player.id}-${startTime} END, elapsed: ${endTime - startTime}ms`)
@@ -1156,7 +1227,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
               if (readyAiPlayers.length === aiPlayers.length) {
                 this.lanBridge.send({
                   type: "lan:ai-bids-ready",
-                  aiPlayerIds: this.lanAiPlayers.map((ai: Player) => ai.id)
+                  aiPlayerIds: (this.lanAiPlayers as Array<{ id: string }>).map((ai) => ai.id)
                 })
               }
             }
@@ -1172,7 +1243,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           delete indicator.dataset.aiThinking
         }
         if (this.lastAiIntelActions.length > 0) {
-          const text = this.lastAiIntelActions.map((entry: Record<string, unknown>) => this.formatAiIntelActionPublicLine(entry)).join("；")
+          const text = this.lastAiIntelActions.map((entry) => this.formatAiIntelActionPublicLine(entry)).join("；")
           this.writeLog(`他人情报行动：${text}`)
         }
 
@@ -1193,7 +1264,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
             summary.push(`${player.name}:出价无效(hasBidDecision=false)`)
             return
           }
-          const actionName = plan.actionId !== "none" ? this.getActionDefById(plan.actionId).name : "无"
+          const actionName = plan.actionId && plan.actionId && plan.actionId !== "none" ? this.getActionDefById(plan.actionId).name : "无"
           summary.push(`${player.name}:出价${plan.bid} 计划动作${actionName}`)
         })
 
@@ -1214,7 +1285,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
       this._aiDecisionSummaryWaiting = false
 
       if (this.lastAiIntelActions.length > 0) {
-        const text = this.lastAiIntelActions.map((entry: Record<string, unknown>) => this.formatAiIntelActionPublicLine(entry)).join("；")
+        const text = this.lastAiIntelActions.map((entry) => this.formatAiIntelActionPublicLine(entry)).join("；")
         this.writeLog(`他人情报行动：${text}`)
       }
 
@@ -1233,7 +1304,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           summary.push(`${player.name}:出价无效(hasBidDecision=false)`)
           return
         }
-        const actionName = plan.actionId !== "none" ? this.getActionDefById(plan.actionId).name : "无"
+        const actionName = plan.actionId && plan.actionId !== "none" ? this.getActionDefById(plan.actionId).name : "无"
         summary.push(`${player.name}:出价${plan.bid} 计划动作${actionName}`)
       })
 
@@ -1271,15 +1342,15 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
         ((rulePayload && rulePayload.entries) || []).map((entry: RuleDecisionEntry) => [entry.playerId, entry])
       )
 
-      const bidByPlayerId = new Map<string, number>((roundBids || []).map((entry: RoundBidEntry) => [entry.playerId, Number(entry.bid) || 0]))
+      const bidByPlayerId = new Map<string, number>((roundBids || []).map((entry) => [String((entry as RoundBidEntry).playerId), Number((entry as RoundBidEntry).bid) || 0]))
       const entries = aiPlayers.map((player: Player) => {
         const plan = this.aiLlmRoundPlans[player.id] || null
         const llmSeatEnabled = this.canUseLlmDecisionForPlayer(player.id)
         const ruleEntry = ruleEntryById.get(player.id)
         const finalBid = bidByPlayerId.has(player.id)
-          ? bidByPlayerId.get(player.id)
+          ? (bidByPlayerId.get(player.id) ?? 0)
           : ruleEntry
-            ? ruleEntry.finalBid
+            ? (ruleEntry.finalBid ?? 0)
             : 0
         const executedActions = this.currentRoundUsage[player.id] || []
         const llmExecutedActionId = plan && plan.actionExecuted ? plan.toolActionId || plan.actionId || "" : ""
@@ -1333,14 +1404,14 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           cacheHitTokens: plan && plan.cacheHitTokens ? plan.cacheHitTokens : 0,
           cacheMissTokens: plan && plan.cacheMissTokens ? plan.cacheMissTokens : 0,
           cacheHitRate: plan && plan.cacheHitRate ? plan.cacheHitRate : 0,
-          usage: plan && plan.usage ? plan.usage : null
+          usage: plan && plan.usage ? plan.usage : undefined
         }
       })
 
       this.lastAiDecisionTelemetry = {
         mode: "llm",
         round: this.round,
-        entries
+        entries: entries as Array<Record<string, unknown>>
       }
     },
 
@@ -1401,8 +1472,11 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           fragment.appendChild(card)
         })
 
-      this.dom.aiLogicContent.innerHTML = ""
-      this.dom.aiLogicContent.appendChild(fragment)
+      const aiLogicContent = this.dom.aiLogicContent
+      if (aiLogicContent) {
+        aiLogicContent.innerHTML = ""
+        aiLogicContent.appendChild(fragment)
+      }
 
       const hasConversationMessages = this.aiConversationCache && Object.keys(this.aiConversationCache).length > 0
       if (this.dom.aiViewMessagesBtn) {
@@ -1447,7 +1521,8 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           lines.push("")
         })
 
-      this.dom.aiLogicContent.textContent = lines.join("\n")
+      const contentEl = this.dom.aiLogicContent
+      if (contentEl) contentEl.textContent = lines.join("\n")
     }
   }
 

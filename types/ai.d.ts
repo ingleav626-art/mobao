@@ -113,21 +113,11 @@ export interface ToolEffect {
 
 // ==================== 情报分析 ====================
 
-/** AI 单件藏品知识 */
-export interface AiItemKnowledge {
-  revealCount: number
-  lastSeenRound: number
-  category: string | null
-  qualityKey: QualityLevel | null
-  sizeTag: string | null
-  knownCells: Set<string>
-}
-
 /** AI 私有情报（每个AI玩家的探查结果汇总） */
 export interface AiPrivateIntel {
-  outlineSignals: unknown[]
-  qualitySignals: unknown[]
-  signalHistory: unknown[]
+  outlineSignals: AiIntelSignal[]
+  qualitySignals: AiIntelSignal[]
+  signalHistory: AiIntelSignal[]
   aggregateStats: IntelAggregate | null
   latestSignalStats: IntelAggregate | null
   knownCellStates: Record<string, string>
@@ -157,11 +147,7 @@ export interface IntelAggregate {
 export interface HighValueTrack {
   trackId: string
   itemId: string
-  sizeTag: string           // 尺寸标签 "2x2"
-  qualityKey: QualityLevel
-  estimateMin: number       // 最低估价
-  estimateMax: number       // 最高估价
-  confidence: number        // 追踪置信度
+  createdRound: number
   lastSeenRound: number
 }
 
@@ -191,6 +177,9 @@ export interface IntelActionPlan {
   actionId: string
   expectedReveal: number
   score: number
+  decisionSource?: string
+  lockedByLlm?: boolean
+  candidates?: unknown[]
 }
 
 // ==================== AI 记忆 ====================
@@ -243,6 +232,18 @@ export interface ConversationMessage {
   item?: string
   thought?: string
   result?: string
+  run?: number
+}
+
+/** AI 对话桶条目（回合级决策记录） */
+export interface ConversationBucketEntry {
+  run: number
+  round: number
+  bid: number | null
+  skill: string
+  item: string
+  thought: string
+  result: string
 }
 
 // ==================== AI 记忆存储 ====================
@@ -254,12 +255,12 @@ export interface AiPrivateIntelPool {
   outlineSignals: AiIntelSignal[]
   qualitySignals: AiIntelSignal[]
   signalHistory: AiIntelSignal[]
-  latestSignalStats: AiSignalStats | null
+  latestSignalStats: { aggregate: AiSignalStats; latest: AiSignalStats } | null
   aggregateStats: AiSignalStats | null
-  knownCellStates: Record<string, unknown>
+  knownCellStates: Record<string, string>
   itemKnowledge: Record<string, AiItemKnowledge>
-  highValueTrackByItemId: Record<string, unknown>
-  highValueTracks: unknown[]
+  highValueTrackByItemId: Record<string, string>
+  highValueTracks: HighValueTrack[]
   nextTrackIndex: number
 }
 
@@ -287,9 +288,12 @@ export interface AiSignalStats {
 
 /** AI 物品知识 */
 export interface AiItemKnowledge {
-  qualityKey?: string
-  sizeTag?: string
-  category?: string
+  revealCount: number
+  lastSeenRound: number
+  category: string | null
+  qualityKey: QualityLevel | null
+  sizeTag: string | null
+  knownCells: Set<string>
   estimatedValue?: number
   confidence?: number
 }

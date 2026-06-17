@@ -244,7 +244,7 @@ const LLM_BRIDGE = createSceneLlmBridge({
   compactPanelText,
   indentMultiline,
   formatBidRevealNumber
-})
+}) as unknown as LlmBridge
 export { LLM_BRIDGE }
 const BATTLE_RECORD_BRIDGE: any = createBattleRecordBridge({
   BATTLE_RECORD_STORAGE_KEY,
@@ -718,9 +718,9 @@ class WarehouseScene extends _PhaserScene {
   }
 
   /**
-   * 初始化音频系统。异步加载AudioManager，预加载常用音效
-   * @returns {void}
-   */
+  * 初始化音频系统。异步加载AudioManager，预加载常用音效
+  * @returns {void}
+  */
   initAudio() {
     if (AudioManager) {
       AudioManager.init().then(() => {
@@ -895,11 +895,11 @@ class WarehouseScene extends _PhaserScene {
       imgEl.classList.toggle("muted", isMuted)
     }
 
-    this.dom.rerollBtn.addEventListener("click", () => {
+    this.dom.rerollBtn?.addEventListener("click", () => {
       if (this.isLanMode) return
       this.startNewRun()
     })
-    this.dom.openSettingsBtn.addEventListener("click", () => {
+    this.dom.openSettingsBtn?.addEventListener("click", () => {
       this.openSettingsOverlay()
     })
     const roundSecondsInput = document.getElementById("setting-roundSeconds") as HTMLInputElement | null
@@ -998,7 +998,7 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     const musicVolumeSlider = document.getElementById("setting-musicVolume") as HTMLInputElement | null
-    const musicVolumeValue = document.getElementById("musicVolumeValue") as HTMLElement | null
+    const musicVolumeValue = document.getElementById("musicVolumeValue") as HTMLElement
     const musicVolumeIcon = document.getElementById("musicVolumeIcon") as HTMLElement | null
     const musicVolumeIconImg = document.getElementById("musicVolumeIconImg") as HTMLImageElement | null
     let musicVolumeBeforeMute = 70
@@ -1029,7 +1029,7 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     const sfxVolumeSlider = document.getElementById("setting-sfxVolume") as HTMLInputElement | null
-    const sfxVolumeValue = document.getElementById("sfxVolumeValue") as HTMLElement | null
+    const sfxVolumeValue = document.getElementById("sfxVolumeValue") as HTMLElement
     const sfxVolumeIcon = document.getElementById("sfxVolumeIcon") as HTMLElement | null
     const sfxVolumeIconImg = document.getElementById("sfxVolumeIconImg") as HTMLImageElement | null
     let sfxVolumeBeforeMute = 80
@@ -1070,37 +1070,37 @@ class WarehouseScene extends _PhaserScene {
         this.enterLobby()
       })
     }
-    this.dom.nextRoundBtn.addEventListener("click", () => this.resolveRoundBids("manual"))
+    this.dom.nextRoundBtn?.addEventListener("click", () => this.resolveRoundBids("manual"))
     if (this.dom.pauseRoundBtn) {
-      this.dom.pauseRoundBtn.addEventListener("click", () => this.toggleRoundPause())
+      this.dom.pauseRoundBtn?.addEventListener("click", () => this.toggleRoundPause())
     }
 
-    this.dom.aiLogicBtn.addEventListener("click", () => this.openAiLogicPanel())
+    this.dom.aiLogicBtn?.addEventListener("click", () => this.openAiLogicPanel())
     if (this.dom.aiLogicCloseBtn) {
-      this.dom.aiLogicCloseBtn.addEventListener("click", () => this.closeAiLogicPanel())
+      this.dom.aiLogicCloseBtn?.addEventListener("click", () => this.closeAiLogicPanel())
     }
     if (this.dom.aiLogicOverlay) {
-      this.dom.aiLogicOverlay.addEventListener("click", (event) => {
+      this.dom.aiLogicOverlay?.addEventListener("click", (event) => {
         if (event.target === this.dom.aiLogicOverlay) {
           this.closeAiLogicPanel()
         }
       })
     }
     if (this.dom.aiViewMessagesBtn) {
-      this.dom.aiViewMessagesBtn.addEventListener("click", () => this.showAiConversationMessages())
+      this.dom.aiViewMessagesBtn?.addEventListener("click", () => this.showAiConversationMessages())
     }
     if (this.dom.battleRecordCloseBtn) {
-      this.dom.battleRecordCloseBtn.addEventListener("click", () => this.closeBattleRecordPanel())
+      this.dom.battleRecordCloseBtn?.addEventListener("click", () => this.closeBattleRecordPanel())
     }
     if (this.dom.battleRecordOverlay) {
-      this.dom.battleRecordOverlay.addEventListener("click", (event) => {
+      this.dom.battleRecordOverlay?.addEventListener("click", (event) => {
         if (event.target === this.dom.battleRecordOverlay) {
           this.closeBattleRecordPanel()
         }
       })
     }
     if (this.dom.battleRecordContent) {
-      this.dom.battleRecordContent.addEventListener("click", (event) => {
+      this.dom.battleRecordContent?.addEventListener("click", (event) => {
         const target = event.target
         if (!(target instanceof HTMLElement)) {
           return
@@ -1162,19 +1162,19 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     if (this.dom.itemOutlineBtn) {
-      this.dom.itemOutlineBtn.addEventListener("click", () => this.useItem("item-outline-lamp"))
+      this.dom.itemOutlineBtn?.addEventListener("click", () => this.useItem("item-outline-lamp"))
     }
     if (this.dom.itemQualityBtn) {
-      this.dom.itemQualityBtn.addEventListener("click", () => this.useItem("item-quality-needle"))
+      this.dom.itemQualityBtn?.addEventListener("click", () => this.useItem("item-quality-needle"))
     }
     if (this.dom.itemDrawerToggleBtn) {
-      this.dom.itemDrawerToggleBtn.addEventListener("click", () => this.toggleItemDrawer())
+      this.dom.itemDrawerToggleBtn?.addEventListener("click", () => this.toggleItemDrawer())
     }
     if (this.dom.itemDrawerCloseBtn) {
-      this.dom.itemDrawerCloseBtn.addEventListener("click", () => this.closeItemDrawer())
+      this.dom.itemDrawerCloseBtn?.addEventListener("click", () => this.closeItemDrawer())
     }
     if (this.dom.itemDrawerList) {
-      this.dom.itemDrawerList.addEventListener("click", (event) => {
+      this.dom.itemDrawerList?.addEventListener("click", (event) => {
         const target = event.target
         if (!(target instanceof HTMLElement)) {
           return
@@ -1193,8 +1193,8 @@ class WarehouseScene extends _PhaserScene {
     }
 
     this.bindCharacterSkillButton()
-    this.dom.settleBtn.addEventListener("click", () => this.settleCurrentRun())
-    this.dom.settleBackBtn.addEventListener("click", () => {
+    this.dom.settleBtn?.addEventListener("click", () => this.settleCurrentRun())
+    this.dom.settleBackBtn?.addEventListener("click", () => {
       if (this.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
         this.showReflectionPendingDialogForBack()
         return
@@ -1216,7 +1216,7 @@ class WarehouseScene extends _PhaserScene {
         this.enterLobby()
       }
     })
-    this.dom.settleReplayBtn.addEventListener("click", () => {
+    this.dom.settleReplayBtn?.addEventListener("click", () => {
       if (this.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
         this.showReflectionPendingDialog()
         return
@@ -1242,10 +1242,10 @@ class WarehouseScene extends _PhaserScene {
     })
 
     if (this.dom.previewCloseBtn) {
-      this.dom.previewCloseBtn.addEventListener("click", () => this.hidePreview())
+      this.dom.previewCloseBtn?.addEventListener("click", () => this.hidePreview())
     }
     this.setupPreviewTouchScroll()
-    this.dom.previewCategorySelect.addEventListener("change", () => {
+    this.dom.previewCategorySelect?.addEventListener("change", () => {
       if (this.selectedItem) {
         this.renderPreviewCandidates(this.selectedItem)
       }
@@ -1253,8 +1253,8 @@ class WarehouseScene extends _PhaserScene {
     // 注意：不再在 mousedown 时修改 overflow，因为这会破坏滚动功能
     // 如果下拉框选项被裁切，应该通过 CSS 解决（如使用 position: fixed 的下拉列表）
 
-    this.dom.settingsCloseBtn.addEventListener("click", () => this.closeSettingsOverlay(false))
-    this.dom.settingsResetBtn.addEventListener("click", () => {
+    this.dom.settingsCloseBtn?.addEventListener("click", () => this.closeSettingsOverlay(false))
+    this.dom.settingsResetBtn?.addEventListener("click", () => {
       this.fillSettingsForm(defaultGameSettings())
       this.fillLlmSettingsForm(
         this.getLlmProvider() && typeof this.getLlmProvider().defaultSettings === "function"
@@ -1263,9 +1263,9 @@ class WarehouseScene extends _PhaserScene {
       )
       this.setSettingsStatus("已恢复默认，点击保存后生效。", false)
     })
-    this.dom.settingsSaveBtn.addEventListener("click", () => this.saveSettingsFromOverlay())
+    this.dom.settingsSaveBtn?.addEventListener("click", () => this.saveSettingsFromOverlay())
     if (this.dom.settingsReturnLobbyBtn) {
-      this.dom.settingsReturnLobbyBtn.addEventListener("click", () => {
+      this.dom.settingsReturnLobbyBtn?.addEventListener("click", () => {
         if (this.isLanMode) {
           this.showGameConfirm("确定要返回房间吗？当前游戏进度将丢失。", () => {
             this.closeSettingsOverlay(false)
@@ -1280,7 +1280,7 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     if (this.dom.clearAiMemoryBtn) {
-      this.dom.clearAiMemoryBtn.addEventListener("click", () => {
+      this.dom.clearAiMemoryBtn?.addEventListener("click", () => {
         this.showGameConfirm("确定要清空所有AI的持久化记忆吗？此操作不可恢复。", () => {
           this.clearAiMemoryStorage()
           if (this.dom.aiMemoryStatusText) {
@@ -1291,7 +1291,7 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     if (this.dom.clearAiContextBtn) {
-      this.dom.clearAiContextBtn.addEventListener("click", () => {
+      this.dom.clearAiContextBtn?.addEventListener("click", () => {
         this.showGameConfirm("确定要清空AI跨局上下文吗？这将清除所有AI的跨局记忆和对话缓存。", () => {
           if (this.aiCrossGameMessagesByPlayer) {
             Object.keys(this.aiCrossGameMessagesByPlayer).forEach((pid) => {
@@ -1315,12 +1315,12 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     if (this.dom.viewAiMemoryBtn) {
-      this.dom.viewAiMemoryBtn.addEventListener("click", () => {
+      this.dom.viewAiMemoryBtn?.addEventListener("click", () => {
         this.openAiMemoryPanel()
       })
     }
     if (this.dom.exportAiMemoryBtn) {
-      this.dom.exportAiMemoryBtn.addEventListener("click", () => {
+      this.dom.exportAiMemoryBtn?.addEventListener("click", () => {
         this.showAiMemoryExportDialog()
       })
     }
@@ -1345,10 +1345,12 @@ class WarehouseScene extends _PhaserScene {
       overlay.appendChild(box)
       document.body.appendChild(overlay)
       const fileName = `mobao-ai-memory-${new Date().toISOString().slice(0, 10)}.json`
-      document.getElementById("exportDialogCloseBtn").addEventListener("click", () => {
+      const closeBtn = document.getElementById("exportDialogCloseBtn")
+      if (closeBtn) closeBtn.addEventListener("click", () => {
         this.removeAiMemoryExportDialog()
       })
-      document.getElementById("exportShareBtn").addEventListener("click", () => {
+      const shareBtn = document.getElementById("exportShareBtn")
+      if (shareBtn) shareBtn.addEventListener("click", () => {
         if (window.NativeBridge?.shareFile) {
           const base64Data = btoa(unescape(encodeURIComponent(jsonData)))
           const success = window.NativeBridge.shareFile(base64Data, fileName, "AI记忆导出")
@@ -1386,7 +1388,8 @@ class WarehouseScene extends _PhaserScene {
           }
         }
       })
-      document.getElementById("exportCopyBtn").addEventListener("click", () => {
+      const copyBtn = document.getElementById("exportCopyBtn")
+      if (copyBtn) copyBtn.addEventListener("click", () => {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard
             .writeText(jsonData)
@@ -1415,7 +1418,7 @@ class WarehouseScene extends _PhaserScene {
       if (el) el.remove()
     }
     if (this.dom.importAiMemoryBtn) {
-      this.dom.importAiMemoryBtn.addEventListener("click", () => {
+      this.dom.importAiMemoryBtn?.addEventListener("click", () => {
         this.showAiMemoryImportDialog()
       })
     }
@@ -1439,12 +1442,13 @@ class WarehouseScene extends _PhaserScene {
           }
           this.writeLog("导入失败: " + result.error)
         }
-      } catch (e) {
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e)
         if (statusEl) {
-          statusEl.textContent = "文件解析失败: " + e.message
+          statusEl.textContent = "文件解析失败: " + msg
           statusEl.className = "ai-import-status error"
         }
-        this.writeLog("文件解析失败: " + e.message)
+        this.writeLog("文件解析失败: " + msg)
       }
     }
     window.__onFileImportError = (errorMsg) => {
@@ -1490,7 +1494,7 @@ class WarehouseScene extends _PhaserScene {
       const statusEl = document.getElementById("importStatus")
       const fileInput = document.getElementById("importFileInput")
 
-      const showStatus = (msg, type) => {
+      const showStatus = (msg: string, type?: string | null) => {
         if (!statusEl) return
         statusEl.textContent = msg
         statusEl.className = "ai-import-status " + (type || "")
@@ -1513,7 +1517,7 @@ class WarehouseScene extends _PhaserScene {
           const reader = new FileReader()
           reader.onload = (ev) => {
             try {
-              const jsonText = ev.target.result
+              const jsonText = (ev.target as FileReader).result as string
               const result = this.importAiMemoryFromJson(jsonText)
               if (result.ok) {
                 showStatus("导入成功！", "success")
@@ -1523,8 +1527,8 @@ class WarehouseScene extends _PhaserScene {
               } else {
                 showStatus("导入失败: " + result.error, "error")
               }
-            } catch (err) {
-              showStatus("文件解析失败: " + err.message, "error")
+            } catch (err: unknown) {
+              showStatus("文件解析失败: " + (err instanceof Error ? err.message : String(err)), "error")
             }
           }
           reader.onerror = () => showStatus("文件读取失败", "error")
@@ -1543,10 +1547,12 @@ class WarehouseScene extends _PhaserScene {
         })
       }
 
-      document.getElementById("importDialogCloseBtn").addEventListener("click", () => {
+      const importCloseBtn = document.getElementById("importDialogCloseBtn")
+      if (importCloseBtn) importCloseBtn.addEventListener("click", () => {
         this.removeAiMemoryImportDialog()
       })
-      document.getElementById("importPasteConfirmBtn").addEventListener("click", () => {
+      const importPasteBtn = document.getElementById("importPasteConfirmBtn")
+      if (importPasteBtn) importPasteBtn.addEventListener("click", () => {
         if (!textarea) return
         const jsonText = textarea.value.trim()
         if (!jsonText) {
@@ -1589,7 +1595,7 @@ class WarehouseScene extends _PhaserScene {
       this.writeLog("AI记忆已导出到文件。")
     }
     if (this.dom.resetAiWalletBtn) {
-      this.dom.resetAiWalletBtn.addEventListener("click", () => {
+      this.dom.resetAiWalletBtn?.addEventListener("click", () => {
         // 临时修改确认按钮文本
         const okBtn = document.getElementById("gameConfirmOkBtn")
         const cancelBtn = document.getElementById("gameConfirmCancelBtn")
@@ -1620,13 +1626,13 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     if (this.dom.aiMemoryCloseBtn) {
-      this.dom.aiMemoryCloseBtn.addEventListener("click", (event) => {
+      this.dom.aiMemoryCloseBtn?.addEventListener("click", (event) => {
         event.stopPropagation()
         this.closeAiMemoryPanel()
       })
     }
     if (this.dom.settingLlmIndependentModelEnabled) {
-      this.dom.settingLlmIndependentModelEnabled.addEventListener("change", () => {
+      this.dom.settingLlmIndependentModelEnabled?.addEventListener("change", () => {
         const checked = (this.dom.settingLlmIndependentModelEnabled as HTMLInputElement).checked
         if (this.dom.independentModelConfig) {
           this.dom.independentModelConfig.classList.toggle("hidden", !checked)
@@ -1634,24 +1640,24 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     if (this.dom.configIndependentModelBtn) {
-      this.dom.configIndependentModelBtn.addEventListener("click", () => {
+      this.dom.configIndependentModelBtn?.addEventListener("click", () => {
         this.openAiModelConfigOverlay()
       })
     }
     if (this.dom.aiModelConfigCloseBtn) {
-      this.dom.aiModelConfigCloseBtn.addEventListener("click", (event) => {
+      this.dom.aiModelConfigCloseBtn?.addEventListener("click", (event) => {
         event.stopPropagation()
         this.closeAiModelConfigOverlay()
       })
     }
     if (this.dom.aiModelConfigSaveBtn) {
-      this.dom.aiModelConfigSaveBtn.addEventListener("click", (event) => {
+      this.dom.aiModelConfigSaveBtn?.addEventListener("click", (event) => {
         event.stopPropagation()
         this.saveAiModelConfigFromForm()
       })
     }
     if (this.dom.aiModelConfigOverlay) {
-      this.dom.aiModelConfigOverlay.addEventListener("click", (event) => {
+      this.dom.aiModelConfigOverlay?.addEventListener("click", (event) => {
         event.stopPropagation()
         if (event.target === this.dom.aiModelConfigOverlay) {
           this.closeAiModelConfigOverlay()
@@ -1665,7 +1671,7 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     if (this.dom.aiMemoryOverlay) {
-      this.dom.aiMemoryOverlay.addEventListener("click", (event) => {
+      this.dom.aiMemoryOverlay?.addEventListener("click", (event) => {
         event.stopPropagation()
         if (event.target === this.dom.aiMemoryOverlay) {
           this.closeAiMemoryPanel()
@@ -1673,17 +1679,17 @@ class WarehouseScene extends _PhaserScene {
       })
     }
     if (this.dom.aiMemoryPanel) {
-      this.dom.aiMemoryPanel.addEventListener("click", (event) => {
+      this.dom.aiMemoryPanel?.addEventListener("click", (event) => {
         event.stopPropagation()
       })
-      this.dom.aiMemoryPanel.addEventListener(
+      this.dom.aiMemoryPanel?.addEventListener(
         "touchstart",
         (event) => {
           event.stopPropagation()
         },
         { passive: true }
       )
-      this.dom.aiMemoryPanel.addEventListener(
+      this.dom.aiMemoryPanel?.addEventListener(
         "touchmove",
         (event) => {
           event.stopPropagation()
@@ -1691,7 +1697,7 @@ class WarehouseScene extends _PhaserScene {
         { passive: true }
       )
     }
-    this.dom.settingsOverlay.addEventListener("click", (event) => {
+    this.dom.settingsOverlay?.addEventListener("click", (event) => {
       if (this.dom.aiMemoryOverlay && !this.dom.aiMemoryOverlay.classList.contains("hidden")) {
         return
       }
@@ -1711,7 +1717,7 @@ class WarehouseScene extends _PhaserScene {
       }
     })
 
-    this.dom.gameRoot.addEventListener(
+    this.dom.gameRoot?.addEventListener(
       "wheel",
       (event) => {
         if (!this.dom.gameRoot) {
@@ -1729,6 +1735,7 @@ class WarehouseScene extends _PhaserScene {
 
         if (
           event.target instanceof HTMLElement &&
+          this.dom.previewPopover &&
           this.dom.previewPopover.contains(event.target) &&
           !this.dom.previewPopover.classList.contains("hidden")
         ) {
@@ -1738,8 +1745,10 @@ class WarehouseScene extends _PhaserScene {
         }
 
         if (
+          this.dom.previewPopover &&
           !this.dom.previewPopover.classList.contains("hidden") &&
           event.target instanceof HTMLElement &&
+          this.dom.gameRoot &&
           this.dom.gameRoot.contains(event.target) &&
           !this.dom.previewPopover.contains(event.target)
         ) {
@@ -1747,7 +1756,7 @@ class WarehouseScene extends _PhaserScene {
         }
 
         if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-          if (this.scrollElementByWheel(this.dom.gameRoot, event.deltaY)) {
+          if (this.dom.gameRoot && this.scrollElementByWheel(this.dom.gameRoot, event.deltaY)) {
             event.preventDefault()
           }
         }
@@ -1755,7 +1764,7 @@ class WarehouseScene extends _PhaserScene {
       { passive: false }
     )
 
-    this.dom.gameRoot.addEventListener(
+    this.dom.gameRoot?.addEventListener(
       "scroll",
       () => {
         this.refreshRevealScrollHints()
@@ -1766,27 +1775,29 @@ class WarehouseScene extends _PhaserScene {
     let touchStartY = 0
     let touchStartScrollTop = 0
     let touchInPreview = false
-    this.dom.gameRoot.addEventListener(
+    this.dom.gameRoot?.addEventListener(
       "touchstart",
       (e) => {
         touchInPreview =
           e.target instanceof HTMLElement &&
+          !!this.dom.previewPopover &&
           this.dom.previewPopover.contains(e.target) &&
           !this.dom.previewPopover.classList.contains("hidden")
         if (touchInPreview) return
         if (e.touches.length === 1) {
           touchStartY = e.touches[0].clientY
-          touchStartScrollTop = this.dom.gameRoot.scrollTop
+          if (this.dom.gameRoot) touchStartScrollTop = this.dom.gameRoot.scrollTop
         }
       },
       { passive: true }
     )
 
-    this.dom.gameRoot.addEventListener(
+    this.dom.gameRoot?.addEventListener(
       "touchmove",
       (e) => {
         if (touchInPreview) return
         if (e.touches.length !== 1) return
+        if (!this.dom.gameRoot) return
         const dy = touchStartY - e.touches[0].clientY
         const maxScroll = this.dom.gameRoot.scrollHeight - this.dom.gameRoot.clientHeight
         if (maxScroll <= 0) return
@@ -1795,13 +1806,13 @@ class WarehouseScene extends _PhaserScene {
       { passive: true }
     )
 
-    this.dom.gameRoot.addEventListener("pointerdown", (event) => {
+    this.dom.gameRoot?.addEventListener("pointerdown", (event) => {
       if (!this.settlementRevealRunning || !this.isSettlementPageActive()) {
         return
       }
 
       const target = event.target
-      if (target instanceof HTMLElement && this.dom.previewPopover.contains(target)) {
+      if (target instanceof HTMLElement && this.dom.previewPopover && this.dom.previewPopover.contains(target)) {
         return
       }
 
@@ -1819,15 +1830,15 @@ class WarehouseScene extends _PhaserScene {
     })
 
       ; (this.dom.bidInput as HTMLInputElement).readOnly = true
-    this.dom.bidInput.addEventListener("keydown", (event) => event.preventDefault())
-    this.dom.bidInput.addEventListener("click", () => this.openBidKeypad())
-    this.dom.bidInput.addEventListener("focus", () => this.openBidKeypad())
+    this.dom.bidInput?.addEventListener("keydown", (event) => event.preventDefault())
+    this.dom.bidInput?.addEventListener("click", () => this.openBidKeypad())
+    this.dom.bidInput?.addEventListener("focus", () => this.openBidKeypad())
 
-    this.dom.keypadCloseBtn.addEventListener("click", () => this.closeBidKeypad())
-    this.dom.bidKeypad.addEventListener("pointerdown", (event) => {
+    this.dom.keypadCloseBtn?.addEventListener("click", () => this.closeBidKeypad())
+    this.dom.bidKeypad?.addEventListener("pointerdown", (event) => {
       event.stopPropagation()
     })
-    this.dom.bidKeypad.addEventListener("click", (event) => {
+    this.dom.bidKeypad?.addEventListener("click", (event) => {
       event.stopPropagation()
       const target = event.target
       if (!(target instanceof HTMLElement)) {
@@ -1856,7 +1867,7 @@ class WarehouseScene extends _PhaserScene {
         this.toggleRoundPause()
       })
 
-    this.dom.gameConfirmCancelBtn.addEventListener("click", (event) => {
+    this.dom.gameConfirmCancelBtn?.addEventListener("click", (event) => {
       event.stopPropagation()
       const cb = this._gameCancelCallback
       this.hideGameConfirm()
@@ -1864,7 +1875,7 @@ class WarehouseScene extends _PhaserScene {
         cb()
       }
     })
-    this.dom.gameConfirmOkBtn.addEventListener("click", (event) => {
+    this.dom.gameConfirmOkBtn?.addEventListener("click", (event) => {
       event.stopPropagation()
       const cb = this._gameConfirmCallback
       this.hideGameConfirm()
@@ -1874,7 +1885,7 @@ class WarehouseScene extends _PhaserScene {
     })
 
     // 游戏确认弹窗点击事件处理，阻止事件冒泡
-    this.dom.gameConfirmOverlay.addEventListener("click", (event) => {
+    this.dom.gameConfirmOverlay?.addEventListener("click", (event) => {
       event.stopPropagation()
     })
     const gameConfirmBox = document.querySelector(".game-confirm-box")
@@ -1884,8 +1895,8 @@ class WarehouseScene extends _PhaserScene {
       })
     }
 
-    this.dom.infoPopupCloseBtn.addEventListener("click", () => this.hideInfoPopup())
-    this.dom.infoPopupOverlay.addEventListener("click", (event) => {
+    this.dom.infoPopupCloseBtn?.addEventListener("click", () => this.hideInfoPopup())
+    this.dom.infoPopupOverlay?.addEventListener("click", (event) => {
       if (event.target === this.dom.infoPopupOverlay) {
         this.hideInfoPopup()
       }
@@ -1969,8 +1980,8 @@ class WarehouseScene extends _PhaserScene {
       if (
         this.settlementRevealRunning &&
         this.isSettlementPageActive() &&
-        !(targetEl && this.dom.previewPopover.contains(targetEl)) &&
-        !(targetEl && this.dom.gameRoot.contains(targetEl))
+        !(targetEl && this.dom.previewPopover && this.dom.previewPopover.contains(targetEl)) &&
+        !(targetEl && this.dom.gameRoot && this.dom.gameRoot.contains(targetEl))
       ) {
         this.settlementRevealSkipRequested = true
       }
@@ -1978,6 +1989,7 @@ class WarehouseScene extends _PhaserScene {
       if (
         targetEl &&
         this.isSettingsOverlayOpen() &&
+        this.dom.settingsPanel &&
         !this.dom.settingsPanel.contains(targetEl) &&
         targetEl !== this.dom.openSettingsBtn
       ) {
@@ -2010,14 +2022,15 @@ class WarehouseScene extends _PhaserScene {
         }
       }
 
-      if (!this.dom.previewPopover.classList.contains("hidden") && Date.now() - this.previewOpenTick >= 140) {
-        if (targetEl && !this.dom.previewPopover.contains(targetEl)) {
+      if (this.dom.previewPopover && !this.dom.previewPopover.classList.contains("hidden") && Date.now() - this.previewOpenTick >= 140) {
+        if (targetEl && this.dom.previewPopover && !this.dom.previewPopover.contains(targetEl)) {
           this.hidePreview()
         }
       }
 
       if (
         targetEl &&
+        this.dom.bidKeypad &&
         !this.dom.bidKeypad.classList.contains("hidden") &&
         !this.dom.bidKeypad.contains(targetEl) &&
         targetEl !== this.dom.bidInput
@@ -2089,7 +2102,7 @@ class WarehouseScene extends _PhaserScene {
     this.exitSettlementPage()
     this.guardWarehouseCapacity()
 
-    if (getActiveCharacter) {
+    if (getActiveCharacter()) {
       resetForNewGame()
       this.applyCharacterToPlayer()
     }
@@ -2388,7 +2401,7 @@ class WarehouseScene extends _PhaserScene {
     return LLM_BRIDGE.methods.extractAiDecisionObject.call(this, content)
   }
 
-  resolveActionPick(rawText: string, type: string, availableIds: string[]) {
+  resolveActionPick(rawText: string, type: "skill" | "item", availableIds: string[]) {
     return LLM_BRIDGE.methods.resolveActionPick.call(this, rawText, type, availableIds)
   }
 
@@ -2488,8 +2501,12 @@ class WarehouseScene extends _PhaserScene {
       this.closeBidKeypad()
     }
 
-    ; (this.dom.nextRoundBtn as HTMLButtonElement).disabled = this.settled || this.roundResolving || this.roundPaused
+    if (this.dom.nextRoundBtn) {
+      ; (this.dom.nextRoundBtn as HTMLButtonElement).disabled = this.settled || this.roundResolving || this.roundPaused
+    }
+    if (this.dom.settleBtn) {
       ; (this.dom.settleBtn as HTMLButtonElement).disabled = this.settled || this.roundResolving || this.roundPaused
+    }
     if (this.dom.pauseRoundBtn) {
       ; (this.dom.pauseRoundBtn as HTMLButtonElement).disabled = this.settled || this.roundResolving
       if (this.isLanMode && !this.lanIsHost) {
@@ -2499,11 +2516,11 @@ class WarehouseScene extends _PhaserScene {
       }
     }
     if (this.isLanMode) {
-      this.dom.nextRoundBtn.style.display = "none"
-      this.dom.settleBtn.style.display = "none"
+      if (this.dom.nextRoundBtn) this.dom.nextRoundBtn.style.display = "none"
+      if (this.dom.settleBtn) this.dom.settleBtn.style.display = "none"
     } else {
-      this.dom.nextRoundBtn.style.display = ""
-      this.dom.settleBtn.style.display = ""
+      if (this.dom.nextRoundBtn) this.dom.nextRoundBtn.style.display = ""
+      if (this.dom.settleBtn) this.dom.settleBtn.style.display = ""
     }
   }
 

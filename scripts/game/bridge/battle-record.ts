@@ -41,6 +41,8 @@
  */
 import { load as loadAppState } from "../core/app-state"
 import { QUALITY_CONFIG } from "../data/artifacts"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { Artifact } from "../../../types/game"
 
 interface BattleRecordDeps {
   BATTLE_RECORD_STORAGE_KEY: string
@@ -52,15 +54,92 @@ interface BattleRecordDeps {
   [key: string]: unknown
 }
 
+interface BattleRecordSaveResult {
+  mode?: string
+  winnerId?: string
+  winnerName?: string
+  winnerBid?: number | string
+  totalValue?: number | string
+  winnerProfit?: number | string
+  playerProfit?: number | string
+  playerWon?: boolean
+  dividendTicketInfo?: {
+    mechanism?: string
+    dividendPerPlayer: number
+    ticketPerPlayer: number
+  } | null
+  reasonText?: string
+}
+
+interface WarehouseSnapshotItem {
+  id?: string
+  key?: string
+  name?: string
+  category?: string
+  qualityKey?: string
+  w?: number | string
+  h?: number | string
+  x?: number | string
+  y?: number | string
+  trueValue?: number | string
+}
+
+interface AiThoughtLogEntry {
+  round?: number
+  controlMode?: string
+  playerName?: string
+  finalBid?: number
+  decisionSource?: string
+  cacheHitTokens?: number
+  cacheMissTokens?: number
+  cacheHitRate?: number
+  llmActionName?: string
+  actionExecuted?: boolean
+  ruleActionName?: string
+  error?: string
+  thought?: string
+  [key: string]: unknown
+}
+
+interface BattleRecordLogs {
+  aiDecisionPanelText?: string | null
+  runNo?: number | null
+  aiThoughtLogs?: AiThoughtLogEntry[]
+  roundLogsByRound?: Record<string, string[]>
+  roundPanelTexts?: Record<string, string>
+  [key: string]: unknown
+}
+
 interface BattleRecord {
-  round: number
-  playerId: string
-  playerName: string
-  bid: number
-  skill?: string
-  item?: string
-  won: boolean
-  profit?: number
+  id?: string
+  finishedAt?: string | number
+  round?: number
+  mode?: string
+  winnerId?: string
+  winner: string
+  winnerName?: string
+  winnerBid: number
+  totalValue: number
+  winnerProfit?: number
+  playerProfit?: number
+  playerWon?: boolean
+  itemCount?: number
+  roundCount?: number
+  players?: string[]
+  reasonText?: string
+  warehouse?: {
+    cols?: number
+    rows?: number
+    items: WarehouseSnapshotItem[]
+    itemCount?: number
+  }
+  logs?: BattleRecordLogs | null
+  logsRound?: number
+  dividendTicketInfo?: {
+    mechanism?: string
+    dividendPerPlayer: number
+    ticketPerPlayer: number
+  } | null
   [key: string]: unknown
 }
 
@@ -69,7 +148,7 @@ interface BattleRecord {
  * @param {BattleRecordDeps} deps - 依赖注入对象
  * @returns {Record<string, unknown>} 战绩记录方法集合
  */
-export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string, unknown> {
+export function createBattleRecordBridge(deps: BattleRecordDeps) {
   const { BATTLE_RECORD_STORAGE_KEY, GRID_COLS, GRID_ROWS, clamp, escapeHtml, formatBidRevealNumber } = deps
 
   function parsePanelTextToHtml(text: string): string {
@@ -185,20 +264,23 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
     }
 
     try {
-      const parsed = JSON.parse(raw)
+      const parsed: unknown = JSON.parse(raw)
       if (!Array.isArray(parsed)) {
         return []
       }
       return parsed
-        .filter((record) => record && typeof record === "object")
+        .filter((record): record is Record<string, unknown> => record != null && typeof record === "object")
         .map((record, idx) => {
           if (record.id) {
-            return record
+            return record as unknown as BattleRecord
           }
           return {
             ...record,
-            id: `legacy-rec-${idx}`
-          }
+            id: `legacy-rec-${idx}`,
+            winner: String(record.winnerName || "未知"),
+            winnerBid: Number(record.winnerBid) || 0,
+            totalValue: Number(record.totalValue) || 0
+          } as BattleRecord
         })
         .slice(0, 20)
     } catch (_error) {
@@ -219,7 +301,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
     return date.toLocaleString("zh-CN", { hour12: false })
   }
 
-  const methods = {
+  const methods: ThisType<WarehouseSceneThis> = {
     /**
      * 打开战绩记录面板
      * @returns {void}
@@ -279,20 +361,21 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
      * @param {Object} result - 对局结果 { mode, winnerId, profit, ... }
      * @returns {void}
      */
-    saveBattleRecord(result) {
+    saveBattleRecord(result: BattleRecordSaveResult) {
       const hasLlm = typeof this.canUseLlmDecision === "function" && this.canUseLlmDecision()
       const runLog = this.currentRunLog
-      let aiDecisionPanelText = null
-      if (hasLlm && this.lastAiDecisionTelemetry && this.lastAiDecisionTelemetry.mode === "llm") {
-        aiDecisionPanelText = this.buildAiDecisionPanelSnapshot(this.lastAiDecisionTelemetry)
+      let aiDecisionPanelText: string | null = null
+      if (hasLlm && this.lastAiDecisionTelemetry && (this.lastAiDecisionTelemetry as unknown as Record<string, unknown>).mode === "llm") {
+        aiDecisionPanelText = this.buildAiDecisionPanelSnapshot(this.lastAiDecisionTelemetry as unknown as Record<string, unknown>) as string | null
       }
-      const record = {
+      const record: BattleRecord = {
         id: `rec-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
         finishedAt: new Date().toISOString(),
         round: this.round,
         mode: result.mode,
         winnerId: result.winnerId,
         winnerName: result.winnerName,
+        winner: result.winnerName || "未知",
         winnerBid: Math.round(Number(result.winnerBid) || 0),
         totalValue: Math.round(Number(result.totalValue) || 0),
         winnerProfit: Math.round(Number(result.winnerProfit) || 0),
@@ -304,26 +387,26 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
           cols: GRID_COLS,
           rows: GRID_ROWS,
           itemCount: this.items.length,
-          items: this.buildWarehouseSnapshotForRecord()
+          items: this.buildWarehouseSnapshotForRecord() as WarehouseSnapshotItem[]
         },
         logs:
           hasLlm && aiDecisionPanelText
-            ? {
+            ? ({
               aiDecisionPanelText,
               runNo: runLog && Number.isFinite(Number(runLog.runNo)) ? Math.round(Number(runLog.runNo)) : null,
-              aiThoughtLogs: runLog && Array.isArray(runLog.aiThoughtLogs) ? runLog.aiThoughtLogs : [],
-              roundLogsByRound: runLog && runLog.roundLogsByRound ? runLog.roundLogsByRound : {},
-              roundPanelTexts: runLog && runLog.roundPanelTexts ? runLog.roundPanelTexts : {}
-            }
+              aiThoughtLogs: (runLog && Array.isArray(runLog.aiThoughtLogs) ? runLog.aiThoughtLogs : []) as AiThoughtLogEntry[],
+              roundLogsByRound: (runLog && runLog.roundLogsByRound ? runLog.roundLogsByRound : {}) as Record<string, string[]>,
+              roundPanelTexts: (runLog && runLog.roundPanelTexts ? runLog.roundPanelTexts : {}) as Record<string, string>
+            } as BattleRecordLogs)
             : null,
         logsRound: this.round || 0
       }
       console.log(
-        `[saveBattleRecord] hasLlm=${hasLlm}, aiDecisionPanelText=${aiDecisionPanelText?.length || 0}, roundPanelTexts keys=${runLog?.roundPanelTexts ? Object.keys(runLog.roundPanelTexts) : "none"}, roundLogsByRound keys=${runLog?.roundLogsByRound ? Object.keys(runLog.roundLogsByRound) : "none"}`
+        `[saveBattleRecord] hasLlm=${hasLlm}, aiDecisionPanelText=${aiDecisionPanelText?.length || 0}, roundPanelTexts keys=${runLog?.roundPanelTexts ? Object.keys(runLog.roundPanelTexts as Record<string, unknown>) : "none"}, roundLogsByRound keys=${runLog?.roundLogsByRound ? Object.keys(runLog.roundLogsByRound as Record<string, unknown>) : "none"}`
       )
 
-      this.battleRecords = [record, ...(this.battleRecords || [])].slice(0, 20)
-      saveBattleRecords(this.battleRecords)
+      this.battleRecords = [record, ...(this.battleRecords || [])].slice(0, 20) as typeof this.battleRecords
+      saveBattleRecords(this.battleRecords as unknown as BattleRecord[])
 
       if (this.dom.battleRecordOverlay && !this.dom.battleRecordOverlay.classList.contains("hidden")) {
         this.renderBattleRecordPanel()
@@ -377,7 +460,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       }
 
       if (this.battleRecordLogView && this.battleRecordLogView.recordId) {
-        this.renderBattleRecordLogView()
+        this.renderBattleRecordLogView(this.battleRecordLogView.recordId)
         return
       }
 
@@ -391,12 +474,12 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
 
       const html = records
         .map((record, idx) => {
-          const timeText = formatRecordTime(record.finishedAt)
+          const timeText = formatRecordTime(String(record.finishedAt || ""))
           const warehouseLines = (
             record.warehouse && Array.isArray(record.warehouse.items) ? record.warehouse.items : []
           )
-            .map((item) => {
-              return `${item.name} | 品类:${item.category} | 品质:${item.qualityKey} | 位置(${Number(item.x) + 1},${Number(item.y) + 1}) | 尺寸${item.w}x${item.h} | 价值${item.trueValue}`
+            .map((item: WarehouseSnapshotItem) => {
+              return `${item.name || "未知"} | 品类:${item.category || "未知"} | 品质:${item.qualityKey || "未知"} | 位置(${Number(item.x || 0) + 1},${Number(item.y || 0) + 1}) | 尺寸${item.w || 0}x${item.h || 0} | 价值${item.trueValue || 0}`
             })
             .join("\n")
           const hasAiDecisionPanel =
@@ -419,8 +502,8 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
             '<article class="battle-record-entry">',
             `<h4>第 ${records.length - idx} 条 | ${escapeHtml(timeText)}</h4>`,
             `<p class="battle-record-meta">拍下者：${escapeHtml(record.winnerName || "-")}（${escapeHtml(record.reasonText || "结算")}）</p>`,
-            `<p class="battle-record-meta">成交价：${formatBidRevealNumber(record.winnerBid)} | 仓库总值：${formatBidRevealNumber(record.totalValue)} | 拍下者利润：${record.winnerProfit >= 0 ? "+" : ""}${formatBidRevealNumber(record.winnerProfit)}</p>`,
-            `<p class="battle-record-meta">自身利润：${playerProfit >= 0 ? "+" : ""}${formatBidRevealNumber(playerProfit)}${dtText}</p>`,
+            `<p class="battle-record-meta">成交价：${formatBidRevealNumber(record.winnerBid)} | 仓库总值：${formatBidRevealNumber(record.totalValue)} | 拍下者利润：${(record.winnerProfit ?? 0) >= 0 ? "+" : ""}${formatBidRevealNumber(record.winnerProfit ?? 0)}</p>`,
+            `<p class="battle-record-meta">自身利润：${(playerProfit ?? 0) >= 0 ? "+" : ""}${formatBidRevealNumber(playerProfit ?? 0)}${dtText}</p>`,
             `<p class="battle-record-meta">回合：${record.round} | 藏品数：${record.warehouse && record.warehouse.itemCount ? record.warehouse.itemCount : 0}</p>`,
             `<div class="battle-record-actions">`,
             `<button class="battle-record-replay-btn" type="button" data-record-id="${escapeHtml(record.id || "")}">复现该局结算页</button>`,
@@ -438,7 +521,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       this.dom.battleRecordContent.innerHTML = html
     },
 
-    openBattleRecordLogs(recordId, page = 1) {
+    openBattleRecordLogs(recordId: string, page = 1) {
       const records = Array.isArray(this.battleRecords) ? this.battleRecords : []
       const record = records.find((entry) => entry && entry.id === recordId)
       if (!record) {
@@ -450,7 +533,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
         recordId,
         page: Math.max(1, Math.round(Number(page) || 1))
       }
-      this.renderBattleRecordLogView()
+      this.renderBattleRecordLogView(recordId)
     },
 
     closeBattleRecordLogs() {
@@ -458,13 +541,13 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       this.renderBattleRecordPanel()
     },
 
-    renderBattleRecordLogView() {
+    renderBattleRecordLogView(recordId?: string) {
       if (!this.dom.battleRecordContent || !this.battleRecordLogView || !this.battleRecordLogView.recordId) {
         return
       }
 
       const records = Array.isArray(this.battleRecords) ? this.battleRecords : []
-      const record = records.find((entry) => entry && entry.id === this.battleRecordLogView.recordId)
+      const record = records.find((entry) => entry && entry.id === (recordId || this.battleRecordLogView?.recordId))
       if (!record) {
         this.battleRecordLogView = null
         this.renderBattleRecordPanel()
@@ -481,7 +564,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
         const html = [
           '<article class="battle-record-log-view">',
           '<div class="battle-record-log-head">',
-          `<h4>${escapeHtml(winnerName)} | ${escapeHtml(formatRecordTime(record.finishedAt))}</h4>`,
+          `<h4>${escapeHtml(winnerName)} | ${escapeHtml(formatRecordTime(String(record.finishedAt || "")))}</h4>`,
           '<button class="battle-record-log-close-btn" type="button" data-log-close="1" aria-label="关闭日志页">×</button>',
           "</div>",
           `<p class="battle-record-meta">该局无AI决策日志（未使用大模型AI）。</p>`,
@@ -494,9 +577,9 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       const winnerName = record.winnerName || "未知玩家"
       const runNo =
         record.logs && Number.isFinite(Number(record.logs.runNo)) ? Math.round(Number(record.logs.runNo)) : null
-      const aiThoughtLogs = record.logs && Array.isArray(record.logs.aiThoughtLogs) ? record.logs.aiThoughtLogs : []
-      const roundLogsByRound = record.logs && record.logs.roundLogsByRound ? record.logs.roundLogsByRound : {}
-      const roundPanelTexts = record.logs && record.logs.roundPanelTexts ? record.logs.roundPanelTexts : {}
+      const aiThoughtLogs: AiThoughtLogEntry[] = record.logs && Array.isArray(record.logs.aiThoughtLogs) ? record.logs.aiThoughtLogs as AiThoughtLogEntry[] : []
+      const roundLogsByRound: Record<string, string[]> = record.logs && record.logs.roundLogsByRound ? record.logs.roundLogsByRound as Record<string, string[]> : {}
+      const roundPanelTexts: Record<string, string> = record.logs && record.logs.roundPanelTexts ? record.logs.roundPanelTexts : {}
 
       const roundSet = new Set<number>()
       aiThoughtLogs.forEach((e) => {
@@ -525,7 +608,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       if (maxRound > 0) {
         const roundPanelText = roundPanelTexts[String(currentPage)]
         const roundThoughts = aiThoughtLogs.filter((e) => e.round === currentPage)
-        const roundActionLogs = roundLogsByRound[String(currentPage)] || []
+        const roundActionLogs: string[] = Array.isArray(roundLogsByRound[String(currentPage)]) ? roundLogsByRound[String(currentPage)] as string[] : []
 
         const lines: string[] = []
         lines.push(`<div class="ai-round-header">第 ${currentPage} 轮 / 共 ${maxRound} 轮</div>`)
@@ -547,7 +630,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
             lines.push(`<div class="ai-player-card" style="margin:6px 0;">`)
             lines.push(`<div class="ai-player-card-header"><span class="player-name">${escapeHtml(entry.playerName || "AI")}</span><span class="control-badge ${badgeClass}">${badgeText}</span></div>`)
             lines.push(`<div class="ai-player-card-body">`)
-            lines.push(`<div class="ai-decision-summary"><span class="label">出价</span><span class="value bid-value">${formatBidRevealNumber(entry.finalBid)}</span><span class="label">来源</span><span class="value">${escapeHtml(entry.decisionSource || "?")}</span></div>`)
+            lines.push(`<div class="ai-decision-summary"><span class="label">出价</span><span class="value bid-value">${formatBidRevealNumber(entry.finalBid ?? 0)}</span><span class="label">来源</span><span class="value">${escapeHtml(entry.decisionSource || "?")}</span></div>`)
             if (isLlm) {
               const cacheHit = entry.cacheHitTokens || 0
               const cacheMiss = entry.cacheMissTokens || 0
@@ -593,12 +676,12 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       const html = [
         '<article class="battle-record-log-view">',
         '<div class="battle-record-log-head">',
-        `<h4>${escapeHtml(winnerName)} | ${escapeHtml(formatRecordTime(record.finishedAt))}${runNo ? ` | 第 ${runNo} 局` : ""}</h4>`,
+        `<h4>${escapeHtml(winnerName)} | ${escapeHtml(formatRecordTime(String(record.finishedAt || "")))}${runNo ? ` | 第 ${runNo} 局` : ""}</h4>`,
         '<button class="battle-record-log-close-btn" type="button" data-log-close="1" aria-label="关闭日志页">×</button>',
         "</div>",
-        `<p class="battle-record-meta">成交价：${formatBidRevealNumber(record.winnerBid)} | 仓库总值：${formatBidRevealNumber(record.totalValue)} | 拍下者利润：${record.winnerProfit >= 0 ? "+" : ""}${formatBidRevealNumber(record.winnerProfit)}</p>`,
+        `<p class="battle-record-meta">成交价：${formatBidRevealNumber(record.winnerBid)} | 仓库总值：${formatBidRevealNumber(record.totalValue)} | 拍下者利润：${(record.winnerProfit ?? 0) >= 0 ? "+" : ""}${formatBidRevealNumber(record.winnerProfit ?? 0)}</p>`,
         (() => {
-          const pp = record.playerProfit != null ? record.playerProfit : record.winnerProfit
+          const pp: number = record.playerProfit != null ? record.playerProfit : (record.winnerProfit ?? 0)
           const dt = record.dividendTicketInfo
           let dtSuffix = ""
           if (dt) {
@@ -616,7 +699,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       this.dom.battleRecordContent.innerHTML = html
     },
 
-    openBattleRecordReplay(recordId) {
+    openBattleRecordReplay(recordId: string) {
       const records = Array.isArray(this.battleRecords) ? this.battleRecords : []
       const record = records.find((entry) => entry && entry.id === recordId)
       if (!record) {
@@ -637,7 +720,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       }
 
       this.battleRecordReplayActive = true
-      this.battleRecordReplayRecordId = record.id
+      this.battleRecordReplayRecordId = record.id || null
       this.isSettlementRevealMode = true
       this.closeBattleRecordPanel()
       this.stopRoundTimer()
@@ -648,9 +731,13 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
 
       this.restoreWarehouseFromBattleRecord(record)
 
-      const replayWinner = {
+      const replayWinner: import("../../../types/game").Player = {
         id: record.winnerId || "record-replay-winner",
-        name: record.winnerName || "未知玩家"
+        name: record.winnerName || "未知玩家",
+        avatar: "replay",
+        isHuman: false,
+        isAI: true,
+        isSelf: false
       }
       const winnerBid = Math.max(0, Math.round(Number(record.winnerBid) || 0))
       const totalValue = Math.max(0, Math.round(Number(record.totalValue) || 0))
@@ -680,7 +767,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       this.updateHud()
     },
 
-    deleteBattleRecord(recordId) {
+    deleteBattleRecord(recordId: string) {
       const records = Array.isArray(this.battleRecords) ? this.battleRecords : []
       const record = records.find((entry) => entry && entry.id === recordId)
       if (!record) {
@@ -688,14 +775,14 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
         return
       }
 
-      const label = `${record.winnerName || "未知玩家"} / ${formatBidRevealNumber(record.winnerBid)} / ${formatRecordTime(record.finishedAt)}`
+      const label = `${record.winnerName || "未知玩家"} / ${formatBidRevealNumber(record.winnerBid)} / ${formatRecordTime(String(record.finishedAt || ""))}`
       const confirmed = window.confirm(`确定删除这条战绩吗？\n${label}`)
       if (!confirmed) {
         return
       }
 
       this.battleRecords = records.filter((entry) => entry && entry.id !== recordId).slice(0, 20)
-      saveBattleRecords(this.battleRecords)
+      saveBattleRecords(this.battleRecords as unknown as BattleRecord[])
 
       if (this.battleRecordReplayRecordId === recordId) {
         this.battleRecordReplayActive = false
@@ -710,7 +797,7 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       this.writeLog("战绩已删除。")
     },
 
-    restoreWarehouseFromBattleRecord(record) {
+    restoreWarehouseFromBattleRecord(record: BattleRecord) {
       this.drawUnknownWarehouse()
 
       if (this.itemLayer) {
@@ -721,11 +808,11 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       this.warehouseTrueValue = 0
 
       const qualityConfig = QUALITY_CONFIG
-      const snapshotItems =
+      const snapshotItems: WarehouseSnapshotItem[] =
         record && record.warehouse && Array.isArray(record.warehouse.items) ? record.warehouse.items : []
 
-      const imagesToLoad = []
-      snapshotItems.forEach((saved) => {
+      const imagesToLoad: string[] = []
+      snapshotItems.forEach((saved: WarehouseSnapshotItem) => {
         if (saved.key) {
           const textureKey = `artifact-${saved.key}`
           if (!this.textures.exists(textureKey)) {
@@ -735,9 +822,9 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
       })
 
       const renderItems = () => {
-        snapshotItems.forEach((saved, idx) => {
+        snapshotItems.forEach((saved: WarehouseSnapshotItem, idx: number) => {
           const qualityKey = saved.qualityKey && qualityConfig[saved.qualityKey] ? saved.qualityKey : "normal"
-          const quality = qualityConfig[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff }
+          const quality = qualityConfig[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff, weight: 1 }
           const safeW = clamp(Math.max(1, Math.round(Number(saved.w) || 1)), 1, GRID_COLS)
           const safeH = clamp(Math.max(1, Math.round(Number(saved.h) || 1)), 1, GRID_ROWS)
           const maxX = Math.max(0, GRID_COLS - safeW)
@@ -746,15 +833,18 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
           const safeY = clamp(Math.max(0, Math.round(Number(saved.y) || 0)), 0, maxY)
           const trueValue = Math.max(0, Math.round(Number(saved.trueValue) || 0))
 
-          const item = {
+          const item: Artifact = {
             id: String(saved.id || `record-item-${idx}`),
             key: saved.key || "record-snapshot",
+            majorCategory: saved.category || "未知",
             category: saved.category || "未知",
             name: saved.name || `藏品${idx + 1}`,
             basePrice: trueValue,
+            qualityKey: qualityKey as import("../../../types/game").QualityLevel,
             trueValue,
-            qualityKey,
-            quality,
+            quality: quality as import("../../../types/game").QualityConfig,
+            expectedPrice: trueValue,
+            previewSizeTag: "normal",
             w: safeW,
             h: safeH,
             x: safeX,
@@ -764,8 +854,18 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
               qualityCell: null,
               exact: true,
               settlementPreRevealed: true
+            },
+            view: {
+              silhouette: null as unknown as Phaser.GameObjects.Rectangle,
+              border: null as unknown as Phaser.GameObjects.Rectangle,
+              qualityMarkers: null as unknown as Phaser.GameObjects.Container,
+              clickZone: null as unknown as Phaser.GameObjects.Rectangle,
+              artifactImage: null,
+              borderPulseStarted: false,
+              qualitySynced: false,
+              qualityGlowTween: null
             }
-          }
+          } as Artifact
 
           this.renderItem(item)
           this.revealOutline(item, { settlementShowName: true, skipEffects: true })
@@ -786,10 +886,12 @@ export function createBattleRecordBridge(deps: BattleRecordDeps): Record<string,
           const textureKey = `artifact-${key}`
           this.load.image(textureKey, `assets/images/artifacts/thumbs/${key}.png`)
         })
-        this.load.once("complete", () => {
+        const onComplete = () => {
           console.log("[战绩复现] 图片加载完成")
+          ;(this.load as unknown as Phaser.Events.EventEmitter).off("complete", onComplete)
           renderItems()
-        })
+        }
+        this.load.on("complete", onComplete)
         this.load.start()
       } else {
         renderItems()

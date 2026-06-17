@@ -9,21 +9,23 @@
  * @requires data/characters - 角色数据定义
  */
 
+
+import type { Character } from '../../../types/game'
 import { CHARACTERS } from "./characters"
 
 const STORAGE_KEY = "mobao_selected_character_v1"
 
-let _activeCharacter: any = null
+let _activeCharacter: Character | null = null
 let _sessionPassiveBonus: number = 0
 
-export function getActiveCharacter(): any {
+export function getActiveCharacter(): Character | null {
   if (_activeCharacter) return _activeCharacter
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const id = JSON.parse(raw)
       const pool = CHARACTERS || []
-      const found = pool.find((c: any) => c.id === id)
+      const found = pool.find((c: Character) => c.id === id)
       if (found) {
         _activeCharacter = found
         return found
@@ -70,7 +72,7 @@ export function getAvatarLabel(): string {
 
 export function selectCharacter(characterId: string): boolean {
   const pool = CHARACTERS || []
-  const char = pool.find((c: any) => c.id === characterId)
+  const char = pool.find((c: Character) => c.id === characterId)
   if (!char) return false
   _activeCharacter = char
   try {

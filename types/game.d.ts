@@ -4,6 +4,8 @@
  *              供 JavaScript 文件通过 JSDoc @type 注释引用，提供 IDE 智能补全和类型检查。
  */
 
+/// <reference path="./ai.d.ts" />
+
 // ==================== 藏品相关 ====================
 
 /** 品质等级 */
@@ -103,6 +105,7 @@ export interface Player {
   isHuman: boolean     // 是否人类玩家（包括自己和联机其他人类）
   isAI: boolean        // 是否AI玩家
   isSelf: boolean      // 是否本地玩家自己
+  money?: number       // 玩家当前金钱（联机同步用）
   characterId?: string | null    // 角色ID
   characterName?: string          // 角色名（运行时填充）
   carryItems?: string[]           // 携带道具ID列表
@@ -159,6 +162,7 @@ export interface RevealResult {
   ok: boolean
   revealed: number
   message: string
+  signalStats?: AiSignalStats
 }
 
 // ==================== 地图相关 ====================

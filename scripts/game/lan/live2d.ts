@@ -25,7 +25,9 @@ interface Live2dState {
 
 let _lanLive2dState: Live2dState | null = null;
 
-export const LanLive2dMixin = {
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+
+export const LanLive2dMixin: ThisType<WarehouseSceneThis> = {
   startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB: HTMLVideoElement) {
     this.stopLanLive2dLoop();
 
