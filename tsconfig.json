@@ -21,11 +21,14 @@
   },
   "include": [
     "scripts/**/*.ts",
-    "types/**/*.d.ts"
+    "lan/client/**/*.ts",
+    "types/**/*.d.ts",
+    "lan/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "tools"
+    "tools",
+    "lan/shared"
   ]
 }
