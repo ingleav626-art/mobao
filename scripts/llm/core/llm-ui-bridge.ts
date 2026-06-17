@@ -44,6 +44,7 @@
     */
 "use strict"
 import { LlmManager } from "./llm-manager"
+import type { CustomProvider } from '../../../types/llm'
 
 const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
 
@@ -229,7 +230,7 @@ function getProviderConfig(providerId: string): ProviderConfig {
   }
   if (LlmManager) {
     const customList = LlmManager.loadCustomProviders()
-    const found = customList.find(function (p: any) {
+    const found = customList.find(function (p: CustomProvider) {
       return p.id === providerId
     })
     if (found) {
@@ -317,7 +318,7 @@ function refreshProviderSelect(selectValue?: string): void {
       const optgroup2 = document.createElement("optgroup")
       optgroup2.label = "自定义模型"
 
-      customList.forEach(function (p: any) {
+      customList.forEach(function (p: CustomProvider) {
         const option = document.createElement("option")
         option.value = p.id
         option.textContent = p.name
@@ -416,7 +417,14 @@ function updateThinkingParamsVisibility(els: UiElements): void {
   }
 }
 
-function saveProviderSettings(providerId: string): any {
+function saveProviderSettings(providerId: string): {
+  apiKey: string
+  endpoint: string
+  model: string
+  maxTokens: number
+  timeoutMs: number
+  thinkingParams: string
+} {
   console.log("[saveProviderSettings] providerId:", providerId)
   const els = getElements()
   console.log(
@@ -479,7 +487,7 @@ async function testConnection(providerId: string): Promise<any> {
   }
 
   try {
-    let result: any
+    let result: { ok: boolean; error?: string; message?: string; code?: string }
     if (LlmManager) {
       result = await LlmManager.testConnection(providerId, settings)
     } else {
@@ -885,6 +893,10 @@ function initialize(): void {
   }
 }
 
+/**
+ * 获取当前活跃提供商的设置
+ * @returns 提供商设置对象（结构因提供商不同而异，包含 apiKey、endpoint、model 等字段）
+ */
 function getActiveProviderSettings(): any {
   const providerId = getCurrentProviderId()
   const provider = LlmManager ? LlmManager.getProvider(providerId) : null

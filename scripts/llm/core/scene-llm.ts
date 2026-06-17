@@ -21,6 +21,10 @@ import { createLlmSettingsModule } from './llm-settings.js'
 import { createLlmPromptModule } from './llm-prompt.js'
 import { createLlmDecisionModule } from './llm-decision.js'
 
+/**
+ * 创建场景 LLM 桥接器
+ * @param deps 依赖注入对象（聚合多个模块的常量和函数，结构复杂且仅内部使用）
+ */
 export function createSceneLlmBridge(deps: any) {
   const settingsModule = createLlmSettingsModule(deps)
   const promptModule = createLlmPromptModule(deps)

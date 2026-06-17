@@ -22,6 +22,15 @@ export interface LlmSettings {
   [key: string]: any
 }
 
+/** 用户自定义 LLM 提供商 */
+export interface CustomProvider {
+  id: string
+  name: string
+  description?: string
+  endpoint?: string
+  model?: string
+}
+
 // ==================== 决策载荷 ====================
 
 /** LLM 回合计费载荷（传给 buildAiLlmRoundPayload） */

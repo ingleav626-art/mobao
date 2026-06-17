@@ -10,7 +10,7 @@
  */
 
 
-import type { Character } from '../../../types/game'
+import type { Character, PassiveEffect } from '../../../types/game'
 import { CHARACTERS } from "./characters"
 
 const STORAGE_KEY = "mobao_selected_character_v1"
@@ -47,7 +47,7 @@ export function getActiveSkillId(): string | null {
   return c ? c.skillId : null
 }
 
-export function getActivePassive(): any {
+export function getActivePassive(): PassiveEffect | null {
   const c = getActiveCharacter()
   return c ? c.passive : null
 }

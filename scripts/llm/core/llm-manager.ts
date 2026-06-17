@@ -32,12 +32,16 @@
  * @requires localStorage - 设置持久化
  *
  * @exports window.LlmManager
- *   { registerProvider, unregisterProvider, getProvider, getActiveProviderId,
+ *   {
+ *     registerProvider, unregisterProvider, getProvider, getActiveProviderId,
  *     setActiveProvider, listProviders, requestChat, testConnection,
  *     createBaseProvider, createOpenAICompatibleProvider,
+ *   }
  * @exports LlmManager - LLM 管理器对象
  */
 "use strict"
+
+import type { CustomProvider } from '../../../types/llm'
 
 const LLM_MANAGER_STORAGE_KEY = "mobao_llm_manager_v1"
 const CUSTOM_PROVIDERS_STORAGE_KEY = "mobao_custom_providers_v1"
@@ -247,7 +251,7 @@ function saveManagerSettings(settings: any): void {
   } catch (_error) { }
 }
 
-function loadCustomProviders(): any[] {
+function loadCustomProviders(): CustomProvider[] {
   try {
     const raw = window.localStorage.getItem(CUSTOM_PROVIDERS_STORAGE_KEY)
     if (!raw) {
@@ -260,7 +264,7 @@ function loadCustomProviders(): any[] {
   }
 }
 
-function saveCustomProviders(list: any[]): void {
+function saveCustomProviders(list: CustomProvider[]): void {
   try {
     window.localStorage.setItem(CUSTOM_PROVIDERS_STORAGE_KEY, JSON.stringify(list))
   } catch (_error) { }
@@ -642,15 +646,15 @@ function createBaseProvider(config: any): any {
 function createOpenAICompatibleProvider(config: any): any {
   const base = createBaseProvider(config)
 
-/**
- * 向当前活跃的LLM Provider发送聊天请求
- * @param {Object} options - 请求选项
- * @param {Array} options.messages - 消息数组 [{role, content}]
- * @param {number} [options.temperature] - 温度参数
- * @param {number} [options.max_tokens] - 最大token数
- * @returns {Promise<Object>} 响应结果 { ok, content, usage?, error? }
- */
-async function requestChat(options: any): Promise<any> {
+  /**
+   * 向当前活跃的LLM Provider发送聊天请求
+   * @param {Object} options - 请求选项
+   * @param {Array} options.messages - 消息数组 [{role, content}]
+   * @param {number} [options.temperature] - 温度参数
+   * @param {number} [options.max_tokens] - 最大token数
+   * @returns {Promise<Object>} 响应结果 { ok, content, usage?, error? }
+   */
+  async function requestChat(options: any): Promise<any> {
     const callStartTime = Date.now()
     const callId = `${base.id}-${callStartTime}-${Math.random().toString(16).slice(2, 6)}`
     console.log(`[requestChat] ${callId} START, provider: ${base.id}, model: ${options.settings?.model || "unknown"}`)
