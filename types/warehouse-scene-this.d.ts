@@ -233,7 +233,7 @@ export interface WarehouseSceneThis {
   roundTimerId: number | null
   settlementRunToken: number
   activeSettlementSpinner: Phaser.GameObjects.GameObject | null
-  moneySettledRunToken: number | null
+  moneySettledRunToken: string | null
   _lastDisplayedMoney: number | null
   deepSeekTesting: boolean
 
@@ -669,7 +669,6 @@ export interface WarehouseSceneThis {
 
   // LLM 方法（来自 LlmDecisionMixin）
   getLlmSettings(): LlmSettings
-  getLlmProvider(): { id: string; name: string; apiKey?: string; endpoint?: string; model?: string; requestChat?(options: unknown): Promise<LlmChatResult>; saveSettings?(settings: Record<string, any>): void; applySettings?(settings: Record<string, any>): void } | null
   canUseLlmDecisionForPlayer(playerId: string): boolean
   pushRunSettlementContextToAi(context: unknown): void
   hasAppliedMoneyForRun(): boolean
@@ -706,7 +705,6 @@ export interface WarehouseSceneThis {
   revealRoundBidsSequential(bids?: unknown[]): Promise<void>
   normalizeAiBidValue(playerId: string, bid: number, wallet?: number | null): number
   exportAiMemoryToJson(): string
-  importAiMemoryFromJson(json: string): void
 
   // 联机同步方法（来自 LanSyncMixin）
   buildWarehouseSnapshotForSync(): unknown
@@ -728,7 +726,6 @@ export interface WarehouseSceneThis {
   setupWarehouseAuction(): void
   drawUnknownWarehouse(): void
   guardWarehouseCapacity(): void
-  makeRunToken(): number
   cleanupGameScene(): void
 
   // AI 初始化方法
@@ -763,6 +760,13 @@ export interface WarehouseSceneThis {
   processAiDecisions(): void
   pushAiRoundSummary(playerId: string, plan: LlmPlanResult): void
   buildAiActionConstraintBlock(playerId: string): { canBid: boolean; canFold: boolean; availableSkills: string[]; availableItems: string[]; notes: string[]; _internal: { availableSkillIds: string[]; availableItemIds: string[]; availableSkillNames: string[]; availableItemNames: string[] } }
+  buildBidHistorySnapshot(): unknown[]
+  buildPublicEventSnapshot(opts: { compact: boolean; viewerId: string }): unknown[]
+  buildOtherPlayersPublicInfo(id: string, opts: { compact: boolean }): unknown
+  buildCatalogSummary(opts: { compact: boolean }): unknown
+  buildRoundPublicStateTable(id: string): unknown
+  buildAiPrivateIntelBlock(id: string): unknown
+  resolveActionPick(text: string, type: string, ids: string[]): { actionId: string | null; target: string }
   requestChat(messages: unknown[], options?: unknown): Promise<unknown>
   getAiModelConfig(aiIndex?: number): AiModelConfig | null
   isAiMultiGameMemoryEnabled(): boolean
@@ -909,4 +913,134 @@ export interface WarehouseSceneThis {
 
   // 出价相关属性
   playerBid(): void
+
+  // 场景初始化方法（来自 scene-init.ts）
+  create(): void
+  initAudio(): void
+  cacheDom(): void
+  initAnimations(): void
+  bindDomEvents(): void
+  initPreviewFilterOptions(): void
+
+  // 场景工具方法（来自 scene-utils.ts）
+  scrollElementByWheel(element: HTMLElement | null, deltaY: number): boolean
+  toWorldPointFromRootEvent(event: MouseEvent): { x: number; y: number } | null
+  markRoundRanking(sorted: BidsPerPlayer[]): void
+  makeRunToken(): string
+  getActionDefById(actionId: string): unknown
+  buildBidHistorySnapshot(): unknown
+  buildPublicEventSnapshot(options?: Record<string, unknown>): unknown
+  buildRoundPublicStateTable(viewerId: string): unknown
+  buildQualityPriceRangeTableCompact(): unknown
+  buildCatalogSummary(options?: Record<string, unknown>): unknown
+  buildQualityPriceGuide(options?: Record<string, unknown>): unknown
+  buildOtherPlayersPublicInfo(viewerId: string, options?: Record<string, unknown>): unknown
+
+  // 场景 AI 面板方法（来自 scene-ai-panel.ts）
+  renderAiLogicPanel(): void
+  renderAiLogicPanelForLlm(telemetry: { mode: string; round: number; entries: LlmTelemetry[] }): void
+  showAiConversationMessages(): void
+  testDeepSeekConnectionFromOverlay(): Promise<void>
+  buildAiLlmRoundPayload(player: Player): unknown
+  buildAiFollowupRoundPayload(player: Player, currentPlan: LlmPlan, toolSummary: string): unknown
+  buildAiIncrementalPayload(player: Player): unknown
+  canUseLlmDecision(): boolean
+  getAiModelConfigForPlayer(playerId: string): unknown
+  getAiIndexFromPlayerId(playerId: string): number
+  buildAiDecisionUserPrompt(payload: LlmRoundPayload, extraBlocks: string[], options: Record<string, unknown>): string
+  resolveActionPick(rawText: string, type: "skill" | "item", availableIds: string[]): unknown
+  normalizeAiLlmPlan(playerId: string, decision: LlmDecision, rawContent: string, options: Record<string, unknown>): LlmPlan
+  buildAiDecisionMessages(payload: LlmRoundPayload, options: Record<string, unknown>): ConversationMessage[]
+  requestAiLlmPlan(player: Player, options: Record<string, unknown>): Promise<LlmPlan | null>
+  buildAiToolResultSummary(result: RevealResult, actionType: string, actionId: string): string
+  requestAiLlmErrorCorrection(player: Player, currentPlan: LlmPlan, errorInfo: LlmErrorInfo, correctionHistory: LlmDecision[], previousMessages: ConversationMessage[]): Promise<LlmPlan | null>
+  prepareAiLlmRoundPlans(): Promise<void>
+  captureAiDecisionTelemetry(roundBids: BidsPerPlayer[]): void
+  processAiDecisions(): void
+
+  // 场景战绩记录方法（来自 scene-battle-record.ts）
+  closeBattleRecordPanel(): void
+  buildWarehouseSnapshotForRecord(): unknown
+  saveBattleRecord(result: { won: boolean; profit: number; bidAmount: number; trueValue: number; round: number }): void
+  renderBattleRecordPanel(): void
+  openBattleRecordReplay(recordId: string): void
+  openBattleRecordLogs(recordId: string, page?: number): void
+  closeBattleRecordLogs(): void
+  deleteBattleRecord(recordId: string): void
+
+  // 场景结算方法（来自 scene-settlement.ts）
+  revealAllArtifactsForSettlement(): Promise<void>
+  playSettlementRevealStep(item: unknown): Promise<void>
+  playSettlementSearchEffect(item: unknown, runToken: unknown): Promise<void>
+  enterSettlementPage(winnerPlayer: unknown, winnerBid: number, reasonText: string): void
+  exitSettlementPage(): void
+  cancelSettlementReveal(): void
+  setSettlementProgress(text: string, progress: number): void
+  showSelfProfit(selfProfit: number, label: string): void
+
+  // UI 方法（补充）
+  enterLobby(): void
+  enterLanRoom(): void
+  onLanBackground(): void
+  onLanForeground(): void
+  openSettingsOverlay(): void
+  isSettingsOverlayOpen(): boolean
+  openShopOverlay(): void
+  openAiLogicPanel(): void
+  closeAiLogicPanel(): void
+  openAiMemoryPanel(): void
+  closeAiMemoryPanel(): void
+  openAiModelConfigOverlay(): void
+  closeAiModelConfigOverlay(): void
+  saveAiModelConfigFromForm(): void
+  hideGameConfirm(): void
+  showCharacterInfoPopup(playerId: string, x: number, y: number): void
+  showLanRestartWaitingDialog(): void
+  shouldShowReflectionUI(): boolean
+  showReflectionPendingDialog(): void
+  showReflectionPendingDialogForBack(): void
+  toggleItemDrawer(): void
+  handleBidKeyInput(key: string): void
+  useItem(itemId: string): void
+  useSkill(skillId: string): void
+  stopRoundTimer(): void
+  applyCharacterToPlayer(): void
+  bindCharacterSkillButton(): void
+  proceedToNewRun(): void
+
+  // AI 记忆方法
+  clearAiMemoryStorage(): void
+  importAiMemoryFromJson(json: string): { ok: boolean; error?: string }
+  showAiMemoryExportDialog(): void
+  removeAiMemoryExportDialog(): void
+  showAiMemoryImportDialog(): void
+  removeAiMemoryImportDialog(): void
+  downloadAiMemoryFallback(jsonData: string, fileName: string): void
+
+  // LLM Provider 方法
+  getLlmProvider(): {
+    id: string
+    name: string
+    apiKey?: string
+    endpoint?: string
+    model?: string
+    requestChat?(options: unknown): Promise<LlmChatResult>
+    saveSettings?(settings: Record<string, unknown>): void
+    applySettings?(settings: Record<string, unknown>): void
+    defaultSettings?(): Record<string, unknown>
+  } | null
+
+  // 仓库方法（补充）
+  guardWarehouseCapacity(): void
+  syncItemManagerFromShop(): void
+  drawUnknownWarehouse(): void
+  spawnRandomItems(): void
+  setupWarehouseAuction(): void
+  initAiWallets(): void
+  initAiIntelSystems(): void
+  resetPlayerHistoryState(): void
+  resetAiConversations(): void
+  isAiMultiGameMemoryEnabled(): boolean
+  beginRunTracking(): void
+  getItemInfo(itemId: string): ItemDef | null
 }
