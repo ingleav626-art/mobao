@@ -64,16 +64,28 @@ export function patch(partial: Partial<AppStateData>): AppStateData {
   return merged
 }
 
-export function get(key: string): any
+/**
+ * 获取应用状态值
+ * @param key 状态键名（可选）
+ * @returns 状态值（结构不确定，来自 localStorage）或完整状态对象
+ *          使用 unknown 强制调用者做类型检查后再使用
+ */
+export function get(key: string): unknown
 export function get(): AppStateData
-export function get(key?: string): any {
+export function get(key?: string): unknown | AppStateData {
   const state = load()
-  return key ? (state as any)[key] : state
+  return key ? (state as unknown as Record<string, unknown>)[key] : state
 }
 
-export function set(key: string, value: any): AppStateData {
+/**
+ * 设置应用状态值
+ * @param key 状态键名
+ * @param value 状态值（结构不确定，来自外部输入）
+ * @returns 更新后的状态对象
+ */
+export function set(key: string, value: unknown): AppStateData {
   const current = load()
-  ;(current as any)[key] = value
+    ; (current as unknown as Record<string, unknown>)[key] = value
   save(current)
   return current
 }

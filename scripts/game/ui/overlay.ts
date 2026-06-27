@@ -35,27 +35,27 @@ import { MobaoShopPage } from "../shop/index"
 
 export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
   showInfoPopup(title: string, sourceScrollEl: HTMLElement | null) {
-    ; (this as any).dom.infoPopupTitle.textContent = title
+    this.dom.infoPopupTitle!.textContent = title
     if (sourceScrollEl) {
-      ; (this as any).dom.infoPopupContent.innerHTML = sourceScrollEl.innerHTML
+      this.dom.infoPopupContent!.innerHTML = sourceScrollEl.innerHTML
     } else {
-      ; (this as any).dom.infoPopupContent.innerHTML = ""
+      this.dom.infoPopupContent!.innerHTML = ""
     }
     if (MobaoAnimations) {
       MobaoAnimations.animateOverlayOpen(
-        (this as any).dom.infoPopupOverlay,
-        (this as any).dom.infoPopupOverlay.querySelector(".info-popup-box")
+        this.dom.infoPopupOverlay!,
+        this.dom.infoPopupOverlay!.querySelector(".info-popup-box")
       )
     } else {
-      ; (this as any).dom.infoPopupOverlay.classList.remove("hidden")
+      this.dom.infoPopupOverlay!.classList.remove("hidden")
     }
   },
 
   hideInfoPopup() {
     if (MobaoAnimations) {
-      MobaoAnimations.animateOverlayClose((this as any).dom.infoPopupOverlay)
+      MobaoAnimations.animateOverlayClose(this.dom.infoPopupOverlay!)
     } else {
-      ; (this as any).dom.infoPopupOverlay.classList.add("hidden")
+      this.dom.infoPopupOverlay!.classList.add("hidden")
     }
   },
 
@@ -146,7 +146,7 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
   },
 
   showCharacterInfoPopup(playerId: string, x: number, y: number) {
-    const player = (this as any).players.find((p: any) => p.id === playerId)
+    const player = this.players.find((p: any) => p.id === playerId)
     if (!player) {
       return
     }
@@ -164,11 +164,11 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
         }
       }
     } else {
-      const charAssign = (this as any).aiCharacterAssignments && (this as any).aiCharacterAssignments[playerId]
+      const charAssign = this.aiCharacterAssignments && this.aiCharacterAssignments[playerId]
       if (charAssign) {
         const charDef = getCharacterById(charAssign.characterId)
         characterInfo = {
-          name: charAssign.characterName,
+          name: charAssign.characterName || charAssign.characterId,
           desc: charDef ? charDef.desc : "",
           skillName: charAssign.skillName,
           skillDesc: charDef ? charDef.skillDesc : "",
@@ -202,21 +202,21 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
 
   openSettingsOverlay() {
     // 保存初始设置值，用于离开保护（使用表单读取的值，确保一致性）
-    ; (this as any).closeBidKeypad()
-      ; (this as any).closeItemDrawer()
+    ; this.closeBidKeypad()
+      ; this.closeItemDrawer()
     this.hideInfoPopup()
-      ; (this as any).fillSettingsForm(GAME_SETTINGS)
-      ; (this as any).fillLlmSettingsForm((this as any).getLlmSettings())
-      ; (this as any).setSettingsStatus("设置保存在本地浏览器中。", false)
+      ; this.fillSettingsForm(GAME_SETTINGS)
+      ; this.fillLlmSettingsForm(this.getLlmSettings())
+      ; this.setSettingsStatus("设置保存在本地浏览器中。", false)
 
-      ; (this as any)._settingsInitialValues = JSON.stringify({
-        game: (this as any).readSettingsForm(),
-        llm: (this as any).readLlmSettingsForm()
+      ; this._settingsInitialValues = JSON.stringify({
+        game: this.readSettingsForm(),
+        llm: this.readLlmSettingsForm()
       })
 
     const llmGroup = document.getElementById("llmSettingsGroup")
     if (llmGroup) {
-      if ((this as any).isLanMode) {
+      if (this.isLanMode) {
         llmGroup.classList.add("settings-group-disabled")
         const inputs = llmGroup.querySelectorAll("input, button")
         inputs.forEach((el: any) => {
@@ -237,8 +237,8 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
       if (isLobbyVisible) {
         returnLobbyBtn.classList.add("hidden")
       } else {
-        if ((this as any).isLanMode) {
-          if ((this as any).lanIsHost) {
+        if (this.isLanMode) {
+          if (this.lanIsHost) {
             returnLobbyBtn.textContent = "返回房间"
             returnLobbyBtn.classList.remove("hidden")
           } else {
@@ -251,21 +251,21 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
       }
     }
     if (MobaoAnimations) {
-      MobaoAnimations.animateOverlayOpen((this as any).dom.settingsOverlay, (this as any).dom.settingsPanel)
+      MobaoAnimations.animateOverlayOpen(this.dom.settingsOverlay!, this.dom.settingsPanel!)
     } else {
-      ; (this as any).dom.settingsOverlay.classList.remove("hidden")
+      this.dom.settingsOverlay!.classList.remove("hidden")
     }
   },
 
   closeSettingsOverlay(keepStatus: boolean = false, forceClose: boolean = false) {
     // 检查是否有未保存的设置
-    if (!forceClose && (this as any)._settingsInitialValues) {
+    if (!forceClose && this._settingsInitialValues) {
       const currentValues = JSON.stringify({
-        game: (this as any).readSettingsForm(),
-        llm: (this as any).readLlmSettingsForm()
+        game: this.readSettingsForm(),
+        llm: this.readLlmSettingsForm()
       })
 
-      if (currentValues !== (this as any)._settingsInitialValues) {
+      if (currentValues !== this._settingsInitialValues) {
         const okBtn = document.getElementById("gameConfirmOkBtn")
         const cancelBtn = document.getElementById("gameConfirmCancelBtn")
         const originalOkText = okBtn ? okBtn.textContent : ""
@@ -274,21 +274,21 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
         if (cancelBtn) cancelBtn.textContent = "不保存"
           // 临时修改确认按钮文本
 
-          ; (this as any).showGameConfirm(
+          ; this.showGameConfirm(
             "设置已修改，是否保存？",
             () => {
               // 恢复按钮文本
               if (okBtn) okBtn.textContent = originalOkText
               if (cancelBtn) cancelBtn.textContent = originalCancelText
-                ; (this as any).saveSettingsFromOverlay()
-                ; (this as any)._settingsInitialValues = null
+                ; this.saveSettingsFromOverlay()
+                ; this._settingsInitialValues = null
               this.closeSettingsOverlay(keepStatus, true)
             },
             () => {
               // 恢复按钮文本
               if (okBtn) okBtn.textContent = originalOkText
               if (cancelBtn) cancelBtn.textContent = originalCancelText
-                ; (this as any)._settingsInitialValues = null
+                ; this._settingsInitialValues = null
               this.closeSettingsOverlay(keepStatus, true)
             }
           )
@@ -297,28 +297,28 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     }
 
     // 清除初始值记录，避免关闭时再次弹窗
-    ; (this as any)._settingsInitialValues = null
+    ; this._settingsInitialValues = null
 
     if (MobaoAnimations) {
       MobaoAnimations.animateOverlayClose(
-        (this as any).dom.settingsOverlay,
-        (this as any).dom.settingsPanel,
+        this.dom.settingsOverlay!,
+        this.dom.settingsPanel!,
         () => {
           if (!keepStatus) {
-            ; (this as any).setSettingsStatus("设置保存在本地浏览器中。", false)
+            this.setSettingsStatus("设置保存在本地浏览器中。", false)
           }
         }
       )
     } else {
-      ; (this as any).dom.settingsOverlay.classList.add("hidden")
+      this.dom.settingsOverlay!.classList.add("hidden")
       if (!keepStatus) {
-        ; (this as any).setSettingsStatus("设置保存在本地浏览器中。", false)
+        this.setSettingsStatus("设置保存在本地浏览器中。", false)
       }
     }
   },
 
   isSettingsOverlayOpen(): boolean {
-    return !(this as any).dom.settingsOverlay.classList.contains("hidden")
+    return !this.dom.settingsOverlay!.classList.contains("hidden")
   },
 
   settingsInputId(field: string): string {
@@ -395,19 +395,19 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
   },
 
   setSettingsStatus(text: string, saved: boolean) {
-    ; (this as any).dom.settingsStatusText.textContent = text
-      ; (this as any).dom.settingsStatusText.classList.toggle("settings-note-saved", Boolean(saved))
+    this.dom.settingsStatusText!.textContent = text
+    this.dom.settingsStatusText!.classList.toggle("settings-note-saved", Boolean(saved))
   },
 
   saveSettingsFromOverlay() {
     const LLM_SETTINGS = loadDeepSeekSettings()
-    const next = (this as any).readSettingsForm()
+    const next = this.readSettingsForm()
     Object.assign(GAME_SETTINGS, next)
     saveGameSettings(GAME_SETTINGS)
 
-    if (!(this as any).isLanMode) {
+    if (!this.isLanMode) {
       const oldMultiGameMemoryEnabled = Boolean(LLM_SETTINGS.multiGameMemoryEnabled)
-      const llmNext = (this as any).readLlmSettingsForm()
+      const llmNext = this.readLlmSettingsForm()
       console.log("[saveSettingsFromOverlay] llmNext:", {
         independentModelEnabled: llmNext.independentModelEnabled,
         enabled: llmNext.enabled,
@@ -430,7 +430,7 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
         window.localStorage.setItem(LLM_GLOBAL_SETTINGS_KEY, JSON.stringify(globalSettings))
       } catch (_e) { }
 
-      const llmProvider = (this as any).getLlmProvider()
+      const llmProvider = this.getLlmProvider()
       console.log("[saveSettingsFromOverlay] llmProvider:", llmProvider ? llmProvider.id : null)
       if (llmProvider && llmProvider.saveSettings) {
         llmProvider.saveSettings({
@@ -460,35 +460,36 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
         LLM_SETTINGS.independentModelEnabled
       )
       if (oldMultiGameMemoryEnabled && !LLM_SETTINGS.multiGameMemoryEnabled) {
-        ; (this as any).writeLog("已关闭多局AI上下文：仅停止发送，不删除记忆。")
+        ; this.writeLog("已关闭多局AI上下文：仅停止发送，不删除记忆。")
       }
       if (!oldMultiGameMemoryEnabled && LLM_SETTINGS.multiGameMemoryEnabled) {
-        ; (this as any).pushRunStartContextToAi()
-          ; (this as any).writeLog("已启用多局AI上下文：后续会在同一会话中连续学习。")
+        ; this.pushRunStartContextToAi()
+          ; this.writeLog("已启用多局AI上下文：后续会在同一会话中连续学习。")
       }
     }
 
-    ; (this as any)._settingsInitialValues = null
+    ; this._settingsInitialValues = null
 
-      ; (this as any).dom.bidInput.step = "1"
-      ; (this as any).dom.bidInput.min = "0"
-    const normalizedBid = Math.max(0, Math.round(Number((this as any).dom.bidInput.value) || 0))
-      ; (this as any).dom.bidInput.value = String(normalizedBid)
+    const bidInput = this.dom.bidInput as HTMLInputElement
+    bidInput.step = "1"
+    bidInput.min = "0"
+    const normalizedBid = Math.max(0, Math.round(Number(bidInput.value) || 0))
+    bidInput.value = String(normalizedBid)
 
-      ; (this as any).round = clamp((this as any).round, 1, GAME_SETTINGS.maxRounds)
-      ; (this as any).roundTimeLeft = Math.min((this as any).roundTimeLeft, GAME_SETTINGS.roundSeconds)
-      ; (this as any).actionsLeft = Math.min((this as any).actionsLeft, GAME_SETTINGS.actionsPerRound)
-      ; (this as any).updateHud()
+      ; this.round = clamp(this.round, 1, GAME_SETTINGS.maxRounds)
+      ; this.roundTimeLeft = Math.min(this.roundTimeLeft, GAME_SETTINGS.roundSeconds)
+      ; this.actionsLeft = Math.min(this.actionsLeft, GAME_SETTINGS.actionsPerRound)
+      ; this.updateHud()
 
-      ; (this as any).setSettingsStatus("设置已保存并立即生效。", true)
+      ; this.setSettingsStatus("设置已保存并立即生效。", true)
     const modelName = (LLM_SETTINGS && LLM_SETTINGS.model) || "大模型"
-      ; (this as any).setLlmSettingsStatus(
+      ; this.setLlmSettingsStatus(
         LLM_SETTINGS.apiKey
           ? `${modelName}配置已保存：${maskApiKey(LLM_SETTINGS.apiKey)}`
           : `${modelName}配置已保存，但尚未填写 API Key。`,
         LLM_SETTINGS.apiKey ? "success" : "normal"
       )
-      ; (this as any).writeLog(`设置已应用：对局参数生效；${modelName} ${LLM_SETTINGS.enabled ? "已启用" : "未启用"}。`)
+      ; this.writeLog(`设置已应用：对局参数生效；${modelName} ${LLM_SETTINGS.enabled ? "已启用" : "未启用"}。`)
     this.closeSettingsOverlay(true)
   },
 
@@ -515,13 +516,13 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     document.body.appendChild(overlay)
     document.getElementById("lanRestartAccept")!.addEventListener("click", () => {
       overlay.remove()
-        ; (this as any).lanBridge.send({ type: "game:restart-accept" })
-        ; (this as any).writeLog("已同意重开，等待其他玩家确认...")
+      this.lanBridge!.send({ type: "game:restart-accept" })
+      this.writeLog("已同意重开，等待其他玩家确认...")
     })
     document.getElementById("lanRestartDecline")!.addEventListener("click", () => {
       overlay.remove()
-        ; (this as any).lanBridge.send({ type: "game:restart-decline" })
-        ; (this as any).writeLog("已拒绝重开请求")
+      this.lanBridge!.send({ type: "game:restart-decline" })
+      this.writeLog("已拒绝重开请求")
     })
   },
 
@@ -549,7 +550,7 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
       '<div style="margin-top:16px;"><span class="lan-waiting-spinner"></span></div>'
     overlay.appendChild(box)
     document.body.appendChild(overlay)
-      ; (this as any).writeLog("已向所有玩家发送重开请求，等待确认...")
+      ; this.writeLog("已向所有玩家发送重开请求，等待确认...")
   },
 
   showLanRestartDeclinedDialog(declinerName: string) {
@@ -576,7 +577,7 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
 
   showLanPauseOverlay() {
     // 只在游戏场景显示暂停弹窗
-    if (!(this as any).isLanMode || (this as any).settled || !(this as any).dom.hud) return
+    if (!this.isLanMode || this.settled || !this.dom.hud) return
     let overlay = document.getElementById("lanPauseOverlay")
     if (overlay) return
     overlay = document.createElement("div")
@@ -592,15 +593,15 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     box.appendChild(title)
     const hint = document.createElement("div")
     hint.style.cssText = "color:#a09070;margin-bottom:16px;"
-    hint.textContent = (this as any).isLanMode && (this as any).lanIsHost ? "点击下方按钮继续游戏" : "等待主机继续游戏..."
+    hint.textContent = this.isLanMode && this.lanIsHost ? "点击下方按钮继续游戏" : "等待主机继续游戏..."
     box.appendChild(hint)
-    if ((this as any).isLanMode && (this as any).lanIsHost) {
+    if (this.isLanMode && this.lanIsHost) {
       const resumeBtn = document.createElement("button")
       resumeBtn.style.cssText =
         "padding:10px 28px;border-radius:6px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:15px;font-weight:bold;"
       resumeBtn.textContent = "结束暂停"
       resumeBtn.addEventListener("click", () => {
-        ; (this as any).toggleRoundPause()
+        ; this.toggleRoundPause()
       })
       box.appendChild(resumeBtn)
     }
@@ -614,7 +615,8 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
   },
 
   hideSettleOverlay() {
-    const overlayEl = (this as any).dom.settleOverlay
+    const overlayEl = this.dom.settleOverlay
+    if (!overlayEl) return
     if (typeof MobaoAnimations !== "undefined") {
       ; (MobaoAnimations as any).animateOverlayClose(overlayEl, null, function () {
         overlayEl.classList.add("hidden")
@@ -627,28 +629,28 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
   },
 
   openAiLogicPanel() {
-    if (!(this as any).dom.aiLogicOverlay) {
+    if (!this.dom.aiLogicOverlay) {
       return
     }
-    ; (this as any).renderAiLogicPanel()
-    if (typeof (this as any).renderAiThoughtLog === "function") {
-      ; (this as any).renderAiThoughtLog()
+    ; this.renderAiLogicPanel()
+    if (typeof this.renderAiThoughtLog === "function") {
+      ; this.renderAiThoughtLog()
     }
     if (MobaoAnimations) {
-      MobaoAnimations.animateOverlayOpen((this as any).dom.aiLogicOverlay, (this as any).dom.aiLogicPanel)
+      MobaoAnimations.animateOverlayOpen(this.dom.aiLogicOverlay, this.dom.aiLogicPanel)
     } else {
-      ; (this as any).dom.aiLogicOverlay.classList.remove("hidden")
+      ; this.dom.aiLogicOverlay.classList.remove("hidden")
     }
   },
 
   closeAiLogicPanel() {
-    if (!(this as any).dom.aiLogicOverlay) {
+    if (!this.dom.aiLogicOverlay) {
       return
     }
     if (MobaoAnimations) {
-      MobaoAnimations.animateOverlayClose((this as any).dom.aiLogicOverlay, (this as any).dom.aiLogicPanel)
+      MobaoAnimations.animateOverlayClose(this.dom.aiLogicOverlay, this.dom.aiLogicPanel)
     } else {
-      ; (this as any).dom.aiLogicOverlay.classList.add("hidden")
+      ; this.dom.aiLogicOverlay.classList.add("hidden")
     }
   },
 
@@ -656,9 +658,9 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     if (typeof MobaoShopPage !== "undefined") {
       MobaoShopPage.init({
         onPurchase: () => {
-          ; (this as any).updateLobbyMoneyDisplay()
+          ; this.updateLobbyMoneyDisplay()
           if (!document.getElementById("gameArea")!.classList.contains("hidden")) {
-            ; (this as any).updateHud()
+            ; this.updateHud()
           }
         }
       })
@@ -670,9 +672,9 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     if (typeof MobaoShopPage !== "undefined") {
       MobaoShopPage.close()
     }
-    ; (this as any).updateLobbyMoneyDisplay()
+    ; this.updateLobbyMoneyDisplay()
     if (!document.getElementById("gameArea")!.classList.contains("hidden")) {
-      ; (this as any).updateHud()
+      ; this.updateHud()
     }
   },
 
@@ -684,16 +686,16 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     } else {
       overlay.classList.remove("hidden")
     }
-    ; (this as any).initCollectionPanel()
+    ; this.initCollectionPanel()
 
     const closeBtn = document.getElementById("collectionCloseBtn")
     if (closeBtn && !(closeBtn as any)._collectionBound) {
       ; (closeBtn as any)._collectionBound = true
-      closeBtn.addEventListener("click", () => (this as any).closeCollectionOverlay())
+      closeBtn.addEventListener("click", () => this.closeCollectionOverlay())
     }
 
     overlay.onclick = (e) => {
-      if (e.target === overlay) (this as any).closeCollectionOverlay()
+      if (e.target === overlay) this.closeCollectionOverlay()
     }
   },
 
@@ -718,10 +720,10 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
 
     if (categorySelect && !(categorySelect as any)._initialized) {
       ; (categorySelect as any)._initialized = true
-      const categories = (this as any).getCollectionCategories()
+      const categories = this.getCollectionCategories()
       categorySelect.innerHTML =
         '<option value="all">全部品类</option>' + categories.map((c: string) => `<option value="${c}">${c}</option>`).join("")
-      categorySelect.addEventListener("change", () => (this as any).renderCollectionGrid())
+      categorySelect.addEventListener("change", () => this.renderCollectionGrid())
     }
 
     if (qualitySelect && !(qualitySelect as any)._initialized) {
@@ -730,15 +732,15 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
       qualitySelect.innerHTML =
         '<option value="all">全部品质</option>' +
         qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join("")
-      qualitySelect.addEventListener("change", () => (this as any).renderCollectionGrid())
+      qualitySelect.addEventListener("change", () => this.renderCollectionGrid())
     }
 
     if (searchInput && !(searchInput as any)._initialized) {
       ; (searchInput as any)._initialized = true
-      searchInput.addEventListener("input", () => (this as any).renderCollectionGrid())
+      searchInput.addEventListener("input", () => this.renderCollectionGrid())
     }
 
-    ; (this as any).renderCollectionGrid()
+    ; this.renderCollectionGrid()
   },
 
   getCollectionCategories(): string[] {
@@ -850,8 +852,8 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     const providers = LlmManager ? LlmManager.listProviders() : []
     const activeProviderId = LlmManager ? LlmManager.getActiveProviderId() : "deepseek"
     const currentSettings: Record<string, any> =
-      typeof (this as any).getLlmSettings === "function"
-        ? (this as any).getLlmSettings()
+      typeof this.getLlmSettings === "function"
+        ? this.getLlmSettings()
         : {} as Record<string, any>
     const currentModel = currentSettings.model || "未配置"
     const currentEndpoint = currentSettings.endpoint || "未配置"
@@ -901,7 +903,7 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
       })
     this.saveAiModelConfigs(configs as any)
     this.closeAiModelConfigOverlay()
-      ; (this as any).writeLog("AI模型配置已保存。")
+      ; this.writeLog("AI模型配置已保存。")
   },
 
   getAiModelConfig(aiIndex: number): Record<string, any> | null {

@@ -554,10 +554,12 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
             input.checked = this.isAiLlmEnabledForPlayer(player.id)
             input.addEventListener("change", () => {
               ; this.aiLlmPlayerEnabled[player.id] = Boolean(input.checked)
-              Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches(this.aiLlmPlayerEnabled)
-                ; this.writeLog(
-                  `${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`
-                )
+              if (Deps.LLM_BRIDGE) {
+                Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches(this.aiLlmPlayerEnabled)
+              }
+              ; this.writeLog(
+                `${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`
+              )
             })
 
             const text = document.createElement("span")

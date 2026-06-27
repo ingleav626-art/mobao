@@ -24,11 +24,12 @@ import { createLlmDecisionModule } from './llm-decision.js'
 /**
  * 创建场景 LLM 桥接器
  * @param deps 依赖注入对象（聚合多个模块的常量和函数，结构复杂且仅内部使用）
+ *             使用 unknown 强制内部模块做类型检查后再使用
  */
-export function createSceneLlmBridge(deps: any) {
-  const settingsModule = createLlmSettingsModule(deps)
-  const promptModule = createLlmPromptModule(deps)
-  const decisionModule = createLlmDecisionModule(deps)
+export function createSceneLlmBridge(deps: unknown) {
+  const settingsModule = createLlmSettingsModule(deps as any)
+  const promptModule = createLlmPromptModule(deps as any)
+  const decisionModule = createLlmDecisionModule(deps as any)
 
   const methods = {
     ...settingsModule.methods,

@@ -134,7 +134,7 @@ export function getAllProfiles(): MapProfile[] {
 }
 
 export function getSelectedProfileId(): string {
-  return getAppState("selectedMapProfile") || "default"
+  return (getAppState("selectedMapProfile") as string) || "default"
 }
 
 export function setSelectedProfileId(id: string): void {

@@ -896,8 +896,9 @@ function initialize(): void {
 /**
  * 获取当前活跃提供商的设置
  * @returns 提供商设置对象（结构因提供商不同而异，包含 apiKey、endpoint、model 等字段）
+ *          使用 unknown 强制调用者做类型检查后再使用
  */
-function getActiveProviderSettings(): any {
+function getActiveProviderSettings(): unknown {
   const providerId = getCurrentProviderId()
   const provider = LlmManager ? LlmManager.getProvider(providerId) : null
 

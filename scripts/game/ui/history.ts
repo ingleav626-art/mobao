@@ -188,7 +188,7 @@ export const UiHistoryMixin: Record<string, any> = {
 
     this.dom.itemDrawerList.innerHTML = itemState
       .map((item: { id: string; count: number }) => {
-        const info = (this as unknown as { getItemInfo(id: string): { tip: string; label: string } }).getItemInfo(item.id)
+        const info = this.getItemInfo(item.id)
         const disabled = !canUse || item.count <= 0
         return [
           `<button type="button" class="item-drawer-btn${disabled ? " is-empty" : ""}" data-item-id="${item.id}" ${disabled ? "disabled" : ""} title="${escapeHtml(info.tip)}">`,

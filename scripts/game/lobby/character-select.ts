@@ -114,7 +114,7 @@ export const CharacterSelectMixin: ThisType<WarehouseSceneThis> = {
     const confirmBtn = document.getElementById("characterSelectConfirmBtn")
 
     if (backBtn) {
-      backBtn.addEventListener("click", () => (this as unknown as { showLobbySubPage(page: string): void }).showLobbySubPage("soloSetup"))
+      backBtn.addEventListener("click", () => this.showLobbySubPage("soloSetup"))
     }
 
     if (confirmBtn) {
@@ -1240,12 +1240,12 @@ export const CharacterSelectMixin: ThisType<WarehouseSceneThis> = {
 
     this.renderSelectedCharacterPreview()
 
-    if (typeof (this as unknown as { updatePlayerAvatar?: Function }).updatePlayerAvatar === "function" && (this as unknown as { players?: unknown[] }).players) {
-      const humanPlayer = (this as unknown as { players: { isHuman: boolean; id: string }[] }).players.find((p: { isHuman: boolean }) => p.isHuman)
+    if (this.updatePlayerAvatar && this.players) {
+      const humanPlayer = this.players.find((p) => p.isHuman)
       if (humanPlayer) {
         const avatarEl = document.getElementById(`avatar-${humanPlayer.id}`)
         if (avatarEl) {
-          ; (this as unknown as { updatePlayerAvatar(id: string, el: HTMLElement): void }).updatePlayerAvatar(humanPlayer.id, avatarEl)
+          this.updatePlayerAvatar(humanPlayer.id, avatarEl)
         }
       }
     }
@@ -1291,8 +1291,8 @@ export const CharacterSelectMixin: ThisType<WarehouseSceneThis> = {
   },
 
   _doStartSoloGame() {
-    if (typeof (this as unknown as { startSoloGame?: Function }).startSoloGame === "function") {
-      ; (this as unknown as { startSoloGame(): void }).startSoloGame()
+    if (this.startSoloGame) {
+      this.startSoloGame()
     }
   },
 

@@ -6,7 +6,17 @@
  *
  * @exports safeParseJson, tryExtractDecisionJson, parseLlmError, showAiErrorToast - 错误处理工具
  */
-export function safeParseJson(text: string): any {
+
+import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { Player } from '../../../types/game'
+
+/**
+ * 安全解析 JSON
+ * @param text JSON 字符串
+ * @returns 解析结果（结构不确定，来自 LLM 响应或外部输入）或 null
+ *          调用者需做类型检查后再使用
+ */
+export function safeParseJson(text: string): unknown {
   try {
     return JSON.parse(text)
   } catch (_error) {
@@ -122,7 +132,7 @@ interface LlmErrorEntry {
   timestamp: number
 }
 
-export function setPlayerLlmError(scene: any, playerId: string, errorMessage: string, code: string, level?: string): void {
+export function setPlayerLlmError(scene: WarehouseSceneThis, playerId: string, errorMessage: string, code: string, level?: string): void {
   if (!scene._aiLlmErrors) scene._aiLlmErrors = {}
   const parsed = parseLlmError(errorMessage, code)
   scene._aiLlmErrors[playerId] = {
@@ -160,7 +170,7 @@ export function setPlayerLlmError(scene: any, playerId: string, errorMessage: st
 
   badge.onclick = (e: MouseEvent) => {
     e.stopPropagation()
-    const player = scene.players.find((p: any) => p.id === playerId)
+    const player = scene.players.find((p: Player) => p.id === playerId)
     const pName = player ? player.name : playerId
     const errData = scene._aiLlmErrors[playerId]
     const time = errData ? new Date(errData.timestamp).toLocaleTimeString() : ""
@@ -171,7 +181,7 @@ export function setPlayerLlmError(scene: any, playerId: string, errorMessage: st
   }
 }
 
-export function clearPlayerLlmErrors(scene: any): void {
+export function clearPlayerLlmErrors(scene: WarehouseSceneThis): void {
   if (!scene._aiLlmErrors) {
     scene._aiLlmErrors = {}
     return

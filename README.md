@@ -178,7 +178,7 @@
 - 地图预设可覆盖默认的品质权重和品类权重
 - 藏品图片存储在 `assets/images/artifacts/thumbs/` 下
 
-### 技能系统（测试时次数无限）
+### 技能系统（当前开发阶段次数无限）
 
 | 技能 | 拥有角色 | 效果 | 每轮次数 |
 |------|---------|------|---------|
@@ -186,7 +186,7 @@
 | 玉脉鉴质 | 鉴定师 | 优先对玉器揭示2件品质格，若不足则补其他品类 | 无限 |
 | 鉴踪直取 | 觅踪者 | 直接揭示轮廓最大的1件藏品的所有信息（私有信息） | 无限 |
 
-### 道具系统（测试时次数无限）
+### 道具系统（当前开发阶段次数无限）
 
 | 道具 | 效果 | 初始数量 | 每日限购 |
 |------|------|---------|---------|
@@ -297,8 +297,8 @@
 ### 架构
 
 - **服务端**：Node.js WebSocket 服务器（`lan/server/server.js`）
-- **客户端**：浏览器端桥接层（`lan/client/lan-bridge.js`）
-- **协议**：JSON 消息通信（`lan/shared/protocol.js`），协议版本 1
+- **客户端**：浏览器端桥接层（`lan/client/lan-bridge.ts`）
+- **协议**：JSON 消息通信（`lan/shared/protocol.ts`），协议版本 1
 
 ### 通信协议
 
@@ -407,7 +407,7 @@ node server.js
 │   ├── mobile/                          移动端适配
 │   │   └── mobile-handler.ts            移动端处理器（键盘遮挡/横竖屏/触觉反馈）
 │   ├── game/
-│   │   ├── main.ts                      游戏入口（Phaser 配置、WarehouseScene、Mixin 组装，~2731 行）
+│   │   ├── main.ts                      游戏入口（Phaser 配置、WarehouseScene、Mixin 组装，2748 行）
 │   │   ├── animations.ts               前端动效工具（涟漪、数字滚动、脉冲等）
 │   │   ├── core/                        核心模块
 │   │   │   ├── constants.ts             常量定义（网格/品质/存储键等）
@@ -486,9 +486,9 @@ node server.js
 │   ├── server/
 │   │   └── server.js                    WebSocket 服务器
 │   ├── client/
-│   │   └── lan-bridge.js                联机桥接
+│   │   └── lan-bridge.ts                联机桥接
 │   └── shared/
-│       └── protocol.js                  通信协议定义
+│       └── protocol.ts                  通信协议定义
 ├── types/                               TypeScript 类型定义
 │   ├── game.d.ts                        游戏核心类型
 │   ├── ai.d.ts                          AI 系统类型
@@ -535,7 +535,7 @@ node server.js
 | Phaser 3.90 | 游戏引擎（仓库渲染、动画、交互） |
 | TypeScript | 类型安全，模块化开发 |
 | Vite 8 | 构建工具（开发服务器 + 生产构建） |
-| 原生 JavaScript | 无框架，IIFE + Mixin 模式 |
+| 原生 JavaScript | 无框架，Mixin 组装模式 |
 | ES Modules | 模块系统（import/export，type="module"） |
 | localStorage | 所有数据持久化（设置/战绩/记忆/角色等） |
 | LLM API | 可选的 AI 大模型决策（5 家内置提供商） |
@@ -546,42 +546,38 @@ node server.js
 ### 架构模式
 
 - **ES Modules**：所有模块使用 `import`/`export` 统一管理，通过 `type="module"` 加载
-- **Mixin 组装**：`WarehouseScene` 通过 `Object.assign` 合并 21 个 Mixin 到原型
+- **Mixin 组装**：`WarehouseScene` 通过 `Object.assign` 合并 19 个 Mixin 到原型（LanIndexMixin 内含 6 个子 Mixin，有效总数 25 个）
 - **Bridge 模式**：`shop.ts`、`battle-record.ts`、`settlement.ts` 作为桥接模块，通过 `.call(this)` 借用场景上下文
 - **依赖注入**：`deps.ts` 提供 `Deps` 容器，解决 ES Module 间共享依赖问题
 - **TypeScript 类型**：完整的类型定义文件（`types/*.d.ts`），提供 IDE 支持和类型检查
 
 ### Mixin 列表
 
-WarehouseScene 通过 `Object.assign` 合并以下 21 个 Mixin：
+WarehouseScene 通过 `Object.assign` 合并以下 19 个 Mixin（main.ts:2699-2717）：
 
 | Mixin | 来源模块 | 功能 |
 |-------|---------|------|
 | WarehouseCoreMixin | warehouse/index.ts | 仓库核心逻辑（初始化/渲染/交互） |
 | WarehouseRevealMixin | warehouse/index.ts | 仓库揭示逻辑（品质/轮廓展示） |
 | WarehousePreviewMixin | warehouse/index.ts | 仓库预览（缩略图/导航） |
-| AiWalletMixin | ai/wallet.ts | AI 钱包管理 |
-| AiIntelMixin | ai/intel.ts | AI 情报分析 |
-| AiMemoryMixin | ai/memory.ts | AI 跨局记忆 |
-| AiReflectionMixin | ai/reflection.ts | AI 反思 |
-| AiDecisionMixin | ai/decision.ts | AI LLM 决策 |
+| AiWalletMixin | ai/index.ts → ai/wallet.ts | AI 钱包管理 |
+| AiIntelMixin | ai/index.ts → ai/intel.ts | AI 情报分析 |
+| AiMemoryMixin | ai/index.ts → ai/memory.ts | AI 跨局记忆 |
+| AiReflectionMixin | ai/index.ts → ai/reflection.ts | AI 反思 |
+| AiDecisionMixin | ai/index.ts → ai/decision.ts | AI LLM 决策 |
 | BiddingMixin | bidding/index.ts | 竞价流程 |
-| UiOverlayMixin | ui/overlay.ts | 弹窗层 |
-| UiPanelsMixin | ui/panels.ts | 侧边面板 |
-| UiHistoryMixin | ui/history.ts | 历史记录 |
+| OverlayMixin | ui/index.ts → ui/overlay.ts | 弹窗层 |
+| PanelsMixin | ui/index.ts → ui/panels.ts | 侧边面板 |
+| HistoryMixin | ui/index.ts → ui/history.ts | 历史记录 |
 | LobbyIndexMixin | lobby/index.ts | 大厅逻辑 |
-| LobbyCarouselMixin | lobby/carousel.ts | 地图轮播 |
-| CharacterSelectMixin | lobby/character-select.ts | 角色选择 |
-| LanIndexMixin | lan/index.ts | 联机客户端 |
-| LanEventsMixin | lan/events.ts | 联机事件 |
-| LanGameFlowMixin | lan/game-flow.ts | 联机流程 |
-| LanLive2dMixin | lan/live2d.ts | 联机 Live2D |
-| LanReconnectMixin | lan/reconnect.ts | 断线重连 |
-| LanSettleMixin | lan/settle.ts | 联机结算 |
-| LanSyncMixin | lan/sync.ts | 联机同步 |
+| CarouselMixin | lobby/index.ts → lobby/carousel.ts | 地图轮播 |
+| CharacterSelectMixin | lobby/index.ts → lobby/character-select.ts | 角色选择 |
+| LanIndexMixin | lan/index.ts | 联机客户端（内含 6 个子 Mixin） |
 | RoundManagerMixin | core/round-manager.ts | 回合管理 |
 | SkillItemManagerMixin | core/skill-item-manager.ts | 技能道具管理 |
 | SettlementManagerMixin | core/settlement-manager.ts | 结算管理 |
+
+> LanIndexMixin 在 `lan/index.ts` 内部通过 Object.assign 合入了 6 个子 Mixin：LanEventsMixin、LanSyncMixin、LanReconnectMixin、LanSettleMixin、LanGameFlowMixin、LanLive2dMixin。
 
 ### 数据存储键
 
@@ -677,7 +673,7 @@ APK 输出：`android/app/build/outputs/apk/debug/app-debug.apk`
 
 | 设置项 | 默认值 | 范围 | 说明 |
 |--------|--------|------|------|
-| roundSeconds | 40 | 10~60 | 每轮倒计时（秒） |
+| roundSeconds | 60 | 10~180 | 每轮倒计时（秒） |
 | settlementSpeedMultiplier | 1.0 | 0.5~3.0 | 结算速度倍率（揭示和搜索动画） |
 | musicVolume | 70 | 0~100 | 音乐音量 |
 | sfxVolume | 80 | 0~100 | 音效音量 |
@@ -690,7 +686,7 @@ APK 输出：`android/app/build/outputs/apk/debug/app-debug.apk`
 - **v1.1** — AI 系统、技能道具（规则 AI 人格参数、3 种技能、11 种道具）
 - **v1.2** — LLM 集成、跨局记忆（5 家 LLM 提供商、跨局记忆与反思）
 - **v1.3** — 联机系统（WebSocket 服务器、房间管理、AI 补位）
-- **v1.4** — 代码重构，模块化拆分（main.js 从 ~9000 行优化至 ~2160 行，16 个 Mixin 拆分）
+- **v1.4** — 代码重构，模块化拆分（main.ts 从 ~9000 行优化至 ~2160 行，16 个 Mixin 拆分）
 - **v1.5** — 角色系统（3 个角色、主动技能与被动能力、Live2D 预览、角色选择 UI）
 - **v1.6** — TypeScript 迁移（所有模块迁移到 TypeScript，ES Modules，Vite 构建）
 - **v1.7** — AI 增强（context-builder、game-history、summarizer，联机模块重构）

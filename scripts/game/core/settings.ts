@@ -41,33 +41,44 @@ export function defaultGameSettings(): GameSettingsData {
   }
 }
 
-export function normalizeSettingsSource(value: any): Record<string, any> {
+/**
+ * 规范化设置源对象
+ * @param value 输入值（来自 localStorage，结构不确定）
+ * @returns 规范化后的对象（强制类型断言后使用）
+ */
+export function normalizeSettingsSource(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object") {
     return {}
   }
-  return value
+  return value as Record<string, unknown>
 }
 
-export function normalizeGameSettings(source: any, fallback?: any): GameSettingsData {
-  const defaults = normalizeSettingsSource(fallback || defaultGameSettings())
-  const input = normalizeSettingsSource(source)
+/**
+ * 规范化游戏设置
+ * @param source 输入设置对象（来自 localStorage，结构不确定）
+ * @param fallback 默认值（结构不确定）
+ * @returns 规范化后的游戏设置（强制类型断言后使用）
+ */
+export function normalizeGameSettings(source: unknown, fallback?: unknown): GameSettingsData {
+  const defaults = normalizeSettingsSource(fallback || defaultGameSettings()) as Record<string, unknown>
+  const input = normalizeSettingsSource(source) as Record<string, unknown>
 
   return {
-    maxRounds: clamp(Math.round(input.maxRounds || defaults.maxRounds), 3, 12),
-    actionsPerRound: clamp(Math.round(input.actionsPerRound || defaults.actionsPerRound), 1, 999),
-    roundSeconds: clamp(Math.round(input.roundSeconds || defaults.roundSeconds), 10, 180),
+    maxRounds: clamp(Math.round(Number(input.maxRounds || defaults.maxRounds)), 3, 12),
+    actionsPerRound: clamp(Math.round(Number(input.actionsPerRound || defaults.actionsPerRound)), 1, 999),
+    roundSeconds: clamp(Math.round(Number(input.roundSeconds || defaults.roundSeconds)), 10, 180),
     directTakeRatio: clamp(Number(input.directTakeRatio || defaults.directTakeRatio), 0.05, 0.6),
-    bidRevealIntervalMs: clamp(Math.round(input.bidRevealIntervalMs || defaults.bidRevealIntervalMs), 250, 1800),
-    postRevealWaitMs: clamp(Math.round(input.postRevealWaitMs || defaults.postRevealWaitMs), 800, 6000),
-    bidStep: clamp(Math.round(input.bidStep || defaults.bidStep), 10, 10000),
-    bidDefaultRaise: clamp(Math.round(input.bidDefaultRaise || defaults.bidDefaultRaise), 0, 50000),
+    bidRevealIntervalMs: clamp(Math.round(Number(input.bidRevealIntervalMs || defaults.bidRevealIntervalMs)), 250, 1800),
+    postRevealWaitMs: clamp(Math.round(Number(input.postRevealWaitMs || defaults.postRevealWaitMs)), 800, 6000),
+    bidStep: clamp(Math.round(Number(input.bidStep || defaults.bidStep)), 10, 10000),
+    bidDefaultRaise: clamp(Math.round(Number(input.bidDefaultRaise || defaults.bidDefaultRaise)), 0, 50000),
     settlementSpeedMultiplier: clamp(
       Number(input.settlementSpeedMultiplier || defaults.settlementSpeedMultiplier),
       0.5,
       3
     ),
-    musicVolume: clamp(Math.round(input.musicVolume || defaults.musicVolume), 0, 100),
-    sfxVolume: clamp(Math.round(input.sfxVolume || defaults.sfxVolume), 0, 100)
+    musicVolume: clamp(Math.round(Number(input.musicVolume || defaults.musicVolume)), 0, 100),
+    sfxVolume: clamp(Math.round(Number(input.sfxVolume || defaults.sfxVolume)), 0, 100)
   }
 }
 
@@ -86,7 +97,11 @@ export function loadGameSettings(): GameSettingsData {
   }
 }
 
-export function saveGameSettings(value: any): void {
+/**
+ * 保存游戏设置
+ * @param value 设置对象（来自外部输入，结构不确定）
+ */
+export function saveGameSettings(value: unknown): void {
   const normalized = normalizeGameSettings(value, defaultGameSettings())
   window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(normalized))
 }

@@ -1116,10 +1116,10 @@ export const LlmManager = {
     registerProvider(provider)
 
     const customList = loadCustomProviders()
-    const existingIndex = customList.findIndex(function (p: Record<string, unknown>) {
+    const existingIndex = customList.findIndex(function (p: CustomProvider) {
       return p.id === providerId
     })
-    const providerInfo = { id: providerId, name: config.name || providerId, description: config.description || "" }
+    const providerInfo: CustomProvider = { id: providerId, name: config.name || providerId, description: config.description || "" }
     if (existingIndex >= 0) {
       customList[existingIndex] = providerInfo
     } else {
@@ -1134,7 +1134,7 @@ export const LlmManager = {
       providers.delete(providerId)
     }
     const customList = loadCustomProviders()
-    const filtered = customList.filter(function (p: Record<string, unknown>) {
+    const filtered = customList.filter(function (p: CustomProvider) {
       return p.id !== providerId
     })
     saveCustomProviders(filtered)
@@ -1150,7 +1150,7 @@ export const LlmManager = {
   },
   initializeCustomProviders: function (): void {
     const customList = loadCustomProviders()
-    customList.forEach(function (cfg: Record<string, unknown>) {
+    customList.forEach(function (cfg: CustomProvider) {
       if (!providers.has(String(cfg.id))) {
         const provider = createOpenAICompatibleProvider({
           id: cfg.id,

@@ -21,11 +21,15 @@
  * @exports initDeps - 初始化依赖注入容器函数
  */
 
-/** @type {{ LLM_BRIDGE?: object, BATTLE_RECORD_BRIDGE?: object, SETTLEMENT_BRIDGE?: object }} */
+import type { LlmBridge } from '../../../types/llm'
+
+/** @type {{ LLM_BRIDGE?: LlmBridge | null, BATTLE_RECORD_BRIDGE?: unknown, SETTLEMENT_BRIDGE?: unknown }} */
 export const Deps: {
-  LLM_BRIDGE: any
-  BATTLE_RECORD_BRIDGE: any
-  SETTLEMENT_BRIDGE: any
+  LLM_BRIDGE: LlmBridge | null
+  /** 战斗记录桥接器（结构未定义，使用 unknown 强制类型检查） */
+  BATTLE_RECORD_BRIDGE: unknown
+  /** 结算桥接器（结构未定义，使用 unknown 强制类型检查） */
+  SETTLEMENT_BRIDGE: unknown
 } = {
   LLM_BRIDGE: null,
   BATTLE_RECORD_BRIDGE: null,
@@ -34,7 +38,8 @@ export const Deps: {
 
 /**
  * 初始化所有共享依赖（在 main.js 桥接层创建后调用）
+ * @param bridges 桥接器对象集合（结构不确定，使用 unknown 强制类型检查）
  */
-export function initDeps(bridges: Record<string, any>): void {
+export function initDeps(bridges: Record<string, unknown>): void {
   Object.assign(Deps, bridges)
 }

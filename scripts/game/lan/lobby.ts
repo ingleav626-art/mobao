@@ -23,6 +23,7 @@ import { MobaoShopBridge } from "../bridge/shop"
 
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { CarryItem } from "../../../types/game"
+import type { RoomCreateOptions } from "../../../types/lan"
 
 interface LanRoomInfo {
   code: string
@@ -228,7 +229,15 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
     return name;
   };
 
-  const connectWithRetry = (url: string, name: string, roomOptions: any, serverFailedRef: any, maxAttempts?: number) => {
+  /**
+   * 带重试的连接
+   * @param url WebSocket URL
+   * @param name 玩家名称
+   * @param roomOptions 房间创建选项
+   * @param serverFailedRef 服务器失败引用（{ failed: boolean }）
+   * @param maxAttempts 最大尝试次数
+   */
+  const connectWithRetry = (url: string, name: string, roomOptions: RoomCreateOptions, serverFailedRef: { failed: boolean }, maxAttempts?: number) => {
     console.log('[LAN] connectWithRetry called, url=' + url);
     maxAttempts = maxAttempts || 8;
     var attempt = 1;

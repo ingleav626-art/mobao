@@ -74,8 +74,8 @@ export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
     lines.push("-");
 
     const rulePayload =
-      (this as unknown as { aiEngine: { getLastDecisionLog(): unknown } | null }).aiEngine && typeof (this as unknown as { aiEngine: { getLastDecisionLog(): unknown } }).aiEngine.getLastDecisionLog === "function"
-        ? (this as unknown as { aiEngine: { getLastDecisionLog(): unknown } }).aiEngine.getLastDecisionLog()
+      this.aiEngine && typeof this.aiEngine.getLastDecisionLog === "function"
+        ? this.aiEngine.getLastDecisionLog()
         : null;
     const ruleEntryById = new Map<string, RuleDecisionEntry>(
       ((rulePayload && ((rulePayload as { entries?: unknown[] }).entries || [])) as unknown[]).map((entry: unknown) => [(entry as DecisionEntry).playerId, entry as RuleDecisionEntry])
@@ -138,34 +138,34 @@ export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
         }
         if (entry.systemPrompt) {
           lines.push("  [System Prompt]");
-          lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.systemPrompt), 2200));
+          lines.push(this.compactPanelTextForSnapshot(String(entry.systemPrompt), 2200));
         }
         if (entry.crossGameMemoryText) {
           lines.push("  [Cross-game Memory]");
-          lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.crossGameMemoryText), 5000));
+          lines.push(this.compactPanelTextForSnapshot(String(entry.crossGameMemoryText), 5000));
         }
         lines.push("  [User Prompt]");
-        lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.userPrompt), 10000));
+        lines.push(this.compactPanelTextForSnapshot(String(entry.userPrompt), 10000));
         lines.push("  [Model Response]");
-        lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.modelResponse), 3000));
+        lines.push(this.compactPanelTextForSnapshot(String(entry.modelResponse), 3000));
         if (entry.toolResultSummary) {
           lines.push("  [Tool Result]");
-          lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.toolResultSummary), 800));
+          lines.push(this.compactPanelTextForSnapshot(String(entry.toolResultSummary), 800));
         }
         if (entry.errorCorrectionPrompt || entry.errorCorrectionResponse) {
           lines.push("  [Error Correction Prompt]");
-          lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.errorCorrectionPrompt), 4200));
+          lines.push(this.compactPanelTextForSnapshot(String(entry.errorCorrectionPrompt), 4200));
           lines.push("  [Error Correction Response]");
-          lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.errorCorrectionResponse), 4000));
+          lines.push(this.compactPanelTextForSnapshot(String(entry.errorCorrectionResponse), 4000));
         }
         if (entry.followupPrompt || entry.followupResponse || entry.followupError) {
           lines.push("  [Follow-up Prompt]");
-          lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.followupPrompt), 4200));
+          lines.push(this.compactPanelTextForSnapshot(String(entry.followupPrompt), 4200));
           lines.push("  [Follow-up Response]");
-          lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.followupResponse || entry.followupError), 4000));
+          lines.push(this.compactPanelTextForSnapshot(String(entry.followupResponse || entry.followupError), 4000));
           if (entry.followupActionRejected) {
             lines.push("  [Follow-up Action Guard]");
-            lines.push((this as unknown as { compactPanelTextForSnapshot(text: string, limit?: number): string }).compactPanelTextForSnapshot(String(entry.followupActionRejected), 500));
+            lines.push(this.compactPanelTextForSnapshot(String(entry.followupActionRejected), 500));
           }
         }
       } else {
@@ -223,34 +223,27 @@ export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
   },
 
   beginRunTracking(): void {
-    (this as unknown as { runSerial: number }).runSerial += 1;
-    (this as unknown as { saveAiMemoryToStorage(): void }).saveAiMemoryToStorage();
-    const runLog: {
-      runNo: number;
-      startedAt: number;
-      actionLogs: string[];
-      aiThoughtLogs: unknown[];
-      roundLogsByRound: Record<string, string[]>;
-      roundPanelTexts: Record<string, string>;
-    } = {
-      runNo: (this as unknown as { runSerial: number }).runSerial,
+    this.runSerial += 1;
+    this.saveAiMemoryToStorage();
+    const runLog = {
+      runNo: this.runSerial,
       startedAt: Date.now(),
-      actionLogs: [],
-      aiThoughtLogs: [],
-      roundLogsByRound: {},
-      roundPanelTexts: {}
+      actionLogs: [] as string[],
+      aiThoughtLogs: [] as unknown[],
+      roundLogsByRound: {} as Record<string, string[]>,
+      roundPanelTexts: {} as Record<string, string>
     };
-    (this as unknown as { currentRunLog: unknown }).currentRunLog = runLog;
-    (this as unknown as { runLogHistory: unknown[] }).runLogHistory.push(runLog);
-    if ((this as unknown as { runLogHistory: unknown[] }).runLogHistory.length > 12) {
-      (this as unknown as { runLogHistory: unknown[] }).runLogHistory = (this as unknown as { runLogHistory: unknown[] }).runLogHistory.slice(-12);
+    this.currentRunLog = runLog;
+    this.runLogHistory.push(runLog);
+    if (this.runLogHistory.length > 12) {
+      this.runLogHistory = this.runLogHistory.slice(-12);
     }
-    (this as unknown as { renderAiThoughtLog(): void }).renderAiThoughtLog();
+    this.renderAiThoughtLog();
   },
 
   recordAiThoughtLogs(telemetry: Record<string, unknown>): void {
     const t = telemetry as { mode?: string; entries?: DecisionEntry[] };
-    if (!t || t.mode !== "llm" || !Array.isArray(t.entries) || !(this as unknown as { currentRunLog: unknown }).currentRunLog) {
+    if (!t || t.mode !== "llm" || !Array.isArray(t.entries) || !this.currentRunLog) {
       return
     }
 
@@ -289,7 +282,7 @@ export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
         parts.push(`[决策摘要] ${thought}`);
       }
 
-      (this as unknown as { currentRunLog: { aiThoughtLogs: unknown[] } }).currentRunLog.aiThoughtLogs.push({
+      this.currentRunLog!.aiThoughtLogs.push({
         round: (telemetry as { round: number }).round,
         playerName: entry.playerName || entry.playerId || "AI",
         thought: parts.join("\n"),
@@ -311,44 +304,44 @@ export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
       });
     });
 
-    if ((this as unknown as { currentRunLog: { aiThoughtLogs: unknown[] } }).currentRunLog.aiThoughtLogs.length > 80) {
-      ; (this as unknown as { currentRunLog: { aiThoughtLogs: unknown[] } }).currentRunLog.aiThoughtLogs = (this as unknown as { currentRunLog: { aiThoughtLogs: unknown[] } }).currentRunLog.aiThoughtLogs.slice(-80);
+    if (this.currentRunLog!.aiThoughtLogs.length > 80) {
+      ; this.currentRunLog!.aiThoughtLogs = this.currentRunLog!.aiThoughtLogs.slice(-80);
     }
 
     const roundNo = Math.max(1, Math.round(Number((telemetry as { round?: number }).round) || 1));
     console.log(
       `[recordAiThoughtLogs] roundNo=${roundNo}, telemetry.round=${(telemetry as { round?: number }).round}, entries=${(telemetry as { entries?: unknown[] }).entries?.length}`
     );
-    if (!(this as unknown as { currentRunLog: { roundPanelTexts?: Record<string, string> } }).currentRunLog.roundPanelTexts) {
-      (this as unknown as { currentRunLog: { roundPanelTexts: Record<string, string> } }).currentRunLog.roundPanelTexts = {};
+    if (!this.currentRunLog!.roundPanelTexts) {
+      this.currentRunLog!.roundPanelTexts = {};
     }
-    if (typeof (this as unknown as { renderAiLogicPanelForLlm?: (telemetry: { round: number; entries?: Array<Record<string, unknown>> }) => void }).renderAiLogicPanelForLlm === "function") {
+    if (typeof this.renderAiLogicPanelForLlm === "function") {
       const tempDiv = document.createElement("div");
-      const origContent = (this as unknown as { dom: { aiLogicContent: HTMLElement } }).dom.aiLogicContent;
-      (this as unknown as { dom: { aiLogicContent: HTMLElement } }).dom.aiLogicContent = tempDiv;
-      (this as unknown as { renderAiLogicPanelForLlm(telemetry: { round: number; entries?: Array<Record<string, unknown>> }): void }).renderAiLogicPanelForLlm(telemetry as { round: number; entries?: Array<Record<string, unknown>> });
+      const origContent = this.dom.aiLogicContent;
+      this.dom.aiLogicContent = tempDiv;
+      this.renderAiLogicPanelForLlm(telemetry as { round: number; entries?: Array<Record<string, unknown>> });
       const htmlContent = tempDiv.innerHTML;
-      (this as unknown as { dom: { aiLogicContent: HTMLElement } }).dom.aiLogicContent = origContent;
+      this.dom.aiLogicContent = origContent;
       if (htmlContent) {
-        (this as unknown as { currentRunLog: { roundPanelTexts: Record<string, string> } }).currentRunLog.roundPanelTexts[String(roundNo)] = htmlContent;
+        this.currentRunLog!.roundPanelTexts[String(roundNo)] = htmlContent;
         console.log(
           `[recordAiThoughtLogs] saved roundPanelTexts[${roundNo}] as HTML, length=${htmlContent.length}`
         );
       }
     }
 
-    (this as unknown as { renderAiThoughtLog(): void }).renderAiThoughtLog();
+    this.renderAiThoughtLog();
   },
 
   renderAiThoughtLog(): void {
-    if (!(this as unknown as { dom: { aiThoughtContent: HTMLElement | null } }).dom.aiThoughtContent) {
+    if (!this.dom.aiThoughtContent) {
       return
     }
 
     const lines: string[] = [];
     const reasoningLines: string[] = [];
-    const runs = (this as unknown as { runLogHistory: Array<{ runNo: number; aiThoughtLogs?: unknown[]; actionLogs?: string[] }> }).runLogHistory.slice().reverse();
-    runs.forEach((run: { runNo: number; aiThoughtLogs?: unknown[]; actionLogs?: string[] }) => {
+    const runs = (this.runLogHistory as Array<{ runNo: number; aiThoughtLogs?: unknown[]; actionLogs?: string[] }>).slice().reverse();
+    runs.forEach((run) => {
       lines.push(`第 ${run.runNo} 局`);
 
       if (!run.aiThoughtLogs || run.aiThoughtLogs.length === 0) {
@@ -373,30 +366,30 @@ export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
       lines.push("");
     });
 
-    (this as unknown as { dom: { aiThoughtContent: HTMLElement } }).dom.aiThoughtContent.textContent = lines.length > 0 ? lines.join("\n") : "暂无AI思考记录。";
+    this.dom.aiThoughtContent.textContent = lines.length > 0 ? lines.join("\n") : "暂无AI思考记录。";
   },
 
   writeLog(text: string): void {
     const line = `日志: ${text}`;
-    if ((this as unknown as { dom: { actionLog: HTMLElement | null } }).dom.actionLog) {
-      (this as unknown as { dom: { actionLog: HTMLElement } }).dom.actionLog.textContent = line;
+    if (this.dom.actionLog) {
+      this.dom.actionLog.textContent = line;
     }
-    if ((this as unknown as { currentRunLog: unknown }).currentRunLog) {
-      (this as unknown as { currentRunLog: { actionLogs: string[] } }).currentRunLog.actionLogs.push(line);
-      if ((this as unknown as { currentRunLog: { actionLogs: string[] } }).currentRunLog.actionLogs.length > 120) {
-        (this as unknown as { currentRunLog: { actionLogs: string[] } }).currentRunLog.actionLogs = (this as unknown as { currentRunLog: { actionLogs: string[] } }).currentRunLog.actionLogs.slice(-120);
+    if (this.currentRunLog) {
+      this.currentRunLog.actionLogs.push(line);
+      if (this.currentRunLog.actionLogs.length > 120) {
+        this.currentRunLog.actionLogs = this.currentRunLog.actionLogs.slice(-120);
       }
 
-      const roundNo = Math.max(1, Math.round(Number((this as unknown as { round: number }).round) || 1));
+      const roundNo = Math.max(1, Math.round(Number(this.round) || 1));
       const roundKey = String(roundNo);
-      if (!Array.isArray((this as unknown as { currentRunLog: { roundLogsByRound: Record<string, string[]> } }).currentRunLog.roundLogsByRound[roundKey])) {
-        (this as unknown as { currentRunLog: { roundLogsByRound: Record<string, string[]> } }).currentRunLog.roundLogsByRound[roundKey] = [];
+      if (!Array.isArray(this.currentRunLog.roundLogsByRound[roundKey])) {
+        this.currentRunLog.roundLogsByRound[roundKey] = [];
       }
-      (this as unknown as { currentRunLog: { roundLogsByRound: Record<string, string[]> } }).currentRunLog.roundLogsByRound[roundKey].push(line);
-      if ((this as unknown as { currentRunLog: { roundLogsByRound: Record<string, string[]> } }).currentRunLog.roundLogsByRound[roundKey].length > 120) {
-        (this as unknown as { currentRunLog: { roundLogsByRound: Record<string, string[]> } }).currentRunLog.roundLogsByRound[roundKey] = (this as unknown as { currentRunLog: { roundLogsByRound: Record<string, string[]> } }).currentRunLog.roundLogsByRound[roundKey].slice(-120);
+      this.currentRunLog.roundLogsByRound[roundKey].push(line);
+      if (this.currentRunLog.roundLogsByRound[roundKey].length > 120) {
+        this.currentRunLog.roundLogsByRound[roundKey] = this.currentRunLog.roundLogsByRound[roundKey].slice(-120);
       }
     }
-    (this as unknown as { renderAiThoughtLog(): void }).renderAiThoughtLog();
+    this.renderAiThoughtLog();
   }
 }

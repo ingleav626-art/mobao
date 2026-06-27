@@ -1,0 +1,82 @@
+
+scripts/game/scene/scene-init.ts(19,39): error TS2307: Cannot find module '../../audio' or its corresponding type declarations.
+scripts/game/scene/scene-init.ts(21,31): error TS2305: Module '"../core/settings"' has no exported member 'defaultDeepSeekSettings'.
+scripts/game/scene/scene-init.ts(27,3): error TS2304: Cannot find name 'WarehouseScene'.
+scripts/game/scene/scene-init.ts(28,8): error TS2339: Property 'initAudio' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(29,8): error TS2339: Property 'cacheDom' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(30,8): error TS2339: Property 'bindDomEvents' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(33,8): error TS2339: Property 'initPreviewFilterOptions' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(34,8): error TS2339: Property 'initAnimations' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(35,8): error TS2339: Property 'enterLobby' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(88,3): error TS2322: Type 'HTMLElement | null' is not assignable to type 'HTMLInputElement | null'.
+scripts/game/scene/scene-init.ts(390,12): error TS2339: Property 'enterLobby' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(398,61): error TS2551: Property 'openAiLogicPanel' does not exist on type 'WarehouseSceneThis'. Did you mean 'renderAiLogicPanel'?
+scripts/game/scene/scene-init.ts(400,68): error TS2339: Property 'closeAiLogicPanel' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(405,14): error TS2339: Property 'closeAiLogicPanel' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(410,70): error TS2551: Property 'showAiConversationMessages' does not exist on type 'WarehouseSceneThis'. Did you mean 'getAiConversationMessages'?
+scripts/game/scene/scene-init.ts(432,16): error TS2551: Property 'openBattleRecordReplay' does not exist on type 'WarehouseSceneThis'. Did you mean 'openBattleRecordPanel'?
+scripts/game/scene/scene-init.ts(441,16): error TS2551: Property 'openBattleRecordLogs' does not exist on type 'WarehouseSceneThis'. Did you mean 'openBattleRecordPanel'?
+scripts/game/scene/scene-init.ts(447,14): error TS2551: Property 'closeBattleRecordLogs' does not exist on type 'WarehouseSceneThis'. Did you mean 'clearBattleRecords'?
+scripts/game/scene/scene-init.ts(458,16): error TS2551: Property 'openBattleRecordLogs' does not exist on type 'WarehouseSceneThis'. Did you mean 'openBattleRecordPanel'?
+scripts/game/scene/scene-init.ts(470,16): error TS2551: Property 'openBattleRecordLogs' does not exist on type 'WarehouseSceneThis'. Did you mean 'openBattleRecordPanel'?
+scripts/game/scene/scene-init.ts(479,16): error TS2551: Property 'deleteBattleRecord' does not exist on type 'WarehouseSceneThis'. Did you mean 'battleRecords'?
+scripts/game/scene/scene-init.ts(491,72): error TS2339: Property 'toggleItemDrawer' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(515,8): error TS2339: Property 'bindCharacterSkillButton' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(518,14): error TS2339: Property 'shouldShowReflectionUI' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(519,12): error TS2339: Property 'showReflectionPendingDialogForBack' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(526,12): error TS2339: Property 'enterLobby' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(536,12): error TS2339: Property 'enterLobby' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(540,14): error TS2339: Property 'shouldShowReflectionUI' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(541,12): error TS2339: Property 'showReflectionPendingDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(554,9): error TS2531: Object is possibly 'null'.
+scripts/game/scene/scene-init.ts(555,14): error TS2551: Property 'showLanRestartWaitingDialog' does not exist on type 'WarehouseSceneThis'. Did you mean 'showLanRestartVoteDialog'?
+scripts/game/scene/scene-init.ts(560,12): error TS2339: Property 'proceedToNewRun' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(578,39): error TS2531: Object is possibly 'null'.
+scripts/game/scene/scene-init.ts(578,61): error TS2339: Property 'defaultSettings' does not exist on type '{ id: string; name: string; apiKey?: string | undefined; endpoint?: string | undefined; model?: string | undefined; requestChat?(options: unknown): Promise<LlmChatResult>; saveSettings?(settings: Record<...>): void; applySettings?(settings: Record<...>): void; }'.
+scripts/game/scene/scene-init.ts(579,11): error TS2531: Object is possibly 'null'.
+scripts/game/scene/scene-init.ts(579,33): error TS2339: Property 'defaultSettings' does not exist on type '{ id: string; name: string; apiKey?: string | undefined; endpoint?: string | undefined; model?: string | undefined; requestChat?(options: unknown): Promise<LlmChatResult>; saveSettings?(settings: Record<...>): void; applySettings?(settings: Record<...>): void; }'.
+scripts/game/scene/scene-init.ts(595,16): error TS2339: Property 'enterLobby' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(603,14): error TS2339: Property 'clearAiMemoryStorage' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(637,12): error TS2339: Property 'openAiMemoryPanel' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(642,12): error TS2339: Property 'showAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(645,8): error TS2339: Property 'showAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(646,10): error TS2339: Property 'removeAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(668,12): error TS2339: Property 'removeAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(680,16): error TS2339: Property 'removeAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(699,20): error TS2339: Property 'removeAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(719,18): error TS2339: Property 'removeAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(730,14): error TS2339: Property 'removeAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(734,8): error TS2339: Property 'removeAiMemoryExportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(740,12): error TS2339: Property 'showAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(748,18): error TS2339: Property 'ok' does not exist on type 'void'.
+scripts/game/scene/scene-init.ts(755,31): error TS2339: Property 'removeAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(758,52): error TS2339: Property 'error' does not exist on type 'void'.
+scripts/game/scene/scene-init.ts(761,41): error TS2339: Property 'error' does not exist on type 'void'.
+scripts/game/scene/scene-init.ts(780,8): error TS2339: Property 'showAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(781,10): error TS2339: Property 'removeAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(838,24): error TS2339: Property 'ok' does not exist on type 'void'.
+scripts/game/scene/scene-init.ts(842,37): error TS2339: Property 'removeAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(844,44): error TS2339: Property 'error' does not exist on type 'void'.
+scripts/game/scene/scene-init.ts(867,12): error TS2339: Property 'removeAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(879,18): error TS2339: Property 'ok' does not exist on type 'void'.
+scripts/game/scene/scene-init.ts(883,31): error TS2339: Property 'removeAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(885,38): error TS2339: Property 'error' does not exist on type 'void'.
+scripts/game/scene/scene-init.ts(890,14): error TS2339: Property 'removeAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(894,8): error TS2339: Property 'removeAiMemoryImportDialog' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(898,8): error TS2339: Property 'downloadAiMemoryFallback' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(943,12): error TS2339: Property 'closeAiMemoryPanel' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(956,12): error TS2551: Property 'openAiModelConfigOverlay' does not exist on type 'WarehouseSceneThis'. Did you mean 'closeAiModelConfigOverlay'?
+scripts/game/scene/scene-init.ts(968,12): error TS2551: Property 'saveAiModelConfigFromForm' does not exist on type 'WarehouseSceneThis'. Did you mean 'saveAiModelConfigs'?
+scripts/game/scene/scene-init.ts(989,14): error TS2339: Property 'closeAiMemoryPanel' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1039,16): error TS2339: Property 'isSettingsOverlayOpen' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1040,18): error TS2339: Property 'scrollElementByWheel' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1054,14): error TS2339: Property 'scrollElementByWheel' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1071,39): error TS2339: Property 'scrollElementByWheel' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1131,24): error TS2339: Property 'toWorldPointFromRootEvent' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1165,10): error TS2339: Property 'handleBidKeyInput' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1185,10): error TS2551: Property 'hideGameConfirm' does not exist on type 'WarehouseSceneThis'. Did you mean 'showGameConfirm'?
+scripts/game/scene/scene-init.ts(1193,10): error TS2551: Property 'hideGameConfirm' does not exist on type 'WarehouseSceneThis'. Did you mean 'showGameConfirm'?
+scripts/game/scene/scene-init.ts(1257,14): error TS2339: Property 'showCharacterInfoPopup' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1302,12): error TS2339: Property 'isSettingsOverlayOpen' does not exist on type 'WarehouseSceneThis'.
+scripts/game/scene/scene-init.ts(1366,12): error TS2339: Property 'onLanBackground' does not exist on type 'WarehouseSceneThis'.
+

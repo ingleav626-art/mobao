@@ -1,4 +1,5 @@
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { Player } from '../../../types/game'
 
 /**
  * @file reflection.js
@@ -70,7 +71,7 @@ export const AiReflectionMixin: Record<string, any> = {
     }
     window.addEventListener("beforeunload", this._reflectionBeforeUnload)
     const originalCrossGameMemory = this.aiCrossGameMemory
-    const aiPlayers = (this as unknown as { players: Array<{ id: string; name: string; isHuman: boolean }>; canUseLlmDecisionForPlayer(id: string): boolean }).players.filter((p: { id: string; name: string; isHuman: boolean }) => !p.isHuman && (this as unknown as { canUseLlmDecisionForPlayer(id: string): boolean }).canUseLlmDecisionForPlayer(p.id))
+    const aiPlayers = this.players.filter((p: Player) => !p.isHuman && this.canUseLlmDecisionForPlayer(p.id))
     this.aiReflectionTotal = aiPlayers.length
     this.updateReflectionStatusUI()
     console.log("[triggerAiReflection] aiPlayers count:", aiPlayers.length)
@@ -96,7 +97,7 @@ export const AiReflectionMixin: Record<string, any> = {
           dividendTicketText = `门票触发：拍下者盈利，你被扣除${record.dividendTicket.ticketPerPlayer || 0}门票`
         }
       }
-      const crossMemory = (this as unknown as { ensureAiCrossGameMemory(id: string): { stats: Record<string, number>; lessons: string[]; strategies: string[]; praises: string[] } }).ensureAiCrossGameMemory(player.id)
+      const crossMemory = this.ensureAiCrossGameMemory(player.id)
       const stats = crossMemory.stats || {}
       const lessons = crossMemory.lessons || []
       const strategies = crossMemory.strategies || []
@@ -306,7 +307,9 @@ export const AiReflectionMixin: Record<string, any> = {
             `[triggerAiReflection] ${player.id} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`
           )
 
-          let parsedReflection: { lessons: any[]; strategies: any[]; summary?: string } = { lessons: [], strategies: [] }
+          // LLM 响应结构不确定，lessons/strategies 内容因模型输出而异
+          // 使用 unknown[] 强制调用者做类型检查后再使用
+          let parsedReflection: { lessons: unknown[]; strategies: unknown[]; summary?: string } = { lessons: [], strategies: [] }
           try {
             const jsonMatch = reflectionText.match(/\{[\s\S]*\}/)
             if (jsonMatch) {
@@ -425,8 +428,8 @@ export const AiReflectionMixin: Record<string, any> = {
       }
     })
     if (this.pendingSettlementSummary && this.aiCrossGameMessagesByPlayer) {
-      (this as unknown as { players: Array<{ id: string; isHuman: boolean }> }).players.filter((p: { id: string; isHuman: boolean }) => !p.isHuman).forEach((p: { id: string }) => {
-        const messages = (this as unknown as { aiCrossGameMessagesByPlayer: Record<string, Array<{ role: string; content: string }[]> | undefined> }).aiCrossGameMessagesByPlayer[p.id]
+      this.players.filter((p: Player) => !p.isHuman).forEach((p: Player) => {
+        const messages = this.aiCrossGameMessagesByPlayer[p.id]
         if (Array.isArray(messages) && messages.length > 0) {
           const lastGame = messages[messages.length - 1]
           if (Array.isArray(lastGame)) {
