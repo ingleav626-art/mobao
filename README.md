@@ -535,6 +535,7 @@ node server.js
 | Phaser 3.90 | 游戏引擎（仓库渲染、动画、交互） |
 | TypeScript | 类型安全，模块化开发 |
 | Vite 8 | 构建工具（开发服务器 + 生产构建） |
+| Vitest | 测试框架（v8 coverage，398 个测试） |
 | 原生 JavaScript | 无框架，Mixin 组装模式 |
 | ES Modules | 模块系统（import/export，type="module"） |
 | localStorage | 所有数据持久化（设置/战绩/记忆/角色等） |
@@ -622,7 +623,7 @@ WarehouseScene 通过 `Object.assign` 合并以下 19 个 Mixin（main.ts:2699-2
 # 安装依赖
 npm install
 
-# 启动开发服务器（端口 3000，支持局域网访问）
+# 启动开发服务器（端口 5173，支持局域网访问）
 npm run dev
 
 # 构建生产版本
@@ -641,6 +642,18 @@ npm run format
 # Prettier 格式修复
 npm run format:fix
 ```
+
+### 测试
+
+```bash
+# 运行全部测试
+npm run test
+
+# Watch 模式（开发时自动重跑）
+npm run test:watch
+```
+
+测试文件在 `tests/` 目录，按源码架构一一对应。覆盖纯函数的输入→输出等价性、边界条件、状态变更。
 
 ### LLM API 代理
 
@@ -690,6 +703,7 @@ APK 输出：`android/app/build/outputs/apk/debug/app-debug.apk`
 - **v1.5** — 角色系统（3 个角色、主动技能与被动能力、Live2D 预览、角色选择 UI）
 - **v1.6** — TypeScript 迁移（所有模块迁移到 TypeScript，ES Modules，Vite 构建）
 - **v1.7** — AI 增强（context-builder、game-history、summarizer，联机模块重构）
+- **v1.8** — Phase 2 Mixin 解耦（15/19 Mixin 提取独立纯函数 + Vitest 测试体系 398 个测试）
 
 ---
 
@@ -738,8 +752,9 @@ APK 输出：`android/app/build/outputs/apk/debug/app-debug.apk`
 
 #### 代码结构优化
 
-- 持续优化 Mixin 组装模式，降低模块间耦合
+- ~~持续优化 Mixin 组装模式，降低模块间耦合~~ ✅ Phase 2 已完成（15/19 Mixin 解耦为独立纯函数）
 - 优化全局命名空间管理
+- Phase 3：将 Mixin 拆分为独立类/模块，通过依赖注入替代 `this` 共享（解决 WarehouseSceneThis God Object 问题）
 - 改进状态管理方式
 
 #### AI 与 LLM 优化

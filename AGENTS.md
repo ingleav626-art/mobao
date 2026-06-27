@@ -7,8 +7,10 @@
 ## Commands
 
 ```bash
-npm run dev          # Vite dev server on port 3000 (LAN-accessible)
+npm run dev          # Vite dev server on port 5173 (LAN-accessible)
 npm run build        # Vite build → dist/
+npm run test         # Vitest run（全量测试）
+npm run test:watch   # Vitest watch 模式
 npm run lint         # eslint scripts/
 npm run format       # prettier --check scripts/
 npm run format:fix   # prettier --write scripts/
@@ -16,7 +18,7 @@ npm run server       # LAN WebSocket server (lan/server/)
 npx tsc --noEmit     # TypeScript type check (run after code changes)
 ```
 
-No test suite. No `typecheck` script — TypeScript is transpiled by Vite, not tsc.
+测试框架：Vitest。测试文件在 `tests/` 目录，按源码架构一一对应。
 
 ## Architecture
 
@@ -41,6 +43,30 @@ All other modules use ES Module `import`/`export`. `main.ts` has 41 import state
 - **lobby/**: LobbyIndexMixin, CarouselMixin, CharacterSelectMixin
 - **lan/**: LanIndexMixin (internally merges 6 sub-mixins: events, sync, reconnect, settle, game-flow, live2d)
 - **core/**: RoundManagerMixin, SkillItemManagerMixin, SettlementManagerMixin
+
+### Phase 2 Mixin 解耦（独立纯函数）
+
+15/19 Mixin 已完成纯函数提取，Mixin 薄包装层委托调用独立导出函数。已解耦的模块：
+
+| 模块 | 提取的独立函数 |
+|------|--------------|
+| ai/wallet.ts | getAiWallet, getAiMinimumBid, normalizeAiBidValue, resetAiWallets |
+| ai/reflection.ts | applyMemoryOperations, updateCrossGameMemory |
+| ai/memory.ts | getAiMemoryStorageKey, getQualityCounts, getTotalOccupiedCells, ensureCrossGameMemory |
+| ai/decision.ts | compactPanelTextForSnapshot, buildAiDecisionPanelSnapshot |
+| ui/panels.ts | addPrivateIntelEntry, addPublicInfoEntry, renderPrivateIntelPanel, renderPublicInfoPanel, updateSidePanels |
+| ui/history.ts | resetPlayerHistoryState, clearCurrentRoundUsage, recordPlayerUsage, renderItemUsageCell, recordRoundHistory, refreshPlayerHistoryUI |
+| ui/overlay.ts | getCollectionCategories, filterCollectionItems |
+| lobby/carousel.ts | getMapProfiles, getSelectedMapIndex, getAdjacentIndexes |
+| lobby/character-select.ts | calcReplenishCost |
+| lobby/index.ts | isAiLlmEnabledForPlayer, getSlotLayout, sortCollectionItems |
+| bidding/index.ts | getLastRoundBidMap, shouldDirectTake |
+| warehouse/index.ts | findFirstEmptySlot, isInBoundsCell, hasAnyInfo, getItemKnownText, pickBottomCellFromTargets, pickRevealTargets |
+| core/skill-item-manager.ts | getItemInfo, getPlayerActionId, consumeActionState, wrapContextWithCharacterBonus |
+| core/settlement-manager.ts | calculateDividendTicket, getSelfProfitInfo, buildDividendTicketLog |
+| core/settings.ts | normalizeGameSettings, roundToStep, loadPlayerMoney, savePlayerMoney, clampBid |
+
+未解耦（DOM 重或已是空壳）：RoundManagerMixin, WarehousePreviewMixin, LanIndexMixin, AiIntelMixin
 
 ### Dependency injection
 
