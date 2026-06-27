@@ -44,6 +44,42 @@ import { MobaoShopPage } from "../shop/index"
 import { rgbHex } from "../core/utils"
 import { MobileHandler } from "../../mobile/mobile-handler"
 import { AudioManager } from "../../audio/audio-manager"
+import { getCollectionCategories as _getCollectionCategories, filterCollectionItems } from "../ui/overlay"
+
+// ─── 独立函数（可独立测试）───
+
+export function isAiLlmEnabledForPlayer(map: Record<string, boolean> | null | undefined, playerId: string): boolean {
+  return Boolean(map && map[playerId])
+}
+
+export function getSlotLayout(playerCount: number): { leftSlots: string[]; rightSlots: string[] } {
+  const leftSlots = playerCount <= 2 ? ["p1"] : ["p1", "p2"]
+  const rightSlots = playerCount <= 1 ? [] : playerCount <= 2 ? ["p2"] : playerCount <= 3 ? ["p3"] : ["p3", "p4"]
+  return { leftSlots, rightSlots }
+}
+
+export function sortCollectionItems<T extends { basePrice?: number; name?: string; w?: number; h?: number }>(
+  items: T[],
+  sortValue: string
+): T[] {
+  if (sortValue === "default") return items
+  return [...items].sort((a, b) => {
+    switch (sortValue) {
+      case "price-asc":
+        return (a.basePrice || 0) - (b.basePrice || 0)
+      case "price-desc":
+        return (b.basePrice || 0) - (a.basePrice || 0)
+      case "name-asc":
+        return (a.name || "").localeCompare(b.name || "", "zh")
+      case "size-asc":
+        return (a.w || 0) * (a.h || 0) - (b.w || 0) * (b.h || 0)
+      case "size-desc":
+        return (b.w || 0) * (b.h || 0) - (a.w || 0) * (a.h || 0)
+      default:
+        return 0
+    }
+  })
+}
 
 interface LobbySceneLike {
   showLobbySubPage(page: string): void
@@ -509,9 +545,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     const personalPanel = document.getElementById("personalPanel")
     const publicPanel = document.getElementById("publicPanel")
     if (leftSide && rightSide) {
-      const playerCount = this.players.length
-      const leftSlots = playerCount <= 2 ? ["p1"] : ["p1", "p2"]
-      const rightSlots = playerCount <= 1 ? [] : playerCount <= 2 ? ["p2"] : playerCount <= 3 ? ["p3"] : ["p3", "p4"]
+      const { leftSlots, rightSlots } = getSlotLayout(this.players.length)
 
       leftSlots.forEach((slotId) => {
         const cardEl = document.getElementById(`playerCard-${slotId}`)
@@ -631,7 +665,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
   },
 
   isAiLlmEnabledForPlayer(playerId: string): boolean {
-    return Boolean(this.aiLlmPlayerEnabled && this.aiLlmPlayerEnabled[playerId])
+    return isAiLlmEnabledForPlayer(this.aiLlmPlayerEnabled, playerId)
   },
 
   initPreviewFilterOptions() {
@@ -790,12 +824,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
   },
 
   getCollectionCategories(): string[] {
-    const artifacts: (ArtifactDef & { key: string })[] = (ARTIFACT_LIBRARY || []) as (ArtifactDef & { key: string })[]
-    const categories = new Set<string>()
-    artifacts.forEach((a) => {
-      if (a.category) categories.add(a.category)
-    })
-    return Array.from(categories).sort()
+    return _getCollectionCategories(ARTIFACT_LIBRARY || [])
   },
 
   renderCollectionGrid() {
@@ -805,41 +834,11 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
 
     const categoryFilter = (document.getElementById("collectionCategoryFilter") as HTMLSelectElement | null)?.value || "all"
     const qualityFilter = (document.getElementById("collectionQualityFilter") as HTMLSelectElement | null)?.value || "all"
-    const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value?.toLowerCase() || ""
+    const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value || ""
     const sortValue = (document.getElementById("collectionSortFilter") as HTMLSelectElement | null)?.value || "default"
 
-    let artifacts: (ArtifactDef & { key: string })[] = (ARTIFACT_LIBRARY || []) as (ArtifactDef & { key: string })[]
-
-    if (categoryFilter !== "all") {
-      artifacts = artifacts.filter((a) => a.category === categoryFilter)
-    }
-    if (qualityFilter !== "all") {
-      artifacts = artifacts.filter((a) => a.qualityKey === qualityFilter)
-    }
-    if (searchText) {
-      artifacts = artifacts.filter(
-        (a) => a.name.toLowerCase().includes(searchText) || a.key.toLowerCase().includes(searchText)
-      )
-    }
-
-    if (sortValue !== "default") {
-      artifacts = [...artifacts].sort((a, b) => {
-        switch (sortValue) {
-          case "price-asc":
-            return (a.basePrice || 0) - (b.basePrice || 0)
-          case "price-desc":
-            return (b.basePrice || 0) - (a.basePrice || 0)
-          case "name-asc":
-            return (a.name || "").localeCompare(b.name || "", "zh")
-          case "size-asc":
-            return (a.w || 0) * (a.h || 0) - (b.w || 0) * (b.h || 0)
-          case "size-desc":
-            return (b.w || 0) * (b.h || 0) - (a.w || 0) * (a.h || 0)
-          default:
-            return 0
-        }
-      })
-    }
+    const filtered = filterCollectionItems(ARTIFACT_LIBRARY || [], { categoryFilter, qualityFilter, searchText })
+    const artifacts = sortCollectionItems(filtered, sortValue)
 
     const total = (ARTIFACT_LIBRARY || []).length
     if (stats) {

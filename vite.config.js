@@ -29,7 +29,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
+    port: 5173,
     host: '0.0.0.0',  // 允许局域网访问，手机端调试用
     open: true,
     proxy: {

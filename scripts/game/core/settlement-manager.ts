@@ -37,6 +37,75 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
 import { savePlayerMoney } from "./settings";
 import { recordGameFinished } from "./app-state";
 
+// ─── 独立函数（可独立测试）───
+
+const DIVIDEND_RATIO = 0.15
+const TICKET_RATIO = 0.05
+
+export interface DividendTicketResult {
+  winnerProfit: number
+  dividendPerPlayer: number
+  ticketPerPlayer: number
+  mechanism: "dividend" | "ticket" | "none"
+}
+
+export function calculateDividendTicket(
+  totalValue: number,
+  winnerBid: number
+): DividendTicketResult {
+  const winnerProfit = totalValue - winnerBid
+  let dividendPerPlayer = 0
+  let ticketPerPlayer = 0
+
+  if (winnerProfit < 0) {
+    dividendPerPlayer = Math.round(Math.abs(winnerProfit) * DIVIDEND_RATIO)
+  } else if (winnerProfit > 0) {
+    ticketPerPlayer = Math.round(winnerProfit * TICKET_RATIO)
+  }
+
+  const mechanism = dividendPerPlayer > 0 ? "dividend" : ticketPerPlayer > 0 ? "ticket" : "none"
+  return { winnerProfit, dividendPerPlayer, ticketPerPlayer, mechanism }
+}
+
+export interface SelfProfitInfo {
+  profit: number
+  label: string
+}
+
+export function getSelfProfitInfo(
+  winnerProfit: number,
+  dividendPerPlayer: number,
+  ticketPerPlayer: number,
+  isWinner: boolean
+): SelfProfitInfo {
+  if (isWinner) {
+    return { profit: winnerProfit, label: "自身利润" }
+  }
+  if (dividendPerPlayer > 0) {
+    return { profit: dividendPerPlayer, label: "自身利润（分红）" }
+  }
+  if (ticketPerPlayer > 0) {
+    return { profit: -ticketPerPlayer, label: "自身利润（门票）" }
+  }
+  return { profit: 0, label: "自身利润" }
+}
+
+export function buildDividendTicketLog(
+  winnerProfit: number,
+  dividendPerPlayer: number,
+  ticketPerPlayer: number
+): string | null {
+  if (winnerProfit < 0 && dividendPerPlayer > 0) {
+    return `分红：拍下者亏损，非拍下者各获得亏损的15%（+${dividendPerPlayer}）。`
+  }
+  if (winnerProfit > 0 && ticketPerPlayer > 0) {
+    return `门票：拍下者盈利，非拍下者各扣除盈利的5%（-${ticketPerPlayer}）。`
+  }
+  return null
+}
+
+// ─── Mixin（向后兼容）───
+
 interface SettlementManagerThis {
   players: Array<{ id: string; isSelf: boolean; name: string }>;
   playerMoney: number;
@@ -88,19 +157,14 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
     this.enterSettlementPage(winnerPlayer, winnerBid, reasonTextMap[mode] || "结算");
 
     const totalValue = this.warehouseTrueValue;
-    const winnerProfit = totalValue - winnerBid;
+    const { winnerProfit, dividendPerPlayer, ticketPerPlayer, mechanism } = calculateDividendTicket(totalValue, winnerBid);
 
-    const DIVIDEND_RATIO = 0.15;
-    const TICKET_RATIO = 0.05;
     const nonWinners = this.players.filter((p: { id: string }) => p.id !== winnerPlayer.id);
-    let dividendPerPlayer = 0;
-    let ticketPerPlayer = 0;
-    let selfProfit = 0;
-    let selfProfitLabel = "自身利润";
     const humanNonWinner = nonWinners.find((p: { isSelf: boolean }) => p.isSelf);
+    const isWinner = winnerPlayer.isSelf;
+    const selfProfitInfo = getSelfProfitInfo(winnerProfit, dividendPerPlayer, ticketPerPlayer, isWinner);
 
-    if (winnerProfit < 0) {
-      dividendPerPlayer = Math.round(Math.abs(winnerProfit) * DIVIDEND_RATIO);
+    if (dividendPerPlayer > 0) {
       nonWinners.forEach((p: { id: string; isSelf: boolean }) => {
         if (p.isSelf) {
           this.playerMoney += dividendPerPlayer;
@@ -109,12 +173,7 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
           this.aiWallets[p.id] = wallet + dividendPerPlayer;
         }
       });
-      if (humanNonWinner) {
-        selfProfit = dividendPerPlayer;
-        selfProfitLabel = "自身利润（分红）";
-      }
-    } else if (winnerProfit > 0) {
-      ticketPerPlayer = Math.round(winnerProfit * TICKET_RATIO);
+    } else if (ticketPerPlayer > 0) {
       nonWinners.forEach((p: { id: string; isSelf: boolean }) => {
         if (p.isSelf) {
           this.playerMoney -= ticketPerPlayer;
@@ -123,17 +182,9 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
           this.aiWallets[p.id] = Math.max(0, wallet - ticketPerPlayer);
         }
       });
-      if (humanNonWinner) {
-        selfProfit = -ticketPerPlayer;
-        selfProfitLabel = "自身利润（门票）";
-      }
     }
 
-    const dividendTicketInfo = {
-      dividendPerPlayer,
-      ticketPerPlayer,
-      mechanism: dividendPerPlayer > 0 ? "dividend" : ticketPerPlayer > 0 ? "ticket" : "none"
-    };
+    const dividendTicketInfo = { dividendPerPlayer, ticketPerPlayer, mechanism };
 
     const settlementResult = {
       winnerId: winnerPlayer.id,
@@ -158,17 +209,14 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
 
     if (this.isLanMode) {
       const lanSelfNonWinner = nonWinners.find((p: { isSelf: boolean }) => p.isSelf);
-      let lanSelfProfit = 0;
-      let lanSelfProfitLabel = "自身利润";
+      const lanSelfProfitInfo = getSelfProfitInfo(winnerProfit, dividendPerPlayer, ticketPerPlayer, false);
 
-      if (winnerProfit < 0) {
+      if (dividendPerPlayer > 0) {
         if (lanSelfNonWinner) {
           if (this.lanIsHost) {
             this.playerMoney += dividendPerPlayer;
           }
-          lanSelfProfit = dividendPerPlayer;
-          lanSelfProfitLabel = "自身利润（分红）";
-          this.writeLog(`分红：拍下者亏损，非拍下者各获得亏损的15%（+${dividendPerPlayer}）。`);
+          this.writeLog(buildDividendTicketLog(winnerProfit, dividendPerPlayer, ticketPerPlayer)!);
         }
         if (this.lanIsHost) {
           nonWinners.forEach((p: { id: string; isSelf: boolean; isAI?: boolean; lanId?: string }) => {
@@ -181,14 +229,12 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
             }
           });
         }
-      } else if (winnerProfit > 0) {
+      } else if (ticketPerPlayer > 0) {
         if (lanSelfNonWinner) {
           if (this.lanIsHost) {
             this.playerMoney -= ticketPerPlayer;
           }
-          lanSelfProfit = -ticketPerPlayer;
-          lanSelfProfitLabel = "自身利润（门票）";
-          this.writeLog(`门票：拍下者盈利，非拍下者各扣除盈利的5%（-${ticketPerPlayer}）。`);
+          this.writeLog(buildDividendTicketLog(winnerProfit, dividendPerPlayer, ticketPerPlayer)!);
         }
         if (this.lanIsHost) {
           nonWinners.forEach((p: { id: string; isSelf: boolean; isAI?: boolean; lanId?: string }) => {
@@ -205,7 +251,7 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
 
       this.updateSettlementPanelMetrics(totalValue, winnerProfit);
       if (lanSelfNonWinner) {
-        this.showSelfProfit(lanSelfProfit, lanSelfProfitLabel);
+        this.showSelfProfit(lanSelfProfitInfo.profit, lanSelfProfitInfo.label);
       }
       this.setSettlementProgress(
         `揭示完成：${winnerPlayer.name} 的最终利润 ${winnerProfit >= 0 ? "+" : ""}${winnerProfit}`,
@@ -223,7 +269,7 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
         winnerBid,
         totalValue,
         winnerProfit,
-        playerProfit: winnerPlayer.isSelf ? winnerProfit : lanSelfProfit,
+        playerProfit: winnerPlayer.isSelf ? winnerProfit : lanSelfProfitInfo.profit,
         playerWon: winnerPlayer.isSelf && winnerProfit > 0,
         dividendTicketInfo: dividendPerPlayer > 0 || ticketPerPlayer > 0 ? dividendTicketInfo : null,
         reasonText: "联机结算"
@@ -231,17 +277,14 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
       return;
     }
 
-    if (humanNonWinner) {
-      if (dividendPerPlayer > 0) {
-        this.writeLog(`分红：拍下者亏损，非拍下者各获得亏损的15%（+${dividendPerPlayer}）。`);
-      } else if (ticketPerPlayer > 0) {
-        this.writeLog(`门票：拍下者盈利，非拍下者各扣除盈利的5%（-${ticketPerPlayer}）。`);
-      }
+    const logMsg = buildDividendTicketLog(winnerProfit, dividendPerPlayer, ticketPerPlayer)
+    if (humanNonWinner && logMsg) {
+      this.writeLog(logMsg);
     }
 
     this.updateSettlementPanelMetrics(totalValue, winnerProfit);
     if (humanNonWinner) {
-      this.showSelfProfit(selfProfit, selfProfitLabel);
+      this.showSelfProfit(selfProfitInfo.profit, selfProfitInfo.label);
     }
     this.setSettlementProgress(
       `揭示完成：${winnerPlayer.name} 的最终利润 ${winnerProfit >= 0 ? "+" : ""}${winnerProfit}`,
@@ -255,7 +298,7 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
       winnerBid,
       totalValue,
       winnerProfit,
-      playerProfit: winnerPlayer.isSelf ? winnerProfit : selfProfit,
+      playerProfit: winnerPlayer.isSelf ? winnerProfit : selfProfitInfo.profit,
       playerWon: winnerPlayer.isSelf && winnerProfit > 0,
       dividendTicketInfo: dividendPerPlayer > 0 || ticketPerPlayer > 0 ? dividendTicketInfo : null,
       reasonText: reasonTextMap[mode] || "结算"
@@ -292,7 +335,7 @@ export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
     const selfPlayer = this.players.find((p: { isSelf: boolean }) => p.isSelf);
     if (selfPlayer && recordGameFinished) {
       const playerIsWinner = winnerPlayer.isSelf;
-      const playerProfit = playerIsWinner ? winnerProfit : selfProfit;
+      const playerProfit = playerIsWinner ? winnerProfit : selfProfitInfo.profit;
       const playerWon = playerIsWinner && winnerProfit > 0;
       recordGameFinished(playerWon, playerProfit);
     }

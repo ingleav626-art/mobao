@@ -33,6 +33,36 @@ import { LlmManager } from "../../llm/core/llm-manager"
 import { MobaoAnimations } from "../animations"
 import { MobaoShopPage } from "../shop/index"
 
+// ─── 独立函数（可独立测试）───
+
+export function getCollectionCategories(library: Array<{ category?: string }>): string[] {
+  const categories = new Set<string>()
+  library.forEach((a) => {
+    if (a.category) categories.add(a.category)
+  })
+  return Array.from(categories).sort()
+}
+
+export function filterCollectionItems<T extends { category?: string; qualityKey?: string; name?: string; key?: string }>(
+  library: T[],
+  opts: { categoryFilter?: string; qualityFilter?: string; searchText?: string }
+): T[] {
+  let result = library
+  if (opts.categoryFilter && opts.categoryFilter !== "all") {
+    result = result.filter((a) => a.category === opts.categoryFilter)
+  }
+  if (opts.qualityFilter && opts.qualityFilter !== "all") {
+    result = result.filter((a) => a.qualityKey === opts.qualityFilter)
+  }
+  if (opts.searchText) {
+    const q = opts.searchText.toLowerCase()
+    result = result.filter(
+      (a) => (a.name || "").toLowerCase().includes(q) || (a.key || "").toLowerCase().includes(q)
+    )
+  }
+  return result
+}
+
 export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
   showInfoPopup(title: string, sourceScrollEl: HTMLElement | null) {
     this.dom.infoPopupTitle!.textContent = title
@@ -744,12 +774,7 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
   },
 
   getCollectionCategories(): string[] {
-    const artifacts = ARTIFACT_LIBRARY || []
-    const categories = new Set<string>()
-    artifacts.forEach((a: any) => {
-      if (a.category) categories.add(a.category)
-    })
-    return Array.from(categories).sort()
+    return getCollectionCategories(ARTIFACT_LIBRARY || [])
   },
 
   renderCollectionGrid() {
@@ -759,21 +784,9 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
 
     const categoryFilter = (document.getElementById("collectionCategoryFilter") as HTMLSelectElement | null)?.value || "all"
     const qualityFilter = (document.getElementById("collectionQualityFilter") as HTMLSelectElement | null)?.value || "all"
-    const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value?.toLowerCase() || ""
+    const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value || ""
 
-    let artifacts = ARTIFACT_LIBRARY || []
-
-    if (categoryFilter !== "all") {
-      artifacts = artifacts.filter((a: any) => a.category === categoryFilter)
-    }
-    if (qualityFilter !== "all") {
-      artifacts = artifacts.filter((a: any) => a.qualityKey === qualityFilter)
-    }
-    if (searchText) {
-      artifacts = artifacts.filter(
-        (a: any) => a.name.toLowerCase().includes(searchText) || a.key.toLowerCase().includes(searchText)
-      )
-    }
+    const artifacts = filterCollectionItems(ARTIFACT_LIBRARY || [], { categoryFilter, qualityFilter, searchText })
 
     const total = (ARTIFACT_LIBRARY || []).length
     if (stats) {

@@ -40,6 +40,32 @@ import { GAME_SETTINGS } from "../core/settings"
 import { AudioUI } from "../../audio/audio-ui"
 import { MobaoAnimations } from "../animations"
 
+// ─── 独立函数（可独立测试）───
+
+export function getLastRoundBidMap(
+  playerRoundHistory: Record<string, Array<{ bid: number }>>
+): Record<string, number> {
+  const map: Record<string, number> = {}
+  for (const [playerId, history] of Object.entries(playerRoundHistory)) {
+    if (history.length > 0) {
+      map[playerId] = history[history.length - 1].bid
+    }
+  }
+  return map
+}
+
+export function shouldDirectTake(
+  round: number,
+  maxRounds: number,
+  firstBid: number,
+  secondBid: number,
+  directTakeRatio: number
+): boolean {
+  return round < maxRounds && firstBid > 0 && firstBid >= Math.ceil(secondBid * (1 + directTakeRatio))
+}
+
+// ─── Mixin（向后兼容）───
+
 export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   setPlayerBidReady(playerId: string, ready: boolean): void {
     this.roundBidReadyState[playerId] = Boolean(ready)
@@ -238,12 +264,9 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
       this.bidLeader = first.playerId
       this.secondHighestBid = second.bid
 
-      const shouldDirectTake =
-        this.round < GAME_SETTINGS.maxRounds &&
-        first.bid > 0 &&
-        first.bid >= Math.ceil(second.bid * (1 + GAME_SETTINGS.directTakeRatio))
+      const directTakeFlag = shouldDirectTake(this.round, GAME_SETTINGS.maxRounds, first.bid, second.bid, GAME_SETTINGS.directTakeRatio)
 
-      if (this.round === GAME_SETTINGS.maxRounds || shouldDirectTake || forceSettle) {
+      if (this.round === GAME_SETTINGS.maxRounds || directTakeFlag || forceSettle) {
         const mode = forceSettle ? "manual" : this.round === GAME_SETTINGS.maxRounds ? "final" : "direct"
         await this.finishAuction(first, mode)
         return
@@ -336,15 +359,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   },
 
   getLastRoundBidMap(): Record<string, number> {
-    const map: Record<string, number> = {}
-    this.players.forEach((player) => {
-      const history = this.playerRoundHistory[player.id] || []
-      const last = history.length > 0 ? history[history.length - 1] : null
-      if (last) {
-        map[player.id] = last.bid
-      }
-    })
-    return map
+    return getLastRoundBidMap(this.playerRoundHistory)
   },
 
   async revealRoundBidsSequential(roundBids: Array<{ playerId: string; bid: number }>): Promise<void> {

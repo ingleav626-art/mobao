@@ -1,24 +1,5 @@
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
-
-/**
- * @file skill-item-manager.js
- * @module core/skill-item-manager
- * @description 技能与道具使用管理。处理技能/道具的消耗、执行、效果记录和联机通知。
- *              所有方法通过 Mixin 混入 WarehouseScene，操作 this 上的状态和 DOM。
- *
- * 核心方法：
- *   - useSkill: 使用技能，处理角色加成和联机通知
- *   - useItem: 使用道具，处理角色加成、商店同步和联机通知
- *   - consumeAction: 消耗行动次数
- *   - getItemInfo: 获取道具/技能的名称和描述
- *
- * @requires window.CharacterSystem - 角色系统（技能/道具加成）
- * @requires window.MobaoShopBridge - 商店桥接（道具消耗同步）
- * @requires SKILL_DEFS - 技能定义（全局）
- * @requires ITEM_DEFS - 道具定义（全局）
- *
- * @exports SkillItemManagerMixin - 技能与道具使用管理 Mixin
- */
+import type { SkillContext } from '../../../types/game'
 
 import { getOutlineBonus, getQualityBonus, getOutlineSortStrategy } from "../data/character-system"
 import { MobaoShopBridge } from "../bridge/shop"
@@ -26,39 +7,89 @@ import { SKILL_DEFS } from "../data/skills"
 import { ITEM_DEFS } from "../data/items"
 import { GAME_SETTINGS } from "./settings"
 
+// ─── 独立函数（可独立测试）───
+
+type DefEntry = { id: string; name: string; description: string }
+
+export function getItemInfo(
+  itemId: string,
+  itemDefs: DefEntry[] = ITEM_DEFS,
+  skillDefs: DefEntry[] = SKILL_DEFS
+): { label: string; tip: string } {
+  const itemDef = itemDefs.find((d) => d.id === itemId)
+  if (itemDef) return { label: itemDef.name, tip: itemDef.description }
+  const skillDef = skillDefs.find((d) => d.id === itemId)
+  if (skillDef) return { label: skillDef.name, tip: skillDef.description }
+  return { label: "未知道具", tip: "未知道具：暂无说明。" }
+}
+
+export function getPlayerActionId(isLanMode: boolean, lanMySlotId: string | null): string {
+  return isLanMode ? (lanMySlotId || "p2") : "p2"
+}
+
+export function consumeActionState(
+  round: number,
+  actionsLeft: number,
+  actionType: string,
+  maxRounds: number = GAME_SETTINGS.maxRounds
+): { allowed: boolean; message?: string } {
+  if (round > maxRounds) {
+    return { allowed: false, message: "所有回合已结束，请重新随机开局。" }
+  }
+  if (actionsLeft <= 0) {
+    return { allowed: false, message: `本回合行动次数已耗尽，无法继续使用${actionType}。` }
+  }
+  return { allowed: true }
+}
+
+export function wrapContextWithCharacterBonus(
+  context: SkillContext,
+  outlineBonus: number,
+  qualityBonus: number,
+  sortStrategy: string | null
+): SkillContext {
+  if (outlineBonus <= 0 && qualityBonus <= 0 && !sortStrategy) {
+    return context
+  }
+  return {
+    revealOutline: (opts) =>
+      context.revealOutline({
+        ...opts,
+        count: ((opts.count as number) || 0) + outlineBonus,
+        sortStrategy: opts.sortStrategy || sortStrategy
+      }),
+    revealQuality: (opts) =>
+      context.revealQuality({
+        ...opts,
+        count: ((opts.count as number) || 0) + qualityBonus,
+        sortStrategy: opts.sortStrategy || sortStrategy
+      }),
+    revealAll: (opts) =>
+      context.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy || "" })
+  }
+}
+
+// ─── Mixin 薄包装（向后兼容）───
+
 export const SkillItemManagerMixin: Record<string, Function> = {
   useSkill(this: WarehouseSceneThis, skillId: string) {
     if (!this.canUseIntelActions()) {
       return
     }
 
-    if (!this.consumeAction("技能")) {
+    const check = consumeActionState(this.round, this.actionsLeft, "技能")
+    if (!check.allowed) {
+      this.writeLog(check.message!)
       return
     }
+    this.actionsLeft -= 1
 
     let context = this.buildSkillContext()
     if (getOutlineBonus) {
       const outlineBonus = getOutlineBonus()
       const qualityBonus = getQualityBonus()
       const sortStrategy = getOutlineSortStrategy()
-      if (outlineBonus > 0 || qualityBonus > 0 || sortStrategy) {
-        const baseContext = context
-        context = {
-          revealOutline: (opts) =>
-            baseContext.revealOutline({
-              ...opts,
-              count: ((opts.count as number) || 0) + outlineBonus,
-              sortStrategy: opts.sortStrategy || sortStrategy
-            }),
-          revealQuality: (opts) =>
-            baseContext.revealQuality({
-              ...opts,
-              count: ((opts.count as number) || 0) + qualityBonus,
-              sortStrategy: opts.sortStrategy || sortStrategy
-            }),
-          revealAll: (opts) => baseContext.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy || "" })
-        }
-      }
+      context = wrapContextWithCharacterBonus(context, outlineBonus, qualityBonus, sortStrategy)
     }
     const result = this.skillManager.use(skillId, context)
     if (!result.ok) {
@@ -68,8 +99,9 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       return
     }
 
-    this.recordPlayerUsage(this.isLanMode ? (this.lanMySlotId || "p2") : "p2", skillId);
-    const skillDef = SKILL_DEFS.find((s: { id: string; name: string; description: string }) => s.id === skillId);
+    const actionId = getPlayerActionId(this.isLanMode, this.lanMySlotId)
+    this.recordPlayerUsage(actionId, skillId);
+    const skillDef = SKILL_DEFS.find((s) => s.id === skillId);
     this.addPrivateIntelEntry({
       source: skillDef ? skillDef.name : skillId,
       text: skillDef ? skillDef.description : "技能效果"
@@ -80,7 +112,7 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       this.lanBridge.send({
         type: "lan:player-action",
         playerId: this.lanBridge.playerId,
-        playerName: this.players.find((p) => p.id === (this.lanMySlotId || "p2"))?.name || "玩家",
+        playerName: this.players.find((p) => p.id === actionId)?.name || "玩家",
         actionId: skillId,
         actionType: "skill",
         itemName: skillDef ? skillDef.name : skillId
@@ -94,34 +126,20 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       return
     }
 
-    if (!this.consumeAction("道具")) {
+    const check = consumeActionState(this.round, this.actionsLeft, "道具")
+    if (!check.allowed) {
+      this.writeLog(check.message!)
       this.closeItemDrawer()
       return
     }
+    this.actionsLeft -= 1
 
     let itemContext = this.buildSkillContext()
     if (getOutlineBonus) {
       const outlineBonus = getOutlineBonus()
       const qualityBonus = getQualityBonus()
       const sortStrategy = getOutlineSortStrategy()
-      if (outlineBonus > 0 || qualityBonus > 0 || sortStrategy) {
-        const baseItemContext = itemContext
-        itemContext = {
-          revealOutline: (opts) =>
-            baseItemContext.revealOutline({
-              ...opts,
-              count: ((opts.count as number) || 0) + outlineBonus,
-              sortStrategy: opts.sortStrategy || sortStrategy
-            }),
-          revealQuality: (opts) =>
-            baseItemContext.revealQuality({
-              ...opts,
-              count: ((opts.count as number) || 0) + qualityBonus,
-              sortStrategy: opts.sortStrategy || sortStrategy
-            }),
-          revealAll: (opts) => baseItemContext.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy || "" })
-        }
-      }
+      itemContext = wrapContextWithCharacterBonus(itemContext, outlineBonus, qualityBonus, sortStrategy)
     }
     const result = this.itemManager.use(itemId, itemContext)
     if (!result.ok) {
@@ -136,8 +154,9 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       MobaoShopBridge.consumeItem(itemId)
     }
 
-    this.recordPlayerUsage(this.isLanMode ? (this.lanMySlotId || "p2") : "p2", itemId);
-    const itemDef = ITEM_DEFS.find((i: { id: string; name: string; description: string }) => i.id === itemId);
+    const actionId = getPlayerActionId(this.isLanMode, this.lanMySlotId)
+    this.recordPlayerUsage(actionId, itemId);
+    const itemDef = ITEM_DEFS.find((i) => i.id === itemId);
     this.addPrivateIntelEntry({
       source: itemDef ? itemDef.name : itemId,
       text: itemDef ? itemDef.description : "道具效果"
@@ -149,7 +168,7 @@ export const SkillItemManagerMixin: Record<string, Function> = {
       this.lanBridge.send({
         type: "lan:player-action",
         playerId: this.lanBridge.playerId,
-        playerName: this.players.find((p) => p.id === (this.lanMySlotId || "p2"))?.name || "玩家",
+        playerName: this.players.find((p) => p.id === actionId)?.name || "玩家",
         actionId: itemId,
         actionType: "item",
         itemName: itemDef ? itemDef.name : itemId
@@ -158,29 +177,16 @@ export const SkillItemManagerMixin: Record<string, Function> = {
   },
 
   consumeAction(this: WarehouseSceneThis, actionType: string) {
-    if (this.round > GAME_SETTINGS.maxRounds) {
-      this.writeLog("所有回合已结束，请重新随机开局。")
+    const check = consumeActionState(this.round, this.actionsLeft, actionType)
+    if (!check.allowed) {
+      this.writeLog(check.message!)
       return false
     }
-
-    if (this.actionsLeft <= 0) {
-      this.writeLog(`本回合行动次数已耗尽，无法继续使用${actionType}。`)
-      return false
-    }
-
     this.actionsLeft -= 1
     return true
   },
 
   getItemInfo(itemId: string) {
-    if (ITEM_DEFS) {
-      const itemDef = ITEM_DEFS.find((item: { id: string; name: string; description: string }) => item.id === itemId)
-      if (itemDef) return { label: itemDef.name, tip: itemDef.description }
-    }
-    if (SKILL_DEFS) {
-      const skillDef = SKILL_DEFS.find((skill: { id: string; name: string; description: string }) => skill.id === itemId)
-      if (skillDef) return { label: skillDef.name, tip: skillDef.description }
-    }
-    return { label: "未知道具", tip: "未知道具：暂无说明。" }
+    return getItemInfo(itemId)
   }
 }

@@ -46,19 +46,6 @@ interface CarryItem {
   icon: string
 }
 
-interface ReplenishItem {
-  id: string
-  name: string
-  icon: string
-  price: number
-  shortage: number
-}
-
-interface ReplenishCostResult {
-  totalCost: number
-  items: ReplenishItem[]
-}
-
 interface ReplenishResult {
   ok: boolean
   message: string
@@ -88,6 +75,45 @@ import type { Character as SelectedCharacter } from '../../../types/game'
 import { getUnlockedCharacters, getCharacterById } from "../data/characters"
 import { getActiveCharacter, selectCharacter } from "../data/character-system"
 import { MobaoShopBridge } from "../bridge/shop"
+
+// ─── 独立函数（可独立测试）───
+
+export interface ReplenishItem {
+  id: string
+  name: string
+  icon: string
+  price: number
+  shortage: number
+}
+
+export interface ReplenishCostResult {
+  totalCost: number
+  items: ReplenishItem[]
+}
+
+export function calcReplenishCost(
+  carryItems: Array<{ id: string; name: string; icon: string }>,
+  shopDefs: Array<{ id: string; price?: number }>,
+  inventory: Record<string, number>,
+  storageKeyFn: (id: string) => string
+): ReplenishCostResult {
+  const result: ReplenishItem[] = []
+  let totalCost = 0
+
+  carryItems.forEach((item) => {
+    const shopDef = shopDefs.find((s) => s.id === item.id)
+    if (!shopDef) return
+    const key = storageKeyFn(item.id)
+    const count = inventory[key] || 0
+    if (count <= 0) {
+      const price = shopDef.price || 0
+      result.push({ id: item.id, name: item.name, icon: item.icon, price, shortage: 1 })
+      totalCost += price
+    }
+  })
+
+  return { totalCost, items: result }
+}
 
 export const CharacterSelectMixin: ThisType<WarehouseSceneThis> = {
   selectedCharacter: null as SelectedCharacter | null,
@@ -596,23 +622,12 @@ export const CharacterSelectMixin: ThisType<WarehouseSceneThis> = {
   calcReplenishCost(): ReplenishCostResult {
     const bridge = MobaoShopBridge
     if (!bridge) return { totalCost: 0, items: [] }
-    const inv: Record<string, number> = bridge.getFullInventory()
-    const result: ReplenishItem[] = []
-    let totalCost = 0
-
-    this._carryItems.forEach((item) => {
-      const shopDef = (bridge.SHOP_ITEMS as Array<{ id: string; price?: number }>).find((s) => s.id === item.id)
-      if (!shopDef) return
-      const storageKey = bridge.getItemStorageKey(item.id) as string
-      const count = inv[storageKey] || 0
-      if (count <= 0) {
-        const price = shopDef.price || 0
-        result.push({ id: item.id, name: item.name, icon: item.icon, price, shortage: 1 })
-        totalCost += price
-      }
-    })
-
-    return { totalCost, items: result }
+    return calcReplenishCost(
+      this._carryItems,
+      bridge.SHOP_ITEMS as Array<{ id: string; price?: number }>,
+      bridge.getFullInventory(),
+      (id) => bridge.getItemStorageKey(id) as string
+    )
   },
 
   /**

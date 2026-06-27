@@ -10,6 +10,8 @@ test.txt
 .agents/
 .trae/
 .claude/
+.mimocode/
+analysis/
 skills-lock.json
 tools
 
@@ -38,7 +40,7 @@ keystore.properties
 Thumbs.db
 *.log
 
-docs/
+coverage/
 
 .env
 .env.local
@@ -53,3 +55,5 @@ dist/
 
 tmp/
 temp/
+errors.txt
+mixin-analysis-result.json

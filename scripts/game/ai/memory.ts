@@ -2,51 +2,83 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
 import type { AiMemoryStorage, CrossGameMemory, CrossGameStats, ConversationMessage, ConversationBucketEntry } from '../../../types/ai'
 
 /**
- * @file memory.js
+ * @file memory.ts
  * @module ai/memory
- * @description AI跨局记忆系统 Mixin。管理AI玩家的对局内对话历史和跨局经验本，
+ * @description AI跨局记忆系统。管理AI玩家的对局内对话历史和跨局经验本，
  *              支持持久化存储（localStorage）、导入导出、以及为LLM构建记忆上下文。
  *
- * 核心职责：
- *   - 对局内对话管理（aiConversationByPlayer）：每轮决策记录，最多保留30条
- *   - 跨局经验本（aiCrossGameMemory）：包含统计、成功经验、策略建议、经验教训
- *   - 持久化存储：自动保存/恢复到 localStorage（联机模式使用独立key）
- *   - 上下文构建（getAiConversationMessages）：为LLM构建包含跨局记忆和本局历史的消息
- *   - 局结算推送（pushRunSettlementContextToAi）：记录结算结果到记忆
- *   - 导入导出（exportAiMemoryToJson / importAiMemoryFromJson）
- *
- * 数据结构：
- *   aiConversationByPlayer[playerId] = [
- *     { run, round, bid, skill, item, thought, result }
- *   ]
- *   aiCrossGameMemory[playerId] = {
- *     stats: { totalGames, winRate, avgProfit, warehouseValueMax/Min/Avg, ... },
- *     praises: [string],    // 成功经验，最多10条
- *     strategies: [string], // 策略建议，最多10条
- *     lessons: [string]     // 经验教训，最多10条
- *   }
- *
- * @exports MemoryMixin - AI记忆系统 Mixin，混入 Phaser Scene
- *
- * 混入方式：Object.assign(scene, MobaoAi.MemoryMixin)
- * 混入后 scene 将获得：aiConversationByPlayer, aiCrossGameMemory,
- *   pendingNextRunAiSummary, runSerial,
- *   loadAiMemoryFromStorage, saveAiMemoryToStorage, restoreAiMemoryFromStorage,
- *   getAiConversationMessages, pushAiRoundSummary, updateLastAiRoundResult, 等
- *
- * @requires core/constants - 常量定义
- * @requires core/utils - 工具函数
+ * @exports DEFAULT_CROSS_GAME_STATS - 默认跨局统计数据
+ * @exports getAiMemoryStorageKey / loadAiMemoryFromStorage / saveAiMemoryToStorage
+ * @exports getQualityCounts / getTotalOccupiedCells / ensureCrossGameMemory
+ * @exports AiMemoryMixin - 向后兼容的 Mixin 薄包装
  */
 import { AI_MEMORY_STORAGE_KEY } from "../core/constants"
 import { formatBidRevealNumber } from "../core/utils"
 import { MobaoGameHistory, GameRecord } from "./game-history"
 
+// ─── 独立函数 / 常量（可独立测试）───
+
+export const DEFAULT_CROSS_GAME_STATS: CrossGameStats = {
+  totalGames: 0,
+  warehouseValueMax: 0, warehouseValueMin: 0, warehouseValueAvg: 0,
+  winRate: 0, avgProfit: 0,
+  totalCellsMax: 0, totalCellsMin: 0, totalCellsAvg: 0,
+  totalItemsMax: 0, totalItemsMin: 0, totalItemsAvg: 0,
+  legendaryMax: 0, legendaryMin: 0, legendaryAvg: 0,
+  rareMax: 0, rareMin: 0, rareAvg: 0
+}
+
+export function getAiMemoryStorageKey(isLanMode: boolean): string {
+  return isLanMode ? AI_MEMORY_STORAGE_KEY + "_lan" : AI_MEMORY_STORAGE_KEY
+}
+
+export function loadAiMemoryFromStorage(storageKey: string): AiMemoryStorage | null {
+  try {
+    const raw = window.localStorage.getItem(storageKey)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== "object") return null
+    return parsed as AiMemoryStorage
+  } catch (_error) {
+    return null
+  }
+}
+
+export function getQualityCounts(items: Array<{ qualityKey: string }>): Record<string, number> {
+  const counts: Record<string, number> = { poor: 0, normal: 0, fine: 0, rare: 0, legendary: 0 }
+  items.forEach((item) => {
+    const qk = item.qualityKey
+    if (typeof counts[qk] === "number") {
+      counts[qk] += 1
+    }
+  })
+  return counts
+}
+
+export function getTotalOccupiedCells(items: Array<{ w: number; h: number }>): number {
+  return items.reduce((sum, item) => sum + item.w * item.h, 0)
+}
+
+export function ensureCrossGameMemory(
+  crossGameMemory: Record<string, CrossGameMemory>,
+  playerId: string
+): CrossGameMemory {
+  if (!crossGameMemory[playerId]) {
+    crossGameMemory[playerId] = {
+      stats: { ...DEFAULT_CROSS_GAME_STATS, warehouseValueMax: 679100, warehouseValueMin: 170400, warehouseValueAvg: 412000 },
+      lessons: [],
+      strategies: [],
+      praises: []
+    }
+  }
+  return crossGameMemory[playerId]
+}
+
+// ─── Mixin 薄包装（向后兼容）───
+
 export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
   getAiMemoryStorageKey(): string {
-    if (this.isLanMode) {
-      return AI_MEMORY_STORAGE_KEY + "_lan"
-    }
-    return AI_MEMORY_STORAGE_KEY
+    return getAiMemoryStorageKey(this.isLanMode)
   },
 
   isAiMultiGameMemoryEnabled(): boolean {
@@ -72,16 +104,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
   },
 
   loadAiMemoryFromStorage(): AiMemoryStorage | null {
-    try {
-      const storageKey = this.getAiMemoryStorageKey()
-      const raw = window.localStorage.getItem(storageKey)
-      if (!raw) return null
-      const parsed = JSON.parse(raw)
-      if (!parsed || typeof parsed !== "object") return null
-      return parsed as AiMemoryStorage
-    } catch (_error) {
-      return null
-    }
+    return loadAiMemoryFromStorage(this.getAiMemoryStorageKey())
   },
 
   saveAiMemoryToStorage(): void {
@@ -203,34 +226,7 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
   },
 
   ensureAiCrossGameMemory(playerId: string): CrossGameMemory {
-    if (!this.aiCrossGameMemory[playerId]) {
-      this.aiCrossGameMemory[playerId] = {
-        stats: {
-          totalGames: 0,
-          warehouseValueMax: 679100,
-          warehouseValueMin: 170400,
-          warehouseValueAvg: 412000,
-          winRate: 0,
-          avgProfit: 0,
-          totalCellsMax: 0,
-          totalCellsMin: 0,
-          totalCellsAvg: 0,
-          totalItemsMax: 0,
-          totalItemsMin: 0,
-          totalItemsAvg: 0,
-          legendaryMax: 0,
-          legendaryMin: 0,
-          legendaryAvg: 0,
-          rareMax: 0,
-          rareMin: 0,
-          rareAvg: 0
-        },
-        lessons: [],
-        strategies: [],
-        praises: []
-      }
-    }
-    return this.aiCrossGameMemory[playerId]
+    return ensureCrossGameMemory(this.aiCrossGameMemory, playerId)
   },
 
   getAiCrossGameMemoryCount(playerId: string): number {
@@ -244,18 +240,11 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
   },
 
   getQualityCounts(): Record<string, number> {
-    const counts = { poor: 0, normal: 0, fine: 0, rare: 0, legendary: 0 }
-    this.items.forEach((item) => {
-      const qk = item.qualityKey
-      if (typeof counts[qk] === "number") {
-        counts[qk] += 1
-      }
-    })
-    return counts
+    return getQualityCounts(this.items)
   },
 
   getTotalOccupiedCells(): number {
-    return this.items.reduce((sum, item) => sum + item.w * item.h, 0)
+    return getTotalOccupiedCells(this.items)
   },
 
   getAiConversationMessages(playerId: string): ConversationMessage[] {

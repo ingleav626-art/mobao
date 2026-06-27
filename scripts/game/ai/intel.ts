@@ -64,6 +64,20 @@ import { getActiveCharacter } from "../data/character-system"
 
 
 
+// ─── 独立函数（可独立测试）───
+
+export function pickRandomItemCell(item: { x: number; y: number; w: number; h: number }): { x: number; y: number } | null {
+  const cells: { x: number; y: number }[] = []
+  for (let y = item.y; y < item.y + item.h; y += 1) {
+    for (let x = item.x; x < item.x + item.w; x += 1) {
+      cells.push({ x, y })
+    }
+  }
+  return cells.length > 0 ? cells[Math.floor(Math.random() * cells.length)] : null
+}
+
+// ─── Mixin 薄包装（向后兼容）───
+
 export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
   /**
    * 构建规则AI可调用的揭示上下文，委托给场景的批量揭示方法
@@ -359,13 +373,7 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
   },
 
   pickRandomItemCell(item: Artifact) {
-    const cells: { x: number; y: number }[] = []
-    for (let y = item.y; y < item.y + item.h; y += 1) {
-      for (let x = item.x; x < item.x + item.w; x += 1) {
-        cells.push({ x, y })
-      }
-    }
-    return cells.length > 0 ? cells[Math.floor(Math.random() * cells.length)] : null
+    return pickRandomItemCell(item)
   },
 
   markAiKnownCellState(playerId: string, x: number, y: number, state: string) {
