@@ -1,8 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
+import { JSDOM } from 'jsdom'
 import {
   addPrivateIntelEntry,
   addPublicInfoEntry,
   updateSidePanels,
+  renderPrivateIntelPanel,
+  renderPublicInfoPanel,
   type IntelEntry
 } from '../../../scripts/game/ui/panels'
 
@@ -76,6 +79,86 @@ describe('panels', () => {
       updateSidePanels(renderPrivate, renderPublic)
       expect(renderPrivate).toHaveBeenCalledOnce()
       expect(renderPublic).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('renderPrivateIntelPanel', () => {
+    it('container 为 null 不崩溃', () => {
+      expect(() => renderPrivateIntelPanel(null, [], { current: '' })).not.toThrow()
+    })
+
+    it('空 entries 显示暂无提示', () => {
+      const dom = new JSDOM('<div></div>')
+      const container = dom.window.document.querySelector('div')!
+      renderPrivateIntelPanel(container, [], { current: '' })
+      expect(container.innerHTML).toContain('暂无私有情报')
+    })
+
+    it('有 entries 时渲染条目', () => {
+      const dom = new JSDOM('<div></div>')
+      const container = dom.window.document.querySelector('div')!
+      const entries: IntelEntry[] = [
+        { source: '技能', text: '发现轮廓', round: 1 },
+        { source: '道具', text: '揭示品质', round: 2 }
+      ]
+      renderPrivateIntelPanel(container, entries, { current: '' })
+      expect(container.innerHTML).toContain('技能')
+      expect(container.innerHTML).toContain('发现轮廓')
+      expect(container.innerHTML).toContain('道具')
+      expect(container.innerHTML).toContain('揭示品质')
+    })
+
+    it('相同版本号跳过渲染', () => {
+      const dom = new JSDOM('<div></div>')
+      const container = dom.window.document.querySelector('div')!
+      const entries: IntelEntry[] = [{ source: '技能', text: '发现轮廓', round: 1 }]
+      renderPrivateIntelPanel(container, entries, { current: '' })
+      const html1 = container.innerHTML
+      renderPrivateIntelPanel(container, entries, { current: '1|发现轮廓' })
+      const html2 = container.innerHTML
+      expect(html1).toBe(html2)
+    })
+
+    it('HTML 特殊字符被转义', () => {
+      const dom = new JSDOM('<div></div>')
+      const container = dom.window.document.querySelector('div')!
+      const entries: IntelEntry[] = [{ source: '<script>', text: '&test"', round: 1 }]
+      renderPrivateIntelPanel(container, entries, { current: '' })
+      expect(container.innerHTML).not.toContain('<script>')
+      expect(container.innerHTML).toContain('&lt;script&gt;')
+    })
+  })
+
+  describe('renderPublicInfoPanel', () => {
+    it('container 为 null 不崩溃', () => {
+      expect(() => renderPublicInfoPanel(null, [])).not.toThrow()
+    })
+
+    it('空 entries 显示暂无提示', () => {
+      const dom = new JSDOM('<div></div>')
+      const container = dom.window.document.querySelector('div')!
+      renderPublicInfoPanel(container, [])
+      expect(container.innerHTML).toContain('暂无公共信息')
+    })
+
+    it('有 entries 时渲染条目', () => {
+      const dom = new JSDOM('<div></div>')
+      const container = dom.window.document.querySelector('div')!
+      const entries: IntelEntry[] = [
+        { source: '系统', text: '市场繁荣', round: 1 }
+      ]
+      renderPublicInfoPanel(container, entries)
+      expect(container.innerHTML).toContain('系统')
+      expect(container.innerHTML).toContain('市场繁荣')
+    })
+
+    it('HTML 特殊字符被转义', () => {
+      const dom = new JSDOM('<div></div>')
+      const container = dom.window.document.querySelector('div')!
+      const entries: IntelEntry[] = [{ source: '<img>', text: 'xss"', round: 1 }]
+      renderPublicInfoPanel(container, entries)
+      expect(container.innerHTML).not.toContain('<img>')
+      expect(container.innerHTML).toContain('&lt;img&gt;')
     })
   })
 })
