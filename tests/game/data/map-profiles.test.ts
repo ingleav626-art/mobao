@@ -1,9 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import {
   MAP_PROFILES,
   getProfile,
-  getAllProfiles
+  getAllProfiles,
+  getSelectedProfileId,
+  setSelectedProfileId
 } from '../../../scripts/game/data/map-profiles'
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 describe('map-profiles', () => {
   describe('MAP_PROFILES', () => {
@@ -91,6 +97,29 @@ describe('map-profiles', () => {
       const result = getAllProfiles()
       result.pop()
       expect(MAP_PROFILES).toHaveLength(4)
+    })
+  })
+
+  describe('getSelectedProfileId', () => {
+    it('空存储返回 default', () => {
+      expect(getSelectedProfileId()).toBe('default')
+    })
+
+    it('有存储返回存储的 id', () => {
+      setSelectedProfileId('treasure-vault')
+      expect(getSelectedProfileId()).toBe('treasure-vault')
+    })
+  })
+
+  describe('setSelectedProfileId', () => {
+    it('合法 id 保存到 app-state', () => {
+      setSelectedProfileId('junkyard')
+      expect(getSelectedProfileId()).toBe('junkyard')
+    })
+
+    it('非法 id 回退到 default', () => {
+      setSelectedProfileId('nonexistent')
+      expect(getSelectedProfileId()).toBe('default')
     })
   })
 })
