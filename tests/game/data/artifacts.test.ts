@@ -4,6 +4,7 @@ import {
   SIZE_TAG_BY_DIMENSION,
   ARTIFACT_LIBRARY,
   CATEGORY_WEIGHTS,
+  ArtifactManager,
   estimatePriceByQuality,
   signalToRevealState,
   summarizeCandidatePrices,
@@ -122,6 +123,12 @@ describe('artifacts', () => {
     it('未知品质 × 1', () => {
       expect(estimatePriceByQuality(1000, 'unknown')).toBe(1000)
     })
+    it('0 价格返回 0', () => {
+      expect(estimatePriceByQuality(0, 'legendary')).toBe(0)
+    })
+    it('负数价格取整后为负', () => {
+      expect(estimatePriceByQuality(-1000, 'poor')).toBe(-720)
+    })
   })
 
   describe('signalToRevealState', () => {
@@ -152,6 +159,10 @@ describe('artifacts', () => {
       expect(toSizeTag(1, 1)).toBe('1x1')
       expect(toSizeTag(2, 3)).toBe('2x3')
       expect(toSizeTag(4, 1)).toBe('4x1')
+    })
+    it('SIZE_TAG_BY_DIMENSION 中所有尺寸都能正确转换', () => {
+      expect(toSizeTag(2, 2)).toBe('2x2')
+      expect(toSizeTag(3, 2)).toBe('3x2')
     })
     it('未知尺寸返回原始格式', () => {
       expect(toSizeTag(5, 5)).toBe('5x5')
@@ -199,6 +210,19 @@ describe('artifacts', () => {
       ])
       expect(result.count).toBe(1)
       expect(result.mean).toBe(1000)
+    })
+    it('两个候选 top2/bottom2 均值一致', () => {
+      const result = summarizeCandidatePrices([{ basePrice: 1000 }, { basePrice: 3000 }])
+      expect(result.count).toBe(2)
+      expect(result.mean).toBe(2000)
+      expect(result.top2Mean).toBe(2000)
+      expect(result.bottom2Mean).toBe(2000)
+      expect(result.std).toBe(1000)
+    })
+    it('未传参默认空数组返回零值', () => {
+      const result = summarizeCandidatePrices()
+      expect(result.count).toBe(0)
+      expect(result.mean).toBe(0)
     })
   })
 
@@ -251,6 +275,92 @@ describe('artifacts', () => {
       const result = summarizeStatsCollection([empty, valid])
       expect(result.count).toBe(3)
       expect(result.mean).toBe(1000)
+    })
+  })
+
+  describe('ArtifactManager', () => {
+    it('buildArtifactFromDef 构建完整字段且自增 ID', () => {
+      const manager = new ArtifactManager()
+      const def = ARTIFACT_LIBRARY[0]
+      const artifact = manager.buildArtifactFromDef(def)
+      expect(artifact.id).toBe('artifact-1')
+      expect(artifact.key).toBe(def.key)
+      expect(artifact.name).toBe(def.name)
+      expect(artifact.basePrice).toBe(def.basePrice)
+      expect(artifact.qualityKey).toBe(def.qualityKey)
+      expect(artifact.quality).toEqual(QUALITY_CONFIG[def.qualityKey])
+      expect(artifact.x).toBe(0)
+      expect(artifact.y).toBe(0)
+    })
+
+    it('buildArtifactFromDef 多次调用 ID 递增', () => {
+      const manager = new ArtifactManager()
+      const def = ARTIFACT_LIBRARY[0]
+      const a1 = manager.buildArtifactFromDef(def)
+      const a2 = manager.buildArtifactFromDef(def)
+      expect(a1.id).toBe('artifact-1')
+      expect(a2.id).toBe('artifact-2')
+    })
+
+    it('buildArtifactFromDef 缺失 majorCategory 时默认古董', () => {
+      const manager = new ArtifactManager()
+      const artifact = manager.buildArtifactFromDef({ key: 'x', category: '瓷器', name: '测试', basePrice: 100, qualityKey: 'poor', w: 1, h: 1 })
+      expect(artifact.majorCategory).toBe('古董')
+    })
+
+    it('getCandidatesByRevealState 按 category 筛选', () => {
+      const manager = new ArtifactManager()
+      const target = ARTIFACT_LIBRARY[0].category
+      const candidates = manager.getCandidatesByRevealState({ category: target })
+      expect(candidates.length).toBeGreaterThan(0)
+      expect(candidates.every((c) => c.category === target)).toBe(true)
+    })
+
+    it('getCandidatesByRevealState 按 qualityKey 筛选并附加揭示字段', () => {
+      const manager = new ArtifactManager()
+      const candidates = manager.getCandidatesByRevealState({ qualityKey: 'rare' })
+      expect(candidates.length).toBeGreaterThan(0)
+      expect(candidates.every((c) => c.qualityKey === 'rare')).toBe(true)
+      expect(candidates[0].revealedQualityKey).toBe('rare')
+      expect(candidates[0].revealedQualityLabel).toBe(QUALITY_CONFIG.rare.label)
+      expect(candidates[0].expectedPrice).toBe(candidates[0].basePrice)
+      expect(candidates[0].previewSizeTag).toBeDefined()
+    })
+
+    it('getCandidatesByRevealState 按 sizeTag 筛选', () => {
+      const manager = new ArtifactManager()
+      const candidates = manager.getCandidatesByRevealState({ sizeTag: '1x1' })
+      expect(candidates.length).toBeGreaterThan(0)
+      expect(candidates.every((c) => c.previewSizeTag === '1x1')).toBe(true)
+    })
+
+    it('getCandidatesByRevealState 空状态返回全部', () => {
+      const manager = new ArtifactManager()
+      const candidates = manager.getCandidatesByRevealState({})
+      expect(candidates.length).toBe(ARTIFACT_LIBRARY.length)
+    })
+
+    it('getCandidateStatsByRevealState 返回价格统计', () => {
+      const manager = new ArtifactManager()
+      const stats = manager.getCandidateStatsByRevealState({ category: ARTIFACT_LIBRARY[0].category })
+      expect(stats.count).toBeGreaterThan(0)
+      expect(stats.mean).toBeGreaterThan(0)
+    })
+
+    it('getLibraryStats total 等于图鉴数量', () => {
+      const manager = new ArtifactManager()
+      const stats = manager.getLibraryStats()
+      expect(stats.total).toBe(ARTIFACT_LIBRARY.length)
+    })
+
+    it('getLibraryStats byCategory 统计正确', () => {
+      const manager = new ArtifactManager()
+      const stats = manager.getLibraryStats()
+      const expected: Record<string, number> = {}
+      for (const a of ARTIFACT_LIBRARY) {
+        expected[a.category] = (expected[a.category] || 0) + 1
+      }
+      expect(stats.byCategory).toEqual(expected)
     })
   })
 })
