@@ -102,6 +102,131 @@ interface LlmDecisionDeps {
   [key: string]: unknown
 }
 
+// ─── 纯函数（可独立测试）───
+
+/**
+ * 从玩家 ID 解析 AI 索引（0/1/2）。
+ * "ai1"→0, "ai2"→1, "ai3"→2; "p1"→0, "p3"→1, "p4"→2; 其他→-1
+ */
+export function getAiIndexFromPlayerId(playerId: string): number {
+  if (typeof playerId !== "string") return -1
+  const aiMatch = playerId.match(/^ai(\d+)$/i)
+  if (aiMatch) {
+    return parseInt(aiMatch[1], 10) - 1
+  }
+  const pMatch = playerId.match(/^p(\d+)$/i)
+  if (pMatch) {
+    const num = parseInt(pMatch[1], 10)
+    if (num === 1) return 0
+    if (num === 3) return 1
+    if (num === 4) return 2
+  }
+  return -1
+}
+
+/**
+ * 判断 LLM 决策总开关是否可用。不依赖 this，仅依赖传入的 settings/provider/window。
+ */
+export function canUseLlmDecisionCore(
+  settings: { enabled?: boolean; apiKey?: string; endpoint?: string } | null,
+  provider: { id: string } | null,
+  nativeBridge: { getServerUrl?: () => string } | null
+): boolean {
+  if (!settings || !settings.enabled || !provider) {
+    return false
+  }
+  const hasApiKey = typeof settings.apiKey === "string" && settings.apiKey.trim().length > 0
+  if (hasApiKey) {
+    return true
+  }
+  const endpoint = typeof settings.endpoint === "string" ? settings.endpoint.trim() : ""
+  const isProxyEndpoint = endpoint.length > 0 && endpoint.startsWith("/")
+  const isNative = !!nativeBridge && !!nativeBridge.getServerUrl
+  if (isProxyEndpoint && !isNative) {
+    return true
+  }
+  return false
+}
+
+/**
+ * 验证独立模型配置是否有效。
+ */
+export function isValidAiModelConfig(config: { apiKey?: string; model?: string } | null): config is {
+  apiKey: string
+  model: string
+} {
+  return Boolean(config && config.apiKey && config.model)
+}
+
+/**
+ * 解析跨局记忆文本为分段对象。
+ */
+export function parseCrossGameMemoryText(text: string): {
+  history?: string
+  summary?: string
+  experience?: string
+  inGame?: string
+} {
+  const result: { history?: string; summary?: string; experience?: string; inGame?: string } = {}
+  if (!text) return result
+
+  const sections = text.split(/【(.+?)】/)
+  for (let i = 1; i < sections.length; i += 2) {
+    const title = sections[i]
+    const content = sections[i + 1] || ""
+    if (title.includes("跨局历史")) result.history = content.trim()
+    else if (title.includes("上期总结")) result.summary = content.trim()
+    else if (title.includes("经验本")) result.experience = content.trim()
+    else if (title.includes("本局决策")) result.inGame = content.trim()
+  }
+  return result
+}
+
+/**
+ * 控制模式标签映射表。
+ */
+export const CONTROL_MODE_LABELS: Record<string, string> = {
+  llm: "大模型正常决策",
+  "llm-corrected": "大模型纠错后决策",
+  "rule-fallback-after-llm-tool": "回退原因: LLM工具执行后的二次请求失败",
+  "rule-fallback-after-correction": "回退原因: 纠错后执行失败",
+  "rule-fallback-correction-skipped": "回退原因: 纠错跳过(已达最大次数或请求失败)",
+  "rule-fallback-llm-failed": "回退原因: LLM请求失败",
+  "rule-fallback-llm-invalid": "回退原因: LLM返回无效决策(无出价)"
+}
+
+/**
+ * 根据控制模式返回标签文本。
+ */
+export function getControlModeLabel(mode: string | undefined): string {
+  if (!mode) return ""
+  return CONTROL_MODE_LABELS[mode] || mode
+}
+
+/**
+ * 构建决策来源标签。
+ */
+export function buildDecisionSourceLabel(
+  plan: { failed?: boolean; model?: string } | null,
+  llmSeatEnabled: boolean
+): string {
+  if (!plan || !llmSeatEnabled) return "规则AI"
+  if (plan.failed) return "规则AI回退"
+  return plan.model || "大模型"
+}
+
+/**
+ * 根据计划与座位启用状态判断控制模式。
+ */
+export function resolveControlMode(
+  plan: { controlMode?: string; failed?: boolean; hasBidDecision?: boolean } | null,
+  llmSeatEnabled: boolean
+): string {
+  if (plan && plan.controlMode) return plan.controlMode
+  if (plan && !plan.failed && plan.hasBidDecision && llmSeatEnabled) return "llm"
+  return "rule"
+}
+
 export function createLlmDecisionModule(deps: LlmDecisionDeps) {
   const {
     GAME_SETTINGS,
@@ -117,32 +242,17 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
     canUseLlmDecision(): boolean {
       const provider = typeof this.getLlmProvider === "function" ? this.getLlmProvider() : null
       const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
-      if (!settings || !settings.enabled || !provider) {
+      const nativeBridge = (window as unknown as Record<string, { getServerUrl?: () => string } | undefined>).NativeBridge || null
+      const result = canUseLlmDecisionCore(settings, provider, nativeBridge)
+      if (!result) {
         console.log(
           "[canUseLlmDecision] false: settings=",
           settings ? { enabled: settings.enabled } : "null",
           "provider=",
           provider ? provider.id : "null"
         )
-        return false
       }
-      const hasApiKey = typeof settings.apiKey === "string" && settings.apiKey.trim().length > 0
-      if (hasApiKey) {
-        return true
-      }
-      const endpoint = typeof settings.endpoint === "string" ? settings.endpoint.trim() : ""
-      const isProxyEndpoint = endpoint.length > 0 && endpoint.startsWith("/")
-      const isNative = !!((window as unknown as Record<string, { getServerUrl?: () => string }>).NativeBridge && (window as unknown as Record<string, { getServerUrl?: () => string }>).NativeBridge.getServerUrl)
-      if (isProxyEndpoint && !isNative) {
-        return true
-      }
-      console.log(
-        "[canUseLlmDecision] false: no apiKey and not proxy endpoint on desktop, endpoint:",
-        endpoint,
-        "isNative:",
-        isNative
-      )
-      return false
+      return result
     },
 
     isAiLlmEnabledForPlayer(playerId: string): boolean {
@@ -186,7 +296,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
             ? { apiKey: config.apiKey ? "(已设置)" : "(空)", endpoint: config.endpoint, model: config.model }
             : null
         )
-        if (!config || !config.apiKey || !config.model) {
+        if (!isValidAiModelConfig(config)) {
           console.log("[getAiModelConfigForPlayer] config is invalid (missing apiKey or model), returning null")
           return null
         }
@@ -197,19 +307,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
     },
 
     getAiIndexFromPlayerId(playerId: string): number {
-      if (typeof playerId !== "string") return -1
-      const aiMatch = playerId.match(/^ai(\d+)$/i)
-      if (aiMatch) {
-        return parseInt(aiMatch[1], 10) - 1
-      }
-      const pMatch = playerId.match(/^p(\d+)$/i)
-      if (pMatch) {
-        const num = parseInt(pMatch[1], 10)
-        if (num === 1) return 0
-        if (num === 3) return 1
-        if (num === 4) return 2
-      }
-      return -1
+      return getAiIndexFromPlayerId(playerId)
     },
 
     async requestAiLlmPlan(player: Player, options: Record<string, unknown> = {}): Promise<LlmPlanResult | null> {
@@ -1361,9 +1459,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           ruleActionIds.length > 0
             ? ruleActionIds.map((actionId: string) => this.getActionDefById(actionId).name).join("、")
             : ""
-        const actualModel = plan && plan.model ? plan.model : ""
-        const decisionSource =
-          !plan || !llmSeatEnabled ? "规则AI" : plan.failed ? "规则AI回退" : actualModel || "大模型"
+        const decisionSource = buildDecisionSourceLabel(plan, llmSeatEnabled)
 
         return {
           playerId: player.id,
@@ -1374,12 +1470,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
           llmActionName,
           ruleActionName,
           actionExecuted: hasLlmExecutedAction,
-          controlMode:
-            plan && plan.controlMode
-              ? plan.controlMode
-              : plan && !plan.failed && plan.hasBidDecision && llmSeatEnabled
-                ? "llm"
-                : "rule",
+          controlMode: resolveControlMode(plan, llmSeatEnabled),
           thought: plan && plan.thought ? plan.thought : "",
           reasoningContent: plan && plan.reasoningContent ? plan.reasoningContent : "",
           error: plan && plan.failed ? plan.error || "未知错误" : "",
@@ -1416,16 +1507,6 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
     },
 
     renderAiLogicPanelForLlm(telemetry: { round: number; entries?: TelemetryEntry[] }): void {
-      const CONTROL_MODE_LABELS: Record<string, string> = {
-        llm: "大模型正常决策",
-        "llm-corrected": "大模型纠错后决策",
-        "rule-fallback-after-llm-tool": "回退原因: LLM工具执行后的二次请求失败",
-        "rule-fallback-after-correction": "回退原因: 纠错后执行失败",
-        "rule-fallback-correction-skipped": "回退原因: 纠错跳过(已达最大次数或请求失败)",
-        "rule-fallback-llm-failed": "回退原因: LLM请求失败",
-        "rule-fallback-llm-invalid": "回退原因: LLM返回无效决策(无出价)"
-      }
-
       const rulePayload =
         this.aiEngine && typeof this.aiEngine.getLastDecisionLog === "function"
           ? this.aiEngine.getLastDecisionLog()
@@ -1450,7 +1531,7 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
 
           const badgeClass = isFallback ? "badge-fallback" : isLlm ? "badge-llm" : "badge-rule"
           const badgeText = isFallback ? "回退" : isLlm ? "大模型" : "规则AI"
-          const modeLabel = entry.controlMode ? (CONTROL_MODE_LABELS[entry.controlMode] || entry.controlMode) : ""
+          const modeLabel = getControlModeLabel(entry.controlMode)
 
           card.innerHTML = `
           <div class="ai-player-card-header">
@@ -1531,22 +1612,6 @@ export function createLlmDecisionModule(deps: LlmDecisionDeps) {
     const div = document.createElement("div")
     div.textContent = text
     return div.innerHTML
-  }
-
-  function parseCrossGameMemoryText(text: string): { history?: string; summary?: string; experience?: string; inGame?: string } {
-    const result: { history?: string; summary?: string; experience?: string; inGame?: string } = {}
-    if (!text) return result
-
-    const sections = text.split(/【(.+?)】/)
-    for (let i = 1; i < sections.length; i += 2) {
-      const title = sections[i]
-      const content = sections[i + 1] || ""
-      if (title.includes("跨局历史")) result.history = content.trim()
-      else if (title.includes("上期总结")) result.summary = content.trim()
-      else if (title.includes("经验本")) result.experience = content.trim()
-      else if (title.includes("本局决策")) result.inGame = content.trim()
-    }
-    return result
   }
 
   function renderLlmEntryDetails(entry: TelemetryEntry): string {
