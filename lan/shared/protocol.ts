@@ -8,7 +8,12 @@
  * @exports MSG - 消息类型常量
  * @exports PROTOCOL_VERSION - 协议版本号
  */
+declare const module: { exports: Record<string, unknown> } | undefined;
+
 const PROTOCOL_VERSION = 1;
+
+const DEFAULT_LAN_SERVER_URL = "ws://localhost:9720";
+const DEFAULT_LAN_HTTP_BASE = "http://localhost:9720";
 
 /**
  * 联机通信协议常量。定义客户端与服务端之间的消息类型、房间状态和回合阶段。
@@ -70,4 +75,4 @@ if (typeof module !== "undefined" && (module as any).exports) {
   (module as any).exports = MSG;
 }
 
-export { MSG, PROTOCOL_VERSION };
+export { MSG, PROTOCOL_VERSION, DEFAULT_LAN_SERVER_URL, DEFAULT_LAN_HTTP_BASE };

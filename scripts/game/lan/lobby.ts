@@ -25,6 +25,7 @@ import {
   LAN_PLAYER_ID_STORAGE_KEY, LAN_ROOM_CODE_STORAGE_KEY, LAN_PLAYER_NAME_STORAGE_KEY,
   LAN_IS_HOST_STORAGE_KEY, LAN_RECONNECT_FAILED_STORAGE_KEY, LAN_NAME_STORAGE_KEY
 } from "../core/constants"
+import { DEFAULT_LAN_SERVER_URL, DEFAULT_LAN_HTTP_BASE } from "../../../lan/shared/protocol"
 
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { CarryItem } from "../../../types/game"
@@ -175,7 +176,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
   } else {
     // Reset native server error handler on non-native
     window.onNativeServerError = null;
-    if (serverUrl) serverUrl.value = "ws://localhost:9720";
+    if (serverUrl) serverUrl.value = DEFAULT_LAN_SERVER_URL;
   }
 
   var toggleServerBtn = $("lobbyToggleServerBtn");
@@ -303,7 +304,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
     const name = getPlayerName();
     var wsUrl = "ws://" + serverIp + ":9720";
     if (isNative && serverIp === LanBridge.getNativeWiFiIP()) {
-      wsUrl = "ws://localhost:9720";
+      wsUrl = DEFAULT_LAN_SERVER_URL;
     }
     setOnlineStatus("连接 " + serverIp + "...", "");
     var doConnect = function () {
@@ -461,7 +462,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
       }
     }
 
-    var localServerBase = "http://localhost:9720";
+    var localServerBase = DEFAULT_LAN_HTTP_BASE;
 
     if (serverBase) {
       var base = serverBase;

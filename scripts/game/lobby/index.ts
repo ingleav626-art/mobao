@@ -1,4 +1,4 @@
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 /**
  * @file lobby/index.ts
@@ -30,8 +30,8 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  *
  * @exports LobbyIndexMixin - 大厅主页面 Mixin，混入 Phaser Scene
  */
-import { Deps } from '../core/deps.js'
-import type { Player } from '../../../types/game'
+import { Deps } from "../core/deps.js"
+import type { Player } from "../../../types/game"
 import { loadPlayerMoney, GAME_SETTINGS } from "../core/settings"
 import { patch as patchAppState } from "../core/app-state"
 import { getProfile, getSelectedProfileId } from "../data/map-profiles"
@@ -39,13 +39,13 @@ import { MobaoShopBridge } from "../bridge/shop"
 import { MobaoAnimations } from "../animations"
 import { getActiveCharacter } from "../data/character-system"
 import { getCharacterById } from "../data/characters"
-import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
+import { ARTIFACT_LIBRARY } from "../data/artifacts"
 import { MobaoShopPage } from "../shop/index"
-import { rgbHex } from "../core/utils"
 import { CARRY_ITEMS_STORAGE_KEY } from "../core/constants"
-import { MobileHandler } from "../../mobile/mobile-handler"
 import { AudioManager } from "../../audio/audio-manager"
-import { getCollectionCategories as _getCollectionCategories, filterCollectionItems } from "../ui/overlay"
+import { LobbyCollectionMixin } from "./collection"
+
+export { sortCollectionItems } from "./collection"
 
 // ─── 独立函数（可独立测试）───
 
@@ -59,33 +59,10 @@ export function getSlotLayout(playerCount: number): { leftSlots: string[]; right
   return { leftSlots, rightSlots }
 }
 
-export function sortCollectionItems<T extends { basePrice?: number; name?: string; w?: number; h?: number }>(
-  items: T[],
-  sortValue: string
-): T[] {
-  if (sortValue === "default") return items
-  return [...items].sort((a, b) => {
-    switch (sortValue) {
-      case "price-asc":
-        return (a.basePrice || 0) - (b.basePrice || 0)
-      case "price-desc":
-        return (b.basePrice || 0) - (a.basePrice || 0)
-      case "name-asc":
-        return (a.name || "").localeCompare(b.name || "", "zh")
-      case "size-asc":
-        return (a.w || 0) * (a.h || 0) - (b.w || 0) * (b.h || 0)
-      case "size-desc":
-        return (b.w || 0) * (b.h || 0) - (a.w || 0) * (a.h || 0)
-      default:
-        return 0
-    }
-  })
-}
-
 export { LobbyCarouselMixin as CarouselMixin } from "./carousel"
 export { CharacterSelectMixin } from "./character-select"
 
-export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
+const _LobbyCoreMixin: ThisType<WarehouseSceneThis> = {
   bindLobbyEvents() {
     const soloBtn = document.getElementById("lobbySoloBtn")
     const onlineBtn = document.getElementById("lobbyOnlineBtn")
@@ -129,15 +106,15 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         const roomPanel = document.getElementById("lobbyOnlineRoom")
         const isInRoom = roomPanel && !roomPanel.classList.contains("hidden")
         if (isInRoom) {
-          ; this.showGameConfirm("确定要离开房间吗？", () => {
+          this.showGameConfirm("确定要离开房间吗？", () => {
             if (this.lanBridge) {
-              ; this.lanBridge.leaveRoom()
-                ; this.lanBridge.disconnect()
+              this.lanBridge.leaveRoom()
+              this.lanBridge.disconnect()
             }
-            ; this.showLobbyMain()
+            this.showLobbyMain()
           })
         } else {
-          ; this.showLobbyMain()
+          this.showLobbyMain()
         }
       })
     }
@@ -151,9 +128,9 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       carouselRightBtn.addEventListener("click", () => this.carouselScroll(1))
     }
 
-    ; this._carouselOffset = 0
-      ; this.renderCarousel()
-      ; this.initLanLobby()
+    this._carouselOffset = 0
+    this.renderCarousel()
+    this.initLanLobby()
   },
 
   showLobbyMain(skipAnimation?: boolean) {
@@ -178,8 +155,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         )
       }
     }
-    ; this.isLanMode = false
-      ; this.lanIsHost = false
+    this.isLanMode = false
+    this.lanIsHost = false
   },
 
   showLobbySubPage(page: string) {
@@ -208,16 +185,15 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
 
     if (page === "soloSetup") {
       animatePageIn(soloSetup)
-        ; this.renderCarousel()
-        ; this.renderMapDetail()
+      this.renderCarousel()
+      this.renderMapDetail()
       this.updateLobbyMoneyDisplay()
     } else if (page === "onlinePlaceholder") {
       animatePageIn(onlinePlaceholder)
 
       const roomPanel = document.getElementById("lobbyOnlineRoom")
       const connectPanel = document.getElementById("lobbyOnlineConnect")
-      const isInRoom =
-        this.lanBridge && this.lanBridge.roomCode && roomPanel && !roomPanel.classList.contains("hidden")
+      const isInRoom = this.lanBridge && this.lanBridge.roomCode && roomPanel && !roomPanel.classList.contains("hidden")
 
       if (!isInRoom) {
         if (roomPanel) roomPanel.classList.add("hidden")
@@ -227,32 +203,35 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       this.updateLobbyMoneyDisplay()
       const onlineMoney = document.getElementById("lobbyOnlineMoney")
       const onlineMoneyOuter = document.getElementById("lobbyOnlineMoneyOuter")
-        ;[onlineMoney, onlineMoneyOuter].forEach((el) => {
-          if (!el) return
-          const textEl = el.querySelector(".hud-icon") ? el.lastChild : el
-          if (textEl && textEl.nodeType === 3) textEl.textContent = " " + this.playerMoney.toLocaleString()
-          else
-            el.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${this.playerMoney.toLocaleString()}`
-        })
+      ;[onlineMoney, onlineMoneyOuter].forEach((el) => {
+        if (!el) return
+        const textEl = el.querySelector(".hud-icon") ? el.lastChild : el
+        if (textEl && textEl.nodeType === 3) textEl.textContent = " " + this.playerMoney.toLocaleString()
+        else
+          el.innerHTML = `<img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon"> ${this.playerMoney.toLocaleString()}`
+      })
     } else if (page === "characterSelect") {
-      ; this.showCharacterSelectPageWithMap()
+      this.showCharacterSelectPageWithMap()
     }
   },
 
   goToCharacterSelect() {
-    ; this.showLobbySubPage("characterSelect")
+    this.showLobbySubPage("characterSelect")
   },
 
   showCharacterSelectPageWithMap() {
     let mapProfile: { name?: string; params?: Record<string, unknown> } | null = null
     if (getProfile) {
-      mapProfile = getProfile(getSelectedProfileId()) as unknown as { name?: string; params?: Record<string, unknown> } | null
+      mapProfile = getProfile(getSelectedProfileId()) as unknown as {
+        name?: string
+        params?: Record<string, unknown>
+      } | null
     }
     if (this.showCharacterSelectPage) {
-      ; this.showCharacterSelectPage(mapProfile)
+      this.showCharacterSelectPage(mapProfile)
     } else {
       console.warn("[Lobby] CharacterSelectMixin not loaded, falling back to start game")
-        ; this.startSoloGame()
+      this.startSoloGame()
     }
   },
 
@@ -275,26 +254,26 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
   },
 
   cleanupGameScene() {
-    ; this.stopRoundTimer()
+    this.stopRoundTimer()
     if (this.itemLayer) {
-      ; this.itemLayer.destroy()
-        ; this.itemLayer = null
+      this.itemLayer.destroy()
+      this.itemLayer = null
     }
     if (this.gridLayer) {
-      ; this.gridLayer.destroy()
-        ; this.gridLayer = null
+      this.gridLayer.destroy()
+      this.gridLayer = null
     }
     if (this.revealCellLayer) {
-      ; this.revealCellLayer.destroy()
-        ; this.revealCellLayer = null
+      this.revealCellLayer.destroy()
+      this.revealCellLayer = null
     }
     if (this.activeSettlementSpinner) {
-      ; this.activeSettlementSpinner.destroy()
-        ; this.activeSettlementSpinner = null
+      this.activeSettlementSpinner.destroy()
+      this.activeSettlementSpinner = null
     }
-    ; (this.tweens as Phaser.Tweens.TweenManager & { killAll(): void }).killAll()
-      ; this.items = []
-      ; (this.time as Phaser.Time.Clock & { removeAllEvents(): void }).removeAllEvents()
+    ;(this.tweens as Phaser.Tweens.TweenManager & { killAll(): void }).killAll()
+    this.items = []
+    ;(this.time as Phaser.Time.Clock & { removeAllEvents(): void }).removeAllEvents()
   },
 
   enterLobby() {
@@ -317,29 +296,29 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       )
     }
     if (this.game && this.game.loop) {
-      ; this.game.loop.sleep()
+      this.game.loop.sleep()
     }
-    ; this.isLanMode = false
-      ; this.lanIsHost = false
-      ; this.lanPlayers = []
-      ; this.lanAiPlayers = []
-      ; this.lanHostWallets = {}
-      ; this.lanHostBids = {}
-      ; this.lanAiLlmEnabled = false
-      ; this.lanIdToSlotId = {}
-      ; this.slotIdToLanId = {}
-      ; this.lanMySlotId = null
-      ; this.aiLlmPlayerEnabled = {}
-      ; this.players = [
-        { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
-        { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
-        { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
-        { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
-      ]
+    this.isLanMode = false
+    this.lanIsHost = false
+    this.lanPlayers = []
+    this.lanAiPlayers = []
+    this.lanHostWallets = {}
+    this.lanHostBids = {}
+    this.lanAiLlmEnabled = false
+    this.lanIdToSlotId = {}
+    this.slotIdToLanId = {}
+    this.lanMySlotId = null
+    this.aiLlmPlayerEnabled = {}
+    this.players = [
+      { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
+      { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
+      { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
+      { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
+    ]
     if (Deps.LLM_BRIDGE && Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches) {
-      ; this.aiLlmPlayerEnabled = Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players)
+      this.aiLlmPlayerEnabled = Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players)
     }
-    ; this.initPlayersUI()
+    this.initPlayersUI()
     this.showLobbyMain(true)
     this.updateLobbyMoneyDisplay()
     patchAppState({ appMode: "lobby", gameSource: null })
@@ -364,7 +343,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     if (lobbyPage) lobbyPage.classList.remove("hidden")
     if (gameArea) gameArea.classList.add("hidden")
     if (this.game && this.game.loop) {
-      ; this.game.loop.sleep()
+      this.game.loop.sleep()
     }
     const connectPanel = document.getElementById("lobbyOnlineConnect")
     const roomPanel = document.getElementById("lobbyOnlineRoom")
@@ -374,7 +353,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     if (roomPanel) roomPanel.classList.remove("hidden")
     if (createPanel) createPanel.classList.add("hidden")
     if (joinPanel) joinPanel.classList.add("hidden")
-      ; this.exitSettlementPage()
+    this.exitSettlementPage()
     this.updateLobbyMoneyDisplay()
     patchAppState({ appMode: "lobby", gameSource: null })
     if (typeof AudioManager !== "undefined") {
@@ -384,13 +363,13 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     if (this.isLanMode && this.lanIsHost && this.lanBridge) {
       const sent = this.lanBridge.send({ type: "room:return" })
       if (!sent) {
-        ; this.writeLog("连接已断开，无法通知客机返回房间")
+        this.writeLog("连接已断开，无法通知客机返回房间")
       }
     }
   },
 
   exitLobby() {
-    ; this._stopLive2dLoop()
+    this._stopLive2dLoop()
     const videoA = document.getElementById("overlayLive2dVideoA") as HTMLVideoElement | null
     const videoB = document.getElementById("overlayLive2dVideoB") as HTMLVideoElement | null
     if (videoA) {
@@ -436,7 +415,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     }
 
     if (this.game && this.game.loop) {
-      ; this.game.loop.wake()
+      this.game.loop.wake()
     }
     if (typeof AudioManager !== "undefined") {
       AudioManager.stopBgm()
@@ -448,7 +427,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     patchAppState({ appMode: "game", gameSource: "solo" })
     this.applyMapProfile()
     this.exitLobby()
-      ; this.startNewRun()
+    this.startNewRun()
   },
 
   applyMapProfile() {
@@ -466,21 +445,21 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     if (Number.isFinite(p.directTakeRatio)) {
       GAME_SETTINGS.directTakeRatio = p.directTakeRatio
     }
-    ; this._mapQualityWeights = p.qualityWeights || null
-      ; this._mapCategoryWeights = p.categoryWeights || null
+    this._mapQualityWeights = p.qualityWeights || null
+    this._mapCategoryWeights = p.categoryWeights || null
   },
 
   initPlayersUI() {
     const activeIds = new Set(this.players.map((p: Player) => p.id))
-      ;["p1", "p2", "p3", "p4"].forEach((slotId) => {
-        const cardEl = document.getElementById(`playerCard-${slotId}`)
-        if (!cardEl) return
-        if (activeIds.has(slotId)) {
-          cardEl.classList.remove("player-card-hidden")
-        } else {
-          cardEl.classList.add("player-card-hidden")
-        }
-      })
+    ;["p1", "p2", "p3", "p4"].forEach((slotId) => {
+      const cardEl = document.getElementById(`playerCard-${slotId}`)
+      if (!cardEl) return
+      if (activeIds.has(slotId)) {
+        cardEl.classList.remove("player-card-hidden")
+      } else {
+        cardEl.classList.add("player-card-hidden")
+      }
+    })
 
     const leftSide = document.getElementById("leftPlayerSide")
     const rightSide = document.getElementById("rightPlayerSide")
@@ -502,7 +481,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       if (publicPanel) rightSide.appendChild(publicPanel)
     }
 
-    ; this.players.forEach((player: Player) => {
+    this.players.forEach((player: Player) => {
       const nameEl = document.getElementById(`name-${player.id}`)
       const avatarEl = document.getElementById(`avatar-${player.id}`)
       const cardEl = document.getElementById(`playerCard-${player.id}`)
@@ -510,7 +489,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         nameEl.textContent = player.name
       }
       if (avatarEl) {
-        ; this.updatePlayerAvatar(player.id, avatarEl)
+        this.updatePlayerAvatar(player.id, avatarEl)
       }
 
       if (cardEl) {
@@ -529,13 +508,11 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
             input.id = toggleId
             input.checked = this.isAiLlmEnabledForPlayer(player.id)
             input.addEventListener("change", () => {
-              ; this.aiLlmPlayerEnabled[player.id] = Boolean(input.checked)
+              this.aiLlmPlayerEnabled[player.id] = Boolean(input.checked)
               if (Deps.LLM_BRIDGE) {
                 Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches(this.aiLlmPlayerEnabled)
               }
-              ; this.writeLog(
-                `${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`
-              )
+              this.writeLog(`${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`)
             })
 
             const text = document.createElement("span")
@@ -575,11 +552,10 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         }
       }
 
-      ; this.playerHistoryPanels[player.id] = document.getElementById(`history-${player.id}`)!
+      this.playerHistoryPanels[player.id] = document.getElementById(`history-${player.id}`)!
     })
-
-      ; this.refreshPlayerHistoryUI()
-      ; this.updatePlayerCharNames()
+    this.refreshPlayerHistoryUI()
+    this.updatePlayerCharNames()
   },
 
   updatePlayerAvatar(playerId: string, avatarEl: HTMLElement) {
@@ -616,9 +592,9 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       .concat(categories.map((category: string) => `<option value="${category}">${category}</option>`))
       .join("")
 
-      ; (this.dom.previewCategorySelect as HTMLElement).innerHTML = options
-      ; (this.dom.bidInput as HTMLInputElement).step = "1"
-      ; (this.dom.bidInput as HTMLInputElement).min = "0"
+    ;(this.dom.previewCategorySelect as HTMLElement).innerHTML = options
+    ;(this.dom.bidInput as HTMLInputElement).step = "1"
+    ;(this.dom.bidInput as HTMLInputElement).min = "0"
   },
 
   renderShopContent() {
@@ -626,8 +602,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
       MobaoShopPage.init({
         onPurchase: (result?: { ok?: boolean; message?: string; newMoney?: number }) => {
           if (result && result.ok) {
-            ; this.playerMoney = result.newMoney ?? 0
-              ; this.syncItemManagerFromShop()
+            this.playerMoney = result.newMoney ?? 0
+            this.syncItemManagerFromShop()
             this.updateLobbyMoneyDisplay()
           }
         }
@@ -652,9 +628,11 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
           carryIds = new Set(parsed.filter((i: { id?: string }) => i && i.id).map((i: { id: string }) => i.id))
         }
       }
-    } catch (_e) { /* ignore */ }
+    } catch (_e) {
+      /* ignore */
+    }
 
-    ; this.itemManager.items.forEach((item: { id: string; count?: number }) => {
+    this.itemManager.items.forEach((item: { id: string; count?: number }) => {
       const storageKey = bridge.getItemStorageKey(item.id)
       const shopCount = inv[storageKey] || 0
 
@@ -666,158 +644,8 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     })
   },
 
-  openCollectionOverlay() {
-    const overlay = document.getElementById("collectionOverlay")
-    const panel = document.getElementById("collectionPanel")
-    if (!overlay || !panel) return
-
-    this.initCollectionPanel()
-
-    if (MobaoAnimations) {
-      MobaoAnimations.animateOverlayOpen(overlay, panel)
-    } else {
-      overlay.classList.remove("hidden")
-    }
-
-    const closeBtn = document.getElementById("collectionCloseBtn")
-    if (closeBtn && !((closeBtn as unknown as Record<string, unknown>)._boundClose)) {
-      ; (closeBtn as unknown as Record<string, unknown>)._boundClose = true
-      closeBtn.addEventListener("click", () => this.closeCollectionOverlay())
-    }
-    if (!((overlay as unknown as Record<string, unknown>)._boundOverlayClose)) {
-      ; (overlay as unknown as Record<string, unknown>)._boundOverlayClose = true
-      overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) this.closeCollectionOverlay()
-      })
-    }
-  },
-
-  closeCollectionOverlay() {
-    const overlay = document.getElementById("collectionOverlay")
-    const panel = document.getElementById("collectionPanel")
-    if (!overlay) return
-
-    if (MobaoAnimations) {
-      MobaoAnimations.animateOverlayClose(overlay, panel)
-    } else {
-      overlay.classList.add("hidden")
-    }
-  },
-
-  _destroyCustomSelect(originalSelect: HTMLSelectElement) {
-    const container = originalSelect.nextElementSibling
-    if (container && container.classList.contains("custom-select-container")) {
-      container.remove()
-    }
-    originalSelect.removeAttribute("data-custom-select")
-    originalSelect.style.display = ""
-  },
-
-  _rebuildCustomSelect(originalSelect: HTMLSelectElement) {
-    this._destroyCustomSelect(originalSelect)
-    if (MobileHandler && (MobileHandler.isMobile || MobileHandler.isTouch)) {
-      MobileHandler.convertToCustomSelect(originalSelect)
-    }
-  },
-
-  initCollectionPanel() {
-    const categorySelect = document.getElementById("collectionCategoryFilter") as HTMLSelectElement | null
-    const qualitySelect = document.getElementById("collectionQualityFilter") as HTMLSelectElement | null
-    const searchInput = document.getElementById("collectionSearchInput") as HTMLInputElement | null
-
-    if (categorySelect) {
-      const categories = this.getCollectionCategories()
-      categorySelect.innerHTML =
-        '<option value="all">全部品类</option>' + categories.map((c) => `<option value="${c}">${c}</option>`).join("")
-      if (!(categorySelect as unknown as Record<string, unknown>)._initialized) {
-        ; (categorySelect as unknown as Record<string, unknown>)._initialized = true
-        categorySelect.addEventListener("change", () => this.renderCollectionGrid())
-      }
-      this._rebuildCustomSelect(categorySelect)
-    }
-
-    if (qualitySelect) {
-      const qualities = Object.entries(QUALITY_CONFIG)
-      qualitySelect.innerHTML =
-        '<option value="all">全部品质</option>' +
-        qualities.map(([key, val]) => `<option value="${key}">${val.label}</option>`).join("")
-      if (!(qualitySelect as unknown as Record<string, unknown>)._initialized) {
-        ; (qualitySelect as unknown as Record<string, unknown>)._initialized = true
-        qualitySelect.addEventListener("change", () => this.renderCollectionGrid())
-      }
-      this._rebuildCustomSelect(qualitySelect)
-    }
-
-    if (searchInput && !(searchInput as unknown as Record<string, unknown>)._initialized) {
-      ; (searchInput as unknown as Record<string, unknown>)._initialized = true
-      searchInput.addEventListener("input", () => this.renderCollectionGrid())
-    }
-
-    const sortSelect = document.getElementById("collectionSortFilter") as HTMLSelectElement | null
-    if (sortSelect) {
-      if (!(sortSelect as unknown as Record<string, unknown>)._initialized) {
-        ; (sortSelect as unknown as Record<string, unknown>)._initialized = true
-        sortSelect.addEventListener("change", () => this.renderCollectionGrid())
-      }
-      this._rebuildCustomSelect(sortSelect)
-    }
-
-    this.renderCollectionGrid()
-  },
-
-  getCollectionCategories(): string[] {
-    return _getCollectionCategories(ARTIFACT_LIBRARY || [])
-  },
-
-  renderCollectionGrid() {
-    const grid = document.getElementById("collectionGrid")
-    const stats = document.getElementById("collectionStats")
-    if (!grid) return
-
-    const categoryFilter = (document.getElementById("collectionCategoryFilter") as HTMLSelectElement | null)?.value || "all"
-    const qualityFilter = (document.getElementById("collectionQualityFilter") as HTMLSelectElement | null)?.value || "all"
-    const searchText = (document.getElementById("collectionSearchInput") as HTMLInputElement | null)?.value || ""
-    const sortValue = (document.getElementById("collectionSortFilter") as HTMLSelectElement | null)?.value || "default"
-
-    const filtered = filterCollectionItems(ARTIFACT_LIBRARY || [], { categoryFilter, qualityFilter, searchText })
-    const artifacts = sortCollectionItems(filtered, sortValue)
-
-    const total = (ARTIFACT_LIBRARY || []).length
-    if (stats) {
-      stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`
-    }
-
-    grid.innerHTML = artifacts
-      .map((artifact) => {
-        const quality = QUALITY_CONFIG[artifact.qualityKey]
-        const qualityLabel = quality ? quality.label : "未知"
-        const qualityColor = quality ? rgbHex(quality.color) : "#9f9f9f"
-        const imgSrc = `assets/images/artifacts/thumbs/${artifact.key}.png`
-
-        return `
-          <article class="collection-item" data-key="${artifact.key}">
-            <div class="collection-thumb" style="background: ${qualityColor}44;">
-              <img src="${imgSrc}" alt="${artifact.name}" onerror="this.style.display='none'"/>
-            </div>
-            <div class="collection-info">
-              <strong class="collection-name">${artifact.name}</strong>
-              <div class="collection-meta">
-                <span class="collection-quality" style="color: ${qualityColor};">${qualityLabel}</span>
-                <span class="collection-category">${artifact.category}</span>
-              </div>
-              <div class="collection-details">
-                <span>基础价: ${artifact.basePrice}</span>
-                <span>尺寸: ${artifact.w}x${artifact.h}</span>
-              </div>
-            </div>
-          </article>
-        `
-      })
-      .join("")
-  },
-
   updatePlayerCharNames() {
-    ; this.players.forEach((player: Player) => {
+    this.players.forEach((player: Player) => {
       const avatarEl = document.getElementById(`avatar-${player.id}`)
       if (!avatarEl) return
       let charName = ""
@@ -842,7 +670,9 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
         wrap.appendChild(nameTag)
       }
       nameTag.textContent = charName
-        ; (nameTag as HTMLElement).style.display = charName ? "" : "none"
+      ;(nameTag as HTMLElement).style.display = charName ? "" : "none"
     })
   }
 }
+
+export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = Object.assign({}, _LobbyCoreMixin, LobbyCollectionMixin)

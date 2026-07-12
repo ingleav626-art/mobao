@@ -61,9 +61,16 @@
 
 | 文件 | 职责 |
 |------|------|
-| battle-record.ts | 战绩记录 Bridge，负责战绩的持久化、 Phaser 重建、UI 渲染、回放控制 |
+| battle-record.ts | 战绩记录 Bridge 工厂，负责战绩持久化、Phaser 重建、UI 渲染、回放控制（纯函数已提取到 battle-record/，908->704 行）|
 | shop.ts | 商店系统 Bridge 单例，管理道具购买、消耗、库存持久化、每日限购、限时特惠 |
 | settlement.ts | 结算系统 Bridge（工厂函数），管理结算页面、藏品逐个揭示动画、品质特效、庆祝粒子 |
+
+## scripts/game/bridge/battle-record/
+
+| 文件 | 职责 |
+|------|------|
+| types.ts | 战绩记录 Bridge 的接口定义（6 个 interface：BattleRecordDeps/BattleRecord 等）|
+| pure.ts | 纯函数（formatRecordTime + parsePanelTextToHtml(text, escapeHtml)），可独立测试 |
 
 ## scripts/game/core/
 
@@ -107,7 +114,8 @@
 
 | 文件 | 职责 |
 |------|------|
-| index.ts | 大厅主页面 Mixin，管理页面导航、子页面切换、单机/联机入口、玩家初始化、游戏启动 |
+| index.ts | 大厅主页面 Mixin，管理页面导航、子页面切换、单机/联机入口、玩家初始化、游戏启动（收藏图鉴已迁 lobby/collection.ts，908->678 行）|
+| collection.ts | LobbyCollectionMixin：收藏图鉴面板（openCollectionOverlay/initCollectionPanel/renderCollectionGrid 等 7 方法 + sortCollectionItems 纯函数）|
 | carousel.ts | 大厅地图选择轮播组件，提供卡片横向滚动、触摸滑动、箭头导航、地图详情展示 |
 | character-select.ts | 角色选择薄入口，通过 Object.assign 合并核心/Live2D/携带道具三个 Mixin，re-export 纯函数 |
 
@@ -164,7 +172,6 @@
 | detail-popup.ts | DetailPopupMixin：道具/角色详情弹窗（showItemDetailPopup/showCharacterInfoPopup 等 4 方法） |
 | settings.ts | SettingsMixin：设置面板（8 方法，含越界 saveSettingsFromOverlay + 3 个 DeepSeek 迁移别名） |
 | lan-dialog.ts | LanDialogMixin：LAN 重开投票/暂停弹窗（6 方法，含 2 越界） |
-| collection.ts | CollectionMixin：收藏图鉴面板（5 方法） |
 | ai-model-config.ts | AiModelConfigMixin：AI 模型配置面板（7 方法 + 1 属性） |
 | ai-memory-panel.ts | AiMemoryPanelMixin：AI 记忆面板 UI（openAiMemoryPanel 等 3 方法，从 ai/memory.ts 迁入）|
 | ai-reflection-dialog.ts | AiReflectionDialogMixin：AI 反思待处理对话框 UI（showReflectionPendingDialog 等 4 方法，从 ai/reflection.ts 迁入）|
@@ -250,4 +257,4 @@
 
 | 文件 | 职责 |
 |------|------|
-| protocol.ts | 联机通信协议常量定义，消息类型、协议版本、房间状态和回合阶段常量 |
+| protocol.ts | 联机通信协议常量定义，消息类型、协议版本、房间状态、回合阶段常量 + 默认服务器 URL（DEFAULT_LAN_SERVER_URL/DEFAULT_LAN_HTTP_BASE，被 reconnect.ts/lobby.ts 使用）|

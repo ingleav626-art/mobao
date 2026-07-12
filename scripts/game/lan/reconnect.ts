@@ -13,6 +13,7 @@ import {
   LAN_PLAYER_ID_STORAGE_KEY, LAN_ROOM_CODE_STORAGE_KEY, LAN_PLAYER_NAME_STORAGE_KEY,
   LAN_IS_HOST_STORAGE_KEY, LAN_RECONNECT_FAILED_STORAGE_KEY
 } from "../core/constants"
+import { DEFAULT_LAN_SERVER_URL } from "../../../lan/shared/protocol"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { LanPlayer } from "../../../types/lan"
 
@@ -37,7 +38,7 @@ export const LanReconnectMixin: ThisType<WarehouseSceneThis> = {
     if (roomPanel) roomPanel.classList.remove("hidden");
     this.setOnlineStatus("正在重连...", "connecting");
 
-    bridge?.reconnect("ws://localhost:9720", roomCode, playerId)
+    bridge?.reconnect(DEFAULT_LAN_SERVER_URL, roomCode, playerId)
       .then((raw: unknown) => {
         const msg = raw as ReconnectResponse
         this.writeLog(`重连成功 | room=${msg.roomCode} | state=${msg.roomState}`);
