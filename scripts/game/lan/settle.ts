@@ -9,7 +9,7 @@
  * @exports LanSettleMixin
  */
 import { DEFAULT_START_MONEY } from "../core/constants"
-import { savePlayerMoney } from "../core/settings"
+import { savePlayerMoney } from "../core/player-money"
 import { patch as patchAppState } from "../core/app-state"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 

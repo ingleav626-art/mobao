@@ -37,10 +37,8 @@ import type {
 import type {
   LanPlayer,
 } from "../../../types/lan"
-import {
-  GAME_SETTINGS as _GAME_SETTINGS,
-  loadPlayerMoney,
-} from "../core/settings"
+import { GAME_SETTINGS as _GAME_SETTINGS } from "../core/settings"
+import { loadPlayerMoney } from "../core/player-money"
 import { ArtifactManager } from "../data/artifacts"
 import { SkillManager } from "../data/skills"
 import { ItemManager } from "../data/items"

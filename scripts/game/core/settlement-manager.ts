@@ -36,7 +36,7 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  * @requires core/app-state - 应用状态
  */
 
-import { savePlayerMoney } from "./settings";
+import { savePlayerMoney } from "./player-money";
 import { recordGameFinished } from "./app-state";
 
 // ─── 独立函数（可独立测试）───

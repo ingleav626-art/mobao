@@ -5,10 +5,12 @@ import {
   normalizeGameSettings,
   loadGameSettings,
   saveGameSettings,
-  loadPlayerMoney,
-  savePlayerMoney,
   type GameSettingsData
 } from '../../../scripts/game/core/settings'
+import {
+  loadPlayerMoney,
+  savePlayerMoney
+} from '../../../scripts/game/core/player-money'
 
 const SETTINGS_STORAGE_KEY = 'mobao_settings_v2'
 const PLAYER_MONEY_STORAGE_KEY = 'mobao_player_money_v1'

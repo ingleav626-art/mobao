@@ -61,7 +61,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| battle-record.ts | 战绩记录 Bridge 工厂，负责战绩持久化、Phaser 重建、UI 渲染、回放控制（纯函数已提取到 battle-record/，908->704 行）|
+| battle-record.ts | 战绩记录 Bridge 薄入口工厂，调用 5 slice 工厂组装 methods（908->54 行）|
 | shop.ts | 商店系统 Bridge 单例，管理道具购买、消耗、库存持久化、每日限购、限时特惠 |
 | settlement.ts | 结算系统 Bridge（工厂函数），管理结算页面、藏品逐个揭示动画、品质特效、庆祝粒子 |
 
@@ -71,6 +71,11 @@
 |------|------|
 | types.ts | 战绩记录 Bridge 的接口定义（6 个 interface：BattleRecordDeps/BattleRecord 等）|
 | pure.ts | 纯函数（formatRecordTime + parsePanelTextToHtml(text, escapeHtml)），可独立测试 |
+| persist.ts | createPersistSlice：战绩持久化（load/saveBattleRecords + buildWarehouseSnapshotForRecord/saveBattleRecord/deleteBattleRecord）|
+| panel.ts | createPanelSlice：战绩面板渲染（open/closeBattleRecordPanel + renderBattleRecordSummary/Panel）|
+| log-view.ts | createLogViewSlice：日志视图（open/closeBattleRecordLogs + renderBattleRecordLogView，调 pure.parsePanelTextToHtml）|
+| replay.ts | createReplaySlice：回放（openBattleRecordReplay）|
+| restore.ts | createRestoreSlice：仓库恢复（restoreWarehouseFromBattleRecord）|
 
 ## scripts/game/core/
 
@@ -80,7 +85,8 @@
 | constants.ts | 游戏全局常量定义，仓库网格布局、Canvas 尺寸、存储键名、品质配置等 |
 | deps.ts | 依赖注入容器，解决模块拆分后局部变量无法被其他 ES Module 访问的问题 |
 | round-manager.ts | 回合生命周期管理 Mixin，负责回合初始化、计时器、暂停/恢复、出价显示重置 |
-| settings.ts | 游戏设置与玩家资金管理，管理规则参数的持久化、规范化校验、玩家资金读写 |
+| settings.ts | 游戏设置管理，规则参数的持久化、规范化校验（PlayerMoney 已拆到 player-money.ts，129->109 行）|
+| player-money.ts | 玩家资金读写（loadPlayerMoney/savePlayerMoney，从 settings.ts 拆出）|
 | settlement-manager.ts | 结算业务逻辑 Mixin，负责分红/门票计算、钱包更新、联机结算分发、战绩保存、AI 反思触发 |
 | skill-item-manager.ts | 技能/道具使用管理 Mixin，处理技能道具的使用、扣减、角色加成、动作状态管理 |
 | utils.ts | 全局工具函数库，提供数组/数值/字符串处理、Phaser 动画封装、AI 情报池初始化等 |
