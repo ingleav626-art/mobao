@@ -9,10 +9,9 @@
  */
 "use strict"
 
-import { LlmManager } from "../core/llm-manager"
+import { LlmManager, createNormalizeSettings } from "../core/llm-manager"
 
-const { createOpenAICompatibleProvider, utils } = LlmManager
-const { clamp, toFiniteNumber, normalizeObject } = utils
+const { createOpenAICompatibleProvider } = LlmManager
 
 const DEEPSEEK_STORAGE_KEY = "mobao_deepseek_settings_v2"
 const DEEPSEEK_API_KEY_STORAGE_KEY = "mobao_deepseek_api_key_v1"
@@ -64,41 +63,13 @@ function normalizeEndpoint(raw: string, fallback: string): string {
   }
 }
 
-function normalizeDeepSeekSettings(source: any, fallback?: any): any {
-  const defaults = {
-    ...defaultDeepSeekSettings(),
-    ...normalizeObject(fallback)
-  }
-  const input = normalizeObject(source)
-
-  const endpointRaw = typeof input.endpoint === "string" ? input.endpoint.trim() : String(defaults.endpoint)
-  const modelRaw = typeof input.model === "string" ? input.model.trim() : String(defaults.model)
-  const apiKeyRaw =
-    typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : String(defaults.apiKey || "")
-
-  const endpoint = normalizeEndpoint(endpointRaw, defaults.endpoint)
-
-  return {
-    provider: "deepseek",
-    enabled: Boolean(input.enabled),
-    multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
-    reflectionEnabled: Boolean(input.reflectionEnabled),
-    contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
-    autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
-    reflectionScope: input.reflectionScope === "full" ? "full" : "current",
-    thinkingEnabled: Boolean(input.thinkingEnabled),
-    independentModelEnabled: Boolean(input.independentModelEnabled),
-    independentReflectionEnabled:
-      input.independentReflectionEnabled !== undefined ? Boolean(input.independentReflectionEnabled) : true,
-    thinkingParams: typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,
-    endpoint,
-    model: modelRaw.length > 0 ? modelRaw : defaults.model,
-    apiKey: apiKeyRaw,
-    timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
-    temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 1.5),
-    maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
-  }
-}
+const normalizeDeepSeekSettings = createNormalizeSettings({
+  providerId: "deepseek",
+  defaultSettings: defaultDeepSeekSettings,
+  temperatureMax: 1.5,
+  includeIndependentReflection: true,
+  normalizeEndpoint: normalizeEndpoint
+})
 
 function isDeepSeekThinkingModel(model: string): boolean {
   return /deepseek-(v4|reasoner)/i.test(model)
@@ -131,7 +102,9 @@ function buildRequestBody(settings: any, context: any): any {
       if (customParams && typeof customParams === "object") {
         Object.assign(body, customParams)
       }
-    } catch (_e) { /* ignore */ }
+    } catch (_e) {
+      /* ignore */
+    }
   }
 
   return body

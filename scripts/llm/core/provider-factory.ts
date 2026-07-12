@@ -16,6 +16,55 @@ import {
   toFiniteNumber
 } from "./manager-utils"
 
+export interface NormalizeSettingsConfig {
+  providerId: string
+  defaultSettings: () => Record<string, unknown>
+  temperatureMax: number
+  includeIndependentReflection?: boolean
+  normalizeEndpoint?: (raw: string, fallback: string) => string
+}
+
+export function createNormalizeSettings(config: NormalizeSettingsConfig) {
+  return function normalizeSettings(source: any, fallback?: any): any {
+    const defaults: any = { ...config.defaultSettings(), ...normalizeObject(fallback) }
+    const input = normalizeObject(source)
+
+    const endpointRaw = typeof input.endpoint === "string" ? input.endpoint.trim() : String(defaults.endpoint)
+    const modelRaw = typeof input.model === "string" ? input.model.trim() : String(defaults.model)
+    const apiKeyRaw =
+      typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : String(defaults.apiKey || "")
+
+    const endpoint = config.normalizeEndpoint
+      ? config.normalizeEndpoint(endpointRaw, defaults.endpoint)
+      : endpointRaw || defaults.endpoint
+
+    return {
+      provider: config.providerId,
+      enabled: Boolean(input.enabled),
+      multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
+      reflectionEnabled: Boolean(input.reflectionEnabled),
+      contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
+      autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
+      reflectionScope: input.reflectionScope === "full" ? "full" : "current",
+      thinkingEnabled: Boolean(input.thinkingEnabled),
+      independentModelEnabled: Boolean(input.independentModelEnabled),
+      ...(config.includeIndependentReflection
+        ? {
+            independentReflectionEnabled:
+              input.independentReflectionEnabled !== undefined ? Boolean(input.independentReflectionEnabled) : true
+          }
+        : {}),
+      thinkingParams: typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,
+      endpoint,
+      model: modelRaw.length > 0 ? modelRaw : defaults.model,
+      apiKey: apiKeyRaw,
+      timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
+      temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, config.temperatureMax),
+      maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
+    }
+  }
+}
+
 export function createBaseProvider(config: any): any {
   const id = config.id
   const name = config.name || id
@@ -99,10 +148,7 @@ export function createBaseProvider(config: any): any {
         normalized.independentModelEnabled = Boolean(parsed.independentModelEnabled)
         console.log("[loadSettings] force set independentModelEnabled to:", normalized.independentModelEnabled)
       }
-      if (
-        parsed.independentReflectionEnabled !== undefined &&
-        normalized.independentReflectionEnabled === undefined
-      ) {
+      if (parsed.independentReflectionEnabled !== undefined && normalized.independentReflectionEnabled === undefined) {
         normalized.independentReflectionEnabled = Boolean(parsed.independentReflectionEnabled)
         console.log(
           "[loadSettings] force set independentReflectionEnabled to:",
@@ -139,15 +185,9 @@ export function createBaseProvider(config: any): any {
       normalized.independentModelEnabled = Boolean(settings.independentModelEnabled)
       console.log("[saveSettings] force set independentModelEnabled to:", normalized.independentModelEnabled)
     }
-    if (
-      settings.independentReflectionEnabled !== undefined &&
-      normalized.independentReflectionEnabled === undefined
-    ) {
+    if (settings.independentReflectionEnabled !== undefined && normalized.independentReflectionEnabled === undefined) {
       normalized.independentReflectionEnabled = Boolean(settings.independentReflectionEnabled)
-      console.log(
-        "[saveSettings] force set independentReflectionEnabled to:",
-        normalized.independentReflectionEnabled
-      )
+      console.log("[saveSettings] force set independentReflectionEnabled to:", normalized.independentReflectionEnabled)
     }
     saveProviderApiKey(normalized.apiKey)
     const safeForLocalStorage = { ...normalized, apiKey: "" }

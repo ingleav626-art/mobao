@@ -9,10 +9,9 @@
  */
 "use strict"
 
-import { LlmManager } from "../core/llm-manager"
+import { LlmManager, createNormalizeSettings } from "../core/llm-manager"
 
-const { createOpenAICompatibleProvider, utils } = LlmManager
-const { clamp, toFiniteNumber, normalizeObject } = utils
+const { createOpenAICompatibleProvider } = LlmManager
 
 const QWEN_STORAGE_KEY = "mobao_qwen_settings_v1"
 const QWEN_API_KEY_STORAGE_KEY = "mobao_qwen_api_key_v1"
@@ -39,39 +38,12 @@ function defaultQwenSettings(): any {
   }
 }
 
-function normalizeQwenSettings(source: any, fallback?: any): any {
-  const defaults = {
-    ...defaultQwenSettings(),
-    ...normalizeObject(fallback)
-  }
-  const input = normalizeObject(source)
-
-  const endpointRaw = typeof input.endpoint === "string" ? input.endpoint.trim() : String(defaults.endpoint)
-  const modelRaw = typeof input.model === "string" ? input.model.trim() : String(defaults.model)
-  const apiKeyRaw =
-    typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : String(defaults.apiKey || "")
-
-  return {
-    provider: "qwen",
-    enabled: Boolean(input.enabled),
-    multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
-    reflectionEnabled: Boolean(input.reflectionEnabled),
-    contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
-    autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
-    reflectionScope: input.reflectionScope === "full" ? "full" : "current",
-    thinkingEnabled: Boolean(input.thinkingEnabled),
-    independentModelEnabled: Boolean(input.independentModelEnabled),
-    independentReflectionEnabled:
-      input.independentReflectionEnabled !== undefined ? Boolean(input.independentReflectionEnabled) : true,
-    thinkingParams: typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,
-    endpoint: endpointRaw || defaults.endpoint,
-    model: modelRaw.length > 0 ? modelRaw : defaults.model,
-    apiKey: apiKeyRaw,
-    timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
-    temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 2),
-    maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
-  }
-}
+const normalizeQwenSettings = createNormalizeSettings({
+  providerId: "qwen",
+  defaultSettings: defaultQwenSettings,
+  temperatureMax: 2,
+  includeIndependentReflection: true
+})
 
 function isQwenThinkingModel(model: string): boolean {
   return /qwen.*think|qwen.*reasoning/i.test(model)
@@ -94,7 +66,9 @@ function buildRequestBody(settings: any, context: any): any {
       if (customParams && typeof customParams === "object") {
         Object.assign(body, customParams)
       }
-    } catch (_e) { /* ignore */ }
+    } catch (_e) {
+      /* ignore */
+    }
   }
 
   return body

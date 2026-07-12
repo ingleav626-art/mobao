@@ -21,7 +21,7 @@ import {
   loadStoredApiKey,
   saveStoredApiKey
 } from "./manager-utils"
-import { createBaseProvider, createOpenAICompatibleProvider } from "./provider-factory"
+import { createBaseProvider, createOpenAICompatibleProvider, createNormalizeSettings } from "./provider-factory"
 
 // re-export 工具函数和工厂（保持向后兼容）
 export {
@@ -42,7 +42,8 @@ export {
   MAX_LOG_ENTRIES
 } from "./manager-utils"
 
-export { createBaseProvider, createOpenAICompatibleProvider } from "./provider-factory"
+export { createBaseProvider, createOpenAICompatibleProvider, createNormalizeSettings } from "./provider-factory"
+export type { NormalizeSettingsConfig } from "./provider-factory"
 
 export type { UsageInput, NormalizedUsage } from "./manager-utils"
 
@@ -65,7 +66,7 @@ function loadManagerSettings(): any {
 function saveManagerSettings(settings: any): void {
   try {
     window.localStorage.setItem(LLM_MANAGER_STORAGE_KEY, JSON.stringify(settings))
-  } catch (_error) { }
+  } catch (_error) {}
 }
 
 function loadCustomProviders(): CustomProvider[] {
@@ -84,7 +85,7 @@ function loadCustomProviders(): CustomProvider[] {
 function saveCustomProviders(list: CustomProvider[]): void {
   try {
     window.localStorage.setItem(CUSTOM_PROVIDERS_STORAGE_KEY, JSON.stringify(list))
-  } catch (_error) { }
+  } catch (_error) {}
 }
 
 function registerProvider(provider: any): void {
@@ -117,7 +118,7 @@ function registerProvider(provider: any): void {
       (() => {
         return provider.defaultSettings ? provider.defaultSettings() : {}
       }),
-    saveSettings: provider.saveSettings || function () { },
+    saveSettings: provider.saveSettings || function () {},
     requestChat: provider.requestChat,
     testConnection: provider.testConnection || defaultTestConnection,
     getSettings:
@@ -135,7 +136,7 @@ function registerProvider(provider: any): void {
       function () {
         return []
       },
-    clearLogs: provider.clearLogs || function () { },
+    clearLogs: provider.clearLogs || function () {},
     isThinkingModel:
       provider.isThinkingModel ||
       function (_model: string) {
@@ -275,81 +276,39 @@ export const LlmManager = {
     const providerId = config.id || `custom_${Date.now()}`
     console.log("[createDynamicProvider] providerId:", providerId)
 
+    function defaultSettingsFn() {
+      return {
+        provider: providerId,
+        enabled: false,
+        multiGameMemoryEnabled: false,
+        reflectionEnabled: false,
+        contextLength: 5,
+        autoSummarizeEnabled: true,
+        reflectionScope: "current",
+        thinkingEnabled: false,
+        thinkingParams: "",
+        endpoint: config.endpoint || "",
+        model: config.model || "",
+        apiKey: "",
+        timeoutMs: 40000,
+        temperature: 0.2,
+        maxTokens: 2048
+      }
+    }
+
     const provider = createOpenAICompatibleProvider({
       id: providerId,
       name: config.name || providerId,
       description: config.description || "用户自定义模型",
       storageKey: `mobao_${providerId}_settings_v1`,
       apiKeyStorageKey: `mobao_${providerId}_api_key_v1`,
-      defaultSettings: function () {
-        return {
-          provider: providerId,
-          enabled: false,
-          multiGameMemoryEnabled: false,
-          reflectionEnabled: false,
-          contextLength: 5,
-          autoSummarizeEnabled: true,
-          reflectionScope: "current",
-          thinkingEnabled: false,
-          thinkingParams: "",
-          endpoint: config.endpoint || "",
-          model: config.model || "",
-          apiKey: "",
-          timeoutMs: 40000,
-          temperature: 0.2,
-          maxTokens: 2048
-        }
-      },
-      normalizeSettings: function (source: any, fallback?: any) {
-        const defaults = fallback || {
-          provider: providerId,
-          enabled: false,
-          multiGameMemoryEnabled: false,
-          reflectionEnabled: false,
-          contextLength: 5,
-          autoSummarizeEnabled: true,
-          reflectionScope: "current",
-          thinkingEnabled: false,
-          independentModelEnabled: false,
-          thinkingParams: "",
-          endpoint: config.endpoint || "",
-          model: config.model || "",
-          apiKey: "",
-          timeoutMs: 40000,
-          temperature: 0.2,
-          maxTokens: 2048
-        }
-        const input = normalizeObject(source)
-        const resultApiKey =
-          typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : defaults.apiKey || ""
-        console.log(
-          "[normalizeSettings] input.apiKey:",
-          typeof input.apiKey === "string" ? (input.apiKey ? "(已设置)" : "(空字符串)") : "(非字符串)",
-          "defaults.apiKey:",
-          defaults.apiKey ? "(已设置)" : "(空)",
-          "result:",
-          resultApiKey ? "(已设置)" : "(空)"
-        )
-        return {
-          provider: providerId,
-          enabled: Boolean(input.enabled),
-          multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
-          reflectionEnabled: Boolean(input.reflectionEnabled),
-          contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
-          autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
-          reflectionScope: input.reflectionScope === "full" ? "full" : "current",
-          thinkingEnabled: Boolean(input.thinkingEnabled),
-          independentModelEnabled: Boolean(input.independentModelEnabled),
-          thinkingParams:
-            typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,
-          endpoint: typeof input.endpoint === "string" ? input.endpoint.trim() : defaults.endpoint,
-          model: typeof input.model === "string" ? input.model.trim() : defaults.model,
-          apiKey: resultApiKey,
-          timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
-          temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 2),
-          maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
-        }
-      },
+      defaultSettings: defaultSettingsFn,
+      normalizeSettings: createNormalizeSettings({
+        providerId: providerId,
+        defaultSettings: defaultSettingsFn,
+        temperatureMax: 2,
+        includeIndependentReflection: true
+      }),
       isThinkingModel: function (_model: string) {
         return false
       },
@@ -397,86 +356,46 @@ export const LlmManager = {
     try {
       window.localStorage.removeItem(`mobao_${providerId}_settings_v1`)
       window.localStorage.removeItem(`mobao_${providerId}_api_key_v1`)
-    } catch (_error) { }
+    } catch (_error) {}
     return true
   },
   initializeCustomProviders: function (): void {
     const customList = loadCustomProviders()
     customList.forEach(function (cfg: CustomProvider) {
       if (!providers.has(String(cfg.id))) {
+        function defaultSettingsFn() {
+          return {
+            provider: cfg.id,
+            enabled: false,
+            multiGameMemoryEnabled: false,
+            reflectionEnabled: false,
+            contextLength: 5,
+            autoSummarizeEnabled: true,
+            reflectionScope: "current",
+            thinkingEnabled: false,
+            thinkingParams: "",
+            endpoint: "",
+            model: "",
+            apiKey: "",
+            timeoutMs: 40000,
+            temperature: 0.2,
+            maxTokens: 2048
+          }
+        }
+
         const provider = createOpenAICompatibleProvider({
           id: cfg.id,
           name: cfg.name,
           description: cfg.description || "",
           storageKey: `mobao_${cfg.id}_settings_v1`,
           apiKeyStorageKey: `mobao_${cfg.id}_api_key_v1`,
-          defaultSettings: function () {
-            return {
-              provider: cfg.id,
-              enabled: false,
-              multiGameMemoryEnabled: false,
-              reflectionEnabled: false,
-              contextLength: 5,
-              autoSummarizeEnabled: true,
-              reflectionScope: "current",
-              thinkingEnabled: false,
-              thinkingParams: "",
-              endpoint: "",
-              model: "",
-              apiKey: "",
-              timeoutMs: 40000,
-              temperature: 0.2,
-              maxTokens: 2048
-            }
-          },
-          normalizeSettings: function (source: any, fallback?: any) {
-            const defaults = fallback || {
-              provider: cfg.id,
-              enabled: false,
-              multiGameMemoryEnabled: false,
-              reflectionEnabled: false,
-              contextLength: 5,
-              autoSummarizeEnabled: true,
-              reflectionScope: "current",
-              thinkingEnabled: false,
-              thinkingParams: "",
-              endpoint: "",
-              model: "",
-              apiKey: "",
-              timeoutMs: 40000,
-              temperature: 0.2,
-              maxTokens: 2048
-            }
-            const input = normalizeObject(source)
-            const resultApiKey =
-              typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : defaults.apiKey || ""
-            console.log(
-              "[normalizeSettings-init] input.apiKey:",
-              typeof input.apiKey === "string" ? (input.apiKey ? "(已设置)" : "(空字符串)") : "(非字符串)",
-              "defaults.apiKey:",
-              defaults.apiKey ? "(已设置)" : "(空)",
-              "result:",
-              resultApiKey ? "(已设置)" : "(空)"
-            )
-            return {
-              provider: cfg.id,
-              enabled: Boolean(input.enabled),
-              multiGameMemoryEnabled: Boolean(input.multiGameMemoryEnabled),
-              reflectionEnabled: Boolean(input.reflectionEnabled),
-              contextLength: Math.max(2, Math.min(20, Math.round(Number(input.contextLength) || 5))),
-              autoSummarizeEnabled: input.autoSummarizeEnabled !== false,
-              reflectionScope: input.reflectionScope === "full" ? "full" : "current",
-              thinkingEnabled: Boolean(input.thinkingEnabled),
-              thinkingParams:
-                typeof input.thinkingParams === "string" ? input.thinkingParams.trim() : defaults.thinkingParams,
-              endpoint: typeof input.endpoint === "string" ? input.endpoint.trim() : defaults.endpoint,
-              model: typeof input.model === "string" ? input.model.trim() : defaults.model,
-              apiKey: resultApiKey,
-              timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
-              temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, 2),
-              maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
-            }
-          },
+          defaultSettings: defaultSettingsFn,
+          normalizeSettings: createNormalizeSettings({
+            providerId: cfg.id,
+            defaultSettings: defaultSettingsFn,
+            temperatureMax: 2,
+            includeIndependentReflection: true
+          }),
           isThinkingModel: function (_model: string) {
             return false
           },
