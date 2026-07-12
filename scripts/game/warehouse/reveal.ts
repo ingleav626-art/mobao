@@ -1,3 +1,16 @@
+/**
+ * @file scripts/game/warehouse/reveal.ts
+ * @module warehouse/reveal
+ * @description 仓库揭示 Mixin。管理藏品揭示动画、品质光晕特效、
+ *              信号生成、揭示结果应用到 AI 情报池。
+ *
+ * @requires core/constants - 网格常量, CANVAS_NATIVE_HEIGHT
+ * @requires core/utils - shuffle, qualityPulseDuration
+ * @requires data/artifacts - QUALITY_CONFIG
+ * @requires ./index - pickBottomCellFromTargets, pickRevealTargets
+ * @requires ./types - WarehouseSceneLike
+ * @exports WarehouseRevealMixin - 仓库揭示子 Mixin
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { Artifact } from "../../../types/game"
 import type { WarehouseSceneLike } from "./types"

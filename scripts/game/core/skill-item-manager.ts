@@ -1,3 +1,17 @@
+/**
+ * @file scripts/game/core/skill-item-manager.ts
+ * @module core/skill-item-manager
+ * @description 技能/道具使用管理 Mixin。处理技能道具的使用、扣减、角色加成、
+ *              动作状态管理，以及道具描述和标签解析。包含可独立测试的纯函数。
+ *
+ * @requires data/character-system - getOutlineBonus, getQualityBonus, getOutlineSortStrategy
+ * @requires bridge/shop - MobaoShopBridge
+ * @requires data/skills - SKILL_DEFS
+ * @requires data/items - ITEM_DEFS
+ * @requires ./settings - GAME_SETTINGS
+ * @exports SkillItemManagerMixin - 技能/道具管理 Mixin
+ * @exports 纯函数 - getItemInfo, getPlayerActionId, consumeActionState, wrapContextWithCharacterBonus
+ */
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
 import type { SkillContext } from '../../../types/game'
 

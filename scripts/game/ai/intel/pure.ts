@@ -1,3 +1,15 @@
+/**
+ * @file scripts/game/ai/intel/pure.ts
+ * @module ai/intel/pure
+ * @description AI 情报系统的可独立测试纯函数。从原 intel.ts 提取，
+ *              包含随机选格、高价值阈值计算、揭示级别判定、
+ *              候选列表截断、邻居状态标签、不确定性计算等。
+ *
+ * @requires core/utils - 工具函数（clamp, formatCompactNumber 等）
+ * @exports pickRandomItemCell, calcHighValuePriceThreshold, checkHighValueArtifact,
+ *          determineRevealLevel, truncateCandidateList, formatIntelActionPublicLine,
+ *          buildNeighborStateLabel, getNeighborOffsets, calcUncertainty, calcAvailableActionState
+ */
 import type { AiSignalStats } from "../../../../types/ai"
 import { compactOneLine, formatCompactNumber, formatTrackIndex, clamp } from "../../core/utils"
 

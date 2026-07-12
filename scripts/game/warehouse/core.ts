@@ -1,3 +1,16 @@
+/**
+ * @file scripts/game/warehouse/core.ts
+ * @module warehouse/core
+ * @description 仓库核心 Mixin。管理仓库网格绘制、藏品生成与放置、
+ *              仓库初始化、Canvas 渲染、网格坐标转换。
+ *
+ * @requires core/constants - 网格布局常量
+ * @requires core/utils - toCellKey
+ * @requires data/artifacts - ARTIFACT_LIBRARY
+ * @requires ./index - findFirstEmptySlot, isInBoundsCell, hasAnyInfo, getItemKnownText
+ * @requires ./types - WarehouseSceneLike
+ * @exports WarehouseCoreMixin - 仓库核心子 Mixin
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { Artifact } from "../../../types/game"
 import type { WarehouseSceneLike } from "./types"

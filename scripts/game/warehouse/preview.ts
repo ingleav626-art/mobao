@@ -1,3 +1,15 @@
+/**
+ * @file scripts/game/warehouse/preview.ts
+ * @module warehouse/preview
+ * @description 仓库预览 Mixin。管理候选藏品预览弹窗的定位、渲染、
+ *              预览锚点跟踪、弹窗显隐动画。
+ *
+ * @requires core/constants - CELL_SIZE, MARGIN
+ * @requires core/utils - clamp, rgbHex
+ * @requires data/artifacts - toSizeTag, QUALITY_CONFIG
+ * @requires ./types - WarehouseSceneLike
+ * @exports WarehousePreviewMixin - 仓库预览子 Mixin
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { Artifact } from "../../../types/game"
 import type { WarehouseSceneLike } from "./types"

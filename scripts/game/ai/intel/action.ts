@@ -1,3 +1,14 @@
+/**
+ * @file scripts/game/ai/intel/action.ts
+ * @module ai/intel/action
+ * @description AI 情报动作执行 Mixin。执行技能/道具动作、LLM 纠错流程、
+ *              动作结果应用到情报池、以及 LAN 通信广播。
+ *
+ * @requires data/skills, data/items - 数据定义
+ * @requires core/settings - GAME_SETTINGS
+ * @requires ./pure - formatIntelActionPublicLine
+ * @exports ActionMixin - 动作执行子 Mixin
+ */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { Player, RevealResult } from "../../../../types/game"
 import type {
@@ -143,22 +154,22 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
       `[processSingleAiIntelAction] ${player.id} plan:`,
       plan
         ? {
-            actionType: plan.actionType,
-            actionId: plan.actionId,
-            decisionSource: plan.decisionSource,
-            lockedByLlm: plan.lockedByLlm
-          }
+          actionType: plan.actionType,
+          actionId: plan.actionId,
+          decisionSource: plan.decisionSource,
+          lockedByLlm: plan.lockedByLlm
+        }
         : "null"
     )
     console.log(
       `[processSingleAiIntelAction] ${player.id} llmPlan:`,
       llmPlan
         ? {
-            failed: llmPlan.failed,
-            hasBidDecision: llmPlan.hasBidDecision,
-            bid: llmPlan.bid,
-            actionId: llmPlan.actionId
-          }
+          failed: llmPlan.failed,
+          hasBidDecision: llmPlan.hasBidDecision,
+          bid: llmPlan.bid,
+          actionId: llmPlan.actionId
+        }
         : "null"
     )
 
@@ -320,11 +331,11 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
                 `[processSingleAiIntelAction] ${player.id} correction followup result:`,
                 followup
                   ? {
-                      ok: followup.ok,
-                      failed: followup.failed,
-                      hasBidDecision: followup.hasBidDecision,
-                      bid: followup.bid
-                    }
+                    ok: followup.ok,
+                    failed: followup.failed,
+                    hasBidDecision: followup.hasBidDecision,
+                    bid: followup.bid
+                  }
                   : "null"
               )
               if (followup && !followup.failed && followup.hasBidDecision) {

@@ -48,19 +48,6 @@ import type {
   LlmChatResult,
 } from "./llm"
 import type {
-  LlmBridge,
-  LlmBridgeMethods,
-  LlmDecision,
-  LlmPlan,
-  LlmPlanResult,
-  LlmSettings,
-  LlmRoundPayload,
-  LlmTelemetry,
-  LlmErrorInfo,
-  AiModelConfig,
-  LlmChatResult,
-} from "./llm"
-import type {
   Room,
   LanPlayer,
   LanBridge,
@@ -80,7 +67,6 @@ export interface WarehouseSceneThis {
   input: Phaser.InputPlugin
   scene: Phaser.Scene["scene"]
   scale: Phaser.Scale.ScaleManager
-  game: { loop: { sleep(): void; wake(): void } }
   game: Phaser.Game
 
   // 核心属性（来自 WarehouseCoreMixin）
@@ -231,7 +217,7 @@ export interface WarehouseSceneThis {
   aiMaxBid: number
   previewOpenTick: number
   roundTimerId: number | null
-  settlementRunToken: number
+  settlementRunToken: number | string | null
   activeSettlementSpinner: Phaser.GameObjects.GameObject | null
   moneySettledRunToken: string | null
   _lastDisplayedMoney: number | null
@@ -389,11 +375,6 @@ export interface WarehouseSceneThis {
     winnerProfit?: number
     selfProfit?: number
   } | null
-  settlementRunToken: number | string | null
-  activeSettlementSpinner: Phaser.GameObjects.GameObject | null
-  isSettlementRevealMode: boolean
-  settlementRevealSkipRequested: boolean
-  settlementRevealRunning: boolean
 
   // UI 属性
   privateIntelEntries: Array<{
@@ -423,9 +404,6 @@ export interface WarehouseSceneThis {
   // AI 决策属性
   _aiDecisionSummaryWaiting: boolean
 
-  // 联机属性
-  lanHostBids: Record<string, number>
-  lanHostWallets: Record<string, number>
   // Lobby 属性（来自 CharacterSelectMixin）
   _carryItems: CarryItem[]
   _MAX_CARRY_ITEMS: number
@@ -847,8 +825,6 @@ export interface WarehouseSceneThis {
   _doStartSoloGame(): void
   _lastRevealedValue: number
   _lastDisplayProfit: number
-  _aiMemoryTouchBound: boolean
-  _aiDecisionSummaryWaiting: boolean
   updateCharacterMoneyDisplay(): void
   updateKeypadDirectHint(): void
 

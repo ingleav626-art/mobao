@@ -70,15 +70,3 @@ export function getCharacterById(id: string): Character | null {
 export function getUnlockedCharacters(): Character[] {
   return CHARACTERS.filter((c) => c.unlocked)
 }
-
-export function getSelectedCharacter(): Character {
-  try {
-    const raw = window.localStorage.getItem("mobao_selected_character_v1")
-    if (raw) return JSON.parse(raw) as Character
-  } catch (_e) { /* ignore */ }
-  return CHARACTERS[0]
-}
-
-export function saveSelectedCharacter(characterId: string): void {
-  window.localStorage.setItem("mobao_selected_character_v1", JSON.stringify(characterId))
-}

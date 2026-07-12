@@ -1,6 +1,16 @@
+/**
+ * @file scripts/game/scene/events-ai-memory.ts
+ * @module scene/events-ai-memory
+ * @description AI 记忆面板事件绑定。绑定设置面板关闭/重置、AI 记忆面板开关、
+ *              经验本导入导出、记忆条目增删等事件监听器。
+ *
+ * @requires core/settings - defaultGameSettings
+ * @requires llm/providers/deepseek-provider - DeepSeekProvider.defaultDeepSeekSettings
+ * @exports bindAiMemoryEvents - AI 记忆事件绑定函数
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { defaultGameSettings } from "../core/settings"
-import { defaultDeepSeekSettings } from "../../llm/providers/deepseek-llm"
+import { DeepSeekProvider } from "../../llm/providers/deepseek-provider"
 
 export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
   this.dom.settingsCloseBtn?.addEventListener("click", () => this.closeSettingsOverlay(false))
@@ -10,7 +20,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
     this.fillLlmSettingsForm(
       provider && typeof provider.defaultSettings === "function"
         ? provider.defaultSettings()
-        : defaultDeepSeekSettings()
+        : DeepSeekProvider.defaultDeepSeekSettings()
     )
     this.setSettingsStatus("已恢复默认，点击保存后生效。", false)
   })

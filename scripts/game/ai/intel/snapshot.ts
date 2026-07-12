@@ -1,3 +1,15 @@
+/**
+ * @file scripts/game/ai/intel/snapshot.ts
+ * @module ai/intel/snapshot
+ * @description AI 情报摘要与资源快照 Mixin。构建情报汇总（线索率、品质率、
+ *              不确定性）、可用动作状态（技能/道具）、以及为 LLM 决策提供上下文。
+ *
+ * @requires core/utils - clamp
+ * @requires data/skills - SKILL_DEFS
+ * @requires data/items - ITEM_DEFS
+ * @requires ./pure - calcUncertainty, calcAvailableActionState
+ * @exports SnapshotMixin - 摘要快照子 Mixin
+ */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { IntelSummary } from "../../../../types/ai"
 import { clamp } from "../../core/utils"

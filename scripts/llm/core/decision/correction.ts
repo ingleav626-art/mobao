@@ -1,3 +1,15 @@
+/**
+ * @file scripts/llm/core/decision/correction.ts
+ * @module llm/core/decision/correction
+ * @description LLM 决策纠错方法。请求 AI LLM 错误纠正、管理纠错历史、
+ *              重试逻辑、纠错次数限制、降级到规则 AI。
+ *
+ * @requires ../prompts - LLM_DECISION_SYSTEM_PROMPT
+ * @requires ../llm-error - parseLlmError, showAiErrorToast, setPlayerLlmError, clearPlayerLlmErrors
+ * @requires ./pure - isValidAiModelConfig
+ * @requires ./types - LlmDecisionDeps
+ * @exports createLlmCorrectionMethods - 工厂函数，返回纠错相关方法
+ */
 import { LLM_DECISION_SYSTEM_PROMPT } from "../prompts.js"
 import { parseLlmError, showAiErrorToast, setPlayerLlmError, clearPlayerLlmErrors } from "../llm-error.js"
 import type { Player } from "../../../../types/game"

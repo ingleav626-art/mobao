@@ -20,7 +20,6 @@ export default [
         AudioUI: "readonly",
         MobileHandler: "readonly",
         LanBridge: "readonly",
-        DeepSeekLLM: "readonly",
         LlmManager: "readonly",
         MobaoConstants: "readonly",
         MobaoUtils: "readonly",

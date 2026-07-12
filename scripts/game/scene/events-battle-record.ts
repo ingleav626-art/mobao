@@ -1,3 +1,10 @@
+/**
+ * @file scripts/game/scene/events-battle-record.ts
+ * @module scene/events-battle-record
+ * @description 战绩面板事件绑定。绑定战绩面板开关、记录点击、回放控制等事件监听器。
+ *
+ * @exports bindBattleRecordEvents - 战绩事件绑定函数
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 export function bindBattleRecordEvents(this: WarehouseSceneThis): void {

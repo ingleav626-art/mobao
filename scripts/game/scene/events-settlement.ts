@@ -1,3 +1,11 @@
+/**
+ * @file scripts/game/scene/events-settlement.ts
+ * @module scene/events-settlement
+ * @description 结算页事件绑定。绑定结算按钮、返回大厅、重开一局、
+ *              藏品跳过揭示、角色技能按钮等事件监听器。
+ *
+ * @exports bindSettlementEvents - 结算页事件绑定函数
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 export function bindSettlementEvents(this: WarehouseSceneThis): void {

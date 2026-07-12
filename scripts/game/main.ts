@@ -36,14 +36,6 @@ import {
 import { GAME_SETTINGS as _GAME_SETTINGS } from "./core/settings"
 import { SKILL_DEFS as _SKILL_DEFS } from "./data/skills"
 import { ITEM_DEFS as _ITEM_DEFS } from "./data/items"
-import {
-  defaultDeepSeekSettings,
-  loadDeepSeekSettings,
-  saveDeepSeekSettings,
-  normalizeDeepSeekSettings,
-  maskApiKey,
-  DeepSeekClient,
-} from "../llm/providers/deepseek-llm"
 import "../llm/providers/deepseek-provider"
 import "../llm/providers/openai-provider"
 import "../llm/providers/qwen-provider"
@@ -57,6 +49,14 @@ import { LlmUiBridge } from "../llm/core/llm-ui-bridge"
 import { LlmManager } from "../llm/core/llm-manager"
 import { DeepSeekProvider } from "../llm/providers/deepseek-provider"
 import { getActiveCharacter, getActiveSkillId, getDisplayName, getAvatarLabel } from "./data/character-system"
+
+// DeepSeek settings 函数从旧版 deepseek-llm.ts 迁移到新 Provider 体系
+// （deepseek-provider + LlmManager），保留原名以减少下游改动
+const defaultDeepSeekSettings = DeepSeekProvider.defaultDeepSeekSettings
+const loadDeepSeekSettings = DeepSeekProvider.getSettings
+const saveDeepSeekSettings = DeepSeekProvider.applySettings
+const normalizeDeepSeekSettings = DeepSeekProvider.normalizeDeepSeekSettings
+const maskApiKey = LlmManager.utils.maskApiKey
 
 // scene/ 提取的方法
 import { WarehouseScene } from "./scene/warehouse-scene"
@@ -186,22 +186,14 @@ const MainOnlyMethods = {
   },
 
   getLlmProvider(this: any) {
-    if (LlmManager) {
-      const provider = LlmManager.getProvider()
-      if (provider) {
-        console.log("[getLlmProvider] using LlmManager provider:", provider.id)
-        return provider
-      }
+    const provider = LlmManager.getProvider()
+    if (provider) {
+      return provider
     }
-    if (DeepSeekClient) {
-      console.log("[getLlmProvider] using DeepSeekProvider (fallback)")
-      return {
-        requestChat: (options: any) => DeepSeekProvider.requestChat(options),
-        applySettings: (settings: any) => DeepSeekProvider.applySettings(settings)
-      }
+    return {
+      requestChat: (options: any) => DeepSeekProvider.requestChat(options),
+      applySettings: (settings: any) => DeepSeekProvider.applySettings(settings)
     }
-    console.log("[getLlmProvider] NO provider available")
-    return null
   }
 }
 

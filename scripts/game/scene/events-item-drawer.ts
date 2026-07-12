@@ -1,3 +1,10 @@
+/**
+ * @file scripts/game/scene/events-item-drawer.ts
+ * @module scene/events-item-drawer
+ * @description 道具抽屉事件绑定。绑定道具使用按钮、抽屉开关/关闭等事件监听器。
+ *
+ * @exports bindItemDrawerEvents - 道具抽屉事件绑定函数
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 export function bindItemDrawerEvents(this: WarehouseSceneThis): void {

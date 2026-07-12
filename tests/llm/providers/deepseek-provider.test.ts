@@ -41,9 +41,47 @@ describe("deepseek-provider", () => {
       expect(result.enabled).toBe(true)
     })
 
-    it("contextLength 不在此 provider，但通用字段仍正常", () => {
+    it("通用字段 thinkingEnabled 默认 false", () => {
       const result = normalizeDeepSeekSettings({}, defaultDeepSeekSettings())
       expect(result.thinkingEnabled).toBe(false)
+    })
+
+    it("contextLength 被 clamp 到 2-20", () => {
+      expect(normalizeDeepSeekSettings({ contextLength: 1 }, defaultDeepSeekSettings()).contextLength).toBe(2)
+      expect(normalizeDeepSeekSettings({ contextLength: 100 }, defaultDeepSeekSettings()).contextLength).toBe(20)
+      expect(normalizeDeepSeekSettings({ contextLength: 5 }, defaultDeepSeekSettings()).contextLength).toBe(5)
+    })
+
+    it("contextLength 非法值回退到 5", () => {
+      expect(normalizeDeepSeekSettings({ contextLength: "abc" }, defaultDeepSeekSettings()).contextLength).toBe(5)
+      expect(normalizeDeepSeekSettings({ contextLength: null }, defaultDeepSeekSettings()).contextLength).toBe(5)
+    })
+
+    it("reflectionScope 只接受 full 或 current", () => {
+      expect(normalizeDeepSeekSettings({ reflectionScope: "full" }, defaultDeepSeekSettings()).reflectionScope).toBe("full")
+      expect(normalizeDeepSeekSettings({ reflectionScope: "other" }, defaultDeepSeekSettings()).reflectionScope).toBe("current")
+    })
+
+    it("autoSummarizeEnabled 仅 false 时为 false", () => {
+      expect(normalizeDeepSeekSettings({ autoSummarizeEnabled: false }, defaultDeepSeekSettings()).autoSummarizeEnabled).toBe(false)
+      expect(normalizeDeepSeekSettings({ autoSummarizeEnabled: true }, defaultDeepSeekSettings()).autoSummarizeEnabled).toBe(true)
+      expect(normalizeDeepSeekSettings({}, defaultDeepSeekSettings()).autoSummarizeEnabled).toBe(true)
+    })
+
+    it("相对路径 endpoint 保留", () => {
+      const result = normalizeDeepSeekSettings({ endpoint: "/api/test" }, defaultDeepSeekSettings())
+      expect(result.endpoint).toBe("/api/test")
+    })
+
+    it("非 http 且非斜杠开头 endpoint 回退到默认", () => {
+      const result = normalizeDeepSeekSettings({ endpoint: "invalid" }, defaultDeepSeekSettings())
+      expect(result.endpoint).toBe(defaultDeepSeekSettings().endpoint)
+    })
+
+    it("未提供 fallback 时使用内置默认", () => {
+      const result = normalizeDeepSeekSettings({})
+      expect(result.provider).toBe("deepseek")
+      expect(result.model).toBe(defaultDeepSeekSettings().model)
     })
 
     it("timeoutMs 被 clamp 到 3000-120000", () => {

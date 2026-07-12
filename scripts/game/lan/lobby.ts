@@ -16,7 +16,8 @@
  * @exports initLanLobbyImpl
  */
 
-import { getCharacterById, getUnlockedCharacters, getSelectedCharacter } from "../data/characters"
+import { getCharacterById, getUnlockedCharacters } from "../data/characters"
+import { getActiveCharacterId } from "../data/character-system"
 import { getProfile, setSelectedProfileId, getAllProfiles } from "../data/map-profiles"
 import { MobaoShopPage } from "../shop/index"
 import { MobaoShopBridge } from "../bridge/shop"
@@ -1063,13 +1064,9 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
   };
 
   const initLanCharacterFromStorage = () => {
-    if (getSelectedCharacter) {
-      var saved = getSelectedCharacter();
-      if (saved && saved.id) {
-        lanSelectedCharacterId = saved.id;
-      } else if (typeof saved === "string") {
-        lanSelectedCharacterId = saved;
-      }
+    const savedId = getActiveCharacterId();
+    if (savedId) {
+      lanSelectedCharacterId = savedId;
     }
     updateLanPortrait();
     var mySlot = lanSlotConfig.find((s) => s.id === (bridge ? bridge.playerId : null));

@@ -1,3 +1,14 @@
+/**
+ * @file scripts/llm/core/decision/pure.ts
+ * @module llm/core/decision/pure
+ * @description LLM 决策子模块的纯函数。包含 AI 索引解析、模型配置校验、
+ *              控制模式标签生成、决策条目详情渲染等，便于独立测试和复用。
+ *
+ * @requires ./types - TelemetryEntry, RuleDecisionEntry
+ * @exports getAiIndexFromPlayerId, canUseLlmDecisionCore, isValidAiModelConfig,
+ *          getControlModeLabel, buildDecisionSourceLabel, resolveControlMode,
+ *          renderLlmEntryDetails, renderRuleEntryDetails
+ */
 import type { TelemetryEntry, RuleDecisionEntry } from "./types"
 
 export function getAiIndexFromPlayerId(playerId: string): number {

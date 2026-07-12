@@ -1,3 +1,16 @@
+/**
+ * @file scripts/game/ai/intel/reveal.ts
+ * @module ai/intel/reveal
+ * @description AI 情报揭示执行 Mixin。执行藏品揭示、信号生成与统计、
+ *              高价值追踪、空间推理（邻居分析）、候选列表管理，
+ *              以及构建技能/道具上下文。同时 re-export pure.ts 中的纯函数。
+ *
+ * @requires core/utils - toCellKey, shuffle, formatTrackIndex
+ * @requires data/skills, data/items, data/artifacts - 数据定义
+ * @requires ./pure - 揭示级别判定、候选截断等纯函数
+ * @exports RevealMixin - 揭示执行子 Mixin
+ * @exports 纯函数 re-export - pickRandomItemCell 等
+ */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { Artifact, RevealResult } from "../../../../types/game"
 import type {

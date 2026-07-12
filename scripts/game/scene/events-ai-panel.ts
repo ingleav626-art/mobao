@@ -1,3 +1,10 @@
+/**
+ * @file scripts/game/scene/events-ai-panel.ts
+ * @module scene/events-ai-panel
+ * @description AI 逻辑面板事件绑定。绑定面板开关、消息查看、日志渲染等事件监听器。
+ *
+ * @exports bindAiPanelEvents - AI 逻辑面板事件绑定函数
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 export function bindAiPanelEvents(this: WarehouseSceneThis): void {

@@ -1,3 +1,13 @@
+/**
+ * @file scripts/llm/core/decision/types.ts
+ * @module llm/core/decision/types
+ * @description LLM 决策子模块的类型定义。包含规则决策条目、遥测条目、
+ *              依赖容器接口，是 decision 子模块的数据契约。
+ *
+ * @requires types/game - Player
+ * @requires types/llm - LlmSettings, AiModelConfig, LlmPlanResult
+ * @exports RuleDecisionEntry, RoundBidEntry, TelemetryEntry, LlmDecisionDeps
+ */
 import type { Player } from "../../../../types/game"
 import type { LlmSettings, AiModelConfig, LlmPlanResult } from "../../../../types/llm"
 

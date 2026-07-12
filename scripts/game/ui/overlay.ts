@@ -28,8 +28,13 @@ import { ITEM_DEFS } from "../data/items"
 import { SKILL_DEFS } from "../data/skills"
 import { getActiveCharacter } from "../data/character-system"
 import { getCharacterById } from "../data/characters"
-import { loadDeepSeekSettings, saveDeepSeekSettings, maskApiKey } from "../../llm/providers/deepseek-llm"
+import { DeepSeekProvider } from "../../llm/providers/deepseek-provider"
 import { LlmManager } from "../../llm/core/llm-manager"
+
+// DeepSeek settings 函数从旧版 deepseek-llm.ts 迁移到新 Provider 体系
+const loadDeepSeekSettings = DeepSeekProvider.getSettings
+const saveDeepSeekSettings = DeepSeekProvider.applySettings
+const maskApiKey = LlmManager.utils.maskApiKey
 import { MobaoAnimations } from "../animations"
 import { MobaoShopPage } from "../shop/index"
 

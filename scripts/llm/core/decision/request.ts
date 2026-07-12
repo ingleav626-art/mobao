@@ -1,3 +1,15 @@
+/**
+ * @file scripts/llm/core/decision/request.ts
+ * @module llm/core/decision/request
+ * @description LLM 决策请求方法。发起 LLM 请求、构建 prompt/messages、
+ *              解析响应为动作计划、处理请求错误和降级到规则 AI。
+ *
+ * @requires ../prompts - LLM_DECISION_SYSTEM_PROMPT
+ * @requires ../llm-error - parseLlmError, showAiErrorToast, setPlayerLlmError
+ * @requires ./pure - canUseLlmDecisionCore, isValidAiModelConfig, getAiIndexFromPlayerId
+ * @requires ./types - LlmDecisionDeps
+ * @exports createLlmRequestMethods - 工厂函数，返回请求相关方法
+ */
 import { LLM_DECISION_SYSTEM_PROMPT } from "../prompts.js"
 import { parseLlmError, showAiErrorToast, setPlayerLlmError } from "../llm-error.js"
 import type { Player } from "../../../../types/game"

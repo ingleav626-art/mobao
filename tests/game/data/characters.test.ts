@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import {
   CHARACTERS,
   getCharacterById,
-  getUnlockedCharacters,
-  getSelectedCharacter,
-  saveSelectedCharacter
+  getUnlockedCharacters
 } from '../../../scripts/game/data/characters'
 
 beforeEach(() => {
@@ -86,34 +84,6 @@ describe('characters', () => {
     it('返回新数组', () => {
       const result = getUnlockedCharacters()
       expect(result).not.toBe(CHARACTERS)
-    })
-  })
-
-  describe('getSelectedCharacter', () => {
-    it('空存储返回第一个角色', () => {
-      const c = getSelectedCharacter()
-      expect(c.id).toBe(CHARACTERS[0].id)
-    })
-
-    it('损坏 JSON 返回第一个角色', () => {
-      localStorage.setItem('mobao_selected_character_v1', '{invalid')
-      const c = getSelectedCharacter()
-      expect(c.id).toBe(CHARACTERS[0].id)
-    })
-
-    it('有存储返回存储的角色 id 字符串', () => {
-      saveSelectedCharacter('scout')
-      const c = getSelectedCharacter()
-      // 注意：getSelectedCharacter 直接 JSON.parse 返回，存储的是 id 字符串
-      expect(c).toBe('scout')
-    })
-  })
-
-  describe('saveSelectedCharacter', () => {
-    it('保存角色 id 到 localStorage', () => {
-      saveSelectedCharacter('seeker')
-      const raw = localStorage.getItem('mobao_selected_character_v1')
-      expect(JSON.parse(raw as string)).toBe('seeker')
     })
   })
 })

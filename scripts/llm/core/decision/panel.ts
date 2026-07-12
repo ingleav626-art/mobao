@@ -1,3 +1,14 @@
+/**
+ * @file scripts/llm/core/decision/panel.ts
+ * @module llm/core/decision/panel
+ * @description LLM 决策面板方法。捕获 AI 决策遥测数据、渲染决策日志面板、
+ *              构建决策快照、展示规则 vs LLM 决策对比。
+ *
+ * @requires ./pure - getControlModeLabel, buildDecisionSourceLabel, resolveControlMode,
+ *                    renderLlmEntryDetails, renderRuleEntryDetails
+ * @requires ./types - LlmDecisionDeps, RuleDecisionEntry, RoundBidEntry, TelemetryEntry
+ * @exports createLlmPanelMethods - 工厂函数，返回面板相关方法
+ */
 import type { Player } from "../../../../types/game"
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { LlmDecisionDeps, RuleDecisionEntry, RoundBidEntry, TelemetryEntry } from "./types"

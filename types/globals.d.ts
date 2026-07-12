@@ -111,7 +111,6 @@ declare var CharacterData: {
   CHARACTERS: Array<{ id: string; name: string; avatarLabel?: string; skillId?: string; skillName?: string }>
   getCharacterById(id: string): { id: string; name: string; skillId?: string; skillName?: string } | null
   getUnlockedCharacters(): Array<{ id: string; name: string }>
-  getSelectedCharacter(): { id: string; name: string } | null
 }
 
 declare class LanBridge {
@@ -205,7 +204,6 @@ interface Window {
   __onFileImportResult: ((data: string) => void) | null
   __onFileImportError: ((msg: string) => void) | null
   AuctionAI: Record<string, any>
-  DeepSeekLLM: Record<string, any>
   DeepSeekProvider: Record<string, any>
   MobaoUi: Record<string, any>
   LLM_BRIDGE: Record<string, any>

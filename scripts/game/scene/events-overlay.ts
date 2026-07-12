@@ -1,3 +1,12 @@
+/**
+ * @file scripts/game/scene/events-overlay.ts
+ * @module scene/events-overlay
+ * @description 覆盖层/弹窗事件绑定。绑定设置面板、信息弹窗、玩家气泡的
+ *              点击/关闭事件监听器，以及全局点击分发。
+ *
+ * @requires Phaser - 用于事件系统
+ * @exports bindOverlayEvents - 覆盖层事件绑定函数
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import Phaser from "phaser"
 
@@ -133,7 +142,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
     this.settlementRevealSkipRequested = true
     event.preventDefault()
   })
-  ;(this.dom.bidInput as HTMLInputElement).readOnly = true
+    ; (this.dom.bidInput as HTMLInputElement).readOnly = true
   this.dom.bidInput?.addEventListener("keydown", (event) => event.preventDefault())
   this.dom.bidInput?.addEventListener("click", () => this.openBidKeypad())
   this.dom.bidInput?.addEventListener("focus", () => this.openBidKeypad())
@@ -156,31 +165,31 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
 
     this.handleBidKeyInput(key)
   })
-  ;(this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
-    "keydown-R",
-    () => {
-      if (this.isLanMode) return
-      this.startNewRun()
-    }
-  )
-  ;(this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
-    "keydown-N",
-    () => {
-      if (this.isLanMode && !this.lanIsHost) return
-      this.resolveRoundBids("manual")
-    }
-  )
-  ;(this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
-    "keydown-B",
-    () => this.openBidKeypad()
-  )
-  ;(this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
-    "keydown-P",
-    () => {
-      if (this.isLanMode && !this.lanIsHost) return
-      this.toggleRoundPause()
-    }
-  )
+    ; (this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
+      "keydown-R",
+      () => {
+        if (this.isLanMode) return
+        this.startNewRun()
+      }
+    )
+    ; (this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
+      "keydown-N",
+      () => {
+        if (this.isLanMode && !this.lanIsHost) return
+        this.resolveRoundBids("manual")
+      }
+    )
+    ; (this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
+      "keydown-B",
+      () => this.openBidKeypad()
+    )
+    ; (this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
+      "keydown-P",
+      () => {
+        if (this.isLanMode && !this.lanIsHost) return
+        this.toggleRoundPause()
+      }
+    )
 
   this.dom.gameConfirmCancelBtn?.addEventListener("click", (event) => {
     event.stopPropagation()
@@ -275,7 +284,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
     publicPanel.addEventListener("click", () => this.showInfoPopup("公共信息区", this.dom.publicInfoScroll))
   }
 
-  ;(
+  ; (
     this.input as Phaser.Input.InputPlugin & {
       on: (event: string, cb: (pointer: { x: number; y: number }) => void) => void
     }

@@ -1,3 +1,16 @@
+/**
+ * @file scripts/game/ai/intel/init.ts
+ * @module ai/intel/init
+ * @description AI 情报系统初始化 Mixin。负责情报池、资源状态、角色分配、
+ *              LLM 开关、高价值阈值的初始化，以及每局开始时的重置逻辑。
+ *
+ * @requires core/utils - createEmptyAiPrivateIntelPool, clamp, shuffle
+ * @requires data/skills - SKILL_DEFS
+ * @requires data/items - ITEM_DEFS
+ * @requires data/characters - CHARACTERS
+ * @requires data/character-system - getActiveCharacter
+ * @exports InitMixin - 初始化子 Mixin
+ */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import {
   createEmptyAiPrivateIntelPool,
@@ -83,7 +96,7 @@ export const InitMixin: ThisType<WarehouseSceneThis> = {
             wrap.appendChild(nameTag)
           }
           nameTag.textContent = charName
-          ;(nameTag as HTMLElement).style.display = ""
+            ; (nameTag as HTMLElement).style.display = ""
         }
       }
     })

@@ -1,3 +1,13 @@
+/**
+ * @file scripts/game/scene/events-settings.ts
+ * @module scene/events-settings
+ * @description 设置面板事件绑定。绑定音量滑块、重抽按钮、设置保存/重置/关闭、
+ *              回合数/动作数/加价幅度等规则参数调整的事件监听器。
+ *
+ * @requires audio/audio-manager - AudioManager
+ * @requires audio/audio-ui - AudioUI
+ * @exports bindSettingsEvents - 设置面板事件绑定函数
+ */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { AudioManager } from "../../audio/audio-manager"
 import { AudioUI } from "../../audio/audio-ui"

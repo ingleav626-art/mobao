@@ -1,3 +1,14 @@
+/**
+ * @file scripts/game/ai/intel/panel.ts
+ * @module ai/intel/panel
+ * @description AI 情报面板渲染 Mixin。渲染私有情报面板（线索列表、候选藏品、
+ *              高价值追踪、邻居状态标签），以及玩家查询辅助方法。
+ *
+ * @requires core/utils - toCellKey, fromCellKey, sizeTagToCellCount
+ * @requires data/artifacts - QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag
+ * @requires ./pure - determineRevealLevel, truncateCandidateList, buildNeighborStateLabel, getNeighborOffsets
+ * @exports PanelMixin - 面板渲染子 Mixin
+ */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { AiIntelSignal, HighValueTrack } from "../../../../types/ai"
 import { toCellKey, fromCellKey } from "../../core/utils"
@@ -189,8 +200,8 @@ export const PanelMixin: ThisType<WarehouseSceneThis> = {
       const knownCells =
         knowledge && knowledge.knownCells
           ? [...knowledge.knownCells]
-              .map((cellKey) => fromCellKey(cellKey))
-              .filter((c): c is { x: number; y: number } => c !== null)
+            .map((cellKey) => fromCellKey(cellKey))
+            .filter((c): c is { x: number; y: number } => c !== null)
           : []
       const anchorCell = knownCells[0] || null
 
