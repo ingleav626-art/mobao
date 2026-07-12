@@ -1,5 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest"
+import { describe, it, expect, beforeEach, vi } from "vitest"
 import { LlmManager } from "../../../scripts/llm/core/llm-manager"
+import { normalizeUsage, broadcastToTokenMonitor } from "../../../scripts/llm/core/manager-utils"
+import { createBaseProvider } from "../../../scripts/llm/core/provider-factory"
 
 const {
   clamp,
@@ -226,5 +228,222 @@ describe("LlmManager 核心方法", () => {
     LlmManager.setActiveProvider("test-active")
     expect(LlmManager.getActiveProviderId()).toBe("test-active")
     LlmManager.unregisterProvider("test-active")
+  })
+})
+
+describe("normalizeUsage", () => {
+  it("null 返回 null", () => {
+    expect(normalizeUsage(null)).toBeNull()
+  })
+  it("undefined 返回 null", () => {
+    expect(normalizeUsage(undefined)).toBeNull()
+  })
+  it("非对象返回 null", () => {
+    expect(normalizeUsage("string" as any)).toBeNull()
+  })
+  it("空对象返回零值", () => {
+    const result = normalizeUsage({})
+    expect(result).toEqual({
+      prompt_cache_hit_tokens: 0,
+      prompt_cache_miss_tokens: 0,
+      completion_tokens: 0,
+      total_tokens: 0,
+      reasoning_tokens: 0,
+      cached_tokens: 0
+    })
+  })
+  it("直接字段映射", () => {
+    const result = normalizeUsage({
+      completion_tokens: 100,
+      total_tokens: 500,
+      prompt_cache_hit_tokens: 200,
+      prompt_cache_miss_tokens: 100,
+      reasoning_tokens: 50
+    })
+    expect(result).not.toBeNull()
+    expect(result!.completion_tokens).toBe(100)
+    expect(result!.total_tokens).toBe(500)
+    expect(result!.prompt_cache_hit_tokens).toBe(200)
+    expect(result!.prompt_cache_miss_tokens).toBe(100)
+    expect(result!.reasoning_tokens).toBe(50)
+  })
+  it("prompt_tokens + cached_tokens 计算", () => {
+    const result = normalizeUsage({
+      prompt_tokens: 300,
+      cached_tokens: 200
+    })
+    expect(result).not.toBeNull()
+    expect(result!.prompt_cache_hit_tokens).toBe(200)
+    expect(result!.prompt_cache_miss_tokens).toBe(100)
+  })
+  it("prompt_tokens_details 优先于 cached_tokens", () => {
+    const result = normalizeUsage({
+      prompt_tokens: 300,
+      cached_tokens: 50,
+      prompt_tokens_details: { cached_tokens: 200 }
+    })
+    expect(result).not.toBeNull()
+    expect(result!.prompt_cache_hit_tokens).toBe(200)
+    expect(result!.prompt_cache_miss_tokens).toBe(100)
+  })
+  it("cached_tokens 回退（prompt_cache_hit 为 0 时）", () => {
+    const result = normalizeUsage({
+      completion_tokens: 100,
+      cached_tokens: 150
+    })
+    expect(result).not.toBeNull()
+    expect(result!.prompt_cache_hit_tokens).toBe(150)
+  })
+})
+
+describe("broadcastToTokenMonitor", () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  it("成功结果写入 localStorage", () => {
+    broadcastToTokenMonitor(
+      { ok: true, elapsedMs: 100, model: "test-model", requestId: "r1", usage: null },
+      { _playerId: "ai1", _playerName: "AI1" }
+    )
+    const stored = localStorage.getItem("llm-token-monitor-live")
+    expect(stored).not.toBeNull()
+    const parsed = JSON.parse(stored!)
+    expect(parsed.type).toBe("llm-request")
+    expect(parsed.payload.ok).toBe(true)
+    expect(parsed.payload.playerId).toBe("ai1")
+  })
+
+  it("失败结果也写入", () => {
+    broadcastToTokenMonitor(
+      { ok: false, elapsedMs: 5000, code: "TIMEOUT", requestId: "r2", usage: null },
+      {}
+    )
+    const stored = localStorage.getItem("llm-token-monitor-live")
+    expect(stored).not.toBeNull()
+    const parsed = JSON.parse(stored!)
+    expect(parsed.payload.ok).toBe(false)
+    expect(parsed.payload.code).toBe("TIMEOUT")
+  })
+
+  it("包含 usage 时写入 normalizedUsage", () => {
+    broadcastToTokenMonitor(
+      {
+        ok: true,
+        elapsedMs: 200,
+        model: "test",
+        requestId: "r3",
+        usage: { prompt_tokens: 100, cached_tokens: 50, completion_tokens: 80 }
+      },
+      {}
+    )
+    const stored = localStorage.getItem("llm-token-monitor-live")
+    const parsed = JSON.parse(stored!)
+    expect(parsed.payload.usage).not.toBeNull()
+    expect(parsed.payload.usage.prompt_cache_hit_tokens).toBe(50)
+    expect(parsed.payload.usage.prompt_cache_miss_tokens).toBe(50)
+  })
+})
+
+describe("createBaseProvider", () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  function makeConfig(overrides: Record<string, unknown> = {}) {
+    return {
+      id: "test-base",
+      name: "Test Base",
+      description: "test provider",
+      defaultSettings: () => ({
+        enabled: false,
+        apiKey: "",
+        endpoint: "https://api.test.com",
+        model: "test-model",
+        timeoutMs: 30000,
+        temperature: 0.2,
+        maxTokens: 2048
+      }),
+      normalizeSettings: (source: any, fallback: any) => {
+        const defaults = fallback || {
+          enabled: false,
+          apiKey: "",
+          endpoint: "https://api.test.com",
+          model: "test-model",
+          timeoutMs: 30000,
+          temperature: 0.2,
+          maxTokens: 2048
+        }
+        return {
+          ...defaults,
+          ...source,
+          enabled: Boolean(source.enabled),
+          timeoutMs: Math.max(3000, Number(source.timeoutMs) || defaults.timeoutMs)
+        }
+      },
+      ...overrides
+    }
+  }
+
+  it("返回包含基本属性的对象", () => {
+    const provider = createBaseProvider(makeConfig())
+    expect(provider.id).toBe("test-base")
+    expect(provider.name).toBe("Test Base")
+    expect(provider.description).toBe("test provider")
+  })
+
+  it("loadSettings 返回默认值+apiKey", () => {
+    const provider = createBaseProvider(makeConfig())
+    const settings = provider.loadSettings()
+    expect(settings.enabled).toBe(false)
+    expect(settings.apiKey).toBe("")
+    expect(settings.model).toBe("test-model")
+  })
+
+  it("saveSettings 后 loadSettings 可读回", () => {
+    const provider = createBaseProvider(makeConfig())
+    provider.saveSettings({ enabled: true, apiKey: "sk-test123", model: "test-model" })
+    const settings = provider.loadSettings()
+    expect(settings.apiKey).toBe("sk-test123")
+  })
+
+  it("apiKey 单独存储不在 JSON settings 中", () => {
+    const provider = createBaseProvider(makeConfig())
+    provider.saveSettings({ enabled: true, apiKey: "sk-secret", model: "test-model" })
+    const raw = localStorage.getItem("mobao_test-base_settings_v1")
+    expect(raw).not.toBeNull()
+    const parsed = JSON.parse(raw!)
+    expect(parsed.apiKey).toBe("")
+  })
+
+  it("log / getLogs / clearLogs 正常工作", () => {
+    const provider = createBaseProvider(makeConfig())
+    provider.log("info", "test.event", { key: "value" })
+    const logs = provider.getLogs()
+    expect(logs.length).toBe(1)
+    expect(logs[0].level).toBe("info")
+    expect(logs[0].event).toBe("test.event")
+    provider.clearLogs()
+    expect(provider.getLogs().length).toBe(0)
+  })
+
+  it("日志循环覆盖（超过 MAX_LOG_ENTRIES）", () => {
+    const provider = createBaseProvider(makeConfig())
+    for (let i = 0; i < 125; i++) {
+      provider.log("info", `event-${i}`, {})
+    }
+    const logs = provider.getLogs()
+    expect(logs.length).toBe(120)
+  })
+
+  it("isThinkingModel 默认返回 false", () => {
+    const provider = createBaseProvider(makeConfig())
+    expect(provider.isThinkingModel("any-model")).toBe(false)
+  })
+
+  it("supportsFeature 默认返回 false", () => {
+    const provider = createBaseProvider(makeConfig())
+    expect(provider.supportsFeature("thinking")).toBe(false)
   })
 })

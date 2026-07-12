@@ -7,7 +7,10 @@ import {
   parseCrossGameMemoryText,
   getControlModeLabel,
   buildDecisionSourceLabel,
-  resolveControlMode
+  resolveControlMode,
+  escapeHtml,
+  renderLlmEntryDetails,
+  renderRuleEntryDetails
 } from "../../../scripts/llm/core/llm-decision"
 
 const mockDeps = {
@@ -394,5 +397,225 @@ describe("llm-decision - resolveControlMode", () => {
   })
   it("无 controlMode + 未启用 返回 rule", () => {
     expect(resolveControlMode({ failed: false, hasBidDecision: true }, false)).toBe("rule")
+  })
+})
+
+const fmtBid = (v: number) => String(v)
+
+describe("llm-decision - escapeHtml", () => {
+  it("空字符串返回空", () => {
+    expect(escapeHtml("")).toBe("")
+  })
+  it("纯文本不变", () => {
+    expect(escapeHtml("hello world")).toBe("hello world")
+  })
+  it("转义 < > &", () => {
+    const result = escapeHtml("<div>&nbsp;</div>")
+    expect(result).not.toContain("<")
+    expect(result).not.toContain(">")
+    expect(result).toContain("&amp;")
+  })
+  it("转义引号", () => {
+    const result = escapeHtml('"hello"')
+    expect(result).toContain("hello")
+  })
+})
+
+describe("llm-decision - renderLlmEntryDetails", () => {
+  const baseEntry = {
+    playerId: "ai1",
+    playerName: "AI1",
+    finalBid: 5000,
+    folded: false,
+    decisionSource: "deepseek-chat",
+    controlMode: "llm" as const,
+    llmActionName: "",
+    ruleActionName: "",
+    actionExecuted: false,
+    thought: "",
+    reasoningContent: "",
+    error: "",
+    fallbackRuleBid: null as number | null,
+    systemPrompt: "",
+    userPrompt: "",
+    modelResponse: "",
+    toolResultSummary: "",
+    followupPrompt: "",
+    followupResponse: "",
+    followupError: "",
+    followupActionRejected: "",
+    correctionAttempt: 0,
+    originalError: "",
+    errorCorrectionPrompt: "",
+    errorCorrectionResponse: "",
+    historyMessagesCount: 0,
+    crossGameMemoryCount: 0,
+    inGameHistoryCount: 0,
+    historyMessagesPreview: "",
+    crossGameMemoryText: "",
+    cacheHitTokens: 0,
+    cacheMissTokens: 0,
+    cacheHitRate: 0,
+    usage: undefined as any
+  }
+
+  it("空 entry 仍包含 User Prompt 和 Model Response 详情块", () => {
+    const result = renderLlmEntryDetails(baseEntry, fmtBid)
+    expect(result).toContain("User Prompt")
+    expect(result).toContain("Model Response")
+  })
+
+  it("包含缓存信息", () => {
+    const entry = { ...baseEntry, cacheHitTokens: 100, cacheMissTokens: 50, cacheHitRate: 66 }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("缓存命中")
+    expect(result).toContain("100")
+    expect(result).toContain("66%")
+  })
+
+  it("包含纠错次数", () => {
+    const entry = { ...baseEntry, correctionAttempt: 1, originalError: "parse error" }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("纠错次数: 1/2")
+    expect(result).toContain("parse error")
+  })
+
+  it("包含跨局记忆信息", () => {
+    const entry = { ...baseEntry, crossGameMemoryCount: 3, inGameHistoryCount: 5 }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("3局跨局记忆")
+    expect(result).toContain("5条本局历史")
+  })
+
+  it("仅跨局记忆无本局历史", () => {
+    const entry = { ...baseEntry, crossGameMemoryCount: 2, inGameHistoryCount: 0 }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("2局跨局记忆")
+    expect(result).not.toContain("本局历史")
+  })
+
+  it("包含动作信息", () => {
+    const entry = { ...baseEntry, llmActionName: "侦查术", actionExecuted: true }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("侦查术")
+    expect(result).toContain("已执行")
+  })
+
+  it("规则动作", () => {
+    const entry = { ...baseEntry, ruleActionName: "鉴定术" }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("规则动作")
+    expect(result).toContain("鉴定术")
+  })
+
+  it("包含思考内容", () => {
+    const entry = { ...baseEntry, thought: "我决定出价5000" }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("思考")
+    expect(result).toContain("我决定出价5000")
+  })
+
+  it("包含错误信息", () => {
+    const entry = { ...baseEntry, error: "JSON解析失败" }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("错误")
+    expect(result).toContain("JSON解析失败")
+  })
+
+  it("包含回退规则出价", () => {
+    const entry = { ...baseEntry, fallbackRuleBid: 3000 }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("回退规则出价参考")
+    expect(result).toContain("3000")
+  })
+
+  it("包含提示词详情", () => {
+    const entry = { ...baseEntry, systemPrompt: "你是AI", userPrompt: "请出价", modelResponse: "出5000" }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("System Prompt")
+    expect(result).toContain("User Prompt")
+    expect(result).toContain("Model Response")
+    expect(result).toContain("3项")
+  })
+
+  it("包含工具结果", () => {
+    const entry = { ...baseEntry, toolResultSummary: "鉴定结果：稀有" }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("Tool Result")
+  })
+
+  it("包含纠错详情", () => {
+    const entry = { ...baseEntry, errorCorrectionPrompt: "纠错prompt", errorCorrectionResponse: "纠错response" }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("Error Correction")
+  })
+
+  it("包含追问详情", () => {
+    const entry = { ...baseEntry, followupPrompt: "追问prompt", followupResponse: "追问response" }
+    const result = renderLlmEntryDetails(entry, fmtBid)
+    expect(result).toContain("Follow-up")
+  })
+})
+
+describe("llm-decision - renderRuleEntryDetails", () => {
+  const baseEntry = {
+    playerId: "ai1",
+    playerName: "AI1",
+    finalBid: 5000,
+    folded: false,
+    decisionSource: "规则AI",
+    controlMode: "rule" as const
+  }
+
+  it("无规则数据时显示提示", () => {
+    const ruleMap = new Map()
+    const result = renderRuleEntryDetails(baseEntry as any, ruleMap, fmtBid)
+    expect(result).toContain("无规则AI决策数据")
+  })
+
+  it("包含信心和人格", () => {
+    const ruleMap = new Map([
+      ["ai1", { playerId: "ai1", finalBid: 5000, confidence: 0.72, archetype: "激进型" }]
+    ])
+    const result = renderRuleEntryDetails(baseEntry as any, ruleMap, fmtBid)
+    expect(result).toContain("72%")
+    expect(result).toContain("激进型")
+  })
+
+  it("包含估值和上限", () => {
+    const ruleMap = new Map([
+      ["ai1", { playerId: "ai1", finalBid: 5000, perceivedValue: 8000, hardCap: 10000, confidence: 0.5 }]
+    ])
+    const result = renderRuleEntryDetails(baseEntry as any, ruleMap, fmtBid)
+    expect(result).toContain("8000")
+    expect(result).toContain("10000")
+  })
+
+  it("包含超预期信息", () => {
+    const ruleMap = new Map([
+      ["ai1", { playerId: "ai1", finalBid: 5000, overheatRatio: 0.3, overheatThreshold: 0.5, confidence: 0.5 }]
+    ])
+    const result = renderRuleEntryDetails(baseEntry as any, ruleMap, fmtBid)
+    expect(result).toContain("30%")
+    expect(result).toContain("50%")
+  })
+
+  it("包含信心组成部分", () => {
+    const ruleMap = new Map([
+      [
+        "ai1",
+        {
+          playerId: "ai1",
+          finalBid: 5000,
+          confidence: 0.8,
+          confidenceParts: { base: 0.3, clue: 0.2, quality: 0.3 }
+        }
+      ]
+    ])
+    const result = renderRuleEntryDetails(baseEntry as any, ruleMap, fmtBid)
+    expect(result).toContain("信心拆解")
+    expect(result).toContain("基础")
+    expect(result).toContain("线索")
+    expect(result).toContain("品质")
   })
 })
