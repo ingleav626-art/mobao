@@ -60,7 +60,15 @@ import {
   marketReference,
   buildToolEffect as _buildToolEffect,
   computeConfidenceParts as _computeConfidenceParts,
-  applyCrowdDiversity as _applyCrowdDiversity
+  applyCrowdDiversity as _applyCrowdDiversity,
+  calcBaseEstimate,
+  calcNoiseBand,
+  calcTargetPsychExpected,
+  calcAdaptRate,
+  calcOverheatThreshold,
+  calcOverheatRatio,
+  calcHardCap,
+  calcFearChance
 } from "./bidding/pure"
 import { planIntelAction as _planIntelAction } from "./bidding/intel-action"
 
@@ -340,9 +348,8 @@ export class AuctionAiEngine {
     //总信心是各个部分的加权总和，反映了AI对当前拍卖情况的整体评估和信心程度，数值越高表示AI越有信心进行积极出价。
     const confidence = confidenceParts.total
 
-    // 基础估值：基于锚点出价、信心程度、线索质量和边缘信号等因素计算的一个初始出价估计，AI会在这个基础上进行调整。
-    //计算公式为：锚点出价*（0.82 + 信心*0.52 + 质量率*0.18 + 边缘信号*0.12），反映了AI对当前拍卖机会的主观价值评估。
-    const baseEstimate = state.anchorBid * (0.82 + confidence * 0.52 + safeQualityRate * 0.18 + edgeSignal * 0.12)
+    // 基础估值（公式见 pure.ts calcBaseEstimate）
+    const baseEstimate = calcBaseEstimate(state.anchorBid, confidence, safeQualityRate, edgeSignal)
 
     // 趋势调整：根据市场参考价和AI的跟风倾向进行调整，参考价越有利，调整越积极；跟风倾向强的AI对参考价更敏感。
     //计算公式为：市场参考价*（0.08 + 跟风倾向*0.2 + 工具跟风加成*0.25）
@@ -356,16 +363,8 @@ export class AuctionAiEngine {
     // 感知价值：AI对当前拍卖情况的综合评估，基于基础估值、趋势调整和压力调整等因素计算得到，反映了AI对当前拍卖机会的主观价值判断。
     let perceivedValue = baseEstimate + trendAdjust + pressureAdjust
 
-    // 噪声干扰：为了增加AI出价的多样性和不可预测性，基于AI的人格特征、当前信息的不确定性和工具效果等因素引入一个随机噪声，避免AI出价过于机械和可预测。
-    //计算公式为：((1-纪律性)*0.18 + 失误率*0.72)*(1 + 不确定性*0.28)*(1 - 工具效果的不确定性降低部分*0.84)*(1 + 信息分布*0.22)
-    const noiseBand = clamp(
-      ((1 - persona.discipline) * 0.18 + persona.errorRate * 0.72) *
-        (1 + safeUncertainty * 0.28) *
-        (1 - normalizedTool.uncertaintyReduction * 0.84) *
-        (1 + safeSpread * 0.22),
-      0.025,
-      0.26
-    )
+    // 噪声带宽（公式见 pure.ts calcNoiseBand）
+    const noiseBand = calcNoiseBand(persona, safeUncertainty, normalizedTool, safeSpread)
 
     // 最终感知价值：在基础感知价值的基础上引入噪声干扰，得到AI最终的主观价值评估，这个值将用于后续的出价决策。
     perceivedValue *= randomBetween(1 - noiseBand, 1 + noiseBand)
@@ -373,80 +372,48 @@ export class AuctionAiEngine {
     // 确保感知价值不低于出价步长，避免AI出价过于保守或停滞不前。
     perceivedValue = Math.max(step, perceivedValue)
 
-    // 心理预期调整：AI根据当前的信心程度、市场参考价、锚点出价和工具效果等因素调整其心理预期出价，反映了AI对未来拍卖走势的预期和适应。
-    //计算公式为:锚点出价*（0.64+纪律性*0.22）+市场参考价*（0.2+跟风倾向*0.17+工具跟风加成*0.15）+当前出价*（0.02+线索率对信心的影响*0.07+质量率对信心的影响*0.08+轮次进度对压力的影响*0.05+工具策略加成对心理预期的提升*0.025）
-    const targetPsychExpected = Math.max(
+    // 目标心理预期（公式见 pure.ts calcTargetPsychExpected）
+    const targetPsychExpected = calcTargetPsychExpected(
       step,
-      state.anchorBid * (0.64 + persona.discipline * 0.22) +
-        marketRef * (0.2 + persona.followRate * 0.17 + normalizedTool.followBoost * 0.15) +
-        currentBid *
-          (0.02 +
-            safeClueRate * 0.07 +
-            safeQualityRate * 0.08 +
-            roundProgress * 0.05 +
-            normalizedTool.strategyScoreBoost * 0.025)
+      state.anchorBid,
+      marketRef,
+      currentBid,
+      persona,
+      normalizedTool,
+      safeClueRate,
+      safeQualityRate,
+      roundProgress
     )
 
-    // 适应率：AI调整心理预期出价的速度，基于当前的信心程度、市场参考价、锚点出价和工具效果等因素计算得到，数值越高表示AI对新信息的适应越快。
-    //计算公式为：0.12+信心*0.24+预期弹性*0.18+工具效果的信心提升部分*0.25-信息分布*0.08
-    const adaptRate = clamp(
-      0.12 +
-        confidence * 0.24 +
-        persona.expectationElasticity * 0.18 +
-        normalizedTool.confidenceBoost * 0.25 -
-        safeSpread * 0.08,
-      0.1,
-      0.72
-    )
+    // 适应率（公式见 pure.ts calcAdaptRate）
+    const adaptRate = calcAdaptRate(confidence, persona, normalizedTool, safeSpread)
 
     // 更新心理预期出价：AI根据适应率调整其心理预期出价，逐渐向目标心理预期靠近，反映了AI对拍卖走势的动态预期和适应过程。
     let psychExpectedBid = state.psychExpectedBid + (targetPsychExpected - state.psychExpectedBid) * adaptRate
 
-    // 过热评估：AI评估当前的出价是否过热，基于当前出价与心理预期的关系、信心程度、信息不确定性和工具效果等因素计算一个过热阈值和过热程度，决定是否进行回撤。
-    //计算公式为：0.04+(1-信心)*0.1+不确定性*0.1+信息分布*0.06-激进程度*0.03+纪律性*0.02-工具效果的不确定性降低部分*0.09
-    const overheatThreshold = clamp(
-      0.04 +
-        (1 - confidence) * 0.1 +
-        safeUncertainty * 0.1 +
-        safeSpread * 0.06 -
-        persona.aggression * 0.03 +
-        persona.discipline * 0.02 -
-        normalizedTool.uncertaintyReduction * 0.09,
-      0.04,
-      0.26
-    )
+    // 过热阈值（公式见 pure.ts calcOverheatThreshold）
+    const overheatThreshold = calcOverheatThreshold(confidence, safeUncertainty, safeSpread, persona, normalizedTool)
 
-    // 过热程度：当前出价超过心理预期的程度，数值越高表示AI感受到的压力越大，可能会触发回撤等保护性行为。
-    const overheatRatio = psychExpectedBid <= step ? 0 : (currentBid - psychExpectedBid) / psychExpectedBid
+    // 过热程度（公式见 pure.ts calcOverheatRatio）
+    const overheatRatio = calcOverheatRatio(currentBid, psychExpectedBid, step)
 
     // 是否过热：AI根据过热程度和过热阈值评估当前是否处于过热状态，过热状态可能会触发回撤等保护性行为，避免AI在不利的情况下继续加价。
     const isOverheated = overheatRatio > overheatThreshold
 
-    // 价格上限计算：AI根据感知价值、心理预期、市场参考价和锚点出价等因素计算一个出价上限，AI的最终出价不会超过这个上限，确保AI在合理范围内进行出价。
-    //计算公式为：感知价值*（0.82 + 纪律性*0.1 + 质量率*0.08）
-    const perceivedCap = perceivedValue * clamp(0.82 + persona.discipline * 0.1 + safeQualityRate * 0.08, 0.78, 1.05)
-
-    // 锚点上限：基于锚点出价、信心程度和边缘信号等因素计算的一个出价上限，反映了AI对当前拍卖机会的主观价值评估和风险控制。
-    //计算公式为：锚点出价*（0.92 + 信心*0.18 + 边缘信号*0.1），反映了AI对当前拍卖机会的主观价值评估和风险控制。
-    const anchorCap = state.anchorBid * clamp(0.92 + confidence * 0.18 + edgeSignal * 0.1, 0.82, 1.18)
-
-    // 心理预期上限：基于心理预期出价、信心程度和工具效果等因素计算的一个出价上限，反映了AI对未来拍卖走势的预期和适应，以及工具对AI决策的影响。
-    //计算公式为：心理预期出价*（0.9 + 信心*0.16），反映了AI对未来拍卖走势的预期和适应，以及工具对AI决策的影响。
-    const psychCap = psychExpectedBid * clamp(0.9 + confidence * 0.16, 0.82, 1.2)
-
-    // 市场参考价上限：基于市场参考价、跟风倾向和工具效果等因素计算的一个出价上限，反映了AI对当前市场状况的评估和跟风行为的控制。
-    //计算公式为：市场参考价*（0.78 + 跟风倾向*0.12 + 轮次进度*0.05），反映了AI对当前市场状况的评估和跟风行为的控制。
-    const marketCap = marketRef * clamp(0.78 + persona.followRate * 0.12 + roundProgress * 0.05, 0.72, 1.08)
-
-    // 综合价格上限：AI根据感知价值、心理预期、市场参考价和锚点出价等因素计算一个综合的出价上限，确保AI在合理范围内进行出价，避免过度冒险或过于保守。
-    //求在perceivedCap、anchorCap、psychCap和marketCap这四个上限中的最小值，确保AI的出价不会超过这些合理的限制，反映了AI对当前拍卖机会的综合评估和风险控制。
-    let hardCap = Math.max(step, Math.min(perceivedCap, Math.max(anchorCap, psychCap, marketCap)))
-
-    // 工具加成：如果AI玩家使用了技能或道具，工具可能会提供一个加成，提升AI的出价上限，反映了工具对AI决策的积极影响。
-    hardCap *= clamp(1 + normalizedTool.capBoost * 0.2, 0.88, 1.1)
-
-    // 确保出价上限不低于出价步长，避免AI出价过于保守或停滞不前。
-    hardCap = Math.max(step, hardCap)
+    // 价格上限 hardCap（四上限组合 + 工具加成，公式见 pure.ts calcHardCap）
+    let hardCap = calcHardCap(
+      step,
+      perceivedValue,
+      state.anchorBid,
+      psychExpectedBid,
+      marketRef,
+      persona,
+      safeQualityRate,
+      confidence,
+      edgeSignal,
+      roundProgress,
+      normalizedTool
+    )
 
     // 价值差距：AI感知的价值与当前出价之间的差距，数值越大表示AI认为当前出价相对于其价值评估有更大的提升空间，可能会更积极地加价。
     const valueGap = perceivedValue - currentBid
@@ -482,13 +449,8 @@ export class AuctionAiEngine {
     // 恐高减价：如果当前出价接近AI的心理预期，且AI感受到一定的压力，AI可能会进行一个恐高减价
     const fearThreshold = state.anchorBid * 0.92
 
-    // 恐高概率计算
-    //计算公式为：0.08 + (1 - 激进程度)*0.14 + 不确定性*0.1 + 信息分布*0.08 - 轮次进度*0.06
-    const fearChance = clamp(
-      0.08 + (1 - persona.aggression) * 0.14 + safeUncertainty * 0.1 + safeSpread * 0.08 - roundProgress * 0.06,
-      0.05,
-      0.3
-    )
+    // 恐高概率（公式见 pure.ts calcFearChance）
+    const fearChance = calcFearChance(persona, safeUncertainty, safeSpread, roundProgress)
 
     // 是否触发恐高减价
     const shouldFearDrop =
@@ -725,7 +687,15 @@ export {
   marketReference,
   buildToolEffect,
   computeConfidenceParts,
-  applyCrowdDiversity
+  applyCrowdDiversity,
+  calcBaseEstimate,
+  calcNoiseBand,
+  calcTargetPsychExpected,
+  calcAdaptRate,
+  calcOverheatThreshold,
+  calcOverheatRatio,
+  calcHardCap,
+  calcFearChance
 } from "./bidding/pure"
 export { planIntelAction } from "./bidding/intel-action"
 export type {

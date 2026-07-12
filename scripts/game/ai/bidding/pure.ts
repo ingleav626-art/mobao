@@ -293,3 +293,120 @@ export function applyCrowdDiversity(args: ApplyCrowdDiversityArgs, personalityMa
     }
   })
 }
+
+// ─── computeSingleDecision 子计算纯函数（Phase 2 提取，确定性公式，可独立测试）───
+
+/** 基础估值：锚点出价 × (0.82 + 信心×0.52 + 质量率×0.18 + 边缘信号×0.12)。 */
+export function calcBaseEstimate(
+  anchorBid: number,
+  confidence: number,
+  qualityRate: number,
+  edgeSignal: number
+): number {
+  return anchorBid * (0.82 + confidence * 0.52 + qualityRate * 0.18 + edgeSignal * 0.12)
+}
+
+/** 噪声带宽：纪律/失误/不确定性/工具/信息分布决定，clamp 到 [0.025, 0.26]。 */
+export function calcNoiseBand(persona: Personality, uncertainty: number, tool: ToolEffect, spread: number): number {
+  return clamp(
+    ((1 - persona.discipline) * 0.18 + persona.errorRate * 0.72) *
+      (1 + uncertainty * 0.28) *
+      (1 - tool.uncertaintyReduction * 0.84) *
+      (1 + spread * 0.22),
+    0.025,
+    0.26
+  )
+}
+
+/** 目标心理预期出价：锚点/市场参考/当前出价加权组合，不低于步长。 */
+export function calcTargetPsychExpected(
+  step: number,
+  anchorBid: number,
+  marketRef: number,
+  currentBid: number,
+  persona: Personality,
+  tool: ToolEffect,
+  clueRate: number,
+  qualityRate: number,
+  roundProgress: number
+): number {
+  return Math.max(
+    step,
+    anchorBid * (0.64 + persona.discipline * 0.22) +
+      marketRef * (0.2 + persona.followRate * 0.17 + tool.followBoost * 0.15) +
+      currentBid *
+        (0.02 + clueRate * 0.07 + qualityRate * 0.08 + roundProgress * 0.05 + tool.strategyScoreBoost * 0.025)
+  )
+}
+
+/** 适应率：心理预期调整速度，clamp 到 [0.1, 0.72]。 */
+export function calcAdaptRate(confidence: number, persona: Personality, tool: ToolEffect, spread: number): number {
+  return clamp(
+    0.12 + confidence * 0.24 + persona.expectationElasticity * 0.18 + tool.confidenceBoost * 0.25 - spread * 0.08,
+    0.1,
+    0.72
+  )
+}
+
+/** 过热阈值：触发回撤的过热程度门槛，clamp 到 [0.04, 0.26]。 */
+export function calcOverheatThreshold(
+  confidence: number,
+  uncertainty: number,
+  spread: number,
+  persona: Personality,
+  tool: ToolEffect
+): number {
+  return clamp(
+    0.04 +
+      (1 - confidence) * 0.1 +
+      uncertainty * 0.1 +
+      spread * 0.06 -
+      persona.aggression * 0.03 +
+      persona.discipline * 0.02 -
+      tool.uncertaintyReduction * 0.09,
+    0.04,
+    0.26
+  )
+}
+
+/** 过热程度：当前出价相对心理预期的超出比例；心理预期 ≤ 步长时为 0。 */
+export function calcOverheatRatio(currentBid: number, psychExpectedBid: number, step: number): number {
+  return psychExpectedBid <= step ? 0 : (currentBid - psychExpectedBid) / psychExpectedBid
+}
+
+/** 价格上限 hardCap：四上限（感知/锚点/心理/市场）组合最小值 × 工具加成，不低于步长。 */
+export function calcHardCap(
+  step: number,
+  perceivedValue: number,
+  anchorBid: number,
+  psychExpectedBid: number,
+  marketRef: number,
+  persona: Personality,
+  qualityRate: number,
+  confidence: number,
+  edgeSignal: number,
+  roundProgress: number,
+  tool: ToolEffect
+): number {
+  const perceivedCap = perceivedValue * clamp(0.82 + persona.discipline * 0.1 + qualityRate * 0.08, 0.78, 1.05)
+  const anchorCap = anchorBid * clamp(0.92 + confidence * 0.18 + edgeSignal * 0.1, 0.82, 1.18)
+  const psychCap = psychExpectedBid * clamp(0.9 + confidence * 0.16, 0.82, 1.2)
+  const marketCap = marketRef * clamp(0.78 + persona.followRate * 0.12 + roundProgress * 0.05, 0.72, 1.08)
+  let hardCap = Math.max(step, Math.min(perceivedCap, Math.max(anchorCap, psychCap, marketCap)))
+  hardCap *= clamp(1 + tool.capBoost * 0.2, 0.88, 1.1)
+  return Math.max(step, hardCap)
+}
+
+/** 恐高概率：接近心理预期时触发恐高减价的概率，clamp 到 [0.05, 0.3]。 */
+export function calcFearChance(
+  persona: Personality,
+  uncertainty: number,
+  spread: number,
+  roundProgress: number
+): number {
+  return clamp(
+    0.08 + (1 - persona.aggression) * 0.14 + uncertainty * 0.1 + spread * 0.08 - roundProgress * 0.06,
+    0.05,
+    0.3
+  )
+}

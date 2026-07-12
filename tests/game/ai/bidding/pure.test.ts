@@ -5,7 +5,15 @@ import {
   marketReference,
   buildToolEffect,
   computeConfidenceParts,
-  applyCrowdDiversity
+  applyCrowdDiversity,
+  calcBaseEstimate,
+  calcNoiseBand,
+  calcTargetPsychExpected,
+  calcAdaptRate,
+  calcOverheatThreshold,
+  calcOverheatRatio,
+  calcHardCap,
+  calcFearChance
 } from "../../../../scripts/game/ai/bidding/pure"
 import type { Personality } from "../../../../scripts/game/ai/bidding/types"
 
@@ -351,6 +359,131 @@ describe("ai/bidding/pure", () => {
       )
       // p3 bid 视为 0，diff=200000 >= spacing，末尾归一化为 0
       expect(bidMap.p3).toBe(0)
+    })
+  })
+
+  // ─── Phase 2 子计算纯函数 ───
+
+  describe("calcBaseEstimate", () => {
+    it("基础公式正确", () => {
+      // 100000 * (0.82 + 0.5*0.52 + 0.5*0.18 + 0.1*0.12) = 100000 * 1.182
+      expect(calcBaseEstimate(100000, 0.5, 0.5, 0.1)).toBeCloseTo(118200, 5)
+    })
+    it("零信心/质量/边缘信号时为锚点*0.82", () => {
+      expect(calcBaseEstimate(100000, 0, 0, 0)).toBeCloseTo(82000, 5)
+    })
+    it("随锚点线性缩放", () => {
+      expect(calcBaseEstimate(200000, 0.5, 0.5, 0.1)).toBeCloseTo(236400, 5)
+    })
+  })
+
+  describe("calcNoiseBand", () => {
+    it("默认人格+零扰动为合理值", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      // (1-0.72)*0.18 + 0.05*0.72 = 0.0504 + 0.036 = 0.0864
+      expect(calcNoiseBand(persona, 0, tool, 0)).toBeCloseTo(0.0864, 5)
+    })
+    it("结果 clamp 到 [0.025, 0.26]", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      const v = calcNoiseBand(persona, 1, tool, 1.5)
+      expect(v).toBeGreaterThanOrEqual(0.025)
+      expect(v).toBeLessThanOrEqual(0.26)
+    })
+  })
+
+  describe("calcTargetPsychExpected", () => {
+    it("不低于步长", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      const v = calcTargetPsychExpected(10000, 0, 0, 0, persona, tool, 0, 0, 0)
+      expect(v).toBeGreaterThanOrEqual(10000)
+    })
+    it("正常输入返回正的加权组合", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      const v = calcTargetPsychExpected(1000, 100000, 50000, 30000, persona, tool, 0.5, 0.5, 0.5)
+      expect(v).toBeGreaterThan(0)
+    })
+  })
+
+  describe("calcAdaptRate", () => {
+    it("默认参数为合理值", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      // 0.12 + 0.5*0.24 + 0.56*0.18 = 0.3408
+      expect(calcAdaptRate(0.5, persona, tool, 0)).toBeCloseTo(0.3408, 5)
+    })
+    it("结果 clamp 到 [0.1, 0.72]", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      const v = calcAdaptRate(1, persona, tool, 1)
+      expect(v).toBeGreaterThanOrEqual(0.1)
+      expect(v).toBeLessThanOrEqual(0.72)
+    })
+  })
+
+  describe("calcOverheatThreshold", () => {
+    it("结果 clamp 到 [0.04, 0.26]", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      const v = calcOverheatThreshold(0.5, 0.5, 0.5, persona, tool)
+      expect(v).toBeGreaterThanOrEqual(0.04)
+      expect(v).toBeLessThanOrEqual(0.26)
+    })
+    it("信心越高阈值越低（更不易过热）", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      const low = calcOverheatThreshold(0.2, 0.3, 0.3, persona, tool)
+      const high = calcOverheatThreshold(0.9, 0.3, 0.3, persona, tool)
+      expect(high).toBeLessThanOrEqual(low)
+    })
+  })
+
+  describe("calcOverheatRatio", () => {
+    it("心理预期 <= 步长时返回 0", () => {
+      expect(calcOverheatRatio(100000, 5000, 10000)).toBe(0)
+    })
+    it("正常超出比例为正", () => {
+      // (120000 - 100000) / 100000 = 0.2
+      expect(calcOverheatRatio(120000, 100000, 10000)).toBeCloseTo(0.2, 5)
+    })
+    it("未超出为负", () => {
+      expect(calcOverheatRatio(80000, 100000, 10000)).toBeCloseTo(-0.2, 5)
+    })
+  })
+
+  describe("calcHardCap", () => {
+    it("不低于步长", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      const v = calcHardCap(10000, 1000, 1000, 1000, 1000, persona, 0.5, 0.5, 0.1, 0.5, tool)
+      expect(v).toBeGreaterThanOrEqual(10000)
+    })
+    it("正常输入返回合理上限", () => {
+      const persona = defaultPersona()
+      const tool = normalizeToolEffect()
+      const v = calcHardCap(1000, 100000, 90000, 95000, 80000, persona, 0.5, 0.6, 0.1, 0.5, tool)
+      expect(v).toBeGreaterThan(0)
+      expect(v).toBeLessThan(200000)
+    })
+  })
+
+  describe("calcFearChance", () => {
+    it("结果 clamp 到 [0.05, 0.3]", () => {
+      const persona = defaultPersona()
+      const v = calcFearChance(persona, 0.5, 0.5, 0.5)
+      expect(v).toBeGreaterThanOrEqual(0.05)
+      expect(v).toBeLessThanOrEqual(0.3)
+    })
+    it("激进人格恐高概率更低", () => {
+      const persona = defaultPersona()
+      const aggressive = { ...persona, aggression: 0.95 }
+      const conservative = { ...persona, aggression: 0.1 }
+      expect(calcFearChance(aggressive, 0.3, 0.3, 0.5)).toBeLessThanOrEqual(
+        calcFearChance(conservative, 0.3, 0.3, 0.5)
+      )
     })
   })
 })
