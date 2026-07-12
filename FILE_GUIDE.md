@@ -55,7 +55,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| index.ts | 出价流程控制 Mixin，管理玩家/AI 出价交互、回合结算、揭示动画、直接拿下判定、联机出价 |
+| index.ts | 出价流程控制 Mixin，管理玩家/AI 出价交互、回合结算、揭示动画、直接拿下判定、联机出价（通用对话框已迁 ui/overlay/，474->446 行）|
 
 ## scripts/game/bridge/
 
@@ -168,7 +168,8 @@
 | ai-model-config.ts | AiModelConfigMixin：AI 模型配置面板（7 方法 + 1 属性） |
 | ai-memory-panel.ts | AiMemoryPanelMixin：AI 记忆面板 UI（openAiMemoryPanel 等 3 方法，从 ai/memory.ts 迁入）|
 | ai-reflection-dialog.ts | AiReflectionDialogMixin：AI 反思待处理对话框 UI（showReflectionPendingDialog 等 4 方法，从 ai/reflection.ts 迁入）|
-| core.ts | CoreOverlayMixin：通用覆盖层开关（结算/AI面板/商店转发，5 方法） |
+| confirm-dialog.ts | ConfirmDialogMixin：通用确认对话框（showGameConfirm/hideGameConfirm，从 bidding/index.ts 迁入）|
+| core.ts | CoreOverlayMixin：通用覆盖层开关（结算开闭/AI面板/商店转发，6 方法） |
 
 ## scripts/game/warehouse/
 

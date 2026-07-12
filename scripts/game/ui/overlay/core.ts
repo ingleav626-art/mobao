@@ -1,7 +1,7 @@
 /**
  * @file scripts/game/ui/overlay/core.ts
  * @module ui/overlay/core
- * @description 通用覆盖层开关 Mixin。负责结算覆盖层关闭、AI 逻辑面板开闭、
+ * @description 通用覆盖层开关 Mixin。负责结算覆盖层开闭、AI 逻辑面板开闭、
  *              商店覆盖层开闭（转发 MobaoShopPage），方法体量小且模式一致。
  *
  * @requires animations - MobaoAnimations
@@ -26,6 +26,20 @@ export const CoreOverlayMixin: ThisType<WarehouseSceneThis> = {
     } else {
       overlayEl.classList.add("hidden")
     }
+  },
+
+  showSettleOverlay(html: string): void {
+    if (this.dom.settleCard) this.dom.settleCard.innerHTML = html
+    this.dom.settleOverlay?.classList.remove("hidden")
+
+    this.tweens.add({
+      targets: this.dom.settleCard,
+      scaleX: { from: 0.94, to: 1 },
+      scaleY: { from: 0.94, to: 1 },
+      alpha: { from: 0.5, to: 1 },
+      duration: 260,
+      ease: "Back.Out"
+    })
   },
 
   openAiLogicPanel() {

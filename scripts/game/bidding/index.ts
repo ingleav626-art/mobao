@@ -18,7 +18,6 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  *   - 直接拿下：当最高出价 ≥ 第二高出价 × (1 + directTakeRatio) 时提前结束
  *   - 联机出价：玩家出价通过 lanBridge.submitBid 提交，主机端统一结算
  *   - 暂停/恢复：roundPaused 状态管理，waitUntilResumed 轮询等待
- *   - 确认弹窗：showGameConfirm / hideGameConfirm 通用确认对话框
  *
  * 出价流程（单机）：
  *   startRound → 玩家输入出价 → playerBid → areAllPlayersBidReady →
@@ -196,19 +195,6 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
     const next = this.keypadValue === "0" ? key : this.keypadValue + key
     this.keypadValue = String(Math.min(99999999, Number(next) || 0))
     this.syncBidKeypadScreen()
-  },
-
-  showGameConfirm(message: string, onConfirm: () => void, onCancel?: () => void): void {
-    if (this.dom.gameConfirmMsg) this.dom.gameConfirmMsg.textContent = message
-    this._gameConfirmCallback = onConfirm || null
-    this._gameCancelCallback = onCancel || null
-    this.dom.gameConfirmOverlay?.classList.remove("hidden")
-  },
-
-  hideGameConfirm(): void {
-    this.dom.gameConfirmOverlay?.classList.add("hidden")
-    this._gameConfirmCallback = null
-    this._gameCancelCallback = null
   },
 
   async resolveRoundBids(reason: string = "manual", forceSettle: boolean = false): Promise<void> {
@@ -456,19 +442,5 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
     }
 
     this.resolveRoundBids("manual", true)
-  },
-
-  showSettleOverlay(html: string): void {
-    if (this.dom.settleCard) this.dom.settleCard.innerHTML = html
-    this.dom.settleOverlay?.classList.remove("hidden")
-
-    this.tweens.add({
-      targets: this.dom.settleCard,
-      scaleX: { from: 0.94, to: 1 },
-      scaleY: { from: 0.94, to: 1 },
-      alpha: { from: 0.5, to: 1 },
-      duration: 260,
-      ease: "Back.Out"
-    })
   }
 }

@@ -93,10 +93,21 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
     bridge.on("ws:close", (d) => {
       setOnlineStatus("连接断开 (code=" + d.code + ")", "error");
       if (connectBtn) connectBtn.disabled = false;
+      if (this.isLanMode && !this.settled && this.lanBridge) {
+        this.lanLastServerUrl = this.lanBridge.ws ? this.lanBridge.ws.url : this.lanLastServerUrl;
+        this.lanLastRoomCode = this.lanBridge.roomCode || this.lanLastRoomCode;
+        this.lanLastPlayerId = this.lanBridge.playerId || this.lanLastPlayerId;
+        this.writeLog("连接断开 (code=" + d.code + ")");
+        this.onLanForeground();
+      }
     });
 
     bridge.on("ws:error", () => {
       setOnlineStatus("连接错误", "error");
+      if (this.isLanMode && !this.settled) {
+        this.writeLog("连接错误，尝试重连...");
+        this.onLanForeground();
+      }
     });
 
     bridge.on("room:created", (msg: RoomMessage) => {
@@ -299,23 +310,6 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
 
     bridge.on("full-sync", (msg: RoomMessage) => {
       this.lanOnFullSync(msg);
-    });
-
-    bridge.on("ws:close", (d) => {
-      if (this.isLanMode && !this.settled && this.lanBridge) {
-        this.lanLastServerUrl = this.lanBridge.ws ? this.lanBridge.ws.url : this.lanLastServerUrl;
-        this.lanLastRoomCode = this.lanBridge.roomCode || this.lanLastRoomCode;
-        this.lanLastPlayerId = this.lanBridge.playerId || this.lanLastPlayerId;
-        this.writeLog("连接断开 (code=" + d.code + ")");
-        this.onLanForeground();
-      }
-    });
-
-    bridge.on("ws:error", () => {
-      if (this.isLanMode && !this.settled) {
-        this.writeLog("连接错误，尝试重连...");
-        this.onLanForeground();
-      }
     });
 
     bridge.on("game:start-failed", (msg: RoomMessage) => {
