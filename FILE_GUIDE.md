@@ -22,7 +22,7 @@
 | 文件 | 职责 |
 |------|------|
 | index.ts | AI 系统模块聚合导出，re-export 钱包/情报/记忆/反思/决策五个 Mixin |
-| bidding.ts | AI 出价引擎（AuctionAiEngine 类），基于人格/情报/市场价计算出价决策，规则 AI 核心 |
+| bidding.ts | AI 出价引擎（AuctionAiEngine 类），基于人格/情报/市场价计算出价决策；纯函数已提取到 ai/bidding/ 子目录，类方法委托（1213->746 行）|
 | context-builder.ts | AI 上下文构建器，从场景状态提取结构化数据供 AI 决策和 LLM 对话使用 |
 | decision.ts | AI 决策日志与记录，记录 AI 出价的决策过程（渲染 UI 已迁 ui/overlay/core.ts） |
 | game-history.ts | AI 多局历史存储系统，管理最近 N 局完整对局记录，支持滑动窗口裁剪 |
@@ -30,6 +30,14 @@
 | reflection.ts | AI 局后反思系统，通过 LLM 让 AI 反思表现并更新跨局经验本 |
 | summarizer.ts | AI 定期总结系统，当对局数达到间隔时触发 LLM 生成跨局经验总结 |
 | wallet.ts | AI 玩家钱包管理，负责虚拟资金初始化、持久化、余额查询和出价规范化 |
+
+## scripts/game/ai/bidding/
+
+| 文件 | 职责 |
+|------|------|
+| types.ts | AI 出价引擎的接口定义（14 个 interface：Personality/AiStateEntry/ToolEffect/ConfidenceParts 等）|
+| pure.ts | 出价相关纯函数（buildToolEffect/computeConfidenceParts/applyCrowdDiversity/defaultPersona/normalizeToolEffect/marketReference），可独立测试 |
+| intel-action.ts | 情报动作规划纯函数（planIntelAction，参数化 personalityMap）|
 
 ## scripts/game/ai/intel/
 
