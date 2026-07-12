@@ -5,6 +5,8 @@
 > 目标：解决"巨行星文件"、"超级对象"、IIFE滥用、模块化不完整等问题
 > 前置条件：TypeScript 迁移已完成（strict 模式 0 错误，any 85% 消除）
 
+> ⚠️ **状态更新（2026-07-12）**：本文档多数"巨行星文件"已拆分完成，下方行数表与"未开始"标记已过时。当前进展以 `analysis/task-list.md`（活跃追踪表）为准。主要已完成：main.ts 2748->198、ai/intel.ts 1673->39、llm-decision.ts 1750->46、llm-manager.ts 1267->519、warehouse/index.ts 1306->薄入口、character-select.ts 1360->459、deepseek-llm.ts 删除（双轨 Provider 消除）、Deps 容器类型补全、MainOnlyMethods 归位（`this: any` 全仓清零）、scene 代理层精简（bridge.methods 直接挂原型，-328 行）、ESLint 修复并可 lint `.ts`。**剩余主要痛点**：lan/lobby.ts 1282行单函数、ai/bidding.ts 1213行职责过载、ui/overlay.ts 957行 God Object 仍待拆分；any 196 处（lint warn 强制中）。
+
 ---
 
 ## 一、现状分析

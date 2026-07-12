@@ -14,7 +14,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| main.ts | 游戏入口与组装文件，创建桥接层、合并 19 个 Mixin 到 WarehouseScene.prototype、启动 Phaser |
+| main.ts | 游戏入口与组装文件（198行）：创建桥接层、将 19 个 Mixin + bridge.methods 直接 Object.assign 到 WarehouseScene.prototype、启动 Phaser |
 | animations.ts | 前端动效工具库单例，提供涟漪、数字滚动、卡片入场、脉冲、覆盖层动效等 9 类通用动画 |
 
 ## scripts/game/ai/
@@ -120,9 +120,10 @@
 | scene-run.ts | 回合管理方法，包含 startNewRun（新局初始化、仓库生成、AI 初始化） |
 | scene-hud.ts | HUD 更新方法，包含 updateHud 和 updateActionAvailability |
 | scene-utils.ts | 场景工具方法，快照构建、坐标转换、排名标记、运行令牌、LLM 设置获取 |
-| scene-ai-panel.ts | AI 逻辑面板渲染与 LLM 代理方法，renderAiLogicPanel 及 LLM_BRIDGE 转发 |
-| scene-battle-record.ts | 战绩记录代理方法，委托给 BATTLE_RECORD_BRIDGE 桥接层 |
-| scene-settlement.ts | 结算代理方法，委托给 SETTLEMENT_BRIDGE 桥接层 |
+| scene-ai-panel.ts | AI 逻辑面板渲染（renderAiLogicPanel）+ LLM 设置方法（getLlmSettings/getLlmProvider）；LLM_BRIDGE.methods 已直接挂原型，不再需转发代理 |
+| scene-character.ts | 角色相关场景方法（applyCharacterToPlayer/bindCharacterSkillButton/refreshSkillButtonLabel），从 main.ts MainOnlyMethods 迁入 |
+| scene-battle-record.ts | 仅保留 buildWarehouseSnapshotForSync 别名；战绩方法由 BATTLE_RECORD_BRIDGE.methods 直接挂原型 |
+| scene-settlement.ts | 空占位（仅文档注释）；结算方法由 SETTLEMENT_BRIDGE.methods 直接挂原型 |
 | events-overlay.ts | 覆盖层/弹窗事件绑定（设置面板、信息弹窗、玩家气泡的点击/关闭事件） |
 | events-settings.ts | 设置面板事件绑定（音量滑块、重抽按钮、设置保存/重置/关闭） |
 | events-ai-memory.ts | AI 记忆面板事件绑定（设置关闭/重置、AI 记忆面板开关、经验本导入导出） |
@@ -142,9 +143,22 @@
 | 文件 | 职责 |
 |------|------|
 | index.ts | UI 组件模块聚合导出，re-export 覆盖层/信息面板/历史记录三个 Mixin |
-| overlay.ts | 弹窗与覆盖层管理 Mixin，管理所有弹窗、覆盖层、设置面板、确认对话框的显示/隐藏 |
+| overlay.ts | 弹窗与覆盖层管理薄入口（32行），Object.assign 合并 overlay/ 下 7 个子 Mixin，re-export 纯函数 |
 | panels.ts | 侧边信息面板 Mixin，管理左右两侧的私有情报面板和公共信息面板的渲染和更新 |
 | history.ts | 玩家历史记录与道具抽屉 Mixin，管理出价历史、道具使用记录、道具抽屉开关和渲染 |
+
+## scripts/game/ui/overlay/
+
+| 文件 | 职责 |
+|------|------|
+| pure.ts | 纯函数（getCollectionCategories、filterCollectionItems），零依赖可独立测试 |
+| info-popup.ts | InfoPopupMixin：信息弹窗与玩家气泡（showInfoPopup/showPlayerInfoPopover 等 5 方法） |
+| detail-popup.ts | DetailPopupMixin：道具/角色详情弹窗（showItemDetailPopup/showCharacterInfoPopup 等 4 方法） |
+| settings.ts | SettingsMixin：设置面板（8 方法，含越界 saveSettingsFromOverlay + 3 个 DeepSeek 迁移别名） |
+| lan-dialog.ts | LanDialogMixin：LAN 重开投票/暂停弹窗（6 方法，含 2 越界） |
+| collection.ts | CollectionMixin：收藏图鉴面板（5 方法） |
+| ai-model-config.ts | AiModelConfigMixin：AI 模型配置面板（7 方法 + 1 属性） |
+| core.ts | CoreOverlayMixin：通用覆盖层开关（结算/AI面板/商店转发，5 方法） |
 
 ## scripts/game/warehouse/
 

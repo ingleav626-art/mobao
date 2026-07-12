@@ -41,9 +41,9 @@ npx tsc --noEmit     # TypeScript type check (run after code changes)
 
 All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the application entry point - now a thin assembly file (272 lines), see **场景拆分** below.
 
-### 场景拆分 (main.ts 2748 -> 272 行)
+### 场景拆分 (main.ts 2748 -> 198 行)
 
-历史上 `main.ts` 是 2748 行的 God Object（含 `WarehouseScene` 类定义 + 所有方法 + Mixin 组装）。已拆分为 `scripts/game/scene/` 目录（15 个文件，~3000 行）：
+历史上 `main.ts` 是 2748 行的 God Object（含 `WarehouseScene` 类定义 + 所有方法 + Mixin 组装）。已拆分为 `scripts/game/scene/` 目录（16 个文件，~3000 行）：
 
 | 文件 | 职责 |
 |------|------|
@@ -52,16 +52,17 @@ All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the
 | `scene/scene-run.ts` | `startNewRun`（新局初始化、仓库生成、AI 初始化） |
 | `scene/scene-hud.ts` | `updateHud` / `updateActionAvailability` |
 | `scene/scene-utils.ts` | 快照构建、坐标转换、排名标记、运行令牌、LLM 设置获取 |
-| `scene/scene-ai-panel.ts` | AI 逻辑面板渲染 + LLM 代理方法（`LLM_BRIDGE` 转发） |
-| `scene/scene-battle-record.ts` | 战绩记录代理方法（委托 `BATTLE_RECORD_BRIDGE`） |
-| `scene/scene-settlement.ts` | 结算代理方法（委托 `SETTLEMENT_BRIDGE`） |
+| `scene/scene-ai-panel.ts` | AI 逻辑面板渲染（`renderAiLogicPanel`）+ LLM 设置方法（`getLlmSettings`/`getLlmProvider`） |
+| `scene/scene-character.ts` | 角色场景方法（`applyCharacterToPlayer`/`bindCharacterSkillButton`/`refreshSkillButtonLabel`），从 MainOnlyMethods 迁入 |
+| `scene/scene-battle-record.ts` | 仅保留 `buildWarehouseSnapshotForSync` 别名（战绩方法由 `BATTLE_RECORD_BRIDGE.methods` 直接挂原型） |
+| `scene/scene-settlement.ts` | 空占位（结算方法由 `SETTLEMENT_BRIDGE.methods` 直接挂原型） |
 | `scene/events-*.ts`（7 个） | 从 `bindDomEvents` 拆出的事件绑定：overlay/settings/ai-memory/ai-panel/battle-record/item-drawer/settlement |
 
-`main.ts` 现仅保留 5 个未提取的独有方法（`MainOnlyMethods`：`applyCharacterToPlayer`、`bindCharacterSkillButton`、`refreshSkillButtonLabel`、`getLlmSettings`、`getLlmProvider`）+ 桥接层初始化 + Mixin 合并 + Phaser 启动。
+`main.ts` 原 `MainOnlyMethods` 的 5 个孤儿方法已迁出：3 个角色方法入 `scene/scene-character.ts`、2 个 LLM 方法入 `scene/scene-ai-panel.ts`，全仓 `this: any` 清零。三个 bridge 的 `.methods`（LLM/战绩/结算）现直接 `Object.assign` 到原型，不再经 scene 代理转发。main.ts 现仅剩桥接层初始化 + Mixin/bridge 合并 + Phaser 启动（198 行）。
 
 ### Mixin assembly
 
-`WarehouseScene` (class in `scene/warehouse-scene.ts`) is the single Phaser scene. 19 mixins + scene/ 方法 + MainOnlyMethods are merged onto its prototype via `Object.assign` in `main.ts` (lines 210-239):
+`WarehouseScene` (class in `scene/warehouse-scene.ts`) is the single Phaser scene. 19 mixins + scene/ 方法 + 三个 bridge 的 `.methods`（LLM_BRIDGE / BATTLE_RECORD_BRIDGE / SETTLEMENT_BRIDGE）are merged onto its prototype via `Object.assign` in `main.ts`:
 
 - **warehouse/**: WarehouseCoreMixin, WarehouseRevealMixin, WarehousePreviewMixin
 - **ai/**: AiWalletMixin, AiIntelMixin, AiMemoryMixin, AiReflectionMixin, AiDecisionMixin
@@ -84,6 +85,7 @@ All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the
 | `llm/core/llm-manager.ts` (1267 行) | `llm/core/`：`manager-utils.ts` + `provider-factory.ts`（llm-manager.ts 保留注册表 + LlmManager） | 519 行 |
 | `lobby/character-select.ts` | `lobby/character-select/`：`pure` / `live2d` / `carry-items`（核心 Mixin 仍在 character-select.ts） | 459 行 |
 | `warehouse/index.ts` | `warehouse/`：`core.ts` / `reveal.ts` / `preview.ts` / `types.ts`（index.ts 薄入口 re-export） | - |
+| `ui/overlay.ts` (957 行) | `ui/overlay/`：`pure` / `info-popup` / `detail-popup` / `settings` / `lan-dialog` / `collection` / `ai-model-config` / `core` | 32 行 |
 
 ### Phase 2 Mixin 解耦（独立纯函数）
 
@@ -122,7 +124,7 @@ All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the
 
 | File | Role |
 |------|------|
-| `scripts/game/main.ts` | **装配入口**（272 行）：桥接层初始化、Mixin 合并（L210-239）、Phaser 启动。类定义在 `scene/warehouse-scene.ts` |
+| `scripts/game/main.ts` | **装配入口**（198 行）：桥接层初始化、Mixin + bridge.methods 合并、Phaser 启动。类定义在 `scene/warehouse-scene.ts` |
 | `scripts/game/scene/*.ts` | `WarehouseScene` 类定义 + 方法实现 + 事件绑定（15 文件，见上"场景拆分"） |
 | `scripts/game/core/constants.ts` | All game constants (grid, storage keys, quality) |
 | `scripts/game/core/settings.ts` | Settings load/save |
@@ -165,6 +167,7 @@ All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the
 
 - **禁止未经同意删除文件**: Never delete any file (including `rm`, `Remove-Item`, `git clean`) unless the user explicitly asks. Even if a file looks orphaned, unused, or AI-created - ask first.
 - **TypeScript strict mode**: `tsconfig.json` has `strict: true`, `noImplicitAny: true`, `strictNullChecks: true`. However, `checkJs: false` means `.js` files are not checked.
+- **ESLint**: flat config 已配 @typescript-eslint，`npm run lint` 可 lint `.ts`（0 error，~305 warning，主要是 `no-explicit-any` warn 级）。新增代码避免 `any` 与未用变量；`_` 前缀的参数/变量/catch 已配置忽略。
 - **LAN server is separate**: `lan/server/` has its own `package.json`. Run `npm install` there before `npm run server`.
 - **Android build**: Requires JDK 17 + Gradle + Android SDK at `D:\web\tool\`. See README for exact commands.
 - **localStorage keys**: All prefixed with `mobao_`. Changing a key breaks backward compat for existing users.
