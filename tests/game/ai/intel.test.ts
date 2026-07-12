@@ -7,7 +7,9 @@ import {
   truncateCandidateList,
   formatIntelActionPublicLine,
   buildNeighborStateLabel,
-  getNeighborOffsets
+  getNeighborOffsets,
+  calcUncertainty,
+  calcAvailableActionState
 } from "../../../scripts/game/ai/intel"
 
 describe("intel", () => {
@@ -251,6 +253,157 @@ describe("intel", () => {
       expect(up).toEqual({ dx: 0, dy: -1, label: "上" })
       const rightDown = offsets.find((o) => o.label === "右下")
       expect(rightDown).toEqual({ dx: 1, dy: 1, label: "右下" })
+    })
+  })
+
+  describe("calcUncertainty", () => {
+    it("无线索时不确定性较高", () => {
+      const result = calcUncertainty({
+        outlineCount: 0,
+        qualityCount: 0,
+        totalItems: 20,
+        spreadRatio: 0,
+        upperEdge: 0,
+        lowerEdge: 0
+      })
+      expect(result).toBeCloseTo(0.88, 2)
+    })
+
+    it("全部已知时不确定性较低", () => {
+      const result = calcUncertainty({
+        outlineCount: 10,
+        qualityCount: 10,
+        totalItems: 20,
+        spreadRatio: 0,
+        upperEdge: 5000,
+        lowerEdge: 5000
+      })
+      expect(result).toBeLessThan(0.4)
+    })
+
+    it("spreadRatio 增加不确定性", () => {
+      const base = calcUncertainty({
+        outlineCount: 2,
+        qualityCount: 1,
+        totalItems: 20,
+        spreadRatio: 0,
+        upperEdge: 0,
+        lowerEdge: 0
+      })
+      const withSpread = calcUncertainty({
+        outlineCount: 2,
+        qualityCount: 1,
+        totalItems: 20,
+        spreadRatio: 0.5,
+        upperEdge: 0,
+        lowerEdge: 0
+      })
+      expect(withSpread).toBeGreaterThan(base)
+    })
+
+    it("edgeBias 减少不确定性", () => {
+      const noEdge = calcUncertainty({
+        outlineCount: 3,
+        qualityCount: 2,
+        totalItems: 20,
+        spreadRatio: 0,
+        upperEdge: 0,
+        lowerEdge: 0
+      })
+      const withEdge = calcUncertainty({
+        outlineCount: 3,
+        qualityCount: 2,
+        totalItems: 20,
+        spreadRatio: 0,
+        upperEdge: 8000,
+        lowerEdge: 2000
+      })
+      expect(withEdge).toBeLessThan(noEdge)
+    })
+
+    it("不确定性不低于 0.05", () => {
+      const result = calcUncertainty({
+        outlineCount: 100,
+        qualityCount: 100,
+        totalItems: 10,
+        spreadRatio: 0,
+        upperEdge: 10000,
+        lowerEdge: 0
+      })
+      expect(result).toBeGreaterThanOrEqual(0.05)
+    })
+
+    it("不确定性不超过 1", () => {
+      const result = calcUncertainty({
+        outlineCount: 0,
+        qualityCount: 0,
+        totalItems: 100,
+        spreadRatio: 2,
+        upperEdge: 0,
+        lowerEdge: 0
+      })
+      expect(result).toBeLessThanOrEqual(1)
+    })
+
+    it("totalItems=0 使用 1 防止除零", () => {
+      const result = calcUncertainty({
+        outlineCount: 0,
+        qualityCount: 0,
+        totalItems: 0,
+        spreadRatio: 0,
+        upperEdge: 0,
+        lowerEdge: 0
+      })
+      expect(result).toBeCloseTo(0.88, 2)
+    })
+  })
+
+  describe("calcAvailableActionState", () => {
+    const skillDefs = [
+      { id: "scan", name: "扫描" },
+      { id: "probe", name: "探测" }
+    ]
+    const itemDefs = [
+      { id: "radar", name: "雷达" },
+      { id: "lens", name: "透镜" }
+    ]
+
+    it("空资源返回空列表", () => {
+      const result = calcAvailableActionState({ skills: {}, items: {} }, skillDefs, itemDefs)
+      expect(result.availableSkillIds).toEqual([])
+      expect(result.availableItemIds).toEqual([])
+      expect(result.availableSkillNames).toEqual([])
+      expect(result.availableItemNames).toEqual([])
+    })
+
+    it("有技能次数返回可用技能", () => {
+      const result = calcAvailableActionState({ skills: { scan: 2 }, items: {} }, skillDefs, itemDefs)
+      expect(result.availableSkillIds).toEqual(["scan"])
+      expect(result.availableSkillNames).toEqual(["扫描"])
+    })
+
+    it("有道具次数返回可用道具", () => {
+      const result = calcAvailableActionState({ skills: {}, items: { radar: 1, lens: 0 } }, skillDefs, itemDefs)
+      expect(result.availableItemIds).toEqual(["radar"])
+      expect(result.availableItemNames).toEqual(["雷达"])
+    })
+
+    it("次数为 0 的不返回", () => {
+      const result = calcAvailableActionState({ skills: { scan: 0 }, items: { radar: 0 } }, skillDefs, itemDefs)
+      expect(result.availableSkillIds).toEqual([])
+      expect(result.availableItemIds).toEqual([])
+    })
+
+    it("多个技能和道具同时可用", () => {
+      const result = calcAvailableActionState(
+        { skills: { scan: 1, probe: 2 }, items: { radar: 3, lens: 1 } },
+        skillDefs,
+        itemDefs
+      )
+      expect(result.availableSkillIds).toEqual(["scan", "probe"])
+      expect(result.availableItemIds).toEqual(["radar", "lens"])
+      expect(result.availableSkillNames).toEqual(["扫描", "探测"])
+      expect(result.availableItemNames).toEqual(["雷达", "透镜"])
     })
   })
 })

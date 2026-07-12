@@ -3,6 +3,7 @@ import type { IntelSummary } from "../../../../types/ai"
 import { clamp } from "../../core/utils"
 import { SKILL_DEFS } from "../../data/skills"
 import { ITEM_DEFS } from "../../data/items"
+import { calcUncertainty, calcAvailableActionState } from "./pure"
 
 export const SnapshotMixin: ThisType<WarehouseSceneThis> = {
   getAiIntelSummary(playerId: string) {
@@ -29,12 +30,14 @@ export const SnapshotMixin: ThisType<WarehouseSceneThis> = {
       count: 0
     }
 
-    const edgeBias = Math.max(0, aggregateStats.upperEdge - aggregateStats.lowerEdge)
-    const uncertainty = clamp(
-      0.88 - clueRate * 0.48 - qualityRate * 0.2 + aggregateStats.spreadRatio * 0.35 - edgeBias * 0.08,
-      0.05,
-      1
-    )
+    const uncertainty = calcUncertainty({
+      outlineCount,
+      qualityCount,
+      totalItems: this.items.length,
+      spreadRatio: aggregateStats.spreadRatio,
+      upperEdge: aggregateStats.upperEdge,
+      lowerEdge: aggregateStats.lowerEdge
+    })
 
     return {
       clueCount,
@@ -80,21 +83,7 @@ export const SnapshotMixin: ThisType<WarehouseSceneThis> = {
 
   getAiAvailableActionState(playerId: string) {
     const resource = this.getAiResourceSnapshot(playerId)
-    const availableSkillIds = SKILL_DEFS.filter((entry) => Number(resource.skills[entry.id] || 0) > 0).map(
-      (entry) => entry.id
-    )
-    const availableItemIds = ITEM_DEFS.filter((entry) => Number(resource.items[entry.id] || 0) > 0).map(
-      (entry) => entry.id
-    )
-
-    return {
-      availableSkillIds,
-      availableItemIds,
-      availableSkillNames: SKILL_DEFS.filter((entry) => availableSkillIds.includes(entry.id)).map(
-        (entry) => entry.name
-      ),
-      availableItemNames: ITEM_DEFS.filter((entry) => availableItemIds.includes(entry.id)).map((entry) => entry.name)
-    }
+    return calcAvailableActionState(resource, SKILL_DEFS, ITEM_DEFS)
   },
 
   buildAiActionConstraintBlock(playerId: string) {

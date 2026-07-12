@@ -14,7 +14,9 @@ export {
   truncateCandidateList,
   formatIntelActionPublicLine,
   buildNeighborStateLabel,
-  getNeighborOffsets
+  getNeighborOffsets,
+  calcUncertainty,
+  calcAvailableActionState
 } from "./intel/pure"
 
 export const AiIntelMixin: ThisType<WarehouseSceneThis> = Object.assign(

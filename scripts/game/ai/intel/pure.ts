@@ -1,5 +1,5 @@
 import type { AiSignalStats } from "../../../../types/ai"
-import { compactOneLine, formatCompactNumber, formatTrackIndex } from "../../core/utils"
+import { compactOneLine, formatCompactNumber, formatTrackIndex, clamp } from "../../core/utils"
 
 export function pickRandomItemCell(item: {
   x: number
@@ -85,4 +85,48 @@ export function getNeighborOffsets(): Array<{ dx: number; dy: number; label: str
     { dx: -1, dy: 1, label: "左下" },
     { dx: 1, dy: 1, label: "右下" }
   ]
+}
+
+export function calcUncertainty(params: {
+  outlineCount: number
+  qualityCount: number
+  totalItems: number
+  spreadRatio: number
+  upperEdge: number
+  lowerEdge: number
+}): number {
+  const total = Math.max(1, params.totalItems)
+  const clueRate = clamp((params.outlineCount * 0.65 + params.qualityCount) / total, 0, 1)
+  const qualityRate = clamp(params.qualityCount / total, 0, 1)
+  const edgeBias = Math.max(0, params.upperEdge - params.lowerEdge)
+  return clamp(
+    0.88 - clueRate * 0.48 - qualityRate * 0.2 + params.spreadRatio * 0.35 - edgeBias * 0.08,
+    0.05,
+    1
+  )
+}
+
+export function calcAvailableActionState(
+  resource: { skills: Record<string, number>; items: Record<string, number> },
+  skillDefs: Array<{ id: string; name: string }>,
+  itemDefs: Array<{ id: string; name: string }>
+): {
+  availableSkillIds: string[]
+  availableItemIds: string[]
+  availableSkillNames: string[]
+  availableItemNames: string[]
+} {
+  const availableSkillIds = skillDefs.filter((entry) => Number(resource.skills[entry.id] || 0) > 0).map(
+    (entry) => entry.id
+  )
+  const availableItemIds = itemDefs.filter((entry) => Number(resource.items[entry.id] || 0) > 0).map(
+    (entry) => entry.id
+  )
+
+  return {
+    availableSkillIds,
+    availableItemIds,
+    availableSkillNames: skillDefs.filter((entry) => availableSkillIds.includes(entry.id)).map((entry) => entry.name),
+    availableItemNames: itemDefs.filter((entry) => availableItemIds.includes(entry.id)).map((entry) => entry.name)
+  }
 }
