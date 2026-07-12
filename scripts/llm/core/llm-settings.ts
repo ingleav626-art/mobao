@@ -11,10 +11,6 @@ interface LlmSettingsModuleThis {
   dom: Record<string, HTMLInputElement | HTMLElement | null>;
   getLlmSettings(): any;
   setLlmSettingsStatus(text: string, state: string): void;
-  writeLog(message: string): void;
-  deepSeekTesting: boolean;
-  getLlmProvider(): any;
-  readLlmSettingsForm(): any;
 }
 
 export function createLlmSettingsModule(deps: any) {
@@ -247,52 +243,6 @@ export function createLlmSettingsModule(deps: any) {
         self.dom.settingsLlmStatusText.classList.add("is-error");
       } else if (state === "pending") {
         self.dom.settingsLlmStatusText.classList.add("is-pending");
-      }
-    },
-
-    async testDeepSeekConnectionFromOverlay() {
-      const self = this as unknown as LlmSettingsModuleThis;
-      if (self.deepSeekTesting) {
-        return;
-      }
-
-      const input = self.readLlmSettingsForm();
-      const modelName = (input && input.model) || "大模型";
-      if (!input.apiKey) {
-        self.setLlmSettingsStatus("请先填写 API Key，再进行连接测试。", "error");
-        self.writeLog(`${modelName}连接测试取消：未填写 API Key。`);
-        return;
-      }
-
-      self.deepSeekTesting = true;
-      if (self.dom.settingsTestDeepSeekBtn) {
-        (self.dom.settingsTestDeepSeekBtn as HTMLInputElement).disabled = true;
-      }
-      self.setLlmSettingsStatus(`正在连接 ${modelName}，请稍候...`, "pending");
-
-      try {
-        const provider = typeof self.getLlmProvider === "function" ? self.getLlmProvider() : null;
-        if (!provider) {
-          self.setLlmSettingsStatus("LLM Provider 未初始化", "error");
-          return;
-        }
-        const result = await provider.testConnection(input);
-        if (result.ok) {
-          self.setLlmSettingsStatus(`${modelName}连接成功${result.message ? `：${result.message}` : ""}`, "success");
-          self.writeLog(`${modelName}连接成功，耗时 ${result.elapsedMs}ms。`);
-        } else {
-          self.setLlmSettingsStatus(`${modelName}连接失败：${result.error || "未知错误"}`, "error");
-          self.writeLog(`${modelName}连接失败：${result.error || "未知错误"}`);
-        }
-      } catch (error) {
-        const message = error && (error as Error).message ? (error as Error).message : "未知异常";
-        self.setLlmSettingsStatus(`${modelName}连接异常：${message}`, "error");
-        self.writeLog(`${modelName}连接异常：${message}`);
-      } finally {
-        self.deepSeekTesting = false;
-        if (self.dom.settingsTestDeepSeekBtn) {
-          (self.dom.settingsTestDeepSeekBtn as HTMLInputElement).disabled = false;
-        }
       }
     }
   }

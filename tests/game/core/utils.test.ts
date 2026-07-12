@@ -14,17 +14,14 @@ import {
   compactOneLine,
   compactPanelText,
   indentMultiline,
-  normalizeActionToken,
-  isNoneActionText,
-  safeParseJson,
-  tryExtractDecisionJson,
   pickFirstDefined,
-  createEmptyAiPrivateIntelPool,
   qualityPulseDuration,
   settlementRevealDelayByQuality,
   settlementSearchDurationByQuality,
   shuffle
 } from '../../../scripts/game/core/utils'
+import { normalizeActionToken, isNoneActionText } from '../../../scripts/llm/core/llm-error'
+import { createEmptyAiPrivateIntelPool } from '../../../scripts/game/ai/intel/pure'
 
 describe('utils', () => {
   describe('clamp', () => {
@@ -269,42 +266,6 @@ describe('utils', () => {
         expect(isNoneActionText(text)).toBe(false)
       }
     )
-  })
-
-  describe('safeParseJson', () => {
-    it('有效 JSON 解析', () => {
-      expect(safeParseJson('{"a":1}')).toEqual({ a: 1 })
-    })
-    it('无效 JSON 返回 null', () => {
-      expect(safeParseJson('not json')).toBeNull()
-    })
-    it('数组 JSON', () => {
-      expect(safeParseJson('[1,2,3]')).toEqual([1, 2, 3])
-    })
-  })
-
-  describe('tryExtractDecisionJson', () => {
-    it('直接 JSON 对象', () => {
-      expect(tryExtractDecisionJson('{"bid":100}')).toEqual({ bid: 100 })
-    })
-    it('代码块中的 JSON', () => {
-      const text = '思考过程...\n```json\n{"bid":200}\n```\n结束'
-      expect(tryExtractDecisionJson(text)).toEqual({ bid: 200 })
-    })
-    it('无代码块标记时从花括号提取', () => {
-      const text = '前置文本 {"bid":300} 后置文本'
-      expect(tryExtractDecisionJson(text)).toEqual({ bid: 300 })
-    })
-    it('空字符串返回 null', () => {
-      expect(tryExtractDecisionJson('')).toBeNull()
-    })
-    it('无有效 JSON 返回 null', () => {
-      expect(tryExtractDecisionJson('完全无json内容')).toBeNull()
-    })
-    it('纯文本中嵌套对象', () => {
-      const text = 'xxx {"a": {"b": 1}} yyy'
-      expect(tryExtractDecisionJson(text)).toEqual({ a: { b: 1 } })
-    })
   })
 
   describe('pickFirstDefined', () => {

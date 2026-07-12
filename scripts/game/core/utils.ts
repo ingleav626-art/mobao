@@ -2,15 +2,12 @@
  * @file core/utils.ts
  * @module core/utils
  * @description 全局工具函数库。提供项目各模块共享的通用工具函数（数组/数值/字符串处理、
- *              Phaser 动画封装、AI 情报池初始化、品质相关时长计算等）。
+ *              Phaser 动画封装、品质相关时长计算等）。
  *
- * @exports window.MobaoUtils - 工具函数库单例（兼容）
  * @exports shuffle, delay, clamp, ... - 命名导出
  *
  * @requires core/utils - 工具函数库
  */
-
-import type { AiPrivateIntelPool } from "../../../types/ai"
 
 export function shuffle<T>(list: T[]): T[] {
   const arr = [...list]
@@ -162,57 +159,6 @@ export function indentMultiline(value: string, indent: string): string {
     .join("\n")
 }
 
-export function normalizeActionToken(value: string): string {
-  return String(value || "")
-    .replace(/[\s\-—_：:（）()]/g, "")
-    .toLowerCase()
-}
-
-export function isNoneActionText(value: string): boolean {
-  const text = normalizeActionToken(value)
-  return ["无", "不使用", "none", "null", "nil", "na"].some((entry) => text === normalizeActionToken(entry))
-}
-
-export function safeParseJson(text: string): any {
-  try {
-    return JSON.parse(text)
-  } catch (_error) {
-    return null
-  }
-}
-
-export function tryExtractDecisionJson(rawText: string): any {
-  const text = String(rawText || "").trim()
-  if (!text) {
-    return null
-  }
-
-  const direct = safeParseJson(text)
-  if (direct && typeof direct === "object") {
-    return direct
-  }
-
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  if (fenced && fenced[1]) {
-    const parsed = safeParseJson(fenced[1].trim())
-    if (parsed && typeof parsed === "object") {
-      return parsed
-    }
-  }
-
-  const firstBrace = text.indexOf("{")
-  const lastBrace = text.lastIndexOf("}")
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    const slice = text.slice(firstBrace, lastBrace + 1)
-    const parsed = safeParseJson(slice)
-    if (parsed && typeof parsed === "object") {
-      return parsed
-    }
-  }
-
-  return null
-}
-
 export function pickFirstDefined(...values: any[]): any {
   for (const value of values) {
     if (value !== undefined && value !== null) {
@@ -220,23 +166,6 @@ export function pickFirstDefined(...values: any[]): any {
     }
   }
   return null
-}
-
-export function createEmptyAiPrivateIntelPool(): AiPrivateIntelPool {
-  return {
-    knownOutlineIds: new Set(),
-    knownQualityIds: new Set(),
-    outlineSignals: [],
-    qualitySignals: [],
-    signalHistory: [],
-    latestSignalStats: null,
-    aggregateStats: null,
-    knownCellStates: {},
-    itemKnowledge: {},
-    highValueTrackByItemId: {},
-    highValueTracks: [],
-    nextTrackIndex: 1
-  }
 }
 
 export function qualityPulseDuration(qualityKey: string): number {

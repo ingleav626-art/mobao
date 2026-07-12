@@ -1,10 +1,11 @@
 /**
  * @file llm/core/llm-error.js
  * @module llm/core/llm-error
- * @description LLM 错误处理模块。提供 JSON 解析、错误分类、Toast 通知、Badge 显示等能力。
- *              从 scene-llm.js 拆分而来，不依赖 deps 注入。
+ * @description LLM 错误处理模块。提供 JSON 解析、错误分类、Toast 通知、Badge 显示、
+ *              动作令牌归一化等能力。从 scene-llm.js 拆分而来，不依赖 deps 注入。
  *
  * @exports safeParseJson, tryExtractDecisionJson, parseLlmError, showAiErrorToast - 错误处理工具
+ * @exports normalizeActionToken, isNoneActionText - 动作令牌归一化（LLM 响应文本解析）
  */
 
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
@@ -54,6 +55,17 @@ export function tryExtractDecisionJson(rawText: string): Record<string, any> | n
   }
 
   return null
+}
+
+export function normalizeActionToken(value: string): string {
+  return String(value || "")
+    .replace(/[\s\-—_：:（）()]/g, "")
+    .toLowerCase()
+}
+
+export function isNoneActionText(value: string): boolean {
+  const text = normalizeActionToken(value)
+  return ["无", "不使用", "none", "null", "nil", "na"].some((entry) => text === normalizeActionToken(entry))
 }
 
 interface LlmErrorInfo {

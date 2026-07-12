@@ -3,14 +3,15 @@
  * @module ai/intel/pure
  * @description AI 情报系统的可独立测试纯函数。从原 intel.ts 提取，
  *              包含随机选格、高价值阈值计算、揭示级别判定、
- *              候选列表截断、邻居状态标签、不确定性计算等。
+ *              候选列表截断、邻居状态标签、不确定性计算、情报池初始化等。
  *
  * @requires core/utils - 工具函数（clamp, formatCompactNumber 等）
  * @exports pickRandomItemCell, calcHighValuePriceThreshold, checkHighValueArtifact,
  *          determineRevealLevel, truncateCandidateList, formatIntelActionPublicLine,
- *          buildNeighborStateLabel, getNeighborOffsets, calcUncertainty, calcAvailableActionState
+ *          buildNeighborStateLabel, getNeighborOffsets, calcUncertainty, calcAvailableActionState,
+ *          createEmptyAiPrivateIntelPool
  */
-import type { AiSignalStats } from "../../../../types/ai"
+import type { AiSignalStats, AiPrivateIntelPool } from "../../../../types/ai"
 import { compactOneLine, formatCompactNumber, clamp } from "../../core/utils"
 
 export function pickRandomItemCell(item: {
@@ -140,5 +141,22 @@ export function calcAvailableActionState(
     availableItemIds,
     availableSkillNames: skillDefs.filter((entry) => availableSkillIds.includes(entry.id)).map((entry) => entry.name),
     availableItemNames: itemDefs.filter((entry) => availableItemIds.includes(entry.id)).map((entry) => entry.name)
+  }
+}
+
+export function createEmptyAiPrivateIntelPool(): AiPrivateIntelPool {
+  return {
+    knownOutlineIds: new Set(),
+    knownQualityIds: new Set(),
+    outlineSignals: [],
+    qualitySignals: [],
+    signalHistory: [],
+    latestSignalStats: null,
+    aggregateStats: null,
+    knownCellStates: {},
+    itemKnowledge: {},
+    highValueTrackByItemId: {},
+    highValueTracks: [],
+    nextTrackIndex: 1
   }
 }

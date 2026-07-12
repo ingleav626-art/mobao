@@ -25,14 +25,13 @@ import {
   compactOneLine,
   compactPanelText,
   indentMultiline,
-  normalizeActionToken,
-  isNoneActionText,
   pickFirstDefined,
   delay,
   tweenToPromise,
   settlementRevealDelayByQuality,
   settlementSearchDurationByQuality,
 } from "./core/utils"
+import { normalizeActionToken, isNoneActionText } from "../llm/core/llm-error"
 import { GAME_SETTINGS as _GAME_SETTINGS } from "./core/settings"
 import { SKILL_DEFS as _SKILL_DEFS } from "./data/skills"
 import { ITEM_DEFS as _ITEM_DEFS } from "./data/items"

@@ -4,7 +4,8 @@
  * @description AI 情报系统初始化 Mixin。负责情报池、资源状态、角色分配、
  *              LLM 开关、高价值阈值的初始化，以及每局开始时的重置逻辑。
  *
- * @requires core/utils - createEmptyAiPrivateIntelPool, clamp, shuffle
+ * @requires core/utils - clamp, shuffle
+ * @requires intel/pure - createEmptyAiPrivateIntelPool
  * @requires data/skills - SKILL_DEFS
  * @requires data/items - ITEM_DEFS
  * @requires data/characters - CHARACTERS
@@ -12,10 +13,8 @@
  * @exports InitMixin - 初始化子 Mixin
  */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
-import {
-  createEmptyAiPrivateIntelPool,
-  shuffle
-} from "../../core/utils"
+import { createEmptyAiPrivateIntelPool } from "./pure"
+import { shuffle } from "../../core/utils"
 import { SKILL_DEFS } from "../../data/skills"
 import { ITEM_DEFS } from "../../data/items"
 import { CHARACTERS } from "../../data/characters"
