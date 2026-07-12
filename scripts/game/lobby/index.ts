@@ -31,7 +31,7 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  * @exports LobbyIndexMixin - 大厅主页面 Mixin，混入 Phaser Scene
  */
 import { Deps } from '../core/deps.js'
-import type { Player, ArtifactDef } from '../../../types/game'
+import type { Player } from '../../../types/game'
 import { loadPlayerMoney, GAME_SETTINGS } from "../core/settings"
 import { patch as patchAppState } from "../core/app-state"
 import { getProfile, getSelectedProfileId } from "../data/map-profiles"
@@ -80,65 +80,6 @@ export function sortCollectionItems<T extends { basePrice?: number; name?: strin
     }
   })
 }
-
-interface LobbySceneLike {
-  showLobbySubPage(page: string): void
-  openSettingsOverlay(): void
-  openCollectionOverlay(): void
-  openBattleRecordPanel(): void
-  openShopOverlay(): void
-  showLobbyMain(skipAnimation?: boolean): void
-  showGameConfirm(msg: string, onConfirm: () => void): void
-  goToCharacterSelect(): void
-  carouselScroll(dir: number): void
-  renderCarousel(): void
-  renderMapDetail(): void
-  initLanLobby(): void
-  showCharacterSelectPageWithMap(): void
-  showCharacterSelectPage(mapProfile: { name?: string; params?: Record<string, unknown> } | null): void
-  startSoloGame(): void
-  stopRoundTimer(): void
-  initPlayersUI(): void
-  updatePlayerAvatar(playerId: string, avatarEl: HTMLElement | null): void
-  isAiLlmEnabledForPlayer(playerId: string): boolean
-  refreshPlayerHistoryUI(): void
-  updatePlayerCharNames(): void
-  exitSettlementPage(): void
-  writeLog(msg: string): void
-  syncItemManagerFromShop(): void
-  startNewRun(): void
-  _stopLive2dLoop(): void
-  _carouselOffset: number
-  isLanMode: boolean
-  lanIsHost: boolean
-  lanBridge: { roomCode: string; leaveRoom(): void; disconnect(): void; send(msg: unknown): boolean } | null
-  lanPlayers: unknown[]
-  lanAiPlayers: unknown[]
-  lanHostWallets: Record<string, unknown>
-  lanHostBids: Record<string, unknown>
-  lanAiLlmEnabled: boolean
-  lanIdToSlotId: Record<string, string>
-  slotIdToLanId: Record<string, string>
-  lanMySlotId: string | null
-  aiLlmPlayerEnabled: Record<string, boolean>
-  players: Player[]
-  playerMoney: number
-  playerHistoryPanels: Record<string, HTMLElement | null>
-  aiCharacterAssignments: Record<string, { characterId: string; characterName?: string }> | null
-  itemLayer: { destroy(): void } | null
-  gridLayer: { destroy(): void } | null
-  revealCellLayer: { destroy(): void } | null
-  activeSettlementSpinner: { destroy(): void } | null
-  items: unknown[]
-  itemManager: { items: unknown[] }
-  dom: Record<string, HTMLElement | null>
-  tweens: { killAll(): void }
-  time: { removeAllEvents(): void }
-  game: { loop: { sleep(): void; wake(): void } } | null
-  _mapQualityWeights: Record<string, number> | null
-  _mapCategoryWeights: Record<string, number> | null
-}
-
 
 export { LobbyCarouselMixin as CarouselMixin } from "./carousel"
 export { CharacterSelectMixin } from "./character-select"
@@ -844,8 +785,6 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
     if (stats) {
       stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`
     }
-
-    const rgbHexFn = rgbHex
 
     grid.innerHTML = artifacts
       .map((artifact) => {

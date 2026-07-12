@@ -254,15 +254,20 @@ export interface LlmChatResult {
   error?: string
   code?: string
   stage?: string
+  latency?: number
   usage?: {
     prompt_tokens: number
     completion_tokens: number
     total_tokens: number
     prompt_cache_hit_tokens?: number
     prompt_cache_miss_tokens?: number
+  } | null
+  meta?: Record<string, unknown>
+  raw?: {
+    choices?: Array<{ finish_reason?: string;[key: string]: unknown }>
+    usage?: Record<string, unknown>
+    [key: string]: unknown
   }
-  model?: string
-  latency?: number                // 响应延迟（ms）
 }
 
 // ==================== LLM 错误 ====================
@@ -330,32 +335,6 @@ export interface AiModelConfig {
   maxTokens?: number
   timeoutMs?: number
   thinkingEnabled?: boolean
-}
-
-/** LLM requestChat 返回结果 */
-export interface LlmChatResult {
-  ok: boolean
-  requestId?: string
-  status?: number
-  elapsedMs?: number
-  content: string
-  reasoningContent?: string
-  model?: string
-  error?: string
-  code?: string
-  usage?: {
-    prompt_tokens: number
-    completion_tokens: number
-    total_tokens: number
-    prompt_cache_hit_tokens?: number
-    prompt_cache_miss_tokens?: number
-  } | null
-  meta?: Record<string, unknown>
-  raw?: {
-    choices?: Array<{ finish_reason?: string;[key: string]: unknown }>
-    usage?: Record<string, unknown>
-    [key: string]: unknown
-  }
 }
 
 // ==================== LLM Bridge 方法签名 ====================

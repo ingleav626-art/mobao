@@ -14,7 +14,6 @@
  * @exports addPrivateIntelEntry / addPublicInfoEntry / renderPrivateIntelPanel / renderPublicInfoPanel / updateSidePanels
  * @exports UiPanelsMixin - 向后兼容的 Mixin 薄包装
  */
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
 import { escapeHtml } from "../core/utils"
 
 export interface IntelEntry {

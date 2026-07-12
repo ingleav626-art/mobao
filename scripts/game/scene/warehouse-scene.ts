@@ -368,7 +368,7 @@ class WarehouseScene extends _PhaserScene {
     this.currentRunLog = null
     this.highValuePriceThreshold = null
     this.battleRecords = Deps.BATTLE_RECORD_BRIDGE
-      ? (Deps.BATTLE_RECORD_BRIDGE as { loadBattleRecords: () => unknown[] }).loadBattleRecords()
+      ? Deps.BATTLE_RECORD_BRIDGE.loadBattleRecords()
       : []
     this.battleRecordReplayActive = false
     this.battleRecordReplayRecordId = null

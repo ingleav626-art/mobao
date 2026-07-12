@@ -982,6 +982,7 @@ export interface WarehouseSceneThis {
   stopRoundTimer(): void
   applyCharacterToPlayer(): void
   bindCharacterSkillButton(): void
+  refreshSkillButtonLabel(): void
   proceedToNewRun(): void
 
   // AI 记忆方法

@@ -26,10 +26,6 @@ import type { Player } from "../../../types/game"
 import type { Personality } from "../../../types/ai"
 
 type ActionDef = { id: string; type: string; name: string; description: string }
-type QualityConfigEntry = { label: string;[key: string]: unknown }
-type ArtifactDataWindow = { QUALITY_CONFIG: Record<string, QualityConfigEntry>; ARTIFACT_LIBRARY: Array<{ qualityKey: string; basePrice: number;[key: string]: unknown }> }
-type ActionDefSystem = { SKILL_DEFS: ActionDef[]; ITEM_DEFS: ActionDef[] }
-
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
 import { GRID_COLS, GRID_ROWS } from "../core/constants"
 import { SKILL_DEFS } from "../data/skills"

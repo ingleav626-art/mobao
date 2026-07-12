@@ -175,7 +175,6 @@ export const WarehousePreviewMixin: ThisType<WarehouseSceneThis> = {
       .map((candidate: Artifact) => {
         const candidateQuality = QUALITY_CONFIG[candidate.qualityKey]
         const qualityText = candidateQuality ? candidateQuality.label : "未知"
-        const sizeText = candidate.previewSizeTag || "未知"
         const imgSrc = `assets/images/artifacts/thumbs/${candidate.key}.png`
         const qualityColor = candidateQuality ? rgbHex(candidateQuality.color) : "#9f9f9f"
         return `<article class="preview-item"><div class="preview-thumb preview-thumb-large" style="background: ${qualityColor}44;"><img src="${imgSrc}" alt="${candidate.name}" onerror="this.style.display='none'"/></div><strong>${candidate.name}</strong><br/>品类: ${candidate.category} | 品质: ${qualityText}<br/>基础价: ${candidate.basePrice} | 估算价: ${candidate.expectedPrice}</article>`

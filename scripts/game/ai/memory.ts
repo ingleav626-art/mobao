@@ -13,8 +13,7 @@ import type { AiMemoryStorage, CrossGameMemory, CrossGameStats, ConversationMess
  * @exports AiMemoryMixin - 向后兼容的 Mixin 薄包装
  */
 import { AI_MEMORY_STORAGE_KEY } from "../core/constants"
-import { formatBidRevealNumber } from "../core/utils"
-import { MobaoGameHistory, GameRecord } from "./game-history"
+import { MobaoGameHistory } from "./game-history"
 
 // ─── 独立函数 / 常量（可独立测试）───
 
@@ -140,28 +139,8 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
       Object.keys(stored.crossGameMemory).forEach((playerId) => {
         const data = stored.crossGameMemory[playerId]
         if (data && typeof data === "object" && (data.stats || data.lessons || data.strategies || data.praises)) {
-          const defaultStats = {
-            totalGames: 0,
-            warehouseValueMax: 0,
-            warehouseValueMin: 0,
-            warehouseValueAvg: 0,
-            winRate: 0,
-            avgProfit: 0,
-            totalCellsMax: 0,
-            totalCellsMin: 0,
-            totalCellsAvg: 0,
-            totalItemsMax: 0,
-            totalItemsMin: 0,
-            totalItemsAvg: 0,
-            legendaryMax: 0,
-            legendaryMin: 0,
-            legendaryAvg: 0,
-            rareMax: 0,
-            rareMin: 0,
-            rareAvg: 0
-          }
           const storedStats = data.stats || {}
-          const mergedStats = { ...defaultStats, ...storedStats }
+          const mergedStats = { ...DEFAULT_CROSS_GAME_STATS, ...storedStats }
           this.aiCrossGameMemory[playerId] = {
             stats: mergedStats,
             lessons: Array.isArray(data.lessons) ? data.lessons.slice(-10) : [],
@@ -402,28 +381,8 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
               praises: []
             }
           } else if (data && typeof data === "object") {
-            const defaultStats = {
-              totalGames: 0,
-              warehouseValueMax: 0,
-              warehouseValueMin: 0,
-              warehouseValueAvg: 0,
-              winRate: 0,
-              avgProfit: 0,
-              totalCellsMax: 0,
-              totalCellsMin: 0,
-              totalCellsAvg: 0,
-              totalItemsMax: 0,
-              totalItemsMin: 0,
-              totalItemsAvg: 0,
-              legendaryMax: 0,
-              legendaryMin: 0,
-              legendaryAvg: 0,
-              rareMax: 0,
-              rareMin: 0,
-              rareAvg: 0
-            }
             const storedStats = data.stats || {}
-            const mergedStats = { ...defaultStats, ...storedStats }
+            const mergedStats = { ...DEFAULT_CROSS_GAME_STATS, ...storedStats }
             this.aiCrossGameMemory[playerId] = {
               stats: mergedStats,
               lessons: Array.isArray(data.lessons) ? data.lessons.slice(-10) : [],

@@ -124,14 +124,6 @@ export function showAiErrorToast(playerName: string, errorSummary: string): void
   }, 3600)
 }
 
-interface LlmErrorEntry {
-  message: string
-  brief: string
-  detail: string
-  level: string
-  timestamp: number
-}
-
 export function setPlayerLlmError(scene: WarehouseSceneThis, playerId: string, errorMessage: string, code: string, level?: string): void {
   if (!scene._aiLlmErrors) scene._aiLlmErrors = {}
   const parsed = parseLlmError(errorMessage, code)

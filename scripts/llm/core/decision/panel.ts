@@ -15,7 +15,7 @@ import type { LlmDecisionDeps, RuleDecisionEntry, RoundBidEntry, TelemetryEntry 
 import { getControlModeLabel, buildDecisionSourceLabel, resolveControlMode, renderLlmEntryDetails, renderRuleEntryDetails } from "./pure"
 
 export function createLlmPanelMethods(deps: LlmDecisionDeps) {
-  const { LLM_SETTINGS, formatBidRevealNumber } = deps
+  const { formatBidRevealNumber } = deps
 
   const methods: ThisType<WarehouseSceneThis> = {
     captureAiDecisionTelemetry(roundBids: Array<Record<string, unknown>>): void {

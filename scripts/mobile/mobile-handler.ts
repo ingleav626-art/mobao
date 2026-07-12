@@ -512,7 +512,6 @@ export const MobileHandler: {
     originalSelect.parentNode!.insertBefore(container, originalSelect.nextSibling)
     originalSelect.style.display = "none"
 
-    var self = this
     var touchStartY = 0
     var touchStartX = 0
     var touchStartTime = 0

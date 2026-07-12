@@ -45,6 +45,7 @@ export const PLAYER_MONEY_STORAGE_KEY: string = "mobao_player_money_v1"
 export const AI_LLM_SWITCH_STORAGE_KEY: string = "mobao_ai_llm_switch_v1"
 export const BATTLE_RECORD_STORAGE_KEY: string = "mobao_battle_records_v1"
 export const AI_MEMORY_STORAGE_KEY: string = "mobao_ai_memory_v1"
+export const APP_STATE_STORAGE_KEY: string = "mobao_app_state_v1"
 
 export const DEFAULT_START_MONEY: number = 3000000
 

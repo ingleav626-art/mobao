@@ -323,6 +323,6 @@ export function pickMultiplePublicEvents(items: WarehouseItem[], gridCols: numbe
   return events.slice(0, selectedCount).map((e) => ({ ...e }))
 }
 
-export function getWarehouseAnalysis(items: WarehouseItem[], gridCols: number, gridRows: number): WarehouseAnalysis | null {
+export function getWarehouseAnalysis(items: WarehouseItem[], _gridCols: number, _gridRows: number): WarehouseAnalysis | null {
   return analyzeWarehouse(items)
 }

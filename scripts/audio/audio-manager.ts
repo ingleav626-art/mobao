@@ -39,10 +39,6 @@ interface SoundEntry {
   audio: HTMLAudioElement | null;
 }
 
-interface SoundCategory {
-  [key: string]: SoundEntry;
-}
-
 const AudioManager: Record<string, any> = {
   _initialized: false as boolean,
   _enabled: true as boolean,
@@ -92,7 +88,7 @@ const AudioManager: Record<string, any> = {
 
     try {
       this._audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    } catch (e) {
+    } catch (_e) {
       console.warn("[AudioManager] Web Audio API not supported")
     }
 
@@ -254,7 +250,7 @@ const AudioManager: Record<string, any> = {
   },
 
   stopAllLoopingSfx(): void {
-    this._loopingSfx.forEach((audio: HTMLAudioElement, key: string) => {
+    this._loopingSfx.forEach((audio: HTMLAudioElement) => {
       audio.pause()
       audio.currentTime = 0
     })

@@ -17,10 +17,9 @@ import type { LlmPlanResult } from "../../../../types/llm"
 import type { IntelActionPlan } from "../../../../types/ai"
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { LlmDecisionDeps } from "./types"
-import { isValidAiModelConfig } from "./pure"
 
 export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
-  const { GAME_SETTINGS, LLM_SETTINGS, isNoneActionText } = deps
+  const { GAME_SETTINGS, LLM_SETTINGS } = deps
 
   const methods: ThisType<WarehouseSceneThis> = {
     async requestAiLlmErrorCorrection(player: Player, currentPlan: Record<string, unknown>, errorInfo: string, correctionHistory: Array<Record<string, unknown>>, previousMessages: Array<Record<string, unknown>> = []): Promise<LlmPlanResult | null> {

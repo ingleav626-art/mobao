@@ -15,14 +15,11 @@ import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { Artifact } from "../../../types/game"
 import type { WarehouseSceneLike } from "./types"
 import {
-  GRID_COLS,
-  GRID_ROWS,
   CELL_SIZE,
   MARGIN,
   CANVAS_NATIVE_HEIGHT
 } from "../core/constants"
 import { shuffle, qualityPulseDuration } from "../core/utils"
-import { QUALITY_CONFIG } from "../data/artifacts"
 import { pickBottomCellFromTargets, pickRevealTargets, type RevealMode } from "./index"
 
 export const WarehouseRevealMixin: ThisType<WarehouseSceneThis> = {

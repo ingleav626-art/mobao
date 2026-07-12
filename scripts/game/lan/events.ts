@@ -29,7 +29,7 @@
 
 
 import { DEFAULT_START_MONEY } from "../core/constants"
-import { getSelectedProfileId, setSelectedProfileId, getProfile } from "../data/map-profiles"
+import { setSelectedProfileId, getProfile } from "../data/map-profiles"
 import { patch as patchAppState } from "../core/app-state"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { RoomMessage, LanPlayer } from "../../../types/lan"
@@ -82,7 +82,6 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
       renderSlots, syncSlotsFromPlayers, initLanCharacterFromStorage,
       renderLanCarryItems, updateModeMapCardState,
       lanCarryItems, lanSlotConfig, mapCardLabel,
-      broadcastSlotState, leaveBtn,
     } = ctx;
     let lanSelectedMapId = ctx.lanSelectedMapId;
 

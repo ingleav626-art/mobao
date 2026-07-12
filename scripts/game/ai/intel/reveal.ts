@@ -12,12 +12,10 @@
  * @exports 纯函数 re-export - pickRandomItemCell 等
  */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
-import type { Artifact, RevealResult } from "../../../../types/game"
+import type { Artifact } from "../../../../types/game"
 import type {
   AiIntelSignal,
   AiItemKnowledge,
-  AiSignalStats,
-  IntelActionPlan,
   HighValueTrack
 } from "../../../../types/ai"
 import {
@@ -25,9 +23,6 @@ import {
   shuffle,
   formatTrackIndex
 } from "../../core/utils"
-import { SKILL_DEFS } from "../../data/skills"
-import { ITEM_DEFS } from "../../data/items"
-import { GAME_SETTINGS } from "../../core/settings"
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } from "../../data/artifacts"
 import {
   pickRandomItemCell,

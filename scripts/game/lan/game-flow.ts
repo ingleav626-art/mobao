@@ -10,8 +10,8 @@
  * @exports LanGameFlowMixin
  */
 import { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } from "../core/constants"
-import { GAME_SETTINGS, savePlayerMoney } from "../core/settings"
-import { getSelectedProfileId, getProfile, setSelectedProfileId } from "../data/map-profiles"
+import { GAME_SETTINGS } from "../core/settings"
+import { getSelectedProfileId, getProfile } from "../data/map-profiles"
 import { pickRandomPublicEvent } from "../data/public-events"
 import { resetForNewGame } from "../data/character-system"
 import { CHARACTERS } from "../data/characters"
@@ -332,7 +332,7 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
     this.writeLog("联机游戏已开始！" + (this.lanIsHost ? "（你是主机）" : ""))
   },
 
-  async lanOnAllBidsIn(msg: Record<string, unknown>) {
+  async lanOnAllBidsIn(_msg: Record<string, unknown>) {
     if (this.lanIsHost && this.aiRoundDecisionPromise) {
       await this.aiRoundDecisionPromise
     }

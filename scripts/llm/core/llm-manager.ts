@@ -138,12 +138,12 @@ function registerProvider(provider: any): void {
     clearLogs: provider.clearLogs || function () { },
     isThinkingModel:
       provider.isThinkingModel ||
-      function (model: string) {
+      function (_model: string) {
         return false
       },
     supportsFeature:
       provider.supportsFeature ||
-      function (feature: string) {
+      function (_feature: string) {
         return false
       }
   })
@@ -350,13 +350,13 @@ export const LlmManager = {
           maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
         }
       },
-      isThinkingModel: function (model: string) {
+      isThinkingModel: function (_model: string) {
         return false
       },
       buildRequestBody: function (settings: any, context: any) {
         return { temperature: context.temperature }
       },
-      supportsFeature: function (feature: string) {
+      supportsFeature: function (_feature: string) {
         return false
       }
     })
@@ -477,13 +477,13 @@ export const LlmManager = {
               maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
             }
           },
-          isThinkingModel: function (model: string) {
+          isThinkingModel: function (_model: string) {
             return false
           },
           buildRequestBody: function (settings: any, context: any) {
             return { temperature: context.temperature }
           },
-          supportsFeature: function (feature: string) {
+          supportsFeature: function (_feature: string) {
             return false
           }
         })

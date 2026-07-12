@@ -18,7 +18,7 @@
 
 import { getCharacterById, getUnlockedCharacters } from "../data/characters"
 import { getActiveCharacterId } from "../data/character-system"
-import { getProfile, setSelectedProfileId, getAllProfiles } from "../data/map-profiles"
+import { setSelectedProfileId, getAllProfiles } from "../data/map-profiles"
 import { MobaoShopPage } from "../shop/index"
 import { MobaoShopBridge } from "../bridge/shop"
 
@@ -113,7 +113,6 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
   const playerGrid = $("lanPlayerGrid");
   const portraitArea = $("lanPortraitArea");
   const portraitPlaceholder = $("lanPortraitPlaceholder");
-  const portraitLive2d = $("lanPortraitLive2d");
   const portraitName = $("lanPortraitName");
   const roomManageBtn = $("lanRoomManageBtn");
   const roomShopBtn = $("lanRoomShopBtn");
@@ -128,7 +127,6 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
   const mapSelectOverlay = $("lanMapSelectOverlay");
   const mapSelectCloseBtn = $("lanMapSelectCloseBtn");
   const carryItemsRow = $("lanCarryItemsRow");
-  const carryAutoReplenish = $("lanCarryAutoReplenish");
   const alertOverlay = $("lanAlertOverlay");
   const alertTitle = $("lanAlertTitle");
   const alertMessage = $("lanAlertMessage");
@@ -282,7 +280,6 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
         return;
       }
       var serverFailedRef = { failed: false };
-      var origErrorHandler = window.onNativeServerError;
       window.onNativeServerError = function (errorMsg) {
         serverFailedRef.failed = true;
         setOnlineStatus("服务器错误: " + errorMsg, "error");
@@ -342,7 +339,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
         pc.createDataChannel("");
         pc.createOffer().then(function (offer) { return pc.setLocalDescription(offer); }).catch(function () { });
         var found: string[] = [];
-        var timer = setTimeout(function () {
+        setTimeout(function () {
           pc.close();
           resolve(found);
         }, 2000);
@@ -354,7 +351,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
             if (found.indexOf(ip) === -1) found.push(ip);
           }
         };
-      } catch (e) {
+      } catch (_e) {
         resolve([]);
       }
     });
@@ -402,7 +399,6 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
     setOnlineStatus("正在扫描房间...", "");
     var nativeIp = LanBridge.getNativeWiFiIP ? LanBridge.getNativeWiFiIP() : null;
     var found: LanServerInfo[] = [];
-    var localDone = false;
     var scanDone = false;
 
     var finishScan = function () {
@@ -422,13 +418,9 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
         .then(function (r) { return r.json(); })
         .then(function (data) {
           processRoomData(data, nativeIp || "localhost", found);
-          localDone = true;
         })
         .catch(function () {
-          localDone = true;
         });
-    } else {
-      localDone = true;
     }
 
     // Step 2: Always run native subnet scan (discovers other servers)
@@ -474,7 +466,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
     if (currentHost && currentHost !== "localhost" && currentHost !== "127.0.0.1" && currentHost.indexOf(".") > 0) {
       serverBase = "http://" + currentHost + ":9720";
     } else if (serverUrl && serverUrl.value) {
-      var m = serverUrl.value.match(/ws:\/\/([^:\/]+)/);
+      var m = serverUrl.value.match(/ws:\/\/([^:/]+)/);
       if (m && m[1] !== "localhost" && m[1] !== "127.0.0.1") {
         serverBase = "http://" + m[1] + ":9720";
       }

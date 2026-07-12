@@ -14,7 +14,6 @@
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import {
   createEmptyAiPrivateIntelPool,
-  clamp,
   shuffle
 } from "../../core/utils"
 import { SKILL_DEFS } from "../../data/skills"

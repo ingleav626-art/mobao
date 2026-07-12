@@ -21,8 +21,8 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  * @requires core/constants - 常量定义
  */
 import { clamp, rgbHex } from "../core/utils"
-import { GAME_SETTINGS, saveGameSettings, normalizeGameSettings, defaultGameSettings } from "../core/settings"
-import { DEFAULT_START_MONEY, SETTINGS_FIELDS } from "../core/constants"
+import { GAME_SETTINGS, saveGameSettings, normalizeGameSettings } from "../core/settings"
+import { SETTINGS_FIELDS } from "../core/constants"
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
 import { ITEM_DEFS } from "../data/items"
 import { SKILL_DEFS } from "../data/skills"
@@ -797,8 +797,6 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     if (stats) {
       stats.textContent = `显示 ${artifacts.length} / ${total} 件藏品`
     }
-
-    const rgbHexFn = rgbHex
 
     grid.innerHTML = artifacts
       .map((artifact: any) => {

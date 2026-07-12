@@ -59,11 +59,6 @@ interface LlmDecision {
   [key: string]: unknown
 }
 
-interface ActionState {
-  availableSkillIds: string[]
-  availableItemIds: string[]
-}
-
 interface SignalData {
   itemId?: string
   mode?: string
@@ -357,7 +352,6 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
     buildAiDecisionMessages(this: WarehouseSceneThis, payload: LlmPayload, options: { requestStage?: string; isFirstRound?: boolean; systemPrompt?: string; historyMessages?: LlmMessage[]; extraBlocks?: string[] } = {}) {
       const requestStage = options.requestStage || "initial"
       const isFollowup = requestStage === "followup-after-tool"
-      const isFirstRound = options.isFirstRound === true
       const systemPrompt = options.systemPrompt || ""
       const historyMessages = options.historyMessages || []
       const extraBlocks = options.extraBlocks || []

@@ -122,6 +122,7 @@ const provider = {
   name: "通义千问",
   description: "阿里云通义千问，支持 qwen-turbo、qwen-plus、qwen-max 等模型"
 }
+LlmManager.registerProvider(provider)
 
 export const QwenProvider = {
   id: "qwen",

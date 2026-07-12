@@ -38,6 +38,8 @@
  *   const plan = engine.planIntelAction(context);
  */
 
+import { clamp, roundToStep, randomBetween } from "../core/utils"
+
 interface Personality {
   name: string
   archetype: string
@@ -1208,16 +1210,4 @@ function marketReference(currentBid: number, lastRoundBids: Record<string, numbe
   const avg = values.reduce((sum, value) => sum + value, 0) / values.length
   const top = Math.max(...values)
   return Math.max(currentBid, avg * 0.62 + top * 0.38)
-}
-
-function roundToStep(value: number, step: number): number {
-  return Math.round(value / step) * step
-}
-
-function randomBetween(min: number, max: number): number {
-  return min + Math.random() * (max - min)
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value))
 }

@@ -11,7 +11,7 @@
  *          buildNeighborStateLabel, getNeighborOffsets, calcUncertainty, calcAvailableActionState
  */
 import type { AiSignalStats } from "../../../../types/ai"
-import { compactOneLine, formatCompactNumber, formatTrackIndex, clamp } from "../../core/utils"
+import { compactOneLine, formatCompactNumber, clamp } from "../../core/utils"
 
 export function pickRandomItemCell(item: {
   x: number

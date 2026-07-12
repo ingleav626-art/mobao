@@ -20,7 +20,7 @@ interface ReconnectResponse {
 }
 
 export const LanReconnectMixin: ThisType<WarehouseSceneThis> = {
-  tryAutoReconnect(playerId: string, roomCode: string, playerName: string, isHost: boolean) {
+  tryAutoReconnect(playerId: string, roomCode: string, _playerName: string, _isHost: boolean) {
     const bridge = this.lanBridge;
     const $ = (id: string): HTMLElement | null => document.getElementById(id);
     const connectPanel = $("lobbyOnlineConnect");

@@ -47,6 +47,10 @@ export function roundToStep(value: number, step: number): number {
   return Math.round(num / safeStep) * safeStep
 }
 
+export function randomBetween(min: number, max: number): number {
+  return min + Math.random() * (max - min)
+}
+
 export function toCellKey(x: number, y: number): string {
   return `${x},${y}`
 }

@@ -77,7 +77,7 @@ const kimiProvider = createOpenAICompatibleProvider({
   apiKeyStorageKey: KIMI_API_KEY_STORAGE_KEY,
   defaultSettings: defaultKimiSettings,
   normalizeSettings: normalizeKimiSettings,
-  isThinkingModel: function (model: string): boolean {
+  isThinkingModel: function (_model: string): boolean {
     return false
   },
   buildRequestBody: function (settings: any, context: any): any {

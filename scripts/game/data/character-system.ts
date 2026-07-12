@@ -111,11 +111,12 @@ export function applyPassiveEffect(context: { profit: number }): { bonus: number
   const profit = context.profit || 0
 
   switch (passive.type) {
-    case "profitBonus":
+    case "profitBonus": {
       if (profit <= 0) return { bonus: 0, label: null }
       const bonus = Math.round(profit * passive.value)
       _sessionPassiveBonus = bonus
       return { bonus, label: passive.label }
+    }
     case "bidBonus":
       return { bonus: 0, label: passive.label }
     case "outlineBonus":

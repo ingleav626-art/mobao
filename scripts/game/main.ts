@@ -48,7 +48,6 @@ import { initDeps } from "./core/deps"
 import { LlmUiBridge } from "../llm/core/llm-ui-bridge"
 import { LlmManager } from "../llm/core/llm-manager"
 import { DeepSeekProvider } from "../llm/providers/deepseek-provider"
-import { getActiveCharacter, getActiveSkillId, getDisplayName, getAvatarLabel } from "./data/character-system"
 
 // DeepSeek settings 函数从旧版 deepseek-llm.ts 迁移到新 Provider 体系
 // （deepseek-provider + LlmManager），保留原名以减少下游改动
@@ -64,8 +63,8 @@ import { create, initAudio, cacheDom, initAnimations, bindDomEvents } from "./sc
 import { startNewRun } from "./scene/scene-run"
 import { updateHud, updateActionAvailability } from "./scene/scene-hud"
 import * as SceneAiPanel from "./scene/scene-ai-panel"
+import * as SceneCharacter from "./scene/scene-character"
 import * as SceneUtils from "./scene/scene-utils"
-import * as SceneSettlement from "./scene/scene-settlement"
 import * as SceneBattleRecord from "./scene/scene-battle-record"
 
 // 原有 Mixin
@@ -106,10 +105,10 @@ const LLM_BRIDGE = createSceneLlmBridge({
   compactPanelText,
   indentMultiline,
   formatBidRevealNumber
-}) as any
+})
 export { LLM_BRIDGE }
 
-const BATTLE_RECORD_BRIDGE: any = createBattleRecordBridge({
+const BATTLE_RECORD_BRIDGE = createBattleRecordBridge({
   BATTLE_RECORD_STORAGE_KEY,
   GRID_COLS: _GRID_COLS,
   GRID_ROWS: _GRID_ROWS,
@@ -118,7 +117,7 @@ const BATTLE_RECORD_BRIDGE: any = createBattleRecordBridge({
   formatBidRevealNumber
 })
 
-const SETTLEMENT_BRIDGE: any = createSettlementBridge({
+const SETTLEMENT_BRIDGE = createSettlementBridge({
   MARGIN,
   CELL_SIZE,
   delay,
@@ -129,85 +128,20 @@ const SETTLEMENT_BRIDGE: any = createSettlementBridge({
 
 initDeps({ LLM_BRIDGE, BATTLE_RECORD_BRIDGE, SETTLEMENT_BRIDGE })
 
-// ─── main.ts 独有方法（未提取到 scene/ 的 5 个方法）───
-
-const MainOnlyMethods = {
-  applyCharacterToPlayer(this: any) {
-    if (!getActiveCharacter) return
-    const char = getActiveCharacter()
-    if (!char) return
-    const self = this.players.find((p: any) => p.isSelf)
-    if (!self) return
-    self.characterId = char.id
-    self.characterName = char.name
-    self.name = getDisplayName()
-    self.avatar = getAvatarLabel()
-    const nameEl = document.getElementById(`name-${self.id}`)
-    if (nameEl) nameEl.textContent = char.name
-    this._activeSkillId = getActiveSkillId()
-    this.refreshSkillButtonLabel()
-  },
-
-  bindCharacterSkillButton(this: any) {
-    if (!this.dom.skillBtn) return
-    this.dom.skillBtn.onclick = () => {
-      const skillId =
-        this._activeSkillId || getActiveSkillId() || "skill-outline-scan"
-      this.useSkill(skillId)
-    }
-    this.refreshSkillButtonLabel()
-  },
-
-  refreshSkillButtonLabel(this: any) {
-    if (!this.dom.skillBtn || !getActiveCharacter) return
-    const char = getActiveCharacter()
-    if (!char || !char.skillName) return
-    this.dom.skillBtn.textContent = char.skillName
-  },
-
-  getLlmSettings(this: any) {
-    const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
-    let globalSettings: Record<string, unknown> = {}
-    try {
-      const raw = window.localStorage.getItem(LLM_GLOBAL_SETTINGS_KEY)
-      if (raw) {
-        globalSettings = JSON.parse(raw)
-      }
-    } catch (_e) { }
-
-    if (LlmManager) {
-      const provider = LlmManager.getProvider()
-      if (provider) {
-        const providerSettings = provider.loadSettings()
-        return { ...providerSettings, ...globalSettings }
-      }
-    }
-    return { ...LLM_SETTINGS, ...globalSettings }
-  },
-
-  getLlmProvider(this: any) {
-    const provider = LlmManager.getProvider()
-    if (provider) {
-      return provider
-    }
-    return {
-      requestChat: (options: any) => DeepSeekProvider.requestChat(options),
-      applySettings: (settings: any) => DeepSeekProvider.applySettings(settings)
-    }
-  }
-}
-
 // ─── Mixin 合并 ───
 
 Object.assign(WarehouseScene.prototype,
-  // scene/ 提取的方法
+  // scene/ 提取的方法（含实现逻辑的非代理方法）
   SceneAiPanel,
+  SceneCharacter,
   SceneUtils,
-  SceneSettlement,
   SceneBattleRecord,
   { create, initAudio, cacheDom, initAnimations, bindDomEvents, startNewRun, updateHud, updateActionAvailability },
-  // main.ts 独有方法
-  MainOnlyMethods,
+  // bridge methods 直接摊到原型（替代手写代理函数）
+  // bridge 方法内 ThisType<WarehouseSceneThis> 仍成立，this 即场景实例
+  BATTLE_RECORD_BRIDGE.methods,
+  SETTLEMENT_BRIDGE.methods,
+  LLM_BRIDGE.methods,
   // 原有 Mixin
   WarehouseCoreMixin,
   WarehouseRevealMixin,

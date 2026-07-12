@@ -9,7 +9,7 @@
  *
  * @exports LanSyncMixin
  */
-import { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } from "../core/constants"
+import { GRID_ROWS, GRID_COLS } from "../core/constants"
 import { GAME_SETTINGS } from "../core/settings"
 import { getSelectedProfileId, setSelectedProfileId } from "../data/map-profiles"
 import { CHARACTERS } from "../data/characters"

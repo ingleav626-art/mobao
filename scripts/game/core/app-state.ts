@@ -12,6 +12,8 @@
  * @requires core/app-state - 应用全局状态管理
  */
 
+import { APP_STATE_STORAGE_KEY } from "./constants"
+
 export interface AppStateData {
   appMode: string
   gameSource: string | null
@@ -23,7 +25,7 @@ export interface AppStateData {
   totalProfit: number
 }
 
-const APP_STATE_KEY = "mobao_app_state_v1"
+const APP_STATE_KEY = APP_STATE_STORAGE_KEY
 
 const DEFAULT_STATE: AppStateData = {
   appMode: "lobby",

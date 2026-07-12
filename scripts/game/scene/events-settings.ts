@@ -10,7 +10,6 @@
  */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { AudioManager } from "../../audio/audio-manager"
-import { AudioUI } from "../../audio/audio-ui"
 
 export function bindSettingsEvents(this: WarehouseSceneThis): void {
   const updateVolumeIcon = (value: string | number, imgEl: HTMLImageElement | null) => {

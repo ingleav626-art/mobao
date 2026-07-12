@@ -8,8 +8,7 @@
  * @requires types/llm - LlmSettings, AiModelConfig, LlmPlanResult
  * @exports RuleDecisionEntry, RoundBidEntry, TelemetryEntry, LlmDecisionDeps
  */
-import type { Player } from "../../../../types/game"
-import type { LlmSettings, AiModelConfig, LlmPlanResult } from "../../../../types/llm"
+import type { LlmSettings } from "../../../../types/llm"
 
 export interface RuleDecisionEntry {
   playerId: string

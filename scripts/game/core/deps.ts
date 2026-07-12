@@ -23,13 +23,55 @@
 
 import type { LlmBridge } from '../../../types/llm'
 
-/** @type {{ LLM_BRIDGE?: LlmBridge | null, BATTLE_RECORD_BRIDGE?: unknown, SETTLEMENT_BRIDGE?: unknown }} */
+/** 战绩记录桥接器方法接口（createBattleRecordBridge 返回的 methods 对象） */
+export interface BattleRecordBridgeMethods {
+  openBattleRecordPanel(): void
+  closeBattleRecordPanel(): void
+  buildWarehouseSnapshotForRecord(): unknown
+  saveBattleRecord(result: { won: boolean; profit: number; bidAmount: number; trueValue: number; round: number }): void
+  renderBattleRecordPanel(): void
+  openBattleRecordReplay(recordId: string): void
+  openBattleRecordLogs(recordId: string, page: number): void
+  closeBattleRecordLogs(): void
+  deleteBattleRecord(recordId: string): void
+  restoreWarehouseFromBattleRecord(record: { id: string; data: Record<string, unknown> }): void
+  renderBattleRecordLogView(): void
+  renderBattleRecordSummary(): void
+}
+
+/** 战绩记录桥接器完整接口（createBattleRecordBridge 返回值） */
+export interface BattleRecordBridge {
+  methods: BattleRecordBridgeMethods
+  loadBattleRecords(): unknown[]
+  saveBattleRecords(records: unknown[]): void
+  formatRecordTime(iso: string): string
+}
+
+/** 结算桥接器方法接口（createSettlementBridge 返回的 methods 对象） */
+export interface SettlementBridgeMethods {
+  revealAllArtifactsForSettlement(): Promise<void>
+  isSettlementPageActive(): boolean
+  playSettlementRevealStep(item: unknown): Promise<void>
+  playSettlementSearchEffect(item: unknown, runToken: unknown): Promise<void>
+  enterSettlementPage(winnerPlayer: unknown, winnerBid: number, reasonText: string): void
+  exitSettlementPage(): void
+  cancelSettlementReveal(): void
+  setSettlementProgress(text: string, progress: number): void
+  updateSettlementPanelMetrics(revealedValue: number, winnerProfit: number): void
+  showSelfProfit(selfProfit: number, label: string): void
+  playSettlementFinalEffect(winnerProfit: number): void
+  triggerSettlementFinalAnimation(winnerProfit: number, isSelfWinner: boolean): void
+}
+
+/** 结算桥接器完整接口（createSettlementBridge 返回值） */
+export interface SettlementBridge {
+  methods: SettlementBridgeMethods
+}
+
 export const Deps: {
   LLM_BRIDGE: LlmBridge | null
-  /** 战斗记录桥接器（结构未定义，使用 unknown 强制类型检查） */
-  BATTLE_RECORD_BRIDGE: unknown
-  /** 结算桥接器（结构未定义，使用 unknown 强制类型检查） */
-  SETTLEMENT_BRIDGE: unknown
+  BATTLE_RECORD_BRIDGE: BattleRecordBridge | null
+  SETTLEMENT_BRIDGE: SettlementBridge | null
 } = {
   LLM_BRIDGE: null,
   BATTLE_RECORD_BRIDGE: null,

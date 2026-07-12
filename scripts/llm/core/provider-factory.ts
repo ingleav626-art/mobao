@@ -169,12 +169,12 @@ export function createBaseProvider(config: any): any {
     clearLogs,
     isThinkingModel:
       config.isThinkingModel ||
-      function (model: string) {
+      function (_model: string) {
         return false
       },
     supportsFeature:
       config.supportsFeature ||
-      function (feature: string) {
+      function (_feature: string) {
         return false
       },
     storageKey,
@@ -321,7 +321,7 @@ export function createOpenAICompatibleProvider(config: any): any {
                   )
                   entry.resolve(resultJson)
                 }
-              } catch (e) {
+              } catch (_e) {
                 entry.resolve(b64Result)
               }
             }
