@@ -15,6 +15,7 @@ import {
   calcReplenishCost,
   type ReplenishCostResult
 } from "./pure"
+import { CARRY_ITEMS_STORAGE_KEY, CARRY_AUTO_REPLENISH_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY } from "../../core/constants"
 
 interface ReplenishResult {
   ok: boolean
@@ -195,13 +196,13 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
 
   _saveCarryItems() {
     try {
-      window.localStorage.setItem("mobao_carry_items_v1", JSON.stringify(this._carryItems))
+      window.localStorage.setItem(CARRY_ITEMS_STORAGE_KEY, JSON.stringify(this._carryItems))
     } catch (_e) { }
   },
 
   _loadCarryItems() {
     try {
-      const raw = window.localStorage.getItem("mobao_carry_items_v1")
+      const raw = window.localStorage.getItem(CARRY_ITEMS_STORAGE_KEY)
       if (!raw) {
         this._carryItems = []
         return
@@ -229,13 +230,13 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
 
   _saveAutoReplenish() {
     try {
-      window.localStorage.setItem("mobao_carry_auto_replenish_v1", this._autoReplenish ? "1" : "0")
+      window.localStorage.setItem(CARRY_AUTO_REPLENISH_STORAGE_KEY, this._autoReplenish ? "1" : "0")
     } catch (_e) { }
   },
 
   _loadAutoReplenish() {
     try {
-      this._autoReplenish = window.localStorage.getItem("mobao_carry_auto_replenish_v1") === "1"
+      this._autoReplenish = window.localStorage.getItem(CARRY_AUTO_REPLENISH_STORAGE_KEY) === "1"
     } catch (_e) {
       this._autoReplenish = false
     }
@@ -265,9 +266,9 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
     }
 
     try {
-      const raw = window.localStorage.getItem("mobao_player_money_v1")
+      const raw = window.localStorage.getItem(PLAYER_MONEY_STORAGE_KEY)
       const current = Math.max(0, Math.round(Number(raw) || 0))
-      window.localStorage.setItem("mobao_player_money_v1", String(current - totalCost))
+      window.localStorage.setItem(PLAYER_MONEY_STORAGE_KEY, String(current - totalCost))
     } catch (_e) { }
 
     const inv: Record<string, number> = bridge.getFullInventory()

@@ -39,6 +39,8 @@ interface SoundEntry {
   audio: HTMLAudioElement | null;
 }
 
+const AUDIO_SETTINGS_STORAGE_KEY = "mobao_audio_settings"
+
 const AudioManager: Record<string, any> = {
   _initialized: false as boolean,
   _enabled: true as boolean,
@@ -98,7 +100,7 @@ const AudioManager: Record<string, any> = {
 
   _loadSettings(): void {
     try {
-      const saved = localStorage.getItem("mobao_audio_settings")
+      const saved = localStorage.getItem(AUDIO_SETTINGS_STORAGE_KEY)
       if (saved) {
         const settings = JSON.parse(saved)
         this._enabled = settings.enabled ?? true
@@ -125,7 +127,7 @@ const AudioManager: Record<string, any> = {
   _saveSettings(): void {
     try {
       localStorage.setItem(
-        "mobao_audio_settings",
+        AUDIO_SETTINGS_STORAGE_KEY,
         JSON.stringify({
           enabled: this._enabled,
           bgmEnabled: this._bgmEnabled,

@@ -37,9 +37,11 @@
  * @requires core/settings - 游戏设置（资金管理）
  * @exports window.MobaoShopBridge - 商店系统 Bridge 单例
  */
-const SHOP_STORAGE_KEY = "mobao_shop_inventory_v1"
-const SHOP_REFRESH_DATE_KEY = "mobao_shop_refresh_date_v1"
-const LIMITED_OFFER_KEY = "mobao_shop_limited_offer_v1"
+import { SHOP_INVENTORY_STORAGE_KEY, SHOP_REFRESH_DATE_STORAGE_KEY, SHOP_LIMITED_OFFER_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY } from "../core/constants"
+
+const SHOP_STORAGE_KEY = SHOP_INVENTORY_STORAGE_KEY
+const SHOP_REFRESH_DATE_KEY = SHOP_REFRESH_DATE_STORAGE_KEY
+const LIMITED_OFFER_KEY = SHOP_LIMITED_OFFER_STORAGE_KEY
 
 const DISCOUNT_BADGES = [
   { type: "fire", label: "爆款", color: "#ff4444", minDiscount: 0.1, maxDiscount: 0.3 },
@@ -219,7 +221,7 @@ function purchaseItem(itemId: string): { ok: boolean; message: string; newMoney?
     return { ok: false, message: "今日购买次数已达上限" }
   }
 
-  const raw = window.localStorage.getItem("mobao_player_money_v1")
+  const raw = window.localStorage.getItem(PLAYER_MONEY_STORAGE_KEY)
   const money = Math.max(0, Math.round(Number(raw) || 0))
   if (money < shopItem.price) {
     return { ok: false, message: "资金不足" }
@@ -231,7 +233,7 @@ function purchaseItem(itemId: string): { ok: boolean; message: string; newMoney?
   saveInventory(inv)
 
   const newMoney = money - shopItem.price
-  window.localStorage.setItem("mobao_player_money_v1", String(newMoney))
+  window.localStorage.setItem(PLAYER_MONEY_STORAGE_KEY, String(newMoney))
 
   daily[itemId] = bought + 1
   saveDailyPurchases(daily)
@@ -270,7 +272,7 @@ function getFullInventory(): Record<string, number> {
 }
 
 function getPlayerMoney(): number {
-  const raw = window.localStorage.getItem("mobao_player_money_v1")
+  const raw = window.localStorage.getItem(PLAYER_MONEY_STORAGE_KEY)
   return Math.max(0, Math.round(Number(raw) || 0))
 }
 
@@ -363,7 +365,7 @@ function purchaseLimitedOffer(offerIndex: number): { ok: boolean; message: strin
   if (!shopItem) {
     return { ok: false, message: "商品不存在" }
   }
-  const raw = window.localStorage.getItem("mobao_player_money_v1")
+  const raw = window.localStorage.getItem(PLAYER_MONEY_STORAGE_KEY)
   const money = Math.max(0, Math.round(Number(raw) || 0))
   if (money < offer.discountedPrice) {
     return { ok: false, message: "资金不足" }
@@ -373,7 +375,7 @@ function purchaseLimitedOffer(offerIndex: number): { ok: boolean; message: strin
   inv[invKey] = (inv[invKey] || 0) + 1
   saveInventory(inv)
   const newMoney = money - offer.discountedPrice
-  window.localStorage.setItem("mobao_player_money_v1", String(newMoney))
+  window.localStorage.setItem(PLAYER_MONEY_STORAGE_KEY, String(newMoney))
   offer.purchased = true
   saveLimitedOffers(offers)
   return { ok: true, message: "购买成功", newMoney: newMoney, newInventory: inv, offer: offer }

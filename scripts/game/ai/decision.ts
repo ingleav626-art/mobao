@@ -460,11 +460,6 @@ export const AiDecisionMixin: ThisType<{
     )
   },
 
-  renderAiThoughtLog(): void {
-    const self = this as any
-    renderAiThoughtLog(self.dom.aiThoughtContent, self.runLogHistory)
-  },
-
   writeLog(text: string): void {
     const self = this as any
     writeLog(text, self.round, self.currentRunLog, self.dom, () => self.renderAiThoughtLog())

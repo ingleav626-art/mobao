@@ -24,7 +24,7 @@
 | index.ts | AI 系统模块聚合导出，re-export 钱包/情报/记忆/反思/决策五个 Mixin |
 | bidding.ts | AI 出价引擎（AuctionAiEngine 类），基于人格/情报/市场价计算出价决策，规则 AI 核心 |
 | context-builder.ts | AI 上下文构建器，从场景状态提取结构化数据供 AI 决策和 LLM 对话使用 |
-| decision.ts | AI 决策日志与调试面板，记录 AI 出价的决策过程并渲染到调试面板 |
+| decision.ts | AI 决策日志与记录，记录 AI 出价的决策过程（渲染 UI 已迁 ui/overlay/core.ts） |
 | game-history.ts | AI 多局历史存储系统，管理最近 N 局完整对局记录，支持滑动窗口裁剪 |
 | memory.ts | AI 跨局记忆系统，管理对局内对话历史和跨局经验本，支持持久化和导入导出 |
 | reflection.ts | AI 局后反思系统，通过 LLM 让 AI 反思表现并更新跨局经验本 |
@@ -158,6 +158,8 @@
 | lan-dialog.ts | LanDialogMixin：LAN 重开投票/暂停弹窗（6 方法，含 2 越界） |
 | collection.ts | CollectionMixin：收藏图鉴面板（5 方法） |
 | ai-model-config.ts | AiModelConfigMixin：AI 模型配置面板（7 方法 + 1 属性） |
+| ai-memory-panel.ts | AiMemoryPanelMixin：AI 记忆面板 UI（openAiMemoryPanel 等 3 方法，从 ai/memory.ts 迁入）|
+| ai-reflection-dialog.ts | AiReflectionDialogMixin：AI 反思待处理对话框 UI（showReflectionPendingDialog 等 4 方法，从 ai/reflection.ts 迁入）|
 | core.ts | CoreOverlayMixin：通用覆盖层开关（结算/AI面板/商店转发，5 方法） |
 
 ## scripts/game/warehouse/

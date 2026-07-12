@@ -46,7 +46,7 @@
 import { LlmManager } from "./llm-manager"
 import type { CustomProvider } from '../../../types/llm'
 
-const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
+export const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
 
 interface LlmGlobalSettings {
   enabled: boolean

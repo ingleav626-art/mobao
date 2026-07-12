@@ -163,6 +163,17 @@ All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the
 - **Chinese** in all user-facing strings, comments, and documentation.
 - **大文件拆分模式**: 新增大模块按"薄入口 + 子目录 + re-export 纯函数"拆分（见上"子模块拆分模式"）。纯函数放 `pure.ts`，可独立测试。
 
+## 子代理规则（delegation via Agent tool）
+
+派发子代理时，**必须在指令里明确以下约束**（曾因子代理擅自 `git stash` 把并行流的未提交改动扫走，耗时恢复）：
+
+- **只做三类操作**：① 读文件；② 编辑**指派范围内**的文件；③ 跑验证命令（`npx tsc --noEmit` / `npm run test` / `npm run lint` / `npm run build` / `prettier --check`）。
+- **禁止破坏性 git 操作**：`git stash`、`git reset`（尤其 `--hard`）、`git checkout -- <file>`（丢弃工作区改动）、`git clean`、`git stash drop`、`git restore <file>`（丢弃改动）、`git restore --staged <非自己文件>`。这些会静默丢失工作区未提交改动，包括其他并行流的成果。需要"干净基线验证"时**绝不**用 stash/reset，改用按文件单独 `npx tsc` 或跑指定测试文件。
+- **禁止 commit/push**，除非用户明确要求。
+- **不越界编辑**：只改任务指派的文件。本项目常有多条并行重构流（见 `analysis/task-list.md`），其他文件可能正被改--不要碰。
+- **验证被阻塞时报告，不要"清理"工作区**：若 tsc/test 报错来自**非本任务文件**（如并行流中途状态），在报告里说明"这些错误来自其他流程，非我改动"，**不要**试图 stash/reset 来隔离验证。只确认自己文件 0 错误即可。
+- **多并行子代理预防冲突**：派发多个并行子代理时，确保文件域不重叠；项目级 tsc 会看到其他流程的瞬时错误，不据此回退自己的正确改动。
+
 ## Gotchas
 
 - **禁止未经同意删除文件**: Never delete any file (including `rm`, `Remove-Item`, `git clean`) unless the user explicitly asks. Even if a file looks orphaned, unused, or AI-created - ask first.

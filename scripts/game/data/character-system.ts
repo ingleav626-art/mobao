@@ -12,8 +12,9 @@
 
 import type { Character, PassiveEffect } from '../../../types/game'
 import { CHARACTERS } from "./characters"
+import { SELECTED_CHARACTER_STORAGE_KEY } from "../core/constants"
 
-const STORAGE_KEY = "mobao_selected_character_v1"
+const STORAGE_KEY = SELECTED_CHARACTER_STORAGE_KEY
 
 let _activeCharacter: Character | null = null
 let _sessionPassiveBonus: number = 0

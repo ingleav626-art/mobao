@@ -21,28 +21,17 @@ import { getActiveCharacterId } from "../data/character-system"
 import { setSelectedProfileId, getAllProfiles } from "../data/map-profiles"
 import { MobaoShopPage } from "../shop/index"
 import { MobaoShopBridge } from "../bridge/shop"
+import {
+  LAN_PLAYER_ID_STORAGE_KEY, LAN_ROOM_CODE_STORAGE_KEY, LAN_PLAYER_NAME_STORAGE_KEY,
+  LAN_IS_HOST_STORAGE_KEY, LAN_RECONNECT_FAILED_STORAGE_KEY, LAN_NAME_STORAGE_KEY
+} from "../core/constants"
 
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { CarryItem } from "../../../types/game"
 import type { RoomCreateOptions } from "../../../types/lan"
 
-interface LanRoomInfo {
-  code: string
-  name?: string
-  roomName?: string
-  hostName: string
-  visibility?: string
-  playerCount: number
-  maxPlayers: number
-  aiCount?: number
-  [key: string]: unknown
-}
-
-interface LanServerInfo {
-  serverIp: string
-  serverPort: number
-  rooms: LanRoomInfo[]
-}
+import { processRoomData, dedupFound, getCharAvatarHtml } from "./lobby/pure"
+import type { LanRoomInfo, LanServerInfo } from "./lobby/pure"
 
 export function initLanLobbyImpl(this: WarehouseSceneThis) {
   console.log('[LAN] initLanLobby called, LanBridge=' + !!LanBridge);
@@ -67,16 +56,16 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
   };
 
   // 检查是否有保存的重连数据
-  const savedPlayerId = localStorage.getItem("mobao_lan_player_id");
-  const savedRoomCode = localStorage.getItem("mobao_lan_room_code");
-  const savedPlayerName = localStorage.getItem("mobao_lan_player_name");
-  const savedIsHost = localStorage.getItem("mobao_lan_is_host") === "true";
-  const reconnectFailed = localStorage.getItem("mobao_lan_reconnect_failed");
+  const savedPlayerId = localStorage.getItem(LAN_PLAYER_ID_STORAGE_KEY);
+  const savedRoomCode = localStorage.getItem(LAN_ROOM_CODE_STORAGE_KEY);
+  const savedPlayerName = localStorage.getItem(LAN_PLAYER_NAME_STORAGE_KEY);
+  const savedIsHost = localStorage.getItem(LAN_IS_HOST_STORAGE_KEY) === "true";
+  const reconnectFailed = localStorage.getItem(LAN_RECONNECT_FAILED_STORAGE_KEY);
 
   // 如果之前重连已失败，不再尝试
   if (reconnectFailed) {
     this.writeLog("之前重连已失败，跳过自动重连");
-    localStorage.removeItem("mobao_lan_reconnect_failed");
+    localStorage.removeItem(LAN_RECONNECT_FAILED_STORAGE_KEY);
   } else if (savedPlayerId && savedRoomCode && savedPlayerName) {
     this.writeLog(`检测到保存的房间数据 | room=${savedRoomCode} | player=${savedPlayerId} | host=${savedIsHost}`);
     // 尝试自动重连
@@ -165,7 +154,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
     });
   }
 
-  const savedName = localStorage.getItem("mobao_lan_name") || "";
+  const savedName = localStorage.getItem(LAN_NAME_STORAGE_KEY) || "";
   if (playerName) playerName.value = savedName;
 
   var selectedVisibility = "public";
@@ -224,7 +213,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
 
   const getPlayerName = () => {
     const name = playerName ? playerName.value.trim() || "Player" : "Player";
-    localStorage.setItem("mobao_lan_name", name);
+    localStorage.setItem(LAN_NAME_STORAGE_KEY, name);
     return name;
   };
 
@@ -500,48 +489,6 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
     setTimeout(finishScan, 10000);
   };
 
-  const processRoomData = (data: { rooms?: Array<{ code: string; name: string; hostName: string; playerCount: number; maxPlayers: number }>; remoteRooms?: Array<{ code: string; name: string; hostName: string; playerCount: number; maxPlayers: number; serverIp: string }> }, serverIp: string, found: LanServerInfo[]) => {
-    if (data && data.rooms && data.rooms.length > 0) {
-      var exists = found.some(function (f) { return f.serverIp === serverIp; });
-      if (!exists) found.push({ serverIp: serverIp, serverPort: 9720, rooms: data.rooms });
-    }
-    if (data && data.remoteRooms && data.remoteRooms.length > 0) {
-      var grouped: Record<string, LanServerInfo> = {};
-      data.remoteRooms.forEach(function (room) {
-        var ip = room.serverIp;
-        if (!grouped[ip]) grouped[ip] = { serverIp: ip, serverPort: 9720, rooms: [] };
-        var r = Object.assign({}, room) as Omit<typeof room, 'serverIp'> & { serverIp?: string };
-        delete r.serverIp;
-        grouped[ip].rooms.push(r);
-      });
-      Object.keys(grouped).forEach(function (ip) {
-        var exists = found.some(function (f) { return f.serverIp === ip; });
-        if (!exists) found.push(grouped[ip]);
-      });
-    }
-  };
-
-  const dedupFound = (found: LanServerInfo[]) => {
-    var seen: Record<string, boolean> = {};
-    for (var i = found.length - 1; i >= 0; i--) {
-      var server = found[i];
-      var dedupRooms: LanRoomInfo[] = [];
-      (server.rooms || []).forEach(function (room) {
-        var key = server.serverIp + ":" + room.code;
-        if (!seen[key]) {
-          seen[key] = true;
-          dedupRooms.push(room);
-        }
-      });
-      server.rooms = dedupRooms;
-    }
-    for (var i = found.length - 1; i >= 0; i--) {
-      if (!found[i].rooms || found[i].rooms.length === 0) {
-        found.splice(i, 1);
-      }
-    }
-  };
-
   const fallbackScan = (found: LanServerInfo[], finishScan: () => void) => {
     var subnets: string[] = [];
     var commonSubnets = ["192.168.1.", "192.168.0.", "192.168.31.", "192.168.43.", "10.0.0.", "192.168.2.", "192.168.3.", "192.168.50.", "192.168.10.", "172.16.0.", "172.17.0.", "172.18.0.", "172.19.0.", "172.20.0.", "10.0.1.", "10.1.0."];
@@ -691,15 +638,6 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
         '<span class="lan-slot-name">待加入</span>' +
         (addBtn ? '<span class="lan-slot-tag" style="cursor:pointer;background:rgba(212,168,67,0.15);color:#d4a843"' + addBtn + '>+AI</span>' : '');
     }
-  };
-
-  const getCharAvatarHtml = (characterId: string) => {
-    if (!getCharacterById) return '<span class="lan-avatar-emoji">👤</span>';
-    const char = getCharacterById(characterId);
-    if (char && char.avatar) {
-      return '<img src="' + char.avatar + '" alt="' + char.name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\';"><span class="lan-avatar-emoji" style="display:none;">👤</span>';
-    }
-    return '<span class="lan-avatar-emoji">👤</span>';
   };
 
   const bindSlotActions = (container: HTMLElement) => {

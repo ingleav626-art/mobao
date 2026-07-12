@@ -18,6 +18,7 @@ import type { LlmSettings } from "../../../types/llm"
 import { formatBidRevealNumber } from "../core/utils"
 import { LlmManager } from "../../llm/core/llm-manager"
 import { DeepSeekProvider } from "../../llm/providers/deepseek-provider"
+import { LLM_GLOBAL_SETTINGS_KEY } from "../../llm/core/llm-ui-bridge"
 
 /**
  * 渲染 AI 逻辑面板（非 LLM 模式）
@@ -96,7 +97,6 @@ export function renderAiLogicPanel(this: WarehouseSceneThis): void {
 
 /** 获取 LLM 设置：优先从当前 Provider 读取，回退到 DeepSeekProvider 默认设置，再合并全局覆盖项 */
 export function getLlmSettings(this: WarehouseSceneThis): LlmSettings {
-  const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
   let globalSettings: Record<string, unknown> = {}
   try {
     const raw = window.localStorage.getItem(LLM_GLOBAL_SETTINGS_KEY)

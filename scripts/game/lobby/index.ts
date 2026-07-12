@@ -42,6 +42,7 @@ import { getCharacterById } from "../data/characters"
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
 import { MobaoShopPage } from "../shop/index"
 import { rgbHex } from "../core/utils"
+import { CARRY_ITEMS_STORAGE_KEY } from "../core/constants"
 import { MobileHandler } from "../../mobile/mobile-handler"
 import { AudioManager } from "../../audio/audio-manager"
 import { getCollectionCategories as _getCollectionCategories, filterCollectionItems } from "../ui/overlay"
@@ -644,7 +645,7 @@ export const LobbyIndexMixin: ThisType<WarehouseSceneThis> = {
 
     let carryIds: Set<string> | undefined
     try {
-      const raw = window.localStorage.getItem("mobao_carry_items_v1")
+      const raw = window.localStorage.getItem(CARRY_ITEMS_STORAGE_KEY)
       if (raw !== null) {
         const parsed = JSON.parse(raw)
         if (Array.isArray(parsed)) {

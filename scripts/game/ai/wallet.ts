@@ -21,9 +21,9 @@ import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { Player } from "../../../types/game"
 import { GAME_SETTINGS } from "../core/settings"
 import { clamp, roundToStep } from "../core/utils"
+import { AI_WALLET_STORAGE_KEY } from "../core/constants"
 
 export const AI_WALLET_INITIAL = 1000000
-const AI_WALLET_STORAGE_KEY = "mobao_ai_wallets_v1"
 
 /** getAiWallet / getAiMinimumBid / normalizeAiBidValue 所需的上下文 */
 export interface AiWalletContext {

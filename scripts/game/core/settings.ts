@@ -22,7 +22,7 @@ export interface GameSettingsData {
   sfxVolume: number
 }
 
-import { SETTINGS_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY, DEFAULT_START_MONEY } from "./constants"
+import { SETTINGS_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY, DEFAULT_START_MONEY, MONEY_SETTLED_RUN_STORAGE_KEY } from "./constants"
 import { clamp } from "./utils"
 
 export function defaultGameSettings(): GameSettingsData {
@@ -108,7 +108,7 @@ export function saveGameSettings(value: unknown): void {
 
 export function loadPlayerMoney(): number {
   const raw = window.localStorage.getItem(PLAYER_MONEY_STORAGE_KEY)
-  const settledRunToken = window.localStorage.getItem("mobao_money_settled_run")
+  const settledRunToken = window.localStorage.getItem(MONEY_SETTLED_RUN_STORAGE_KEY)
   const parsed = Number(raw)
   if (!Number.isFinite(parsed) || parsed < 0) {
     return DEFAULT_START_MONEY

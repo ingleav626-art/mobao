@@ -22,6 +22,7 @@ import { MobaoShopBridge } from "../bridge/shop"
 
 import { Live2dMixin } from "./character-select/live2d"
 import { CarryItemsMixin } from "./character-select/carry-items"
+import { SELECTED_CHARACTER_STORAGE_KEY } from "../core/constants"
 
 export {
   type CarryItem,
@@ -324,7 +325,7 @@ const CoreMixin: ThisType<WarehouseSceneThis> = {
     this.selectedCharacter = char
     selectCharacter(characterId)
     try {
-      window.localStorage.setItem("mobao_selected_character_v1", JSON.stringify(characterId))
+      window.localStorage.setItem(SELECTED_CHARACTER_STORAGE_KEY, JSON.stringify(characterId))
     } catch (_e) { }
 
     document.querySelectorAll(".character-card").forEach((card) => {

@@ -17,6 +17,7 @@ import type { Player } from "../../../types/game"
 import type { BidsPerPlayer } from "../../../types/lan"
 import type { Personality } from "../../../types/ai"
 import { clamp } from "../core/utils"
+import { MONEY_SETTLED_RUN_STORAGE_KEY } from "../core/constants"
 import {
   buildBidHistorySnapshot as buildBidHistorySnapshotImpl,
   buildPublicEventSnapshot as buildPublicEventSnapshotImpl,
@@ -170,7 +171,7 @@ export function hasAppliedMoneyForRun(this: WarehouseSceneThis): boolean {
   if (!this.moneySettledRunToken) {
     return false
   }
-  const raw = window.localStorage.getItem("mobao_money_settled_run")
+  const raw = window.localStorage.getItem(MONEY_SETTLED_RUN_STORAGE_KEY)
   return raw === this.moneySettledRunToken
 }
 
@@ -181,5 +182,5 @@ export function markMoneyAppliedForRun(this: WarehouseSceneThis): void {
   if (!this.moneySettledRunToken) {
     return
   }
-  window.localStorage.setItem("mobao_money_settled_run", this.moneySettledRunToken)
+  window.localStorage.setItem(MONEY_SETTLED_RUN_STORAGE_KEY, this.moneySettledRunToken)
 }

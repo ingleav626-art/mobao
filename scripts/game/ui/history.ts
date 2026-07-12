@@ -16,6 +16,7 @@
 import type { ItemDef } from '../../../types/game'
 import { escapeHtml, formatCompactNumber } from "../core/utils"
 import { GAME_SETTINGS } from "../core/settings"
+import { CARRY_ITEMS_STORAGE_KEY } from "../core/constants"
 
 // ─── 类型定义 ───
 
@@ -188,7 +189,7 @@ export function renderItemDrawer(
   if (!itemState.length) {
     let hasCarryItems = false
     try {
-      const raw = window.localStorage.getItem("mobao_carry_items_v1")
+      const raw = window.localStorage.getItem(CARRY_ITEMS_STORAGE_KEY)
       if (raw) {
         const parsed = JSON.parse(raw)
         hasCarryItems = Array.isArray(parsed) && parsed.length > 0

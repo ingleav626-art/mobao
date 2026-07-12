@@ -9,6 +9,10 @@
  * @exports LanReconnectMixin
  */
 import { patch as patchAppState } from "../core/app-state"
+import {
+  LAN_PLAYER_ID_STORAGE_KEY, LAN_ROOM_CODE_STORAGE_KEY, LAN_PLAYER_NAME_STORAGE_KEY,
+  LAN_IS_HOST_STORAGE_KEY, LAN_RECONNECT_FAILED_STORAGE_KEY
+} from "../core/constants"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { LanPlayer } from "../../../types/lan"
 
@@ -38,7 +42,7 @@ export const LanReconnectMixin: ThisType<WarehouseSceneThis> = {
         const msg = raw as ReconnectResponse
         this.writeLog(`重连成功 | room=${msg.roomCode} | state=${msg.roomState}`);
         // 清除重连失败标记
-        localStorage.removeItem("mobao_lan_reconnect_failed");
+        localStorage.removeItem(LAN_RECONNECT_FAILED_STORAGE_KEY);
         this.isLanMode = true;
         this.lanIsHost = msg.isHost;
         this.lanPlayers = msg.players || [];
@@ -64,12 +68,12 @@ export const LanReconnectMixin: ThisType<WarehouseSceneThis> = {
       .catch((err) => {
         this.writeLog(`重连失败 | ${err.message}`);
         // 清除 localStorage
-        localStorage.removeItem("mobao_lan_player_id");
-        localStorage.removeItem("mobao_lan_room_code");
-        localStorage.removeItem("mobao_lan_player_name");
-        localStorage.removeItem("mobao_lan_is_host");
+        localStorage.removeItem(LAN_PLAYER_ID_STORAGE_KEY);
+        localStorage.removeItem(LAN_ROOM_CODE_STORAGE_KEY);
+        localStorage.removeItem(LAN_PLAYER_NAME_STORAGE_KEY);
+        localStorage.removeItem(LAN_IS_HOST_STORAGE_KEY);
         // 设置重连失败标记，防止反复重连
-        localStorage.setItem("mobao_lan_reconnect_failed", "true");
+        localStorage.setItem(LAN_RECONNECT_FAILED_STORAGE_KEY, "true");
 
         // 显示正常界面
         if (connectPanel) connectPanel.classList.remove("hidden");
