@@ -1,6 +1,8 @@
 # main.ts 文件拆分方案
 
 > 创建时间：2026-06-17
+> 最近更新：2026-07-10
+> 状态：✅ 已完成（main.ts 2748行 -> 250行）
 > 目标：将 main.ts（2548行）拆分为多个职责单一的文件
 
 ---
@@ -421,6 +423,20 @@ Object.assign(WarehouseScene.prototype, AiWalletMixin)
 
 将 main.ts（2548行）拆分为 8 个文件，每个文件职责单一，易于维护。
 
+### 实际结果（2026-07-10）
+
+| 文件 | 预估行数 | 实际行数 | 说明 |
+|------|---------|---------|------|
+| `main.ts` | ~200 | 250 | 入口文件（导入、创建游戏、Mixin 混入） |
+| `scene/warehouse-scene.ts` | ~300 | - | WarehouseScene 类定义 |
+| `scene/scene-init.ts` | ~500 | 218 | 场景初始化（bindDomEvents 已拆分为 7 个事件模块） |
+| `scene/scene-run.ts` | ~300 | - | 回合管理 |
+| `scene/scene-hud.ts` | ~200 | - | HUD 更新 |
+| `scene/scene-battle-record.ts` | ~100 | - | 战绩记录 |
+| `scene/scene-ai-panel.ts` | ~200 | - | AI 逻辑面板 |
+| `scene/scene-utils.ts` | ~100 | - | 场景工具方法 |
+| `scene/events-*.ts`（新增） | - | 7 个文件 | bindDomEvents 拆分的事件模块 |
+
 ### 拆分路径
 
 **Phase 1**：创建 scene 目录（1小时）
@@ -431,6 +447,6 @@ Object.assign(WarehouseScene.prototype, AiWalletMixin)
 
 ### 拆分后的收益
 
-- ✅ main.ts 行数从 2548 行减少到 ~200 行
+- ✅ main.ts 行数从 2748 行减少到 250 行
 - ✅ 每个文件职责单一，易于查找和维护
 - ✅ 为后续模块化提供基础

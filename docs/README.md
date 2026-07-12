@@ -41,11 +41,11 @@
 | 文档 | 内容 | 状态 |
 |------|------|------|
 | [v1.6-1.7 计划](plans/v1.6-1.7.md) | 角色收尾、体验升级、Bug 修复、AI 优化、代码结构优化 | 进行中 |
-| [main.ts 拆分](plans/main-split.md) | 2548 行拆分为 8 个文件（scene/ 目录） | 待执行 |
+| [main.ts 拆分](plans/main-split.md) | 2748 行拆分为 scene/ 目录（8+ 个文件），main.ts 降至 250 行 | ✅ 已完成 |
 | [场景拆分方案](plans/warehouse-scene-split.md) | WarehouseScene 从 Mixin 改为组合模式 | 待执行 |
 | [联机房间重构](plans/lan-room-refactor.md) | 角色/地图/道具选择同步、房间管理 | 部分完成 |
 | [Vue 引入方案](plans/vue-integration.md) | Phaser + Vue 共存分析、Pinia 状态管理 | 评估中 |
-| [测试覆盖率提升](plans/test-coverage.md) | 7% → 60% 分阶段计划，纯函数/mock/深度覆盖 | 进行中 |
+| [测试覆盖率提升](plans/test-coverage.md) | 7% -> 13.7%（972 用例），Phase 4 纯函数提取进行中 | 进行中 |
 
 ---
 

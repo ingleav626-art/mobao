@@ -1,6 +1,7 @@
 # 项目深度重构计划
 
 > 创建时间：2026-06-17
+> 最近更新：2026-07-10
 > 目标：解决"巨行星文件"、"超级对象"、IIFE滥用、模块化不完整等问题
 > 前置条件：TypeScript 迁移已完成（strict 模式 0 错误，any 85% 消除）
 
@@ -10,14 +11,14 @@
 
 ### 1.1 巨行星文件（行数 > 1000）
 
-| 文件 | 行数 | 问题 | 影响 |
-|------|------|------|------|
-| `main.ts` | 2548 | 游戏入口，定义 WarehouseScene 类 + 核心方法 | 类定义过长，但已拆分 Mixin |
-| `llm-decision.ts` | 1569 | LLM 决策逻辑，参数结构复杂 | 难以调试、难以扩展 |
-| `warehouse/index.ts` | 1288 | 仓库场景逻辑，包含3个 Mixin | 职责混杂（Core+Reveal+Preview） |
-| `llm-manager.ts` | 1186 | LLM 管理器，配置项多样 | 难以配置、难以测试 |
-| `character-select.ts` | 1181 | 角色选择，UI+逻辑混杂 | 难以复用 |
-| `lan/lobby.ts` | 1178 | 联机大厅，UI+网络+逻辑混杂 | 难以测试网络逻辑 |
+| 文件 | 当前行数 | 历史行数 | 问题 | 影响 | 拆分状态 |
+|------|---------|---------|------|------|---------|
+| `main.ts` | 250 | 2748 | 游戏入口，定义 WarehouseScene 类 + 核心方法 | ✅ 已拆分到 scene/ 目录（8 个文件） | ✅ 完成 |
+| `llm-decision.ts` | 1627 | 1569 | LLM 决策逻辑，参数结构复杂 | 难以调试、难以扩展 | 🟡 已提取 8 个纯函数 |
+| `warehouse/index.ts` | 108 | 1306 | 仓库场景逻辑，包含3个 Mixin | ✅ 已拆分为 core/reveal/preview/types | ✅ 完成 |
+| `llm-manager.ts` | 1186 | 1186 | LLM 管理器，配置项多样 | 难以配置、难以测试 | ❌ 未开始 |
+| `character-select.ts` | 1194 | 1181 | 角色选择，UI+逻辑混杂 | 难以复用 | ❌ 未开始 |
+| `lan/lobby.ts` | - | 1178 | 联机大厅，UI+网络+逻辑混杂 | 难以测试网络逻辑 | ❌ 未开始 |
 
 ### 1.2 超级对象（WarehouseScene）
 
@@ -27,7 +28,7 @@
 
 | 模块 | 文件 | Mixin 数量 | 行数 | 说明 |
 |------|------|-----------|------|------|
-| warehouse | `warehouse/index.ts` | 3 | 1288 | WarehouseCoreMixin, WarehouseRevealMixin, WarehousePreviewMixin |
+| warehouse | `warehouse/core.ts` + `reveal.ts` + `preview.ts` | 3 | 360+500+180 | WarehouseCoreMixin, WarehouseRevealMixin, WarehousePreviewMixin（已从 index.ts 拆分） |
 | ai | `ai/index.ts`（导出） | 5 | - | AiWalletMixin, AiIntelMixin, AiMemoryMixin, AiReflectionMixin, AiDecisionMixin（实际在各自文件） |
 | ui | `ui/index.ts`（导出） | 3 | - | OverlayMixin, PanelsMixin, HistoryMixin（实际在各自文件） |
 | lobby | `lobby/index.ts` | 1 | 832 | LobbyIndexMixin |
@@ -101,13 +102,13 @@
 
 ### 2.2 分级目标
 
-| 阶段 | 目标 | 预计耗时 | 风险 |
-|------|------|---------|------|
-| **Phase 1 — 巨行星文件拆分** | main.ts、llm-decision.ts、warehouse/index.ts 拆分 | 3-5 天 | 中（需要理解现有逻辑） |
-| **Phase 2 — 超级对象解耦** | WarehouseScene 拆分为独立模块 | 5-7 天 | 高（涉及核心架构） |
-| **Phase 3 — IIFE 消除** | 将不必要的 IIFE 改为 ES Module | 1-2 天 | 低 |
-| **Phase 4 — Vue 引入评估** | 评估 Vue 引入的可行性和收益 | 1-2 天 | 中（需要技术决策） |
-| **Phase 5 — 模块化完善** | 统一模块边界，完善依赖注入 | 2-3 天 | 低 |
+| 阶段 | 目标 | 预计耗时 | 风险 | 状态 |
+|------|------|---------|------|------|
+| **Phase 1 - 巨行星文件拆分** | main.ts、llm-decision.ts、warehouse/index.ts 拆分 | 3-5 天 | 中（需要理解现有逻辑） | 🟡 部分完成 |
+| **Phase 2 - 超级对象解耦** | WarehouseScene 拆分为独立模块 | 5-7 天 | 高（涉及核心架构） | ❌ 未开始 |
+| **Phase 3 - IIFE 消除** | 将不必要的 IIFE 改为 ES Module | 1-2 天 | 低 | ❌ 未开始 |
+| **Phase 4 - Vue 引入评估** | 评估 Vue 引入的可行性和收益 | 1-2 天 | 中（需要技术决策） | ❌ 未开始 |
+| **Phase 5 - 模块化完善** | 统一模块边界，完善依赖注入 | 2-3 天 | 低 | ❌ 未开始 |
 
 ---
 
