@@ -63,7 +63,8 @@
 |------|------|
 | battle-record.ts | 战绩记录 Bridge 薄入口工厂，调用 5 slice 工厂组装 methods（908->54 行）|
 | shop.ts | 商店系统 Bridge 单例，管理道具购买、消耗、库存持久化、每日限购、限时特惠 |
-| settlement.ts | 结算系统 Bridge（工厂函数），管理结算页面、藏品逐个揭示动画、品质特效、庆祝粒子 |
+| settlement.ts | 结算系统 Bridge（工厂函数），管理结算页面、藏品逐个揭示动画、品质特效（粒子效果已抽到 settlement-particles.ts，773->590 行）|
+| settlement-particles.ts | 结算庆祝粒子效果（playSettlementFinalEffect + 6 spawn helper：金币/星星/上升/闪烁粒子）|
 
 ## scripts/game/bridge/battle-record/
 

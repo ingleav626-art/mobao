@@ -21,12 +21,18 @@ export const QUALITY_LABELS: Record<string, string> = {
 export const QUALITY_ORDER: string[] = ["poor", "normal", "fine", "rare", "legendary"]
 
 export const CATEGORY_NAMES: Record<string, string> = {
+  // 古董（6 类）
   瓷器: "瓷器",
   玉器: "玉器",
   书画: "书画",
   铜器: "铜器",
   木器: "木器",
-  金石: "金石"
+  金石: "金石",
+  // 珠宝首饰（4 类）
+  宝石: "宝石",
+  有机宝石: "有机宝石",
+  贵金属: "贵金属",
+  镶嵌饰品: "镶嵌饰品"
 }
 
 interface WarehouseItem {

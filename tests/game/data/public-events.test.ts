@@ -21,8 +21,12 @@ describe('public-events', () => {
       expect(QUALITY_ORDER).toEqual(['poor', 'normal', 'fine', 'rare', 'legendary'])
     })
 
-    it('CATEGORY_NAMES 包含 6 个品类', () => {
-      expect(Object.keys(CATEGORY_NAMES)).toHaveLength(6)
+    it('CATEGORY_NAMES 包含 10 个品类（古董6+珠宝4）', () => {
+      expect(Object.keys(CATEGORY_NAMES)).toHaveLength(10)
+      expect(CATEGORY_NAMES['宝石']).toBe('宝石')
+      expect(CATEGORY_NAMES['有机宝石']).toBe('有机宝石')
+      expect(CATEGORY_NAMES['贵金属']).toBe('贵金属')
+      expect(CATEGORY_NAMES['镶嵌饰品']).toBe('镶嵌饰品')
     })
   })
 

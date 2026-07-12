@@ -113,40 +113,43 @@ declare var CharacterData: {
   getUnlockedCharacters(): Array<{ id: string; name: string }>
 }
 
+// LanBridge 单一权威类型定义：实例成员与 types/lan.d.ts 原接口一致，
+// 另含构造函数静态方法（原生桥接）。types/lan.d.ts 不再重复定义 LanBridge 接口。
 declare class LanBridge {
-  ws: { url: string; readyState: number } | null
+  ws: WebSocket | null
+  connected: boolean
   playerId: string | null
   playerName: string | null
   roomCode: string | null
-  connected: boolean
   isHost: boolean
   players: unknown[]
   _listeners: Record<string, Function[]>
+  on(event: string, handler: (data: any) => void): void
+  _emit(event: string, data: unknown): void
+  connect(url: string, playerName: string): Promise<void>
+  disconnect(): void
+  send(msg: unknown): boolean
+  createRoom(options: unknown): void
+  joinRoom(code: string, password?: string): void
+  listRooms(): void
+  reconnect(url: string, roomCode: string, playerId: string): Promise<unknown>
+  requestFullSync(): void
+  sendFullSync(targetPlayerId: string, syncData: unknown): void
+  leaveRoom(): void
+  startGame(options: unknown): void
+  broadcastRoundStart(round: number, maxRounds: number, currentBid: number, roundSeconds: number): void
+  submitBid(bid: number): void
+  broadcastRoundResult(round: number, bids: unknown[], reason?: string): void
+  broadcastSettle(data: unknown): void
+  broadcastSettleFinal(wallets: unknown, profitDetails: unknown): void
+  togglePause(paused: boolean, roundTimeLeft?: number): void
+  sendChat(text: string): void
   static isNative(): boolean
   static startNativeServer(): boolean
   static getLocalServerUrl(): string | null
   static getNativeServerUrl(): string | null
   static getNativeWiFiIP(): string | null
   static discoverRoomsNative(): Array<{ serverIp: string; rooms: Record<string, unknown>[] }> | null
-  connect(url: string, name: string): Promise<void>
-  disconnect(): void
-  createRoom(options: Record<string, any>): void
-  joinRoom(code: string, password?: string): void
-  leaveRoom(): void
-  startGame(options: Record<string, any>): void
-  listRooms(): void
-  reconnect(url: string, roomCode: string, playerId: string): Promise<Record<string, unknown>>
-  send(data: Record<string, any>): void
-  sendFullSync(playerId: string, data: Record<string, any>): void
-  requestFullSync(): void
-  on(event: string, handler: (data: any) => void): void
-  broadcastRoundResult(round: number, bids: Array<Record<string, unknown>>, reason: string): void
-  broadcastRoundStart(round: number, maxRounds: number, currentBid: number, roundSeconds: number): void
-  broadcastSettle(data: Record<string, any>): void
-  broadcastSettleFinal(wallets: Record<string, number>, profitDetails: Array<Record<string, unknown>>): void
-  togglePause(paused: boolean, timeLeft: number): void
-  submitBid(bid: number): void
-  sendChat(text: string): void
 }
 
 // ==================== Window 属性 ====================

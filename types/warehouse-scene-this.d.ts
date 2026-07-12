@@ -50,7 +50,6 @@ import type {
 import type {
   Room,
   LanPlayer,
-  LanBridge,
   BidsPerPlayer,
   BidWinner,
   BidSubmitMessage,

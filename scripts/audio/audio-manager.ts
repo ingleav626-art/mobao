@@ -34,26 +34,96 @@
  * @exports window.AudioManager - 音频管理器单例
  */
 interface SoundEntry {
-  path: string;
-  loaded: boolean;
-  audio: HTMLAudioElement | null;
+  path: string
+  loaded: boolean
+  audio: HTMLAudioElement | null
+}
+
+type SoundCategoryMap = Record<string, SoundEntry>
+
+interface SoundsConfig {
+  ui: SoundCategoryMap
+  game: SoundCategoryMap
+  skill: SoundCategoryMap
+  bgm: SoundCategoryMap
+  [category: string]: SoundCategoryMap
+}
+
+interface PlayOptions {
+  volume?: number
+  playbackRate?: number
+  loop?: boolean
+}
+
+interface AudioSettings {
+  enabled: boolean
+  bgmEnabled: boolean
+  sfxEnabled: boolean
+  bgmVolume: number
+  sfxVolume: number
+}
+
+interface AudioManagerType {
+  _initialized: boolean
+  _enabled: boolean
+  _bgmEnabled: boolean
+  _sfxEnabled: boolean
+  _bgmVolume: number
+  _sfxVolume: number
+  _currentBgm: string | null
+  _bgmAudio: HTMLAudioElement | null
+  _sfxPool: Map<string, SoundEntry>
+  _loopingSfx: Map<string, HTMLAudioElement>
+  _stopableSfx: Map<string, HTMLAudioElement>
+  _audioContext: AudioContext | null
+  sounds: SoundsConfig
+  init(): Promise<void>
+  _loadSettings(): void
+  _saveSettings(): void
+  preload(category?: string, keys?: string[] | null): Promise<void>
+  _findSfx(key: string): { entry: SoundEntry; category: string } | null
+  playSfx(key: string, options?: PlayOptions): void
+  playLoopingSfx(key: string, options?: PlayOptions): void
+  stopLoopingSfx(key: string): void
+  stopAllLoopingSfx(): void
+  playStopableSfx(key: string, options?: PlayOptions): void
+  stopStopableSfx(key: string): void
+  playBgm(key: string, options?: PlayOptions): void
+  stopBgm(fadeOut?: number): void
+  pauseBgm(): void
+  resumeBgm(): void
+  setEnabled(enabled: boolean): void
+  setBgmEnabled(enabled: boolean): void
+  setSfxEnabled(enabled: boolean): void
+  setBgmVolume(volume: number): void
+  setSfxVolume(volume: number): void
+  setMusicVolume(volume: number): void
+  getSettings(): AudioSettings
+  isBgmPlaying(): boolean
+  getCurrentBgm(): string | null
+}
+
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext
+  }
 }
 
 const AUDIO_SETTINGS_STORAGE_KEY = "mobao_audio_settings"
 
-const AudioManager: Record<string, any> = {
-  _initialized: false as boolean,
-  _enabled: true as boolean,
-  _bgmEnabled: true as boolean,
-  _sfxEnabled: true as boolean,
-  _bgmVolume: 0.5 as number,
-  _sfxVolume: 0.7 as number,
-  _currentBgm: null as string | null,
-  _bgmAudio: null as HTMLAudioElement | null,
+const AudioManager: AudioManagerType = {
+  _initialized: false,
+  _enabled: true,
+  _bgmEnabled: true,
+  _sfxEnabled: true,
+  _bgmVolume: 0.5,
+  _sfxVolume: 0.7,
+  _currentBgm: null,
+  _bgmAudio: null,
   _sfxPool: new Map<string, SoundEntry>(),
   _loopingSfx: new Map<string, HTMLAudioElement>(),
   _stopableSfx: new Map<string, HTMLAudioElement>(),
-  _audioContext: null as AudioContext | null,
+  _audioContext: null,
 
   sounds: {
     ui: {
@@ -89,7 +159,10 @@ const AudioManager: Record<string, any> = {
     this._loadSettings()
 
     try {
-      this._audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const Ctor = window.AudioContext || window.webkitAudioContext
+      if (Ctor) {
+        this._audioContext = new Ctor()
+      }
     } catch (_e) {
       console.warn("[AudioManager] Web Audio API not supported")
     }
@@ -175,31 +248,32 @@ const AudioManager: Record<string, any> = {
     }
   },
 
-  playSfx(key: string, options: Record<string, any> = {}): void {
+  _findSfx(key: string): { entry: SoundEntry; category: string } | null {
+    for (const category of ["ui", "game", "skill"]) {
+      const entry = this.sounds[category][key]
+      if (entry) return { entry, category }
+    }
+    return null
+  },
+
+  playSfx(key: string, options: PlayOptions = {}): void {
     if (!this._enabled || !this._sfxEnabled) return
 
-    let sound = null
-    let soundCategory = null
-    for (const category of ["ui", "game", "skill"]) {
-      if (this.sounds[category][key]) {
-        sound = this.sounds[category][key]
-        soundCategory = category
-        break
-      }
-    }
-
-    if (!sound) {
+    const found = this._findSfx(key)
+    if (!found) {
       console.warn(`[AudioManager] SFX not found: ${key}`)
       return
     }
+    const sound = found.entry
 
     if (!sound.loaded && sound.audio === null) {
-      this.preload(soundCategory, [key]).then(() => this.playSfx(key, options))
+      this.preload(found.category, [key]).then(() => this.playSfx(key, options))
       return
     }
+    if (!sound.audio) return
 
     try {
-      const audio = sound.audio.cloneNode()
+      const audio = sound.audio.cloneNode() as HTMLAudioElement
       audio.volume = (options.volume ?? 1) * this._sfxVolume
       audio.playbackRate = options.playbackRate ?? 1
       audio.play().catch((e: Error) => console.warn(`[AudioManager] Play failed: ${key}`, e.message))
@@ -208,31 +282,26 @@ const AudioManager: Record<string, any> = {
     }
   },
 
-  playLoopingSfx(key: string, options: Record<string, any> = {}): void {
+  playLoopingSfx(key: string, options: PlayOptions = {}): void {
     if (!this._enabled || !this._sfxEnabled) return
 
     this.stopLoopingSfx(key)
 
-    let sound = null
-    for (const category of ["ui", "game", "skill"]) {
-      if (this.sounds[category][key]) {
-        sound = this.sounds[category][key]
-        break
-      }
-    }
-
-    if (!sound) {
+    const found = this._findSfx(key)
+    if (!found) {
       console.warn(`[AudioManager] Looping SFX not found: ${key}`)
       return
     }
+    const sound = found.entry
 
     if (!sound.loaded && sound.audio === null) {
       this.preload("game", [key]).then(() => this.playLoopingSfx(key, options))
       return
     }
+    if (!sound.audio) return
 
     try {
-      const audio = sound.audio.cloneNode()
+      const audio = sound.audio.cloneNode() as HTMLAudioElement
       audio.volume = (options.volume ?? 1) * this._sfxVolume
       audio.loop = options.loop ?? true
       audio.play().catch((e: Error) => console.warn(`[AudioManager] Looping SFX play failed: ${key}`, e.message))
@@ -252,38 +321,33 @@ const AudioManager: Record<string, any> = {
   },
 
   stopAllLoopingSfx(): void {
-    this._loopingSfx.forEach((audio: HTMLAudioElement) => {
+    this._loopingSfx.forEach((audio) => {
       audio.pause()
       audio.currentTime = 0
     })
     this._loopingSfx.clear()
   },
 
-  playStopableSfx(key: string, options: Record<string, any> = {}): void {
+  playStopableSfx(key: string, options: PlayOptions = {}): void {
     if (!this._enabled || !this._sfxEnabled) return
 
     this.stopStopableSfx(key)
 
-    let sound = null
-    for (const category of ["ui", "game", "skill"]) {
-      if (this.sounds[category][key]) {
-        sound = this.sounds[category][key]
-        break
-      }
-    }
-
-    if (!sound) {
+    const found = this._findSfx(key)
+    if (!found) {
       console.warn(`[AudioManager] Stopable SFX not found: ${key}`)
       return
     }
+    const sound = found.entry
 
     if (!sound.loaded && sound.audio === null) {
       this.preload("game", [key]).then(() => this.playStopableSfx(key, options))
       return
     }
+    if (!sound.audio) return
 
     try {
-      const audio = sound.audio.cloneNode()
+      const audio = sound.audio.cloneNode() as HTMLAudioElement
       audio.volume = (options.volume ?? 1) * this._sfxVolume
       audio.play().catch((e: Error) => console.warn(`[AudioManager] Stopable SFX play failed: ${key}`, e.message))
       this._stopableSfx.set(key, audio)
@@ -305,7 +369,7 @@ const AudioManager: Record<string, any> = {
     }
   },
 
-  playBgm(key: string, options: Record<string, any> = {}): void {
+  playBgm(key: string, options: PlayOptions = {}): void {
     if (!this._enabled || !this._bgmEnabled) return
 
     const sound = this.sounds.bgm[key]
@@ -324,9 +388,10 @@ const AudioManager: Record<string, any> = {
       this.preload("bgm", [key]).then(() => this.playBgm(key, options))
       return
     }
+    if (!sound.audio) return
 
     try {
-      this._bgmAudio = sound.audio.cloneNode()
+      this._bgmAudio = sound.audio.cloneNode() as HTMLAudioElement
       this._bgmAudio.volume = (options.volume ?? 1) * this._bgmVolume
       this._bgmAudio.loop = options.loop ?? true
       this._bgmAudio.play().catch((e: Error) => console.warn(`[AudioManager] BGM play failed: ${key}`, e.message))
@@ -406,7 +471,11 @@ const AudioManager: Record<string, any> = {
     this._saveSettings()
   },
 
-  getSettings(): Record<string, any> {
+  setMusicVolume(volume: number): void {
+    this.setBgmVolume(volume)
+  },
+
+  getSettings(): AudioSettings {
     return {
       enabled: this._enabled,
       bgmEnabled: this._bgmEnabled,
@@ -417,7 +486,7 @@ const AudioManager: Record<string, any> = {
   },
 
   isBgmPlaying(): boolean {
-    return this._bgmAudio && !this._bgmAudio.paused
+    return !!this._bgmAudio && !this._bgmAudio.paused
   },
 
   getCurrentBgm(): string | null {
@@ -425,4 +494,3 @@ const AudioManager: Record<string, any> = {
   }
 }
 export { AudioManager }
-
