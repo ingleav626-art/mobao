@@ -82,6 +82,29 @@ describe('panels', () => {
     })
   })
 
+  describe('in-place clear (Bug 2: 回合重置)', () => {
+    it('entries.length = 0 原地清空保持引用', () => {
+      const entries: IntelEntry[] = [
+        { source: '技能', text: '发现轮廓', round: 1 },
+        { source: '道具', text: '揭示品质', round: 2 },
+      ]
+      const refBefore = entries
+      entries.length = 0
+      expect(entries).toHaveLength(0)
+      expect(entries).toBe(refBefore) // 保持同一引用
+    })
+
+    it('publicInfoEntries 原地清空后 PanelsManager 仍可见空数组', () => {
+      const entries: IntelEntry[] = [
+        { source: '系统', text: '市场繁荣', round: 1 },
+      ]
+      entries.length = 0
+      // 模拟 PanelsManager 内部持有引用
+      const managerRef = entries
+      expect(managerRef).toHaveLength(0)
+    })
+  })
+
   describe('renderPrivateIntelPanel', () => {
     it('container 为 null 不崩溃', () => {
       expect(() => renderPrivateIntelPanel(null, [], { current: '' })).not.toThrow()

@@ -167,7 +167,9 @@ All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the
 
 派发子代理时，**必须在指令里明确以下约束**（曾因子代理擅自 `git stash` 把并行流的未提交改动扫走，耗时恢复）：
 
-- **何时派子代理**：仅当有 **2 个及以上独立任务且文件域不冲突**时才派子代理并行；单任务直接自己做，不为单任务派子代理（避免不必要的间接开销与上下文传递成本）。
+- **何时派子代理**：仅当有 **2 个及以上独立任务且文件域不冲突**时才派子代理并行；单任务直接自己做，不为单任务派子代理（避免不必要的间接开销与上下文传递成本）。**规划与 review 由主代理完成，子代理负责执行**。
+- **子代理模型**：派发子代理时**必须指定 `model: "haiku"`**（快速、省额度的执行模型）。主代理（规划/review）用会话模型。
+- **禁止 any**：新增代码**不允许使用 `any`**（包括 `as any`、`: any`、`<any>`）。类型无法确定时用 `unknown` + 类型守卫，或定义具体接口。lint `no-explicit-any` 为 warn 级，但新代码必须消除 any。现有 any 逐步偿还。
 - **只做三类操作**：① 读文件；② 编辑**指派范围内**的文件；③ 跑验证命令（`npx tsc --noEmit` / `npm run test` / `npm run lint` / `npm run build` / `prettier --check`）。
 - **禁止破坏性 git 操作**：`git stash`、`git reset`（尤其 `--hard`）、`git checkout -- <file>`（丢弃工作区改动）、`git clean`、`git stash drop`、`git restore <file>`（丢弃改动）、`git restore --staged <非自己文件>`。这些会静默丢失工作区未提交改动，包括其他并行流的成果。需要"干净基线验证"时**绝不**用 stash/reset，改用按文件单独 `npx tsc` 或跑指定测试文件。
 - **禁止 commit/push**，除非用户明确要求。

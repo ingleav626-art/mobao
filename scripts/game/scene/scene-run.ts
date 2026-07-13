@@ -49,8 +49,8 @@ export function startNewRun(this: WarehouseSceneThis): void {
   this.moneySettledRunToken = this.makeRunToken()
   this.resetPlayerHistoryState()
 
-  this.privateIntelEntries = []
-  this.publicInfoEntries = []
+  this.privateIntelEntries.length = 0
+  this.publicInfoEntries.length = 0
   this.currentPublicEvent = null
 
   this.skillManager.resetForNewRun()

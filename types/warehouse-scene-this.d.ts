@@ -61,6 +61,17 @@ import type { AiDecisionManager } from "../scripts/game/ai/decision-manager"
 import type { SkillItemManager } from "../scripts/game/core/skill-item-manager-class"
 import type { PanelsManager } from "../scripts/game/ui/panels-manager"
 import type { CarouselManager } from "../scripts/game/lobby/carousel-manager"
+import type { SettlementManager } from "../scripts/game/core/settlement-manager-class"
+import type { CharacterSelectManager } from "../scripts/game/lobby/character-select-manager"
+import type { AiReflectionManager } from "../scripts/game/ai/reflection-manager"
+import type { AiMemoryManager } from "../scripts/game/ai/memory-manager"
+import type { WarehouseManager } from "../scripts/game/warehouse/warehouse-manager"
+import type { AiIntelManager } from "../scripts/game/ai/intel-manager"
+import type { UiOverlayManager } from "../scripts/game/ui/overlay-manager"
+import type { LobbyIndexManager } from "../scripts/game/lobby/lobby-index-manager"
+import type { RoundManager } from "../scripts/game/core/round-manager-class"
+import type { BiddingManager } from "../scripts/game/bidding/bidding-manager"
+import type { LanIndexManager } from "../scripts/game/lan/lan-index-manager"
 
 export interface WarehouseSceneThis {
   // Phaser Scene
@@ -250,6 +261,17 @@ export interface WarehouseSceneThis {
   skillItemManager: SkillItemManager
   panelsManager: PanelsManager
   carouselManager: CarouselManager
+  settlementManager: SettlementManager
+  characterSelectManager: CharacterSelectManager
+  aiReflectionManager: AiReflectionManager
+  aiMemoryManager: AiMemoryManager
+  warehouseManager: WarehouseManager
+  aiIntelManager: AiIntelManager
+  uiOverlayManager: UiOverlayManager
+  lobbyIndexManager: LobbyIndexManager
+  roundManager: RoundManager
+  biddingManager: BiddingManager
+  lanIndexManager: LanIndexManager
   // AI 属性（来自 AiWalletMixin）
   aiWallets: Record<string, number>
   aiLlmPlayerEnabled: Record<string, boolean>
@@ -260,6 +282,7 @@ export interface WarehouseSceneThis {
   lastAiDecisionTelemetry: { mode: string; round: number; entries?: Array<Record<string, unknown>> } | null
   llmEverUsedThisRun: boolean
   aiReflectionState: string
+  aiReflectionStateDetail: string
   aiReflectionTotal: number
   aiReflectionCompleted: number
   _reflectionBeforeUnload: (() => void) | null

@@ -1,43 +1,12 @@
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
 
 /**
- * @file bidding/index.js
+ * @file bidding/index.ts
  * @module bidding
- * @description 出价流程控制 Mixin。管理玩家和AI的出价交互、回合结算、出价揭示动画、
- *              直接拿下判定、以及联机出价提交。是游戏核心玩法的流程编排层。
- *
- * 核心职责：
- *   - 出价交互：openBidKeypad / closeBidKeypad / handleBidKeyInput / playerBid
- *     玩家通过数字键盘输入出价，确认后提交密封出价
- *   - 回合结算：resolveRoundBids
- *     收集所有玩家出价 → 逐个揭示 → 排名 → 判定直接拿下/进入下一轮
- *   - AI决策调度：kickoffAiRoundDecisions → processAiDecisions
- *     触发AI出价计算（规则引擎 + LLM覆盖），等待AI决策完成
- *   - 出价构建：buildRoundBids
- *     整合规则AI出价、LLM覆盖出价、玩家出价，构建完整出价列表
- *   - 直接拿下：当最高出价 ≥ 第二高出价 × (1 + directTakeRatio) 时提前结束
- *   - 联机出价：玩家出价通过 lanBridge.submitBid 提交，主机端统一结算
- *   - 暂停/恢复：roundPaused 状态管理，waitUntilResumed 轮询等待
- *
- * 出价流程（单机）：
- *   startRound → 玩家输入出价 → playerBid → areAllPlayersBidReady →
- *   resolveRoundBids → buildRoundBids → revealRoundBidsSequential →
- *   排名判定 → finishAuction 或进入下一轮
- *
- * 出价流程（联机）：
- *   玩家出价 → lanBridge.submitBid → 服务端广播 → 主机 resolveRoundBids
- *
- * @requires MobaoUtils     - 工具函数（delay, formatBidRevealNumber）
- * @requires MobaoSettings  - 全局设置（GAME_SETTINGS: bidStep, maxRounds, directTakeRatio, bidRevealIntervalMs 等）
- * @requires MobaoAnimations - 动画系统（roundTransition 回合过渡动画）
- * @requires AudioUI        - 音频系统（playReveal, stopCountdown）
- *
- * @exports BiddingMixin - 出价流程 Mixin，混入 Phaser Scene
+ * @description 出价流程控制 Mixin（薄代理层）。
+ *              所有方法委托给 this.biddingManager（BiddingManager 实例）。
+ *              纯函数 getLastRoundBidMap / shouldDirectTake 保持独立导出。
  */
-import { delay, formatBidRevealNumber } from "../core/utils"
-import { GAME_SETTINGS } from "../core/settings"
-import { AudioUI } from "../../audio/audio-ui"
-import { MobaoAnimations } from "../animations"
 
 // ─── 独立函数（可独立测试）───
 
@@ -63,285 +32,51 @@ export function shouldDirectTake(
   return round < maxRounds && firstBid > 0 && firstBid >= Math.ceil(secondBid * (1 + directTakeRatio))
 }
 
-// ─── Mixin（向后兼容）───
+// ─── Mixin（薄代理层）───
 
 export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   setPlayerBidReady(playerId: string, ready: boolean): void {
-    this.roundBidReadyState[playerId] = Boolean(ready)
-    const cardEl = document.getElementById(`playerCard-${playerId}`)
-    if (cardEl) {
-      cardEl.classList.toggle("bid-ready", Boolean(ready))
-    }
+    return this.biddingManager.setPlayerBidReady(playerId, ready)
   },
 
   areAllPlayersBidReady(): boolean {
-    return this.players.every((player) => Boolean(this.roundBidReadyState[player.id]))
+    return this.biddingManager.areAllPlayersBidReady()
   },
 
   async kickoffAiRoundDecisions() {
-    console.log("[kickoffAiRoundDecisions] >>> ENTERED")
-    const indicator = this.dom && this.dom.aiThinkingIndicator
-    if (indicator && !indicator.dataset.aiThinking) {
-      indicator.dataset.aiThinking = "1"
-      indicator.classList.remove("hidden")
-    }
-    try {
-      if (!this.isLanMode && this.roundPaused) await this.waitUntilResumed()
-      // processAiDecisions 内部会设置 this.aiRoundDecisionPromise（独立任务的 Promise.all）
-      // 这里不要用返回值覆盖它
-      await this.processAiDecisions()
-    } catch (error: unknown) {
-      console.error("[kickoffAiRoundDecisions] ERROR:", error)
-      const errMsg = error instanceof Error ? error.message : String(error)
-      if (errMsg === "PAUSE_CANCELLED") return
-      this.writeLog(`AI回合初始化异常：${errMsg}`)
-    }
-    // indicator 由 processAiDecisions 中的 Promise.all 完成后隐藏
+    return this.biddingManager.kickoffAiRoundDecisions()
   },
 
   waitUntilResumed(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.roundPaused) {
-        resolve()
-        return
-      }
-      const check = () => {
-        if (this.settled || this.roundResolving) {
-          reject(new Error("PAUSE_CANCELLED"))
-          return
-        }
-        if (!this.roundPaused) {
-          resolve()
-          return
-        }
-        setTimeout(check, 200)
-      }
-      check()
-    })
+    return this.biddingManager.waitUntilResumed()
   },
 
   openBidKeypad(): void {
-    if (this.settled || this.roundResolving || this.playerBidSubmitted) {
-      return
-    }
-
-    this.closeItemDrawer()
-    this.hideInfoPopup()
-    this.keypadValue = String(Math.max(0, Math.round(Number((this.dom.bidInput as HTMLInputElement | null)?.value) || 0)))
-    this.syncBidKeypadScreen()
-    this.updateKeypadDirectHint()
-    this.dom.bidKeypad?.classList.remove("hidden")
-    if (this.input) {
-      (this.input as Phaser.Input.InputPlugin & { enabled: boolean }).enabled = false
-    }
+    return this.biddingManager.openBidKeypad()
   },
 
   closeBidKeypad(): void {
-    this.dom.bidKeypad?.classList.add("hidden")
-    if (this.input) {
-      (this.input as Phaser.Input.InputPlugin & { enabled: boolean }).enabled = true
-    }
+    return this.biddingManager.closeBidKeypad()
   },
 
   syncBidKeypadScreen(): void {
-    if (this.dom.keypadScreen) this.dom.keypadScreen.textContent = this.keypadValue
-    this.updateKeypadDirectHint()
+    return this.biddingManager.syncBidKeypadScreen()
   },
 
   updateKeypadDirectHint(): void {
-    if (!this.dom.keypadDirectHint) return
-    if (this.round >= GAME_SETTINGS.maxRounds || this.settled) {
-      this.dom.keypadDirectHint.classList.add("hidden")
-      return
-    }
-    const myBid = Math.max(0, Math.round(Number(this.keypadValue) || 0))
-    const secondBid = this.secondHighestBid || 0
-    const ratio = GAME_SETTINGS.directTakeRatio
-    const requiredBid = secondBid > 0 ? Math.ceil(secondBid * (1 + ratio)) : 0
-    if (myBid > 0 && requiredBid > 0 && myBid >= requiredBid) {
-      this.dom.keypadDirectHint.textContent = "可直接拿下"
-      this.dom.keypadDirectHint.classList.remove("hidden")
-    } else if (requiredBid > 0) {
-      const displayRatio = (1 + ratio).toFixed(1)
-      this.dom.keypadDirectHint.textContent = `达第2名${displayRatio}倍可拿下`
-      this.dom.keypadDirectHint.classList.remove("hidden")
-    } else {
-      this.dom.keypadDirectHint.classList.add("hidden")
-    }
+    return this.biddingManager.updateKeypadDirectHint()
   },
 
   handleBidKeyInput(key: string): void {
-    if (key === "clear") {
-      this.keypadValue = "0"
-      this.syncBidKeypadScreen()
-      return
-    }
-
-    if (key === "del") {
-      this.keypadValue = this.keypadValue.length <= 1 ? "0" : this.keypadValue.slice(0, -1)
-      this.syncBidKeypadScreen()
-      return
-    }
-
-    if (key === "ok") {
-      const bid = Math.max(0, Math.round(Number(this.keypadValue) || 0))
-      const bidInput = this.dom.bidInput as HTMLInputElement | null
-      if (bidInput) bidInput.value = String(bid)
-      this.closeBidKeypad()
-      this.showGameConfirm(`确认出价 ${bid.toLocaleString()} ？`, () => this.playerBid())
-      return
-    }
-
-    const next = this.keypadValue === "0" ? key : this.keypadValue + key
-    this.keypadValue = String(Math.min(99999999, Number(next) || 0))
-    this.syncBidKeypadScreen()
+    return this.biddingManager.handleBidKeyInput(key)
   },
 
   async resolveRoundBids(reason: string = "manual", forceSettle: boolean = false): Promise<void> {
-    console.log(
-      `[resolveRoundBids] reason=${reason}, forceSettle=${forceSettle}, settled=${this.settled}, roundResolving=${this.roundResolving}, round=${this.round}, isLanMode=${this.isLanMode}`
-    )
-    if (this.settled || this.roundResolving) {
-      return
-    }
-
-    if (this.isLanMode && this.lanBridge) {
-      return
-    }
-
-    this.roundResolving = true
-    this.stopRoundTimer()
-
-    if (AudioUI) {
-      AudioUI.stopCountdown()
-    }
-
-    try {
-      if (!this.playerBidSubmitted) {
-        this.playerRoundBid = 0
-        this.writeLog(reason === "timeout" ? "回合超时：玩家本轮出价记为 0。" : "玩家未提交出价，本轮按 0 处理。")
-        const myId = this.isLanMode ? this.lanMySlotId : "p2"
-        if (myId) this.setPlayerBidReady(myId, true)
-      }
-
-      // AI 决策已改为独立并发，不再需要等待
-      // if (this.aiRoundDecisionPromise) {
-      //   await this.aiRoundDecisionPromise;
-      // }
-      this.updateHud()
-
-      const roundBids = this.buildRoundBids()
-      console.log(
-        "[resolveRoundBids] final roundBids:",
-        roundBids.map((b) => ({ playerId: b.playerId, bid: b.bid }))
-      )
-      this.captureAiDecisionTelemetry(roundBids)
-      this.recordAiThoughtLogs(this.lastAiDecisionTelemetry)
-      this.renderAiLogicPanel()
-      await this.revealRoundBidsSequential(roundBids)
-      this.recordRoundHistory(roundBids)
-
-      const sorted = [...roundBids].sort((a, b) => b.bid - a.bid)
-      const first = sorted[0]
-      const second = sorted[1] || { bid: 0 }
-      this.markRoundRanking(sorted)
-
-      this.currentBid = first.bid
-      this.bidLeader = first.playerId
-      this.secondHighestBid = second.bid
-
-      const directTakeFlag = shouldDirectTake(this.round, GAME_SETTINGS.maxRounds, first.bid, second.bid, GAME_SETTINGS.directTakeRatio)
-
-      if (this.round === GAME_SETTINGS.maxRounds || directTakeFlag || forceSettle) {
-        const mode = forceSettle ? "manual" : this.round === GAME_SETTINGS.maxRounds ? "final" : "direct"
-        await this.finishAuction(first, mode)
-        return
-      }
-
-      await delay(GAME_SETTINGS.postRevealWaitMs)
-
-      // 回合过渡动画：出价揭示后切换到下一回合
-      if (MobaoAnimations) {
-        await MobaoAnimations.roundTransition({
-          text: "第 " + (this.round + 1) + " 回合"
-        })
-      }
-
-      this.round += 1
-      this.skillManager.onNewRound()
-      this.startRound()
-      this.updateHud()
-      this.writeLog(`进入第 ${this.round} 回合。`)
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "未知异常"
-      this.roundResolving = false
-      this.writeLog(`回合结算异常：${message}`)
-      this.updateHud()
-      if (typeof console !== "undefined" && console.error) {
-        console.error("resolveRoundBids failed", error)
-      }
-    }
+    return this.biddingManager.resolveRoundBids(reason, forceSettle)
   },
 
   buildRoundBids(): Array<{ playerId: string; bid: number }> {
-    const clueRate =
-      this.items.length === 0 ? 0 : this.items.filter((item) => this.hasAnyInfo(item)).length / this.items.length
-    const lastRoundBids = this.getLastRoundBidMap()
-    const aiIntelMap = this.buildAiIntelSnapshot()
-
-    const aiPlayers = this.players.filter((player) => !player.isHuman)
-    const aiBidMap = this.aiEngine.buildAIBids({
-      aiPlayers,
-      clueRate,
-      round: this.round,
-      maxRounds: GAME_SETTINGS.maxRounds,
-      currentBid: this.currentBid,
-      lastRoundBids,
-      bidStep: GAME_SETTINGS.bidStep,
-      aiIntelMap,
-      aiToolEffectMap: this.aiRoundEffects,
-      itemCount: this.items.length
-    })
-
-    aiPlayers.forEach((player) => {
-      const plan = this.aiLlmRoundPlans[player.id]
-      console.log(
-        `[buildRoundBids] ${player.id} aiLlmPlan:`,
-        plan
-          ? {
-            failed: plan.failed,
-            hasBidDecision: plan.hasBidDecision,
-            bid: plan.bid,
-            canUseLlm: this.canUseLlmDecisionForPlayer(player.id)
-          }
-          : "null"
-      )
-      if (!plan || plan.failed || !plan.hasBidDecision || !this.canUseLlmDecisionForPlayer(player.id)) {
-        return
-      }
-
-      const wallet = this.getAiWallet(player.id)
-      const normalizedBid = this.normalizeAiBidValue(player.id, plan.bid, wallet)
-      console.log(
-        `[buildRoundBids] ${player.id} LLM bid override: ${aiBidMap[player.id]} -> ${normalizedBid} (wallet=${wallet})`
-      )
-      aiBidMap[player.id] = normalizedBid
-    })
-
-    return this.players.map((player) => {
-      if (player.isSelf) {
-        return { playerId: player.id, bid: this.playerRoundBid }
-      }
-
-      if (player.isHuman) {
-        const existingBid = player.lanId !== undefined ? this.lanHostBids[player.lanId] : undefined
-        return { playerId: player.id, bid: existingBid !== undefined ? existingBid : 0 }
-      }
-
-      const wallet = this.getAiWallet(player.id)
-      const aiBid = this.normalizeAiBidValue(player.id, aiBidMap[player.id] ?? 0, wallet)
-      return { playerId: player.id, bid: aiBid }
-    })
+    return this.biddingManager.buildRoundBids()
   },
 
   getLastRoundBidMap(): Record<string, number> {
@@ -349,98 +84,18 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   },
 
   async revealRoundBidsSequential(roundBids: Array<{ playerId: string; bid: number }>): Promise<void> {
-    for (let i = 0; i < this.players.length; i += 1) {
-      const player = this.players[i]
-      const bidInfo = roundBids.find((entry) => entry.playerId === player.id)
-      if (!bidInfo) continue
-      this.setPlayerBidDisplay(player.id, bidInfo.bid, i + 1)
-      this.writeLog(`${player.name} 本轮出价：${bidInfo.bid}`)
-      if (AudioUI) {
-        AudioUI.playReveal()
-      }
-      await delay(GAME_SETTINGS.bidRevealIntervalMs)
-    }
+    return this.biddingManager.revealRoundBidsSequential(roundBids)
   },
 
   setPlayerBidDisplay(playerId: string, bid: number, order: number): void {
-    const bidEl = document.getElementById(`bid-${playerId}`)
-    const cardEl = document.getElementById(`playerCard-${playerId}`)
-    if (bidEl) {
-      bidEl.textContent = `${formatBidRevealNumber(bid)} #${order}`
-      bidEl.classList.remove("bid-reveal")
-      void bidEl.offsetWidth
-      bidEl.classList.add("bid-reveal")
-      window.setTimeout(() => bidEl.classList.remove("bid-reveal"), 480)
-    }
-    if (cardEl) {
-      cardEl.classList.add("revealed")
-      cardEl.classList.remove("bid-pop")
-      void cardEl.offsetWidth
-      cardEl.classList.add("bid-pop")
-      window.setTimeout(() => cardEl.classList.remove("bid-pop"), 520)
-    }
+    return this.biddingManager.setPlayerBidDisplay(playerId, bid, order)
   },
 
   playerBid(): void {
-    this.closeItemDrawer()
-
-    if (this.settled) {
-      this.writeLog("本局已结算，请重新开局。")
-      return
-    }
-
-    if (this.roundResolving) {
-      this.writeLog("本轮正在结算中，请等待出价揭示。")
-      return
-    }
-
-    if (this.roundPaused) {
-      this.writeLog("当前回合已暂停，请先继续回合再提交出价。")
-      return
-    }
-
-    if (this.playerBidSubmitted) {
-      this.writeLog("你已提交本轮出价，不可再次提交。")
-      return
-    }
-
-    const inputValue = Number((this.dom.bidInput as HTMLInputElement | null)?.value || 0)
-    if (!Number.isFinite(inputValue) || inputValue < 0) {
-      this.writeLog("请输入有效出价金额（允许 0）。")
-      return
-    }
-
-    if (inputValue > this.playerMoney) {
-      this.writeLog("资金不足，无法按该金额出价。")
-      return
-    }
-
-    this.playerRoundBid = Math.round(inputValue)
-    this.playerBidSubmitted = true
-
-    const myId = this.isLanMode ? this.lanMySlotId : "p2"
-    if (myId) this.setPlayerBidReady(myId, true)
-    this.closeBidKeypad()
-    this.writeLog(`玩家已提交本轮密封出价：${this.playerRoundBid}。提交后不可再用道具/技能。`)
-    this.updateHud()
-
-    if (this.isLanMode && this.lanBridge) {
-      this.lanBridge.submitBid(this.playerRoundBid)
-      return
-    }
-
-    if (!this.roundResolving && this.areAllPlayersBidReady()) {
-      this.resolveRoundBids("all-ready")
-    }
+    return this.biddingManager.playerBid()
   },
 
   settleCurrentRun(): void {
-    if (this.isLanMode && !this.lanIsHost) return
-    if (this.settled) {
-      this.writeLog("本局已结算，请重新开局。")
-      return
-    }
-
-    this.resolveRoundBids("manual", true)
+    return this.biddingManager.settleCurrentRun()
   }
 }

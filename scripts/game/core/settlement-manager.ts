@@ -36,9 +36,6 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
  * @requires core/app-state - 应用状态
  */
 
-import { savePlayerMoney } from "./player-money";
-import { recordGameFinished } from "./app-state";
-
 // ─── 独立函数（可独立测试）───
 
 const DIVIDEND_RATIO = 0.15
@@ -106,7 +103,7 @@ export function buildDividendTicketLog(
   return null
 }
 
-// ─── Mixin（向后兼容）───
+// ─── Mixin 薄代理（Phase 2：代理到 SettlementManager，向后兼容 Object.assign 混入）───
 
 interface FinishAuctionContext {
   winnerPlayer: { id: string; isSelf: boolean; name: string }
@@ -123,271 +120,28 @@ interface FinishAuctionContext {
   selfProfitInfo: SelfProfitInfo
 }
 
-interface SettlementManagerThis {
-  players: Array<{ id: string; isSelf: boolean; name: string }>;
-  playerMoney: number;
-  aiWallets: Record<string, number>;
-  warehouseTrueValue: number;
-  isLanMode: boolean;
-  lanIsHost: boolean;
-  lanHostWallets: Record<string, number>;
-  currentBid: number;
-  bidLeader: string | null;
-  settled: boolean;
-  stopRoundTimer(): void;
-  enterSettlementPage(player: { isSelf: boolean; name: string }, bid: number, reason: string): void;
-  updateSettlementPanelMetrics(totalValue: number, winnerProfit: number): void;
-  showSelfProfit(profit: number, label: string): void;
-  setSettlementProgress(step: string, progress: number): void;
-  triggerSettlementFinalAnimation(profit: number, isSelf: boolean): void;
-  saveBattleRecord(record: any): void;
-  saveAiWalletsToStorage(): void;
-  pushRunSettlementContextToAi(context: any): void;
-  hasAppliedMoneyForRun(): boolean;
-  markMoneyAppliedForRun(): void;
-  writeLog(message: string): void;
-  updateHud(): void;
-  getAiWallet(id: string): number;
-  revealAllArtifactsForSettlement(): void;
-  prepareFinishAuction(winner: { playerId: string; bid: number }, mode: string): Promise<FinishAuctionContext | null>;
-  finishAuctionLan(ctx: FinishAuctionContext): void;
-  finishAuctionSingle(ctx: FinishAuctionContext): void;
-  updateSettlementFinalUI(ctx: FinishAuctionContext, profitInfo: SelfProfitInfo): void;
-  saveSettlementBattleRecord(ctx: FinishAuctionContext, playerProfit: number, reasonText: string): void;
-}
-
 export const SettlementManagerMixin: ThisType<WarehouseSceneThis> = {
   async finishAuction(winner: { playerId: string; bid: number }, mode: string) {
-    const self = this as unknown as SettlementManagerThis;
-    const ctx = await self.prepareFinishAuction(winner, mode);
-    if (!ctx) return;
-    if (this.isLanMode) {
-      self.finishAuctionLan(ctx);
-    } else {
-      self.finishAuctionSingle(ctx);
-    }
+    return this.settlementManager.finishAuction(winner, mode)
   },
 
-  async prepareFinishAuction(
-    winner: { playerId: string; bid: number },
-    mode: string
-  ): Promise<FinishAuctionContext | null> {
-    const self = this as unknown as SettlementManagerThis;
-    const winnerPlayer = this.players.find((player: { id: string }) => player.id === winner.playerId);
-    if (!winnerPlayer) {
-      this.writeLog(`结算失败：找不到赢家玩家 ${winner.playerId}`);
-      return null;
-    }
-    const winnerBid = winner.bid;
-
-    this.currentBid = winnerBid;
-    this.bidLeader = winner.playerId;
-    this.settled = true;
-    this.stopRoundTimer();
-    const reasonTextMap: Record<string, string> = {
-      direct: "提前拿下",
-      final: "最终回合高价胜出",
-      manual: "手动结算"
-    };
-
-    this.enterSettlementPage(winnerPlayer, winnerBid, reasonTextMap[mode] || "结算");
-
-    const totalValue = this.warehouseTrueValue;
-    const { winnerProfit, dividendPerPlayer, ticketPerPlayer, mechanism } = calculateDividendTicket(totalValue, winnerBid);
-
-    const nonWinners = this.players.filter((p: { id: string }) => p.id !== winnerPlayer.id);
-    const humanNonWinner = nonWinners.find((p: { isSelf: boolean }) => p.isSelf);
-    const isWinner = winnerPlayer.isSelf;
-    const selfProfitInfo = getSelfProfitInfo(winnerProfit, dividendPerPlayer, ticketPerPlayer, isWinner);
-
-    if (dividendPerPlayer > 0) {
-      nonWinners.forEach((p: { id: string; isSelf: boolean }) => {
-        if (p.isSelf) {
-          this.playerMoney += dividendPerPlayer;
-        } else {
-          const wallet = this.getAiWallet(p.id);
-          this.aiWallets[p.id] = wallet + dividendPerPlayer;
-        }
-      });
-    } else if (ticketPerPlayer > 0) {
-      nonWinners.forEach((p: { id: string; isSelf: boolean }) => {
-        if (p.isSelf) {
-          this.playerMoney -= ticketPerPlayer;
-        } else {
-          const wallet = this.getAiWallet(p.id);
-          this.aiWallets[p.id] = Math.max(0, wallet - ticketPerPlayer);
-        }
-      });
-    }
-
-    const dividendTicketInfo = { dividendPerPlayer, ticketPerPlayer, mechanism };
-
-    const settlementResult = {
-      winnerId: winnerPlayer.id,
-      winnerName: winnerPlayer.name,
-      winnerBid,
-      totalValue,
-      winnerProfit,
-      reasonText: reasonTextMap[mode] || "结算",
-      dividendTicketInfo
-    };
-    const crossGameRecord = (self as unknown as { createCrossGameRecord(result: any): any }).createCrossGameRecord(settlementResult);
-    (self as unknown as { triggerAiReflection(record: any): Promise<void> }).triggerAiReflection(crossGameRecord).catch(() => { });
-
-    try {
-      await this.revealAllArtifactsForSettlement();
-    } catch (revealError) {
-      this.writeLog(`揭示藏品时发生异常：${revealError && (revealError as Error).message ? (revealError as Error).message : "未知错误"}`);
-      if (typeof console !== "undefined" && console.error) {
-        console.error("revealAllArtifactsForSettlement failed", revealError);
-      }
-    }
-
-    return {
-      winnerPlayer,
-      winnerBid,
-      mode,
-      reasonText: reasonTextMap[mode] || "结算",
-      totalValue,
-      winnerProfit,
-      dividendPerPlayer,
-      ticketPerPlayer,
-      dividendTicketInfo,
-      nonWinners,
-      humanNonWinner,
-      selfProfitInfo
-    };
+  async prepareFinishAuction(winner: { playerId: string; bid: number }, mode: string) {
+    return this.settlementManager.prepareFinishAuction(winner, mode)
   },
 
-  finishAuctionLan(ctx: FinishAuctionContext): void {
-    const self = this as unknown as SettlementManagerThis;
-    const { winnerPlayer, winnerBid, winnerProfit, dividendPerPlayer, ticketPerPlayer, nonWinners } = ctx;
-    const lanSelfNonWinner = ctx.humanNonWinner;
-    const lanSelfProfitInfo = getSelfProfitInfo(winnerProfit, dividendPerPlayer, ticketPerPlayer, false);
-
-    if (dividendPerPlayer > 0) {
-      if (lanSelfNonWinner) {
-        if (this.lanIsHost) {
-          this.playerMoney += dividendPerPlayer;
-        }
-        this.writeLog(buildDividendTicketLog(winnerProfit, dividendPerPlayer, ticketPerPlayer)!);
-      }
-      if (this.lanIsHost) {
-        nonWinners.forEach((p: { id: string; isSelf: boolean; isAI?: boolean; lanId?: string }) => {
-          if (!p.isSelf && !p.isAI) {
-            const wallet = this.lanHostWallets[p.lanId || ""] || 0;
-            this.lanHostWallets[p.lanId || ""] = wallet + dividendPerPlayer;
-          } else if (p.isAI) {
-            const wallet = this.getAiWallet(p.id);
-            this.aiWallets[p.id] = wallet + dividendPerPlayer;
-          }
-        });
-      }
-    } else if (ticketPerPlayer > 0) {
-      if (lanSelfNonWinner) {
-        if (this.lanIsHost) {
-          this.playerMoney -= ticketPerPlayer;
-        }
-        this.writeLog(buildDividendTicketLog(winnerProfit, dividendPerPlayer, ticketPerPlayer)!);
-      }
-      if (this.lanIsHost) {
-        nonWinners.forEach((p: { id: string; isSelf: boolean; isAI?: boolean; lanId?: string }) => {
-          if (!p.isSelf && !p.isAI) {
-            const wallet = this.lanHostWallets[p.lanId || ""] || 0;
-            this.lanHostWallets[p.lanId || ""] = Math.max(0, wallet - ticketPerPlayer);
-          } else if (p.isAI) {
-            const wallet = this.getAiWallet(p.id);
-            this.aiWallets[p.id] = Math.max(0, wallet - ticketPerPlayer);
-          }
-        });
-      }
-    }
-
-    self.updateSettlementFinalUI(ctx, lanSelfProfitInfo);
-    this.writeLog(
-      `联机结算：${winnerPlayer.name} 以 ${winnerBid} 拿下整仓，利润 ${winnerProfit >= 0 ? "+" : ""}${winnerProfit}。`
-    );
-
-    self.saveSettlementBattleRecord(ctx, winnerPlayer.isSelf ? winnerProfit : lanSelfProfitInfo.profit, "联机结算");
+  finishAuctionLan(ctx: FinishAuctionContext) {
+    return this.settlementManager.finishAuctionLan(ctx)
   },
 
-  finishAuctionSingle(ctx: FinishAuctionContext): void {
-    const self = this as unknown as SettlementManagerThis;
-    const { winnerPlayer, winnerBid, totalValue, winnerProfit, dividendPerPlayer, ticketPerPlayer, reasonText, selfProfitInfo, dividendTicketInfo } = ctx;
-
-    const logMsg = buildDividendTicketLog(winnerProfit, dividendPerPlayer, ticketPerPlayer)
-    if (ctx.humanNonWinner && logMsg) {
-      this.writeLog(logMsg);
-    }
-
-    self.updateSettlementFinalUI(ctx, selfProfitInfo);
-
-    self.saveSettlementBattleRecord(ctx, winnerPlayer.isSelf ? winnerProfit : selfProfitInfo.profit, reasonText);
-
-    this.saveAiWalletsToStorage();
-
-    this.pushRunSettlementContextToAi({
-      winnerId: winnerPlayer.id,
-      winnerName: winnerPlayer.name,
-      winnerBid,
-      totalValue,
-      winnerProfit,
-      reasonText,
-      dividendTicketInfo
-    });
-
-    if (winnerPlayer.isSelf) {
-      if (!this.hasAppliedMoneyForRun()) {
-        this.playerMoney += winnerProfit;
-        savePlayerMoney(this.playerMoney);
-        this.markMoneyAppliedForRun();
-      }
-      this.writeLog(
-        `结算完成：你以 ${winnerBid} 拿下整仓，${winnerProfit >= 0 ? "盈利" : "亏损"} ${Math.abs(winnerProfit)}。`
-      );
-    } else {
-      savePlayerMoney(this.playerMoney);
-      this.writeLog(
-        `结算完成：${winnerPlayer.name} 以 ${winnerBid} 拿下整仓，利润 ${winnerProfit >= 0 ? "+" : ""}${winnerProfit}。`
-      );
-    }
-
-    const selfPlayer = this.players.find((p: { isSelf: boolean }) => p.isSelf);
-    if (selfPlayer && recordGameFinished) {
-      const playerIsWinner = winnerPlayer.isSelf;
-      const playerProfit = playerIsWinner ? winnerProfit : selfProfitInfo.profit;
-      const playerWon = playerIsWinner && winnerProfit > 0;
-      recordGameFinished(playerWon, playerProfit);
-    }
-
-    this.updateHud();
+  finishAuctionSingle(ctx: FinishAuctionContext) {
+    return this.settlementManager.finishAuctionSingle(ctx)
   },
 
-  updateSettlementFinalUI(ctx: FinishAuctionContext, profitInfo: SelfProfitInfo): void {
-    this.updateSettlementPanelMetrics(ctx.totalValue, ctx.winnerProfit);
-    if (ctx.humanNonWinner) {
-      this.showSelfProfit(profitInfo.profit, profitInfo.label);
-    }
-    this.setSettlementProgress(
-      `揭示完成：${ctx.winnerPlayer.name} 的最终利润 ${ctx.winnerProfit >= 0 ? "+" : ""}${ctx.winnerProfit}`,
-      100
-    );
-    this.triggerSettlementFinalAnimation(ctx.winnerProfit, ctx.winnerPlayer.isSelf);
+  updateSettlementFinalUI(ctx: FinishAuctionContext, profitInfo: SelfProfitInfo) {
+    return this.settlementManager.updateSettlementFinalUI(ctx, profitInfo)
   },
 
-  saveSettlementBattleRecord(ctx: FinishAuctionContext, playerProfit: number, reasonText: string): void {
-    const { winnerPlayer, winnerBid, totalValue, winnerProfit, dividendPerPlayer, ticketPerPlayer, mode, dividendTicketInfo } = ctx;
-    this.saveBattleRecord({
-      mode,
-      winnerId: winnerPlayer.id,
-      winnerName: winnerPlayer.name,
-      winnerBid,
-      totalValue,
-      winnerProfit,
-      playerProfit,
-      playerWon: winnerPlayer.isSelf && winnerProfit > 0,
-      dividendTicketInfo: dividendPerPlayer > 0 || ticketPerPlayer > 0 ? dividendTicketInfo : null,
-      reasonText
-    });
+  saveSettlementBattleRecord(ctx: FinishAuctionContext, playerProfit: number, reasonText: string) {
+    return this.settlementManager.saveSettlementBattleRecord(ctx, playerProfit, reasonText)
   }
 }

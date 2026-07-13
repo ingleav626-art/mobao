@@ -1,65 +1,128 @@
 import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { LanBridgeLike } from './lan-index-manager'
 
 /**
  * @file lan/index.ts
  * @module game/lan
- * @description 联机房间 UI 与事件处理 Mixin。管理联机大厅的完整生命周期，
- *              包括服务器连接、房间创建/加入、玩家槽位管理、角色选择、道具携带、
- *              地图选择、以及游戏过程中的 WebSocket 事件监听。
- *
- * 核心职责：
- *   - initLanLobby: 初始化联机大厅，绑定所有 DOM 元素和事件
- *   - 服务器连接：connectWithRetry / autoConnectAndCreate / autoConnectAndJoin
- *     支持手动输入地址和自动发现（子网扫描、Native WiFi IP）
- *   - 房间管理：创建房间（公开/私密）、加入房间、离开房间（含确认弹窗）
- *   - 玩家槽位：lanSlotConfig[4] + renderSlots + syncSlotsFromPlayers
- *     4个槽位：host/client/ai/empty，支持踢出、加AI、LLM勾选
- *   - 角色选择：renderLanCharacterList + updateLanPortrait
- *     两列式角色卡片，选择后广播 lan:character-select，Live2D 立绘无缝循环
- *   - 道具携带：renderLanCarryItems + lanCarryItems
- *     复用单机道具选择UI，选择后发送 lan:carry-items
- *   - 地图选择：openLanMapSelect，仅房主可操作
- *   - 房间管理弹窗：openLanRoomManage，踢出/加AI/编号
- *
- * WebSocket 事件监听（bridge.on）：
- *   房间生命周期：room:created, room:joined, room:join-failed, room:kicked,
- *     room:player-joined, room:player-left, room:host-left, room:slot-state
- *   角色同步：lan:character-selected
- *   游戏流程：game:init, round:start, round:bid-ack, bid:received, all-bids-in,
- *     round:timeout, round:result, game:settle, game:settle-final
- *   暂停/恢复：pause:state
- *   数据同步：full-sync, full-sync-request, game:warehouse-sync
- *   重开投票：game:restart-vote, game:restart-go, game:restart-cancelled
- *   AI事件：ai-bids-ready, ai-item-use
- *   玩家动作：player-action, public-info
- *   重连：room:player-reconnected, room:player-removed, room:reconnected, room:reconnect-failed
- *
- * @requires LanBridge       - 联机通信桥（scripts/game/lan-bridge.js）
- * @requires MobaoAppState   - 全局状态管理
- * @requires MobaoConstants  - 常量（DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS）
- * @requires MobaoSettings   - 设置（savePlayerMoney, GAME_SETTINGS）
- * @requires CharacterData   - 角色数据（characters.js）
- * @requires MobaoMapProfiles - 地图配置
- * @requires MobaoShopBridge - 商店系统
- *
- * @exports MobaoLan.LanIndexMixin - 联机大厅 Mixin，混入 Phaser Scene
+ * @description 联机大厅 Mixin（薄代理层）。
+ *              所有方法委托给 this.lanIndexManager（LanIndexManager 实例）。
+ *              原 6 个子 Mixin（game-flow/sync/settle/reconnect/live2d/events）的方法
+ *              全部通过 LanIndexManager 代理。
  */
 
-import { LanGameFlowMixin } from "./game-flow.js"
-import { LanSyncMixin } from "./sync.js"
-import { LanSettleMixin } from "./settle.js"
-import { LanReconnectMixin } from "./reconnect.js"
-import { LanLive2dMixin } from "./live2d.js"
-import { LanEventsMixin } from "./events.js"
-import { initLanLobbyImpl } from "./lobby.js"
-
 export const LanIndexMixin: ThisType<WarehouseSceneThis> = {
+  // ═════════════ 大厅方法 ═════════════
+
   initLanLobby() {
-    initLanLobbyImpl.call(this);
+    return this.lanIndexManager.initLanLobby()
   },
 
-};
+  // ═════════════ 游戏流程方法 ═════════════
 
-// Merge sub-mixins into LanIndexMixin
-Object.assign(LanIndexMixin, LanGameFlowMixin, LanSyncMixin, LanSettleMixin, LanReconnectMixin, LanLive2dMixin, LanEventsMixin)
+  lanResolveRound(reason: string) {
+    return this.lanIndexManager.lanResolveRound(reason)
+  },
 
+  lanComputeAiBids(): Record<string, number> {
+    return this.lanIndexManager.lanComputeAiBids()
+  },
+
+  lanOnRoundStart(msg: { round: number; currentBid?: number; ts?: number; roundSeconds?: number }) {
+    return this.lanIndexManager.lanOnRoundStart(msg)
+  },
+
+  lanBroadcastRoundStart() {
+    return this.lanIndexManager.lanBroadcastRoundStart()
+  },
+
+  startLanRun() {
+    return this.lanIndexManager.startLanRun()
+  },
+
+  async lanOnAllBidsIn(_msg: Record<string, unknown>) {
+    return this.lanIndexManager.lanOnAllBidsIn(_msg)
+  },
+
+  async lanOnRoundTimeout() {
+    return this.lanIndexManager.lanOnRoundTimeout()
+  },
+
+  lanOnRoundResult(msg: { bids?: Array<{ playerId: string; bid: number }> }) {
+    return this.lanIndexManager.lanOnRoundResult(msg)
+  },
+
+  lanDoFinishAuction(winner: { playerId: string; bid: number }, mode: string) {
+    return this.lanIndexManager.lanDoFinishAuction(winner, mode)
+  },
+
+  // ═════════════ 同步方法 ═════════════
+
+  lanBuildFullSyncData(targetPlayerId: string) {
+    return this.lanIndexManager.lanBuildFullSyncData(targetPlayerId)
+  },
+
+  lanOnFullSync(msg: Record<string, unknown>) {
+    return this.lanIndexManager.lanOnFullSync(msg)
+  },
+
+  lanRestoreWarehouseFromSync(msg: Record<string, unknown>) {
+    return this.lanIndexManager.lanRestoreWarehouseFromSync(msg)
+  },
+
+  lanAttemptReconnect() {
+    return this.lanIndexManager.lanAttemptReconnect()
+  },
+
+  toggleLanPause(pause: boolean) {
+    return this.lanIndexManager.toggleLanPause(pause)
+  },
+
+  onLanBackground() {
+    return this.lanIndexManager.onLanBackground()
+  },
+
+  onLanForeground() {
+    return this.lanIndexManager.onLanForeground()
+  },
+
+  // ═════════════ 结算方法 ═════════════
+
+  lanOnSettleFinal(msg: { wallets: Record<string, number> }) {
+    return this.lanIndexManager.lanOnSettleFinal(msg)
+  },
+
+  lanOnSettle(msg: { winnerId: string; winnerBid: number; mode: string }) {
+    return this.lanIndexManager.lanOnSettle(msg)
+  },
+
+  lanOnRestartGo(msg: {
+    players: Array<{ id: string; name: string; isAI: boolean; isHost: boolean; isReady?: boolean; characterId?: string | null; carryItems?: string[]; llm?: boolean }>
+    hostId: string
+    aiPlayers: Array<{ id: string; name: string; isAI: boolean; isHost: boolean; llm?: boolean }>
+    aiLlmEnabled: boolean
+  }) {
+    return this.lanIndexManager.lanOnRestartGo(msg)
+  },
+
+  // ═════════════ 重连方法 ═════════════
+
+  tryAutoReconnect(playerId: string, roomCode: string, playerName: string, isHost: boolean) {
+    return this.lanIndexManager.tryAutoReconnect(playerId, roomCode, playerName, isHost)
+  },
+
+  // ═════════════ Live2D 方法 ═════════════
+
+  startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB: HTMLVideoElement) {
+    return this.lanIndexManager.startLanLive2dLoop(src, videoA, videoB)
+  },
+
+  stopLanLive2dLoop() {
+    return this.lanIndexManager.stopLanLive2dLoop()
+  },
+
+  // ═════════════ 事件绑定方法 ═════════════
+
+  bindLanEvents(bridge: LanBridgeLike, ctx: Record<string, unknown>) {
+    return this.lanIndexManager.bindLanEvents(bridge, ctx)
+  }
+}
