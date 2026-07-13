@@ -16,6 +16,7 @@
  * @exports AiDecisionMixin - 向后兼容的 Mixin 薄包装
  */
 import { formatBidRevealNumber } from "../core/utils"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 // ─── 类型定义 ───
 
@@ -410,58 +411,26 @@ export function writeLog(
   render();
 }
 
-// ─── Mixin 薄包装（向后兼容）───
+// ─── Mixin 薄代理（Phase 2：代理到 AiDecisionManager，向后兼容 Object.assign 混入）───
 
-export const AiDecisionMixin: ThisType<{
-  runSerial: number
-  currentRunLog: RunLog | null
-  runLogHistory: RunLog[]
-  round: number
-  dom: Record<string, HTMLElement | null>
-  aiEngine?: { getLastDecisionLog(): Record<string, unknown> | null }
-  saveAiMemoryToStorage(): void
-  renderAiThoughtLog(): void
-  renderAiLogicPanelForLlm?(telemetry: { round: number; entries?: Array<Record<string, unknown>> }): void
-  compactPanelTextForSnapshot(text: string): string
-}> = {
+export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
   compactPanelTextForSnapshot(text: string): string {
-    return compactPanelTextForSnapshot(text)
+    return this.aiDecisionManager.compactPanelTextForSnapshot(text)
   },
 
   buildAiDecisionPanelSnapshot(telemetry: Record<string, unknown>): string | null {
-    const self = this as any
-    const getLastDecisionLog = self.aiEngine && typeof self.aiEngine.getLastDecisionLog === "function"
-      ? () => self.aiEngine.getLastDecisionLog()
-      : null
-    return buildAiDecisionPanelSnapshot(telemetry, getLastDecisionLog)
+    return this.aiDecisionManager.buildAiDecisionPanelSnapshot(telemetry)
   },
 
   beginRunTracking(): void {
-    const self = this as any
-    const newLog = beginRunTracking(
-      self.runLogHistory,
-      () => self.saveAiMemoryToStorage(),
-      () => self.renderAiThoughtLog()
-    )
-    self.runSerial = newLog.runNo
-    self.currentRunLog = newLog
+    this.aiDecisionManager.beginRunTracking()
   },
 
   recordAiThoughtLogs(telemetry: Record<string, unknown>): void {
-    const self = this as any
-    recordAiThoughtLogs(
-      telemetry,
-      self.currentRunLog,
-      self.dom,
-      typeof self.renderAiLogicPanelForLlm === "function"
-        ? (t: { round: number; entries?: Array<Record<string, unknown>> }) => self.renderAiLogicPanelForLlm(t)
-        : null,
-      () => self.renderAiThoughtLog()
-    )
+    this.aiDecisionManager.recordAiThoughtLogs(telemetry)
   },
 
   writeLog(text: string): void {
-    const self = this as any
-    writeLog(text, self.round, self.currentRunLog, self.dom, () => self.renderAiThoughtLog())
+    this.aiDecisionManager.writeLog(text)
   }
 }

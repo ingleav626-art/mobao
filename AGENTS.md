@@ -183,5 +183,5 @@ All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the
 - **LAN server is separate**: `lan/server/` has its own `package.json`. Run `npm install` there before `npm run server`.
 - **Android build**: Requires JDK 17 + Gradle + Android SDK at `D:\web\tool\`. See README for exact commands.
 - **localStorage keys**: All prefixed with `mobao_`. Changing a key breaks backward compat for existing users.
-- **Scene 架构**: 单一 Phaser 场景（`WarehouseScene`），19 个 Mixin + scene/ 方法通过 Object.assign 合并到原型。类定义在 `scene/warehouse-scene.ts`，方法实现分散在 `scene/` 各文件（非 main.ts）。新增方法优先写成 Mixin 或 scene/ 模块。
+- **Scene 架构**: 单一 Phaser 场景（`WarehouseScene`），19 个 Mixin + scene/ 方法通过 Object.assign 合并到原型。类定义在 `scene/warehouse-scene.ts`，方法实现分散在 `scene/` 各文件（非 main.ts）。
 - **FILE_GUIDE.md 是文件定位首选**: 查找某文件职责时先查 `FILE_GUIDE.md`（2026-07-12 最新），再查 `docs/reference/`。

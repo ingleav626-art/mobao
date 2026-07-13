@@ -14,6 +14,7 @@
  * @exports UiHistoryMixin - 向后兼容的 Mixin 薄包装
  */
 import type { ItemDef } from '../../../types/game'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { escapeHtml, formatCompactNumber } from "../core/utils"
 import { GAME_SETTINGS } from "../core/settings"
 import { CARRY_ITEMS_STORAGE_KEY } from "../core/constants"
@@ -214,81 +215,46 @@ export function renderItemDrawer(
     .join("")
 }
 
-// ─── Mixin 薄包装（向后兼容）───
+// ─── Mixin 薄代理（Phase 2：代理到 HistoryManager，向后兼容 Object.assign 混入）───
 
-export const UiHistoryMixin: ThisType<HistoryData & {
-  players: Array<{ id: string }>
-  round: number
-  dom: Record<string, HTMLElement | null>
-  settled: boolean
-  roundResolving: boolean
-  playerBidSubmitted: boolean
-  roundTimeLeft: number
-  itemManager: { getItemState(): Array<{ id: string; count: number }> }
-  _drawerVersionRef?: { current: string }
-  refreshPlayerHistoryUI(): void
-  openItemDrawer(): void
-  closeItemDrawer(): void
-  renderItemDrawer(): void
-  closeBidKeypad(): void
-  isSettingsOverlayOpen(): boolean
-  isSettlementPageActive(): boolean
-  getItemInfo(itemId: string): ItemDef
-}> = {
+export const UiHistoryMixin: ThisType<WarehouseSceneThis> = {
   resetPlayerHistoryState(): void {
-    const self = this as any
-    resetPlayerHistoryState(self.players, self, () => self.refreshPlayerHistoryUI())
+    this.historyManager.resetPlayerHistoryState()
   },
 
   clearCurrentRoundUsage(): void {
-    const self = this as any
-    clearCurrentRoundUsage(self.players, self)
+    this.historyManager.clearCurrentRoundUsage()
   },
 
   recordPlayerUsage(playerId: string, itemId: string): void {
-    const self = this as any
-    recordPlayerUsage(self, playerId, itemId, () => self.refreshPlayerHistoryUI())
+    this.historyManager.recordPlayerUsage(playerId, itemId)
   },
 
   recordRoundHistory(roundBids: Array<{ playerId: string; bid: number }>): void {
-    const self = this as any
-    recordRoundHistory(self.players, self, self.round, roundBids, () => self.refreshPlayerHistoryUI())
+    this.historyManager.recordRoundHistory(roundBids)
   },
 
   refreshPlayerHistoryUI(): void {
-    const self = this as any
-    refreshPlayerHistoryUI(self.players, self, (actions: string[]) => self.renderItemUsageCell(actions))
+    this.historyManager.refreshPlayerHistoryUI()
   },
 
   renderItemUsageCell(actions: string[]): string {
-    const self = this as any
-    return renderItemUsageCell(actions, (itemId: string) => self.getItemInfo(itemId))
+    return this.historyManager.renderItemUsageCell(actions)
   },
 
   toggleItemDrawer(): void {
-    const self = this as any
-    toggleItemDrawer(self.dom, () => self.openItemDrawer(), () => self.closeItemDrawer())
+    this.historyManager.toggleItemDrawer()
   },
 
   openItemDrawer(): void {
-    const self = this as any
-    openItemDrawer(
-      { settled: self.settled, roundResolving: self.roundResolving, playerBidSubmitted: self.playerBidSubmitted, roundTimeLeft: self.roundTimeLeft, itemManager: self.itemManager, dom: self.dom },
-      () => self.closeBidKeypad(),
-      () => self.isSettingsOverlayOpen(),
-      () => self.isSettlementPageActive(),
-      () => self.renderItemDrawer()
-    )
+    this.historyManager.openItemDrawer()
   },
 
   closeItemDrawer(): void {
-    const self = this as any
-    closeItemDrawer(self.dom)
+    this.historyManager.closeItemDrawer()
   },
 
   renderItemDrawer(): void {
-    const self = this as any
-    const canUse = !(self.settled || self.roundResolving || self.playerBidSubmitted || self.roundTimeLeft <= 0)
-    renderItemDrawer(self.dom, canUse, self.itemManager, self._drawerVersionRef || (self._drawerVersionRef = { current: "" }), (itemId: string) => self.getItemInfo(itemId))
+    this.historyManager.renderItemDrawer()
   }
 }

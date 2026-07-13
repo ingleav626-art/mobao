@@ -55,6 +55,12 @@ import type {
   BidSubmitMessage,
   RoomMessage,
 } from "./lan"
+import type { AiWalletManager } from "../scripts/game/ai/wallet-manager"
+import type { HistoryManager } from "../scripts/game/ui/history-manager"
+import type { AiDecisionManager } from "../scripts/game/ai/decision-manager"
+import type { SkillItemManager } from "../scripts/game/core/skill-item-manager-class"
+import type { PanelsManager } from "../scripts/game/ui/panels-manager"
+import type { CarouselManager } from "../scripts/game/lobby/carousel-manager"
 
 export interface WarehouseSceneThis {
   // Phaser Scene
@@ -237,6 +243,13 @@ export interface WarehouseSceneThis {
     items: Array<{ id: string; count?: number }>
     use(id: string, ctx: unknown): { ok: boolean; message: string }
   }
+  // Phase 2: Manager 实例（依赖注入，替代 Mixin 隐式 this 依赖）
+  walletManager: AiWalletManager
+  historyManager: HistoryManager
+  aiDecisionManager: AiDecisionManager
+  skillItemManager: SkillItemManager
+  panelsManager: PanelsManager
+  carouselManager: CarouselManager
   // AI 属性（来自 AiWalletMixin）
   aiWallets: Record<string, number>
   aiLlmPlayerEnabled: Record<string, boolean>
@@ -915,7 +928,6 @@ export interface WarehouseSceneThis {
   renderAiLogicPanel(): void
   renderAiLogicPanelForLlm(telemetry: { mode: string; round: number; entries: LlmTelemetry[] }): void
   showAiConversationMessages(): void
-  testDeepSeekConnectionFromOverlay(): Promise<void>
   buildAiLlmRoundPayload(player: Player): unknown
   buildAiFollowupRoundPayload(player: Player, currentPlan: LlmPlan, toolSummary: string): unknown
   buildAiIncrementalPayload(player: Player): unknown

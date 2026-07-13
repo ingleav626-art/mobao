@@ -24,6 +24,7 @@ import type {
   Artifact,
   GameSettings,
   ItemDef,
+  SkillContext,
 } from "../../../types/game"
 import type {
   AiPrivateIntel,
@@ -44,6 +45,18 @@ import { SkillManager } from "../data/skills"
 import { ItemManager } from "../data/items"
 import { AuctionAiEngine } from "../ai/bidding"
 import { Deps } from "../core/deps"
+import { AiWalletManager } from "../ai/wallet-manager"
+import { AiDecisionManager } from "../ai/decision-manager"
+import { HistoryManager } from "../ui/history-manager"
+import { SkillItemManager } from "../core/skill-item-manager-class"
+import type { LanBridgeLike } from "../core/skill-item-manager-class"
+import { PanelsManager } from "../ui/panels-manager"
+import type { PanelsLanBridge } from "../ui/panels-manager"
+import { CarouselManager } from "../lobby/carousel-manager"
+import { getOutlineBonus, getQualityBonus, getOutlineSortStrategy } from "../data/character-system"
+import { MobaoShopBridge } from "../bridge/shop"
+import type { IntelEntry } from "../ui/panels"
+import type { RunLog } from "../ai/decision"
 
 // Mixin 方法声明：这些方法通过 Object.assign 从各 Mixin 混入 WarehouseScene.prototype
 // 声明为 interface 让 TS 识别，运行时由 Mixin 提供
@@ -181,6 +194,7 @@ class WarehouseScene extends _PhaserScene {
   lanMySlotId: string
   lanIdToSlotId: Record<string, string>
   slotIdToLanId: Record<string, string>
+  lanHostWallets: Record<string, number>
   lanReconnecting: boolean
   lanLastServerUrl: string | null
   lanLastRoomCode: string | null
@@ -268,6 +282,23 @@ class WarehouseScene extends _PhaserScene {
   lanAiPlayers: (LanPlayer & { llm?: boolean })[]
   lanAiLlmEnabled: boolean
   static instance: WarehouseScene & WarehouseMixinMethods
+  // Phase 2: Manager 实例（依赖注入）
+  walletManager!: AiWalletManager
+  historyManager!: HistoryManager
+  aiDecisionManager!: AiDecisionManager
+  skillItemManager!: SkillItemManager
+  panelsManager!: PanelsManager
+  carouselManager!: CarouselManager
+  // Phase 2: Manager 依赖的跨 Mixin 方法（运行时由 Object.assign 提供）
+  isSettlementPageActive!: () => boolean
+  saveAiMemoryToStorage!: () => void
+  renderAiThoughtLog!: () => void
+  renderAiLogicPanelForLlm!: (telemetry: { round: number; entries?: Array<Record<string, unknown>> }) => void
+  canUseIntelActions!: () => boolean
+  buildSkillContext!: () => SkillContext
+  updateHud!: () => void
+  recordPlayerUsage!: (playerId: string, actionId: string) => void
+  addPrivateIntelEntry!: (entry: { source: string; text: string }) => void
 
   constructor() {
     super("warehouse")
@@ -304,6 +335,7 @@ class WarehouseScene extends _PhaserScene {
     this.lanMySlotId = "p2"
     this.lanIdToSlotId = {}
     this.slotIdToLanId = {}
+    this.lanHostWallets = {}
     this.lanReconnecting = false
     this.lanLastServerUrl = null
     this.lanLastRoomCode = null
@@ -379,7 +411,6 @@ class WarehouseScene extends _PhaserScene {
     this.privateIntelEntries = []
     this.publicInfoEntries = []
     this.currentPublicEvent = null
-    this.resetPlayerHistoryState()
 
     this.dom = {
       hudRound: null,
@@ -493,6 +524,93 @@ class WarehouseScene extends _PhaserScene {
     this._timerSpan = null
 
     this.keypadValue = "0"
+
+    // Phase 2: Manager 实例化（依赖注入）
+    this.walletManager = new AiWalletManager(this.players, this.aiWallets, () => ({
+      currentBid: this.currentBid,
+      aiMaxBid: this.aiMaxBid,
+      aiWallets: this.aiWallets,
+      isLanMode: this.isLanMode,
+      slotIdToLanId: this.slotIdToLanId,
+      lanHostWallets: this.lanHostWallets,
+    }))
+    this.historyManager = new HistoryManager({
+      players: this.players,
+      data: {
+        playerRoundHistory: this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>,
+        playerUsageHistory: this.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>,
+        currentRoundUsage: this.currentRoundUsage as Record<string, string[]>,
+        playerHistoryPanels: this.playerHistoryPanels as Record<string, HTMLElement | null>,
+      },
+      dom: this.dom,
+      itemManager: this.itemManager,
+      getRound: () => this.round,
+      getDrawerState: () => ({
+        settled: this.settled,
+        roundResolving: this.roundResolving,
+        playerBidSubmitted: this.playerBidSubmitted,
+        roundTimeLeft: this.roundTimeLeft,
+      }),
+      closeBidKeypad: () => this.closeBidKeypad(),
+      isSettingsOverlayOpen: () => this.isSettingsOverlayOpen(),
+      isSettlementPageActive: () => this.isSettlementPageActive(),
+      getItemInfo: (itemId: string) => this.getItemInfo(itemId)!,
+    })
+    this.aiDecisionManager = new AiDecisionManager({
+      runLogHistory: this.runLogHistory as RunLog[],
+      dom: this.dom,
+      aiEngine: this.aiEngine,
+      getRound: () => this.round,
+      getCurrentRunLog: () => this.currentRunLog as RunLog | null,
+      setCurrentRunLog: (log: RunLog) => {
+        this.currentRunLog = log
+      },
+      setRunSerial: (n: number) => {
+        this.runSerial = n
+      },
+      saveAiMemoryToStorage: () => this.saveAiMemoryToStorage(),
+      renderAiThoughtLog: () => this.renderAiThoughtLog(),
+      renderAiLogicPanelForLlm: (t) => this.renderAiLogicPanelForLlm(t),
+    })
+    this.skillItemManager = new SkillItemManager({
+      getRound: () => this.round,
+      getActionsLeft: () => this.actionsLeft,
+      setActionsLeft: (n: number) => {
+        this.actionsLeft = n
+      },
+      skillManager: this.skillManager,
+      itemManager: this.itemManager,
+      canUseIntelActions: () => this.canUseIntelActions(),
+      closeItemDrawer: () => this.closeItemDrawer(),
+      writeLog: (msg: string) => this.writeLog(msg),
+      buildSkillContext: () => this.buildSkillContext(),
+      updateHud: () => this.updateHud(),
+      recordPlayerUsage: (playerId: string, actionId: string) => this.recordPlayerUsage(playerId, actionId),
+      addPrivateIntelEntry: (entry: { source: string; text: string }) => this.addPrivateIntelEntry(entry),
+      getOutlineBonus: () => getOutlineBonus(),
+      getQualityBonus: () => getQualityBonus(),
+      getOutlineSortStrategy: () => getOutlineSortStrategy(),
+      isLanMode: () => this.isLanMode,
+      lanMySlotId: () => this.lanMySlotId,
+      lanBridge: () => this.lanBridge as LanBridgeLike | null,
+      getPlayers: () => this.players,
+      consumeItem: (itemId: string) => {
+        if (MobaoShopBridge) {
+          MobaoShopBridge.consumeItem(itemId)
+        }
+      },
+    })
+    this.panelsManager = new PanelsManager({
+      privateIntelEntries: this.privateIntelEntries,
+      publicInfoEntries: this.publicInfoEntries as unknown as IntelEntry[],
+      dom: this.dom,
+      getRound: () => this.round,
+      getLanBridge: () => this.lanBridge as PanelsLanBridge,
+      getIsLanMode: () => this.isLanMode,
+      getLanIsHost: () => this.lanIsHost,
+    })
+    this.carouselManager = new CarouselManager()
+    this.resetPlayerHistoryState()
   }
 
   create() {

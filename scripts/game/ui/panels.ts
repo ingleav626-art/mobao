@@ -15,6 +15,7 @@
  * @exports UiPanelsMixin - 向后兼容的 Mixin 薄包装
  */
 import { escapeHtml } from "../core/utils"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 export interface IntelEntry {
   source: string
@@ -116,29 +117,26 @@ export function updateSidePanels(
   renderPublic()
 }
 
-// ─── Mixin 薄包装（向后兼容）───
+// ─── Mixin 薄代理（Phase 2：代理到 PanelsManager，向后兼容 Object.assign 混入）───
 
-export const UiPanelsMixin: Record<string, any> = {
-  privateIntelEntries: [] as IntelEntry[],
-  publicInfoEntries: [] as IntelEntry[],
-
+export const UiPanelsMixin: ThisType<WarehouseSceneThis> = {
   addPrivateIntelEntry(entry: { source?: string; text?: string }): void {
-    addPrivateIntelEntry(this.privateIntelEntries, this.round, entry)
+    this.panelsManager.addPrivateIntelEntry(entry)
   },
 
   addPublicInfoEntry(entry: { source?: string; text?: string }): void {
-    addPublicInfoEntry(this.publicInfoEntries, this.round, entry, this.lanBridge, this.isLanMode, this.lanIsHost)
+    this.panelsManager.addPublicInfoEntry(entry)
   },
 
   renderPrivateIntelPanel(): void {
-    renderPrivateIntelPanel(this.dom.personalPanelScroll, this.privateIntelEntries, this._intelPanelVersionRef || (this._intelPanelVersionRef = { current: "" }))
+    this.panelsManager.renderPrivateIntelPanel()
   },
 
   renderPublicInfoPanel(): void {
-    renderPublicInfoPanel(this.dom.publicInfoScroll, this.publicInfoEntries)
+    this.panelsManager.renderPublicInfoPanel()
   },
 
   updateSidePanels(): void {
-    updateSidePanels(() => this.renderPrivateIntelPanel(), () => this.renderPublicInfoPanel())
+    this.panelsManager.updateSidePanels()
   }
 }

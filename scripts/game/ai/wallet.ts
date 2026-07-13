@@ -116,25 +116,14 @@ export function normalizeAiBidValue(ctx: AiWalletContext, playerId: string, bid:
   return Math.max(minBid, roundToStep(safe, step))
 }
 
-// ─── Mixin 薄包装（向后兼容，通过 Object.assign 混入原型）───
-
-function walletCtx(scene: WarehouseSceneThis): AiWalletContext {
-  return {
-    currentBid: scene.currentBid,
-    aiMaxBid: scene.aiMaxBid,
-    aiWallets: scene.aiWallets,
-    isLanMode: scene.isLanMode,
-    slotIdToLanId: scene.slotIdToLanId,
-    lanHostWallets: scene.lanHostWallets,
-  }
-}
+// ─── Mixin 薄代理（Phase 2：代理到 AiWalletManager，向后兼容 Object.assign 混入）───
 
 export const AiWalletMixin: ThisType<WarehouseSceneThis> = {
-  loadAiWalletsFromStorage,
-  saveAiWalletsToStorage() { saveAiWalletsToStorage(this.aiWallets) },
-  resetAiWallets() { resetAiWallets(this.players, this.aiWallets) },
-  initAiWallets() { initAiWallets(this.players, this.aiWallets) },
-  getAiWallet(playerId: string) { return getAiWallet(walletCtx(this), playerId) },
-  getAiMinimumBid(playerId: string, wallet: number | null = null) { return getAiMinimumBid(walletCtx(this), playerId, wallet) },
-  normalizeAiBidValue(playerId: string, bid: number, wallet: number | null = null) { return normalizeAiBidValue(walletCtx(this), playerId, bid, wallet) },
+  loadAiWalletsFromStorage() { return this.walletManager.loadAiWalletsFromStorage() },
+  saveAiWalletsToStorage() { return this.walletManager.saveAiWalletsToStorage() },
+  resetAiWallets() { return this.walletManager.resetAiWallets() },
+  initAiWallets() { return this.walletManager.initAiWallets() },
+  getAiWallet(playerId: string) { return this.walletManager.getAiWallet(playerId) },
+  getAiMinimumBid(playerId: string, wallet: number | null = null) { return this.walletManager.getAiMinimumBid(playerId, wallet) },
+  normalizeAiBidValue(playerId: string, bid: number, wallet: number | null = null) { return this.walletManager.normalizeAiBidValue(playerId, bid, wallet) },
 }

@@ -221,26 +221,26 @@ export function renderMapDetail(): void {
   }
 }
 
-// ─── Mixin 薄包装（向后兼容）───
-
-const _carouselState: CarouselState = { offset: 0 }
+// ─── Mixin 薄代理（Phase 2：代理到 CarouselManager，向后兼容 Object.assign 混入）───
 
 export const LobbyCarouselMixin: ThisType<WarehouseSceneThis> = {
   renderCarousel(): void {
-    renderCarousel(_carouselState)
+    this.carouselManager.renderCarousel()
   },
 
   bindCarouselTouch(): void {
-    bindCarouselTouch(_carouselState)
+    this.carouselManager.bindCarouselTouch()
   },
 
   carouselScroll(direction: number): void {
-    carouselScroll(_carouselState, direction)
+    this.carouselManager.carouselScroll(direction)
   },
 
   updateCarouselPosition(): void {
-    updateCarouselPosition(_carouselState.offset)
+    this.carouselManager.updateCarouselPosition()
   },
 
-  renderMapDetail,
+  renderMapDetail(): void {
+    this.carouselManager.renderMapDetail()
+  }
 }

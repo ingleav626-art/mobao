@@ -346,7 +346,6 @@ export interface LlmBridgeMethods {
   fillLlmSettingsForm(values: LlmSettings): void
   readLlmSettingsForm(): LlmSettings
   setLlmSettingsStatus(text: string, state: string): void
-  testDeepSeekConnectionFromOverlay(): Promise<void>
 
   buildAiLlmRoundPayload(player: object): LlmRoundPayload
   buildAiIncrementalPayload(player: object): LlmIncrementalPayload
