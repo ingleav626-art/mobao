@@ -10,6 +10,8 @@
  * @exports ITEM_DEFS, ItemManager - 命名导出
  */
 
+import { applyUse, resetEntries, type RevealResult } from "./def-manager-helpers"
+
 export const ITEM_DEFS = [
   {
     id: "item-outline-lamp",
@@ -156,12 +158,6 @@ interface ItemState {
   initialCount: number
 }
 
-interface RevealResult {
-  ok: boolean
-  revealed: number
-  message: string
-}
-
 export class ItemManager {
   items: ItemRuntime[]
 
@@ -170,32 +166,25 @@ export class ItemManager {
   }
 
   resetForNewRun(): void {
-    this.items.forEach((item) => {
-      item.count = item.initialCount
-    })
+    resetEntries(
+      this.items,
+      (e) => e.initialCount,
+      (e, v) => {
+        e.count = v
+      }
+    )
   }
 
   use(itemId: string, context: any): RevealResult {
-    const item = this.items.find((entry) => entry.id === itemId)
-    if (!item) {
-      return { ok: false, revealed: 0, message: "道具不存在" }
-    }
-
-    if (item.count <= 0) {
-      return { ok: false, revealed: 0, message: `${item.name} 数量不足` }
-    }
-
-    const revealResult = item.execute(context)
-    if (!revealResult.ok) {
-      return { ok: false, revealed: 0, message: revealResult.message || "揭示失败" }
-    }
-
-    item.count -= 1
-    return {
-      ok: true,
-      revealed: revealResult.revealed,
-      message: `${item.name} 生效，揭示 ${revealResult.revealed} 件目标。`
-    }
+    return applyUse(itemId, context, {
+      entries: this.items,
+      getRemaining: (e) => e.count,
+      setRemaining: (e, v) => {
+        e.count = v
+      },
+      notFoundMessage: () => "道具不存在",
+      depletedMessage: (e) => `${e.name} 数量不足`
+    })
   }
 
   getItemState(): ItemState[] {

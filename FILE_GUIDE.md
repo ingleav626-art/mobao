@@ -96,13 +96,23 @@
 
 | 文件 | 职责 |
 |------|------|
-| artifacts.ts | 藏品数据定义与生成管理，定义品质配置、品类权重、70+ 藏品图鉴，ArtifactManager 负责随机生成 |
+| artifacts.ts | 藏品数据薄入口（18行），re-export artifacts/ 4 子模块的全部公共符号 |
 | character-system.ts | 角色系统运行时管理，管理当前选中角色状态、被动技能效果计算、角色选择持久化 |
 | characters.ts | 角色数据定义，定义 3 个可玩角色的静态数据（ID、技能、被动、头像、立绘） |
 | items.ts | 道具数据定义与使用管理，定义 11 种道具配置，ItemManager 负责使用、扣减和状态查询 |
 | map-profiles.ts | 地图配置定义，定义 4 个地图的参数配置（回合数、直接拿下比例、品质权重等） |
 | public-events.ts | 公共事件系统，根据仓库藏品分布自动生成公共情报事件 |
 | skills.ts | 技能数据定义与使用管理，定义 3 个主动技能配置，SkillManager 负责使用、扣减和状态查询 |
+| def-manager-helpers.ts | ItemManager/SkillManager 共享 helper（applyUse + resetEntries），消除 use/reset 同构重复 |
+
+## scripts/game/data/artifacts/
+
+| 文件 | 职责 |
+|------|------|
+| config.ts | 品质配置（QUALITY_CONFIG + SIZE_TAG_BY_DIMENSION + CATEGORY_WEIGHTS）|
+| library.ts | ARTIFACT_LIBRARY 藏品数据（73 件）|
+| pure.ts | 9 纯函数（estimatePriceByQuality/signalToRevealState/summarizeCandidatePrices 等）|
+| manager.ts | ArtifactManager 类（藏品生成管理）|
 
 ## scripts/game/lan/
 
@@ -234,7 +244,21 @@
 
 | 文件 | 职责 |
 |------|------|
-| mobile-handler.ts | 移动端适配处理器单例，解决键盘遮挡、输入框定位、横竖屏切换等兼容性问题 |
+| mobile-handler.ts | 移动端适配处理器薄入口（56行），Object.assign 合并 mobile-handler/ 9 子模块 + re-export 纯函数 + 自动初始化 |
+
+## scripts/mobile/mobile-handler/
+
+| 文件 | 职责 |
+|------|------|
+| types.ts | MobileHandlerType 接口（11 属性 + 18 方法签名）|
+| pure.ts | 5 纯函数（detectMobile/detectTouch/calcSafeKeyboardHeight/isTextInputElement/isPortraitOrientation）|
+| styles.ts | addStyles() CSS 注入 |
+| core.ts | CorePart：11 状态属性 + init |
+| keyboard.ts | KeyboardPart：键盘适配 6 方法 |
+| input.ts | InputPart：输入框定位 6 方法 |
+| orientation.ts | OrientationPart：横竖屏切换 |
+| custom-select.ts | CustomSelectPart：自定义 select 3 方法（含 convertToCustomSelect）|
+| vibration.ts | VibrationPart：振动反馈 |
 
 ## types/
 

@@ -13,6 +13,8 @@
  * @exports SKILL_DEFS, SkillManager - 命名导出
  */
 
+import { applyUse, resetEntries, type RevealResult } from "./def-manager-helpers"
+
 // 技能配置：控制每回合可用次数、揭露类型与数量。
 export const SKILL_DEFS = [
   {
@@ -67,12 +69,6 @@ interface SkillState {
   maxPerRound: number
 }
 
-interface RevealResult {
-  ok: boolean
-  revealed: number
-  message: string
-}
-
 export class SkillManager {
   skills: SkillRuntime[]
 
@@ -84,38 +80,30 @@ export class SkillManager {
   }
 
   resetForNewRun(): void {
-    this.skills.forEach((skill) => {
-      skill.remainingThisRound = skill.maxPerRound
-    })
+    resetEntries(
+      this.skills,
+      (e) => e.maxPerRound,
+      (e, v) => {
+        e.remainingThisRound = v
+      }
+    )
   }
 
+  // onNewRound 与 resetForNewRun 行为一致（测试已断言），委托同一实现消除字节级重复。
   onNewRound(): void {
-    this.skills.forEach((skill) => {
-      skill.remainingThisRound = skill.maxPerRound
-    })
+    this.resetForNewRun()
   }
 
   use(skillId: string, context: any): RevealResult {
-    const skill = this.skills.find((s) => s.id === skillId)
-    if (!skill) {
-      return { ok: false, revealed: 0, message: "技能不存在" }
-    }
-
-    if (skill.remainingThisRound <= 0) {
-      return { ok: false, revealed: 0, message: `${skill.name} 本回合已用完` }
-    }
-
-    const revealResult = skill.execute(context)
-    if (!revealResult.ok) {
-      return { ok: false, revealed: 0, message: revealResult.message || "揭示失败" }
-    }
-
-    skill.remainingThisRound -= 1
-    return {
-      ok: true,
-      revealed: revealResult.revealed,
-      message: `${skill.name} 生效，揭示 ${revealResult.revealed} 件目标。`
-    }
+    return applyUse(skillId, context, {
+      entries: this.skills,
+      getRemaining: (e) => e.remainingThisRound,
+      setRemaining: (e, v) => {
+        e.remainingThisRound = v
+      },
+      notFoundMessage: () => "技能不存在",
+      depletedMessage: (e) => `${e.name} 本回合已用完`
+    })
   }
 
   getSkillState(): SkillState[] {
