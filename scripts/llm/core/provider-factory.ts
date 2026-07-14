@@ -407,6 +407,7 @@ export function createOpenAICompatibleProvider(config: any): any {
           headers.Authorization = `Bearer ${mergedSettings.apiKey}`
         }
 
+        console.log("[requestChat] fetchEndpoint:", fetchEndpoint, "type:", typeof fetchEndpoint, "startsWith https:", typeof fetchEndpoint === "string" && fetchEndpoint.startsWith("https://"))
         const fetchResponse = await window.fetch(fetchEndpoint, {
           method: "POST",
           headers,

@@ -193,7 +193,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
 
   this.dom.gameConfirmCancelBtn?.addEventListener("click", (event) => {
     event.stopPropagation()
-    const cb = this._gameCancelCallback
+    const cb = this.uiOverlayManager.getGameCancelCallback()
     this.hideGameConfirm()
     if (cb) {
       cb()
@@ -201,7 +201,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
   })
   this.dom.gameConfirmOkBtn?.addEventListener("click", (event) => {
     event.stopPropagation()
-    const cb = this._gameConfirmCallback
+    const cb = this.uiOverlayManager.getGameConfirmCallback()
     this.hideGameConfirm()
     if (cb) {
       cb()

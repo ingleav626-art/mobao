@@ -34,6 +34,7 @@ import type {
 } from "../../../types/ai"
 import type {
   LlmPlan,
+  LlmPlanResult,
   LlmTelemetry,
   LlmSettings,
 } from "../../../types/llm"
@@ -66,10 +67,11 @@ import type { AiMemoryData } from "../ai/memory-manager"
 import { WarehouseManager } from "../warehouse/warehouse-manager"
 import type { WarehouseManagerState } from "../warehouse/warehouse-manager"
 import { AiIntelManager } from "../ai/intel-manager"
-import type { AiIntelState } from "../ai/intel-manager"
+import type { AiIntelState, ArtifactManagerDep, AiEngineDep, LanBridgeDep } from "../ai/intel-manager"
 import { UiOverlayManager } from "../ui/overlay-manager"
+import type { OverlayPlayer, OverlayLanBridge, OverlayLlmProvider, OverlayTweens } from "../ui/overlay-manager"
 import { LobbyIndexManager } from "../lobby/lobby-index-manager"
-import type { LobbyIndexState } from "../lobby/lobby-index-manager"
+import type { LobbyIndexState, PhaserGameLike, LanBridgeLike as LobbyLanBridgeLike } from "../lobby/lobby-index-manager"
 import { RoundManager } from "../core/round-manager-class"
 import { BiddingManager } from "../bidding/bidding-manager"
 import { LanIndexManager } from "../lan/lan-index-manager"
@@ -78,6 +80,7 @@ import { getOutlineBonus, getQualityBonus, getOutlineSortStrategy } from "../dat
 import { MobaoShopBridge } from "../bridge/shop"
 import type { IntelEntry } from "../ui/panels"
 import type { RunLog } from "../ai/decision"
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 // Mixin 方法声明：这些方法通过 Object.assign 从各 Mixin 混入 WarehouseScene.prototype
 // 声明为 interface 让 TS 识别，运行时由 Mixin 提供
@@ -179,6 +182,7 @@ export interface WarehouseMixinMethods {
   // History
   resetPlayerHistoryState(): void
   writeLog(msg: string): void
+  proceedToBack(): void
 }
 
 // Phaser.Scene 类型桥接：extends 子句不支持 as，用中间类绕过
@@ -872,16 +876,16 @@ class WarehouseScene extends _PhaserScene {
       set warehouseCellIndex(v) { scene.warehouseCellIndex = v as unknown as Record<string, Artifact | null> },
       get selectedItem() { return scene.selectedItem },
       set selectedItem(v) { scene.selectedItem = v },
-      get previewAnchor() { return (scene as any).previewAnchor },
-      set previewAnchor(v) { (scene as any).previewAnchor = v },
+      get previewAnchor() { return (scene as unknown as WarehouseSceneThis).previewAnchor },
+      set previewAnchor(v) { (scene as unknown as WarehouseSceneThis).previewAnchor = v },
       get previewOpenTick() { return scene.previewOpenTick },
       set previewOpenTick(v) { scene.previewOpenTick = v },
-      get pendingRevealHintTargets() { return (scene as any).pendingRevealHintTargets },
-      set pendingRevealHintTargets(v) { (scene as any).pendingRevealHintTargets = v },
-      get pendingRevealHintText() { return (scene as any).pendingRevealHintText },
-      set pendingRevealHintText(v) { (scene as any).pendingRevealHintText = v },
-      get pendingRevealHintSeenIds() { return (scene as any).pendingRevealHintSeenIds },
-      set pendingRevealHintSeenIds(v) { (scene as any).pendingRevealHintSeenIds = v },
+      get pendingRevealHintTargets() { return (scene as unknown as WarehouseSceneThis).pendingRevealHintTargets },
+      set pendingRevealHintTargets(v) { (scene as unknown as WarehouseSceneThis).pendingRevealHintTargets = v },
+      get pendingRevealHintText() { return (scene as unknown as WarehouseSceneThis).pendingRevealHintText },
+      set pendingRevealHintText(v) { (scene as unknown as WarehouseSceneThis).pendingRevealHintText = v },
+      get pendingRevealHintSeenIds() { return (scene as unknown as WarehouseSceneThis).pendingRevealHintSeenIds },
+      set pendingRevealHintSeenIds(v) { (scene as unknown as WarehouseSceneThis).pendingRevealHintSeenIds = v },
       get warehouseTrueValue() { return scene.warehouseTrueValue },
       set warehouseTrueValue(v) { scene.warehouseTrueValue = v },
       get aiMaxBid() { return scene.aiMaxBid },
@@ -891,49 +895,53 @@ class WarehouseScene extends _PhaserScene {
     }
 
     this.warehouseManager = new WarehouseManager({
-      getTextures: () => (this as any).textures,
-      getLoad: () => (this as any).load,
-      getAdd: () => (this as any).add,
-      getTime: () => (this as any).time,
-      getTweens: () => (this as any).tweens,
-      getInput: () => (this as any).input,
+      getTextures: () => (this as unknown as WarehouseSceneThis).textures,
+      getLoad: () => (this as unknown as WarehouseSceneThis).load,
+      getAdd: () => (this as unknown as WarehouseSceneThis).add,
+      getTime: () => (this as unknown as WarehouseSceneThis).time,
+      getTweens: () => (this as unknown as WarehouseSceneThis).tweens,
+      getInput: () => (this as unknown as WarehouseSceneThis).input,
       state: warehouseManagerState,
       dom: this.dom,
-      artifactManager: this.artifactManager as any,
+      artifactManager: this.artifactManager as unknown as {
+        getCandidatesByRevealState(state: Record<string, unknown>): Artifact[]
+        getLibraryStats(): { total: number }
+        createRandomArtifactForSlot(options: Record<string, unknown>): Artifact
+      },
       getRound: () => this.round,
       getSettled: () => this.settled,
       getRoundResolving: () => this.roundResolving,
       getIsSettlementRevealMode: () => this.isSettlementRevealMode,
-      getMapCategoryWeights: () => (scene as any)._mapCategoryWeights,
-      getMapQualityWeights: () => (scene as any)._mapQualityWeights,
+      getMapCategoryWeights: () => (scene as unknown as WarehouseSceneThis)._mapCategoryWeights,
+      getMapQualityWeights: () => (scene as unknown as WarehouseSceneThis)._mapQualityWeights,
       isSettlementPageActive: () => this.isSettlementPageActive(),
       writeLog: (msg: string) => this.writeLog(msg),
       updateHud: () => this.updateHud(),
     })
 
     const aiIntelState: AiIntelState = {
-      get aiPrivateIntel() { return scene.aiPrivateIntel as any },
-      set aiPrivateIntel(v) { scene.aiPrivateIntel = v as any },
-      get aiResourceState() { return scene.aiResourceState as any },
-      set aiResourceState(v) { scene.aiResourceState = v as any },
-      get aiRoundEffects() { return scene.aiRoundEffects as any },
-      set aiRoundEffects(v) { scene.aiRoundEffects = v as any },
-      get lastAiIntelActions() { return scene.lastAiIntelActions as any },
-      set lastAiIntelActions(v) { scene.lastAiIntelActions = v as any },
-      get aiLlmRoundPlans() { return scene.aiLlmRoundPlans as any },
-      set aiLlmRoundPlans(v) { scene.aiLlmRoundPlans = v as any },
-      get aiFoldState() { return scene.aiFoldState as any },
-      set aiFoldState(v) { scene.aiFoldState = v as any },
-      get aiCharacterAssignments() { return (scene as any).aiCharacterAssignments },
-      set aiCharacterAssignments(v) { (scene as any).aiCharacterAssignments = v },
-      get aiErrorCorrectionHistory() { return (scene as any).aiErrorCorrectionHistory },
-      set aiErrorCorrectionHistory(v) { (scene as any).aiErrorCorrectionHistory = v },
+      get aiPrivateIntel() { return scene.aiPrivateIntel as unknown as AiIntelState["aiPrivateIntel"] },
+      set aiPrivateIntel(v) { scene.aiPrivateIntel = v as unknown as Record<string, AiPrivateIntel> },
+      get aiResourceState() { return scene.aiResourceState as unknown as AiIntelState["aiResourceState"] },
+      set aiResourceState(v) { scene.aiResourceState = v as unknown as Record<string, unknown> },
+      get aiRoundEffects() { return scene.aiRoundEffects as AiIntelState["aiRoundEffects"] },
+      set aiRoundEffects(v) { scene.aiRoundEffects = v as unknown as Record<string, unknown> },
+      get lastAiIntelActions() { return scene.lastAiIntelActions as unknown as AiIntelState["lastAiIntelActions"] },
+      set lastAiIntelActions(v) { scene.lastAiIntelActions = v as unknown as typeof scene.lastAiIntelActions },
+      get aiLlmRoundPlans() { return scene.aiLlmRoundPlans as unknown as AiIntelState["aiLlmRoundPlans"] },
+      set aiLlmRoundPlans(v) { scene.aiLlmRoundPlans = v as unknown as Record<string, LlmPlan | null> },
+      get aiFoldState() { return scene.aiFoldState as unknown as AiIntelState["aiFoldState"] },
+      set aiFoldState(v) { scene.aiFoldState = v as unknown as Record<string, unknown> },
+      get aiCharacterAssignments() { return (scene as unknown as WarehouseSceneThis).aiCharacterAssignments },
+      set aiCharacterAssignments(v) { (scene as unknown as WarehouseSceneThis).aiCharacterAssignments = v },
+      get aiErrorCorrectionHistory() { return (scene as unknown as WarehouseSceneThis).aiErrorCorrectionHistory },
+      set aiErrorCorrectionHistory(v) { (scene as unknown as WarehouseSceneThis).aiErrorCorrectionHistory = v },
       get highValuePriceThreshold() { return scene.highValuePriceThreshold },
       set highValuePriceThreshold(v) { scene.highValuePriceThreshold = v },
       get llmEverUsedThisRun() { return scene.llmEverUsedThisRun },
       set llmEverUsedThisRun(v) { scene.llmEverUsedThisRun = v },
-      get currentRunLog() { return scene.currentRunLog as any },
-      set currentRunLog(v) { scene.currentRunLog = v as any },
+      get currentRunLog() { return scene.currentRunLog as unknown as AiIntelState["currentRunLog"] },
+      set currentRunLog(v) { scene.currentRunLog = v as unknown as typeof scene.currentRunLog },
     }
 
     this.aiIntelManager = new AiIntelManager({
@@ -945,84 +953,84 @@ class WarehouseScene extends _PhaserScene {
       getRound: () => this.round,
       isLanMode: () => this.isLanMode,
       isLanHost: () => this.lanIsHost,
-      getLanBridge: () => this.lanBridge as any,
+      getLanBridge: () => this.lanBridge as unknown as LanBridgeDep | null,
       getLanAiPlayers: () => this.lanAiPlayers as Array<{ id: string }>,
       isRoundResolving: () => this.roundResolving,
       isSettled: () => this.settled,
       isRoundPaused: () => this.roundPaused,
       getRoundTimeLeft: () => this.roundTimeLeft,
       isPlayerBidSubmitted: () => this.playerBidSubmitted,
-      artifactManager: this.artifactManager as any,
-      aiEngine: this.aiEngine as any,
+      artifactManager: this.artifactManager as unknown as ArtifactManagerDep,
+      aiEngine: this.aiEngine as unknown as AiEngineDep,
       updatePlayerAvatar: (playerId: string, avatarEl: HTMLElement) => this.updatePlayerAvatar(playerId, avatarEl),
-      isInBoundsCell: (x: number, y: number) => (this as any).isInBoundsCell(x, y),
-      isWarehouseCellOccupied: (x: number, y: number) => (this as any).isWarehouseCellOccupied(x, y),
-      pickBottomCellFromTargets: (targets: Artifact[]) => (this as any).pickBottomCellFromTargets(targets),
+      isInBoundsCell: (x: number, y: number) => (this as unknown as WarehouseSceneThis).isInBoundsCell(x, y),
+      isWarehouseCellOccupied: (x: number, y: number) => (this as unknown as WarehouseSceneThis).isWarehouseCellOccupied(x, y),
+      pickBottomCellFromTargets: (targets: Artifact[]) => (this as unknown as WarehouseSceneThis).pickBottomCellFromTargets(targets),
       revealOutlineBatch: (count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string | null) =>
-        (this as any).revealOutlineBatch(count, category, allowCategoryFallback, sortStrategy),
+        (this as unknown as WarehouseSceneThis).revealOutlineBatch(count, category, allowCategoryFallback, sortStrategy),
       revealQualityBatch: (count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string | null) =>
-        (this as any).revealQualityBatch(count, category, allowCategoryFallback, sortStrategy),
+        (this as unknown as WarehouseSceneThis).revealQualityBatch(count, category, allowCategoryFallback, sortStrategy),
       revealArtifactFullyBatch: (options: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }) =>
-        (this as any).revealArtifactFullyBatch(options),
+        (this as unknown as WarehouseSceneThis).revealArtifactFullyBatch(options),
       canUseLlmDecisionForPlayer: (playerId: string) => this.canUseLlmDecisionForPlayer(playerId),
       writeLog: (text: string) => this.writeLog(text),
-      requestAiLlmErrorCorrection: (player: any, plan: any, error: string, history: any, messages: any) =>
-        (this as any).requestAiLlmErrorCorrection(player, plan, error, history, messages),
-      getAiConversationMessages: (playerId: string) => (this as any).getAiConversationMessages(playerId),
+      requestAiLlmErrorCorrection: (player: Player, plan: LlmPlan, error: string, history: Array<{ error: string; aiResponse: string; at: number }>, messages: ConversationMessage[]) =>
+        (this as unknown as WarehouseSceneThis).requestAiLlmErrorCorrection(player, plan, error, history, messages),
+      getAiConversationMessages: (playerId: string) => (this as unknown as WarehouseSceneThis).getAiConversationMessages(playerId),
       recordPlayerUsage: (playerId: string, actionId: string) => this.recordPlayerUsage(playerId, actionId),
       buildAiToolResultSummary: (result: unknown, actionType: string, actionId: string) =>
-        (this as any).buildAiToolResultSummary(result, actionType, actionId),
-      getActionDefById: (actionId: string) => (this as any).getActionDefById(actionId),
+        (this as unknown as WarehouseSceneThis).buildAiToolResultSummary(result, actionType, actionId),
+      getActionDefById: (actionId: string) => (this as unknown as WarehouseSceneThis).getActionDefById(actionId),
       addPublicInfoEntry: (entry: { source: string; text: string }) => this.addPublicInfoEntry(entry),
-      requestAiLlmFollowupBid: (player: any, plan: any, toolSummary: string) =>
-        (this as any).requestAiLlmFollowupBid(player, plan, toolSummary),
-      setPlayerBidReady: (playerId: string, ready: boolean) => (this as any).setPlayerBidReady(playerId, ready),
+      requestAiLlmFollowupBid: (player: Player, plan: LlmPlanResult | null, toolSummary: string) =>
+        (this as unknown as WarehouseSceneThis).requestAiLlmFollowupBid(player, plan, toolSummary),
+      setPlayerBidReady: (playerId: string, ready: boolean) => (this as unknown as WarehouseSceneThis).setPlayerBidReady(playerId, ready),
       updateHud: () => this.updateHud(),
-      areAllPlayersBidReady: () => (this as any).areAllPlayersBidReady(),
-      resolveRoundBids: ((reason: string) => this.resolveRoundBids(reason)) as any,
+      areAllPlayersBidReady: () => (this as unknown as WarehouseSceneThis).areAllPlayersBidReady(),
+      resolveRoundBids: (reason: string) => this.resolveRoundBids(reason) as unknown as Promise<void>,
       getItemInfo: (itemId: string) => this.getItemInfo(itemId) as { label?: string } | null,
-      waitUntilResumed: () => (this as any).waitUntilResumed(),
+      waitUntilResumed: () => (this as unknown as WarehouseSceneThis).waitUntilResumed(),
     })
 
     this.uiOverlayManager = new UiOverlayManager({
       dom: this.dom,
-      get players() { return scene.players as any },
+      get players() { return scene.players as unknown as OverlayPlayer[] },
       getIsLanMode: () => this.isLanMode,
       getLanIsHost: () => this.lanIsHost,
-      getLanBridge: () => this.lanBridge as any,
+      getLanBridge: () => this.lanBridge as unknown as OverlayLanBridge,
       getSettled: () => this.settled,
       getRound: () => this.round,
       getRoundTimeLeft: () => this.roundTimeLeft,
       getActionsLeft: () => this.actionsLeft,
       getRunLogHistory: () => this.runLogHistory as RunLog[],
-      getAiCharacterAssignments: () => (scene as any).aiCharacterAssignments,
+      getAiCharacterAssignments: () => (scene as unknown as WarehouseSceneThis).aiCharacterAssignments,
       getAiReflectionState: () => this.aiReflectionState,
       getAiReflectionStateDetail: () => this.aiReflectionStateDetail,
       getAiReflectionTotal: () => this.aiReflectionTotal,
       getAiReflectionCompleted: () => this.aiReflectionCompleted,
-      getTweens: () => this.tweens as any,
+      getTweens: () => (this as unknown as WarehouseSceneThis).tweens as unknown as OverlayTweens,
       setRound: (v: number) => { this.round = v },
       setRoundTimeLeft: (v: number) => { this.roundTimeLeft = v },
       setActionsLeft: (v: number) => { this.actionsLeft = v },
-      renderAiLogicPanel: () => (this as any).renderAiLogicPanel(),
-      updateLobbyMoneyDisplay: () => (this as any).updateLobbyMoneyDisplay(),
+      renderAiLogicPanel: () => (this as unknown as WarehouseSceneThis).renderAiLogicPanel(),
+      updateLobbyMoneyDisplay: () => (this as unknown as WarehouseSceneThis).updateLobbyMoneyDisplay(),
       updateHud: () => this.updateHud(),
       closeBidKeypad: () => this.closeBidKeypad(),
       closeItemDrawer: () => this.closeItemDrawer(),
-      fillLlmSettingsForm: (settings: Record<string, unknown>) => (this as any).fillLlmSettingsForm(settings),
-      getLlmSettings: () => this.getLlmSettings() as any,
-      readLlmSettingsForm: () => (this as any).readLlmSettingsForm(),
-      setLlmSettingsStatus: (text: string, state: string) => (this as any).setLlmSettingsStatus(text, state),
-      getLlmProvider: () => this.getLlmProvider() as any,
+      fillLlmSettingsForm: (settings: Record<string, unknown>) => (this as unknown as WarehouseSceneThis).fillLlmSettingsForm(settings),
+      getLlmSettings: () => this.getLlmSettings() as unknown as Record<string, unknown>,
+      readLlmSettingsForm: () => (this as unknown as WarehouseSceneThis).readLlmSettingsForm(),
+      setLlmSettingsStatus: (text: string, state: string) => (this as unknown as WarehouseSceneThis).setLlmSettingsStatus(text, state),
+      getLlmProvider: () => this.getLlmProvider() as unknown as OverlayLlmProvider | null,
       writeLog: (msg: string) => this.writeLog(msg),
       pushRunStartContextToAi: () => this.pushRunStartContextToAi(),
       toggleRoundPause: () => this.toggleRoundPause(),
-      ensureAiCrossGameMemory: (playerId: string) => this.aiMemoryManager.ensureAiCrossGameMemory(playerId) as any,
+      ensureAiCrossGameMemory: (playerId: string) => this.aiMemoryManager.ensureAiCrossGameMemory(playerId) as unknown as CrossGameMemory,
       shouldShowReflectionUI: () => this.shouldShowReflectionUI(),
       shouldGenerateSummary: () => this.aiMemoryManager.shouldGenerateSummary(),
       isAiMultiGameMemoryEnabled: () => this.isAiMultiGameMemoryEnabled(),
       proceedToNewRun: () => this.proceedToNewRun(),
-      proceedToBack: () => (this as any).proceedToBack(),
+      proceedToBack: () => this.proceedToBack(),
     })
 
     const lobbyIndexState: LobbyIndexState = {
@@ -1030,14 +1038,14 @@ class WarehouseScene extends _PhaserScene {
       set isLanMode(v) { scene.isLanMode = v },
       get lanIsHost() { return scene.lanIsHost },
       set lanIsHost(v) { scene.lanIsHost = v },
-      get lanPlayers() { return (scene as any).lanPlayers },
-      set lanPlayers(v) { (scene as any).lanPlayers = v },
-      get lanAiPlayers() { return scene.lanAiPlayers as any },
-      set lanAiPlayers(v) { scene.lanAiPlayers = v as any },
-      get lanHostWallets() { return scene.lanHostWallets as any },
-      set lanHostWallets(v) { scene.lanHostWallets = v as any },
-      get lanHostBids() { return (scene as any).lanHostBids },
-      set lanHostBids(v) { (scene as any).lanHostBids = v },
+      get lanPlayers() { return (scene as unknown as WarehouseSceneThis).lanPlayers as unknown as LobbyIndexState["lanPlayers"] },
+      set lanPlayers(v) { (scene as unknown as WarehouseSceneThis).lanPlayers = v as unknown as typeof scene.lanPlayers },
+      get lanAiPlayers() { return scene.lanAiPlayers as unknown as LobbyIndexState["lanAiPlayers"] },
+      set lanAiPlayers(v) { scene.lanAiPlayers = v as unknown as (LanPlayer & { llm?: boolean })[] },
+      get lanHostWallets() { return scene.lanHostWallets as unknown as LobbyIndexState["lanHostWallets"] },
+      set lanHostWallets(v) { scene.lanHostWallets = v as unknown as Record<string, number> },
+      get lanHostBids() { return (scene as unknown as WarehouseSceneThis).lanHostBids as unknown as LobbyIndexState["lanHostBids"] },
+      set lanHostBids(v) { (scene as unknown as WarehouseSceneThis).lanHostBids = v as unknown as Record<string, number> },
       get lanAiLlmEnabled() { return scene.lanAiLlmEnabled },
       set lanAiLlmEnabled(v) { scene.lanAiLlmEnabled = v },
       get lanIdToSlotId() { return scene.lanIdToSlotId },
@@ -1052,53 +1060,53 @@ class WarehouseScene extends _PhaserScene {
       set players(v) { scene.players = v },
       get playerMoney() { return scene.playerMoney },
       set playerMoney(v) { scene.playerMoney = v },
-      get items() { return scene.items as any },
-      set items(v) { scene.items = v as any },
-      get itemLayer() { return scene.itemLayer as any },
-      set itemLayer(v) { scene.itemLayer = v as any },
-      get gridLayer() { return scene.gridLayer as any },
-      set gridLayer(v) { scene.gridLayer = v as any },
-      get revealCellLayer() { return scene.revealCellLayer as any },
-      set revealCellLayer(v) { scene.revealCellLayer = v as any },
-      get activeSettlementSpinner() { return scene.activeSettlementSpinner as any },
-      set activeSettlementSpinner(v) { scene.activeSettlementSpinner = v as any },
-      get carouselOffset() { return (scene as any)._carouselOffset },
-      set carouselOffset(v) { (scene as any)._carouselOffset = v },
-      get mapQualityWeights() { return (scene as any)._mapQualityWeights },
-      set mapQualityWeights(v) { (scene as any)._mapQualityWeights = v },
-      get mapCategoryWeights() { return (scene as any)._mapCategoryWeights },
-      set mapCategoryWeights(v) { (scene as any)._mapCategoryWeights = v },
-      get aiCharacterAssignments() { return (scene as any).aiCharacterAssignments },
-      set aiCharacterAssignments(v) { (scene as any).aiCharacterAssignments = v },
+      get items() { return scene.items as unknown as LobbyIndexState["items"] },
+      set items(v) { scene.items = v as unknown as Artifact[] },
+      get itemLayer() { return scene.itemLayer as unknown as LobbyIndexState["itemLayer"] },
+      set itemLayer(v) { scene.itemLayer = v as unknown as Phaser.GameObjects.Container | null },
+      get gridLayer() { return scene.gridLayer as unknown as LobbyIndexState["gridLayer"] },
+      set gridLayer(v) { scene.gridLayer = v as unknown as Phaser.GameObjects.Graphics | null },
+      get revealCellLayer() { return scene.revealCellLayer as unknown as LobbyIndexState["revealCellLayer"] },
+      set revealCellLayer(v) { scene.revealCellLayer = v as unknown as Phaser.GameObjects.Graphics | null },
+      get activeSettlementSpinner() { return scene.activeSettlementSpinner as unknown as LobbyIndexState["activeSettlementSpinner"] },
+      set activeSettlementSpinner(v) { scene.activeSettlementSpinner = v as unknown as Phaser.GameObjects.Arc | null },
+      get carouselOffset() { return (scene as unknown as WarehouseSceneThis)._carouselOffset },
+      set carouselOffset(v) { (scene as unknown as WarehouseSceneThis)._carouselOffset = v },
+      get mapQualityWeights() { return (scene as unknown as WarehouseSceneThis)._mapQualityWeights },
+      set mapQualityWeights(v) { (scene as unknown as WarehouseSceneThis)._mapQualityWeights = v },
+      get mapCategoryWeights() { return (scene as unknown as WarehouseSceneThis)._mapCategoryWeights },
+      set mapCategoryWeights(v) { (scene as unknown as WarehouseSceneThis)._mapCategoryWeights = v },
+      get aiCharacterAssignments() { return (scene as unknown as WarehouseSceneThis).aiCharacterAssignments as unknown as LobbyIndexState["aiCharacterAssignments"] },
+      set aiCharacterAssignments(v) { (scene as unknown as WarehouseSceneThis).aiCharacterAssignments = v as unknown as WarehouseSceneThis["aiCharacterAssignments"] },
       get playerHistoryPanels() { return scene.playerHistoryPanels as Record<string, HTMLElement | null> },
-      set playerHistoryPanels(v) { scene.playerHistoryPanels = v as any },
+      set playerHistoryPanels(v) { scene.playerHistoryPanels = v as unknown as Record<string, unknown> },
     }
 
     this.lobbyIndexManager = new LobbyIndexManager({
       state: lobbyIndexState,
       dom: this.dom,
-      lanBridge: this.lanBridge as any,
-      game: (scene as any).game,
-      getTweens: () => (this as any).tweens,
-      getTime: () => (this as any).time,
-      itemManager: this.itemManager as any,
+      lanBridge: this.lanBridge as unknown as LobbyLanBridgeLike | null,
+      game: (scene as unknown as WarehouseSceneThis).game as unknown as PhaserGameLike | null,
+      getTweens: () => (this as unknown as WarehouseSceneThis).tweens as unknown as { killAll(): void },
+      getTime: () => (this as unknown as WarehouseSceneThis).time as unknown as { removeAllEvents(): void },
+      itemManager: this.itemManager as unknown as { items: Array<{ id: string; count?: number }> },
       openSettingsOverlay: () => this.openSettingsOverlay(),
-      openCollectionOverlay: () => (this as any).openCollectionOverlay(),
+      openCollectionOverlay: () => (this as unknown as WarehouseSceneThis).openCollectionOverlay(),
       openBattleRecordPanel: () => this.openBattleRecordPanel(),
       openShopOverlay: () => this.openShopOverlay(),
       showGameConfirm: (msg: string, onConfirm: () => void) => this.showGameConfirm(msg, onConfirm),
-      carouselScroll: (dir: number) => (this as any).carouselScroll(dir),
-      renderCarousel: () => (this as any).renderCarousel(),
-      renderMapDetail: () => (this as any).renderMapDetail(),
-      initLanLobby: () => (this as any).initLanLobby(),
+      carouselScroll: (dir: number) => (this as unknown as WarehouseSceneThis).carouselScroll(dir),
+      renderCarousel: () => (this as unknown as WarehouseSceneThis).renderCarousel(),
+      renderMapDetail: () => (this as unknown as WarehouseSceneThis).renderMapDetail(),
+      initLanLobby: () => (this as unknown as WarehouseSceneThis).initLanLobby(),
       showCharacterSelectPage: (mapProfile: { name?: string; params?: Record<string, unknown> } | null) =>
-        (this as any).showCharacterSelectPage(mapProfile),
+        (this as unknown as WarehouseSceneThis).showCharacterSelectPage(mapProfile),
       stopRoundTimer: () => this.stopRoundTimer(),
       exitSettlementPage: () => this.exitSettlementPage(),
       startNewRun: () => this.startNewRun(),
-      stopLive2dLoop: () => (this as any)._stopLive2dLoop(),
+      stopLive2dLoop: () => (this as unknown as WarehouseSceneThis)._stopLive2dLoop(),
       writeLog: (msg: string) => this.writeLog(msg),
-      refreshPlayerHistoryUI: () => (this as any).refreshPlayerHistoryUI(),
+      refreshPlayerHistoryUI: () => (this as unknown as WarehouseSceneThis).refreshPlayerHistoryUI(),
     })
 
     // Phase 2: 新增 3 个 Manager 实例化（RoundManager / BiddingManager / LanIndexManager）
@@ -1478,6 +1486,7 @@ class WarehouseScene extends _PhaserScene {
   onLanForeground!: WarehouseMixinMethods["onLanForeground"]
   resetPlayerHistoryState!: WarehouseMixinMethods["resetPlayerHistoryState"]
   writeLog!: WarehouseMixinMethods["writeLog"]
+  proceedToBack!: WarehouseMixinMethods["proceedToBack"]
 }
 
 export { WarehouseScene }

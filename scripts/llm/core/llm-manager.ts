@@ -69,6 +69,22 @@ function saveManagerSettings(settings: any): void {
   } catch (_error) {}
 }
 
+/** 自定义 Provider 的 endpoint 归一化：验证 URL 协议，无效协议回退到默认值 */
+function normalizeCustomEndpoint(raw: string, fallback: string): string {
+  const input = typeof raw === "string" ? raw.trim() : ""
+  if (!input) {
+    return fallback
+  }
+  if (input.startsWith("/")) {
+    return input.replace(/\/$/, "") || "/"
+  }
+  if (/^https?:\/\//i.test(input)) {
+    return input.replace(/\/$/, "")
+  }
+  // 无效协议（如缺少 ://），回退到默认
+  return fallback || input
+}
+
 function loadCustomProviders(): CustomProvider[] {
   try {
     const raw = window.localStorage.getItem(CUSTOM_PROVIDERS_STORAGE_KEY)
@@ -307,7 +323,8 @@ export const LlmManager = {
         providerId: providerId,
         defaultSettings: defaultSettingsFn,
         temperatureMax: 2,
-        includeIndependentReflection: true
+        includeIndependentReflection: true,
+        normalizeEndpoint: normalizeCustomEndpoint
       }),
       isThinkingModel: function (_model: string) {
         return false
@@ -394,7 +411,8 @@ export const LlmManager = {
             providerId: cfg.id,
             defaultSettings: defaultSettingsFn,
             temperatureMax: 2,
-            includeIndependentReflection: true
+            includeIndependentReflection: true,
+            normalizeEndpoint: normalizeCustomEndpoint
           }),
           isThinkingModel: function (_model: string) {
             return false

@@ -1054,4 +1054,5 @@ export interface WarehouseSceneThis {
   isAiMultiGameMemoryEnabled(): boolean
   beginRunTracking(): void
   getItemInfo(itemId: string): ItemDef | null
+  proceedToBack(): void
 }

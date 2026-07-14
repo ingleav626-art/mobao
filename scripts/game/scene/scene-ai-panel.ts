@@ -107,14 +107,25 @@ export function getLlmSettings(this: WarehouseSceneThis): LlmSettings {
     // 忽略 JSON 解析错误
   }
 
+  // 从 globalSettings 排除 provider 级字段，防止旧数据（如 endpoint）覆盖 provider 正确值
+  const providerLevelFields = new Set([
+    "endpoint", "apiKey", "model", "maxTokens", "timeoutMs", "temperature", "thinkingParams"
+  ])
+  const safeGlobal: Record<string, unknown> = {}
+  for (const key of Object.keys(globalSettings)) {
+    if (!providerLevelFields.has(key)) {
+      safeGlobal[key] = globalSettings[key]
+    }
+  }
+
   if (LlmManager) {
     const provider = LlmManager.getProvider()
     if (provider) {
       const providerSettings = provider.loadSettings()
-      return { ...providerSettings, ...globalSettings } as LlmSettings
+      return { ...providerSettings, ...safeGlobal } as LlmSettings
     }
   }
-  return { ...DeepSeekProvider.getSettings(), ...globalSettings } as LlmSettings
+  return { ...DeepSeekProvider.getSettings(), ...safeGlobal } as LlmSettings
 }
 
 /** 获取 LLM Provider：优先返回已注册 Provider，回退到 DeepSeekProvider 兼容对象 */

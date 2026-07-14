@@ -139,6 +139,9 @@ export class UiOverlayManager {
   // ==================== ConfirmDialogMixin ====================
   showGameConfirm(message: string, onConfirm: () => void, onCancel?: () => void): void { showGameConfirm(this.deps, this.state, message, onConfirm, onCancel) }
   hideGameConfirm(): void { hideGameConfirm(this.deps, this.state) }
+  /** 供 events-overlay 读取确认回调（由 Manager 的 showGameConfirm 写入 state） */
+  getGameConfirmCallback(): (() => void) | null { return this.state.gameConfirmCallback }
+  getGameCancelCallback(): (() => void) | null { return this.state.gameCancelCallback }
 
   // ==================== SettingsMixin ====================
   openSettingsOverlay(): void { openSettingsOverlay(this.deps, this.state) }

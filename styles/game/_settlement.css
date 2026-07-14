@@ -1,0 +1,580 @@
+.settlement-page {
+  border: none;
+  border-radius: 0;
+  background: none;
+  padding: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settle-data-wrap {
+  background: url("../../assets/images/backgrounds/panels/settle-panel.png") center / cover no-repeat;
+  padding: 60px 70px 0px 69px;
+  ;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settlement-page h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  color: #3a2a17;
+}
+
+.settle-meta {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.settle-meta strong {
+  font-size: 17px;
+}
+
+.settle-progress {
+  margin: 10px 0 4px;
+  color: #735738;
+  font-size: 13px;
+}
+
+.settle-progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(115, 87, 56, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+  border: 1px solid rgba(115, 87, 56, 0.2);
+}
+
+.settle-progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6b8e23, #4169e1, #9932cc, #ffd700);
+  background-size: 200% 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  animation: settle-progress-bar-shimmer 2s linear infinite;
+}
+
+@keyframes settle-progress-bar-shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.settle-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.settle-actions button {
+  border: 1px solid #8d7a5a;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff6dd 0%, #f0e0b0 100%);
+  color: #3e2f1d;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: var(--transition-btn);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.settle-actions button:hover {
+  background: linear-gradient(180deg, #ffecc0 0%, #ffd88a 100%);
+  border-color: #a08550;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.settle-actions button:active {
+  background: linear-gradient(180deg, #e8d4a0 0%, #dcc890 100%);
+  transform: translateY(0);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.settle-reflection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #735738;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #fff8ea;
+  border: 1px solid #d7c19b;
+  white-space: nowrap;
+}
+
+.settle-reflection-status.is-pending {
+  color: #8a6d2b;
+  background: #fff3cd;
+  border-color: #e6c34d;
+}
+
+.settle-reflection-status.is-pending::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #8a6d2b;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: reflection-spin 0.8s linear infinite;
+}
+
+@keyframes reflection-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.settle-reflection-status.is-done {
+  color: #2d6a2e;
+  background: #e8f5e9;
+  border-color: #66bb6a;
+}
+
+.settle-reflection-status.is-timeout {
+  color: #b04020;
+  background: #fef0ec;
+  border-color: #e08060;
+}
+
+.settle-reflection-status.is-error {
+  color: #b04020;
+  background: #fef0ec;
+  border-color: #e08060;
+}
+
+.settle-meta-row.card-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes profitBounce {
+  0% {
+    transform: scale(1);
+  }
+
+  20% {
+    transform: scale(1.35);
+  }
+
+  40% {
+    transform: scale(0.9);
+  }
+
+  60% {
+    transform: scale(1.15);
+  }
+
+  80% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes profitShake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  15% {
+    transform: translateX(-6px);
+  }
+
+  30% {
+    transform: translateX(6px);
+  }
+
+  45% {
+    transform: translateX(-4px);
+  }
+
+  60% {
+    transform: translateX(4px);
+  }
+
+  75% {
+    transform: translateX(-2px);
+  }
+
+  90% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes panelGlow {
+  0% {
+    box-shadow: 0 0 8px rgba(212, 168, 67, 0.3), 0 0 20px rgba(212, 168, 67, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(212, 168, 67, 0.6), 0 0 40px rgba(241, 196, 15, 0.3), 0 0 60px rgba(212, 168, 67, 0.15);
+  }
+
+  100% {
+    box-shadow: 0 0 8px rgba(212, 168, 67, 0.3), 0 0 20px rgba(212, 168, 67, 0.1);
+  }
+}
+
+@keyframes settleSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes profitSpark {
+  0% {
+    filter: brightness(1) drop-shadow(0 0 0 transparent);
+  }
+
+  50% {
+    filter: brightness(1.4) drop-shadow(0 0 8px rgba(241, 196, 15, 0.8));
+  }
+
+  100% {
+    filter: brightness(1) drop-shadow(0 0 0 transparent);
+  }
+}
+
+.settlement-page.settle-slide-in {
+  animation: settleSlideIn 0.5s ease-out forwards;
+}
+
+.settlement-page.settle-glow {
+  animation: panelGlow 1.5s ease-in-out 2;
+}
+
+.settle-meta strong.profit-animate-bounce {
+  animation: profitBounce 0.6s ease-out;
+}
+
+.settle-meta strong.profit-animate-shake {
+  animation: profitShake 0.5s ease-out;
+}
+
+.settle-meta strong.profit-animate-spark {
+  animation: profitSpark 0.8s ease-in-out 2;
+}
+
+/* === Winner announcement enhancements === */
+@keyframes winner-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.3), 0 0 12px rgba(255, 215, 0, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 14px rgba(255, 215, 0, 0.7), 0 0 30px rgba(255, 215, 0, 0.3), 0 0 50px rgba(255, 215, 0, 0.1);
+  }
+}
+
+@keyframes winner-name-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+    filter: brightness(0.5);
+  }
+
+  50% {
+    transform: scale(1.25);
+    filter: brightness(1.4);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes settle-screen-shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10% {
+    transform: translateX(-4px);
+  }
+
+  20% {
+    transform: translateX(4px);
+  }
+
+  30% {
+    transform: translateX(-3px);
+  }
+
+  40% {
+    transform: translateX(3px);
+  }
+
+  50% {
+    transform: translateX(-2px);
+  }
+
+  60% {
+    transform: translateX(2px);
+  }
+
+  70% {
+    transform: translateX(-1px);
+  }
+
+  80% {
+    transform: translateX(1px);
+  }
+}
+
+.settle-winner-name-animate {
+  display: inline-block;
+  animation: winner-name-enter 0.8s ease-out forwards;
+}
+
+.settlement-page.settle-glow-enhanced {
+  animation: settleSlideIn 0.5s ease-out forwards, winner-glow 2s ease-in-out 3;
+}
+
+.settlement-page.settle-screen-shake {
+  animation: settle-screen-shake 0.5s ease-out;
+}
+
+body.settlement-mode .hud,
+body.settlement-mode .action-log,
+body.settlement-mode .player-side,
+body.settlement-mode .bottom-bid-bar,
+body.settlement-mode .item-drawer {
+  display: none !important;
+}
+
+body.settlement-mode .table-wrap {
+  width: 100%;
+  margin: 0;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+body.settlement-mode .middle-wrapper {
+  grid-column: 2;
+}
+
+body.settlement-mode .settlement-page {
+  display: flex !important;
+  grid-column: 1;
+}
+
+body.settlement-mode #game-root {
+  width: max-content;
+  max-width: 100%;
+  justify-self: center;
+  background: linear-gradient(180deg, rgba(51, 41, 29, 0.18), rgba(36, 28, 19, 0.08));
+}
+
+.settlement-detail {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.settlement-detail .preview-thumb {
+  flex-shrink: 0;
+  width: 140px;
+  height: 140px;
+  margin-bottom: 0;
+}
+
+.settlement-detail .preview-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.settlement-detail-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 5px 0 0;
+}
+
+.settlement-detail-content strong {
+  font-size: 16px;
+  color: #4a3520;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.settlement-detail-content .detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px dashed #e0d4c0;
+  font-size: 13px;
+}
+
+.settlement-detail-content .detail-row:last-child {
+  border-bottom: none;
+}
+
+.settlement-detail-content .detail-label {
+  color: #7d6340;
+}
+
+.settlement-detail-content .detail-value {
+  font-weight: 600;
+  color: #4a3520;
+}
+
+.settlement-detail-content .detail-value.highlight {
+  color: #d4a843;
+  font-size: 15px;
+}
+
+.settle-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 16, 10, 0.56);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settle-card {
+  min-width: 320px;
+  max-width: 560px;
+  border: 1px solid #d8bb7c;
+  border-radius: 12px;
+  background: #fff8e9;
+  color: #3d2d1a;
+  padding: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.settle-card h3 {
+  margin: 0 0 8px;
+}
+
+.settle-card p {
+  margin: 6px 0;
+}
+
+.settle-metrics {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #dcc18a;
+  border-radius: 10px;
+  background: #fffdf3;
+}
+
+.settle-metrics p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.settle-metrics strong {
+  font-size: 16px;
+}
+
+.profit-positive {
+  color: #1d9748;
+}
+
+.profit-negative {
+  color: #c53a35;
+}
+
+.profit-neutral {
+  color: #73624a;
+}
+
+.settle-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #75593c;
+}
+
+.settle-close {
+  margin-top: 10px;
+  border: 1px solid #8d7a5a;
+  border-radius: 8px;
+  background: #fff2cf;
+  color: #3e2f1d;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.settle-close:hover {
+  background: #ffe5aa;
+}
+
+/* ============================================================
+   @media (max-width: 1200px) — Settlement fragment
+   ============================================================ */
+@media (max-width: 1200px) and (orientation: portrait) {
+  body.settlement-mode #game-root {
+    height: min(60vh, 780px);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  body.settlement-mode .table-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .settlement-detail {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .settlement-detail .preview-thumb {
+    width: 120px;
+    height: 120px;
+  }
+
+  .settlement-detail-content {
+    width: 100%;
+  }
+
+  .settlement-detail-content .detail-row {
+    justify-content: space-between;
+  }
+}
