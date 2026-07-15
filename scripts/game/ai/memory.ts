@@ -1,5 +1,11 @@
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
-import type { AiMemoryStorage, CrossGameMemory, CrossGameStats, ConversationMessage, ConversationBucketEntry } from '../../../types/ai'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type {
+  AiMemoryStorage,
+  CrossGameMemory,
+  CrossGameStats,
+  ConversationMessage,
+  ConversationBucketEntry
+} from "../../../types/ai"
 
 /**
  * @file memory.ts
@@ -18,12 +24,23 @@ import { AI_MEMORY_STORAGE_KEY } from "../core/constants"
 
 export const DEFAULT_CROSS_GAME_STATS: CrossGameStats = {
   totalGames: 0,
-  warehouseValueMax: 0, warehouseValueMin: 0, warehouseValueAvg: 0,
-  winRate: 0, avgProfit: 0,
-  totalCellsMax: 0, totalCellsMin: 0, totalCellsAvg: 0,
-  totalItemsMax: 0, totalItemsMin: 0, totalItemsAvg: 0,
-  legendaryMax: 0, legendaryMin: 0, legendaryAvg: 0,
-  rareMax: 0, rareMin: 0, rareAvg: 0
+  warehouseValueMax: 0,
+  warehouseValueMin: 0,
+  warehouseValueAvg: 0,
+  winRate: 0,
+  avgProfit: 0,
+  totalCellsMax: 0,
+  totalCellsMin: 0,
+  totalCellsAvg: 0,
+  totalItemsMax: 0,
+  totalItemsMin: 0,
+  totalItemsAvg: 0,
+  legendaryMax: 0,
+  legendaryMin: 0,
+  legendaryAvg: 0,
+  rareMax: 0,
+  rareMin: 0,
+  rareAvg: 0
 }
 
 export function getAiMemoryStorageKey(isLanMode: boolean): string {
@@ -63,7 +80,12 @@ export function ensureCrossGameMemory(
 ): CrossGameMemory {
   if (!crossGameMemory[playerId]) {
     crossGameMemory[playerId] = {
-      stats: { ...DEFAULT_CROSS_GAME_STATS, warehouseValueMax: 679100, warehouseValueMin: 170400, warehouseValueAvg: 412000 },
+      stats: {
+        ...DEFAULT_CROSS_GAME_STATS,
+        warehouseValueMax: 679100,
+        warehouseValueMin: 170400,
+        warehouseValueAvg: 412000
+      },
       lessons: [],
       strategies: [],
       praises: []

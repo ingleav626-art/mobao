@@ -195,7 +195,8 @@ export const LanSyncMixin: ThisType<WarehouseSceneThis> = {
 
     const qualityConfig = QUALITY_CONFIG
     warehouseData.forEach((saved, idx) => {
-      const qualityKey = saved.qualityKey && qualityConfig[saved.qualityKey as string] ? (saved.qualityKey as string) : "normal"
+      const qualityKey =
+        saved.qualityKey && qualityConfig[saved.qualityKey as string] ? (saved.qualityKey as string) : "normal"
       const quality = qualityConfig[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff, weight: 1 }
       const safeW = Math.max(1, Math.round(Number(saved.w) || 1))
       const safeH = Math.max(1, Math.round(Number(saved.h) || 1))
@@ -257,9 +258,7 @@ export const LanSyncMixin: ThisType<WarehouseSceneThis> = {
     }
     this.lanReconnectAttempts++
     var delay = Math.min(1000 * Math.pow(2, this.lanReconnectAttempts - 1), 8000)
-    this.writeLog(
-      "重连尝试 " + this.lanReconnectAttempts + "/" + this.lanMaxReconnectAttempts + " (" + delay + "ms后)"
-    )
+    this.writeLog("重连尝试 " + this.lanReconnectAttempts + "/" + this.lanMaxReconnectAttempts + " (" + delay + "ms后)")
     const lastServerUrl = this.lanLastServerUrl
     const lastRoomCode = this.lanLastRoomCode
     const lastPlayerId = this.lanLastPlayerId

@@ -36,7 +36,7 @@ export const CorePart: ThisType<MobileHandlerType> = {
       "isTouch:",
       this.isTouch,
       "hasAndroidKeyboard:",
-      typeof (window as any).AndroidKeyboard !== "undefined",
+      typeof (window as unknown as Record<string, unknown>).AndroidKeyboard !== "undefined",
       "screenHeight:",
       this.screenHeight
     )

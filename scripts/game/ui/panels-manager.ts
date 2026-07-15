@@ -12,8 +12,9 @@ import {
   addPublicInfoEntry,
   renderPrivateIntelPanel,
   renderPublicInfoPanel,
-  updateSidePanels,
+  updateSidePanels
 } from "./panels"
+import { usePanelsStore } from "../../vue/stores/panelsStore"
 
 /** 联机桥最小接口（仅约束 send 方法，用于广播公共信息） */
 export type PanelsLanBridge = { send: (msg: unknown) => void } | null
@@ -51,6 +52,12 @@ export class PanelsManager {
   /** 添加私有情报条目（来源+文本+当前回合号） */
   addPrivateIntelEntry(entry: { source?: string; text?: string }): void {
     addPrivateIntelEntry(this.deps.privateIntelEntries, this.deps.getRound(), entry)
+    try {
+      const store = usePanelsStore()
+      store.syncPrivateIntelEntries(this.deps.privateIntelEntries)
+    } catch {
+      // Vue store not available yet, skip sync
+    }
   }
 
   /** 添加公共信息条目（联机模式且为主机时自动通过 lanBridge 广播） */
@@ -61,26 +68,43 @@ export class PanelsManager {
       entry,
       this.deps.getLanBridge(),
       this.deps.getIsLanMode(),
-      this.deps.getLanIsHost(),
+      this.deps.getLanIsHost()
     )
+    try {
+      const store = usePanelsStore()
+      store.syncPublicInfoEntries(this.deps.publicInfoEntries)
+    } catch {
+      // Vue store not available yet, skip sync
+    }
   }
 
   /** 渲染私有情报面板（带版本缓存，自动滚动到底部） */
   renderPrivateIntelPanel(): void {
-    renderPrivateIntelPanel(
-      this.deps.dom.personalPanelScroll,
-      this.deps.privateIntelEntries,
-      this.intelPanelVersionRef,
-    )
+    renderPrivateIntelPanel(this.deps.dom.personalPanelScroll, this.deps.privateIntelEntries, this.intelPanelVersionRef)
+    try {
+      const store = usePanelsStore()
+      store.syncPrivateIntelEntries(this.deps.privateIntelEntries)
+    } catch {
+      // Vue store not available yet, skip sync
+    }
   }
 
   /** 渲染公共信息面板（自动滚动到底部） */
   renderPublicInfoPanel(): void {
     renderPublicInfoPanel(this.deps.dom.publicInfoScroll, this.deps.publicInfoEntries)
+    try {
+      const store = usePanelsStore()
+      store.syncPublicInfoEntries(this.deps.publicInfoEntries)
+    } catch {
+      // Vue store not available yet, skip sync
+    }
   }
 
   /** 统一更新两侧面板（先私有后公共） */
   updateSidePanels(): void {
-    updateSidePanels(() => this.renderPrivateIntelPanel(), () => this.renderPublicInfoPanel())
+    updateSidePanels(
+      () => this.renderPrivateIntelPanel(),
+      () => this.renderPublicInfoPanel()
+    )
   }
 }

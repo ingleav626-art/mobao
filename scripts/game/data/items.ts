@@ -12,14 +12,28 @@
 
 import { applyUse, resetEntries, type RevealResult } from "./def-manager-helpers"
 
+/** 道具执行上下文接口 */
+interface ItemExecContext {
+  revealOutline: (options: { count: number; category?: string; allowCategoryFallback?: boolean }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
+  revealQuality: (options: { count: number; category?: string; allowCategoryFallback?: boolean }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
+}
+
 export const ITEM_DEFS = [
   {
     id: "item-outline-lamp",
     name: "探照灯",
     description: "揭示4件藏品轮廓。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealOutline({ count: 4 })
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealOutline({ count: 4 })
     }
   },
   {
@@ -27,8 +41,8 @@ export const ITEM_DEFS = [
     name: "鉴定针",
     description: "优先对铜器揭示3件品质格，若不足则补其他品类。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealQuality({
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealQuality({
         count: 3,
         category: "铜器",
         allowCategoryFallback: true
@@ -40,8 +54,8 @@ export const ITEM_DEFS = [
     name: "蜡烛",
     description: "揭示2件藏品轮廓。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealOutline({ count: 2 })
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealOutline({ count: 2 })
     }
   },
   {
@@ -49,8 +63,8 @@ export const ITEM_DEFS = [
     name: "放大镜",
     description: "精确揭示1件藏品品质格。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealQuality({ count: 1 })
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealQuality({ count: 1 })
     }
   },
   {
@@ -58,8 +72,8 @@ export const ITEM_DEFS = [
     name: "火把",
     description: "揭示6件藏品轮廓。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealOutline({ count: 6 })
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealOutline({ count: 6 })
     }
   },
   {
@@ -67,8 +81,8 @@ export const ITEM_DEFS = [
     name: "瓷器图谱",
     description: "优先对瓷器揭示3件轮廓，若不足则补其他品类。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealOutline({
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealOutline({
         count: 3,
         category: "瓷器",
         allowCategoryFallback: true
@@ -80,8 +94,8 @@ export const ITEM_DEFS = [
     name: "玉器鉴书",
     description: "优先对玉器揭示2件品质格，若不足则补其他品类。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealQuality({
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealQuality({
         count: 2,
         category: "玉器",
         allowCategoryFallback: true
@@ -93,8 +107,8 @@ export const ITEM_DEFS = [
     name: "铜器拓片",
     description: "优先对铜器揭示4件轮廓，若不足则补其他品类。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealOutline({
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealOutline({
         count: 4,
         category: "铜器",
         allowCategoryFallback: true
@@ -106,8 +120,8 @@ export const ITEM_DEFS = [
     name: "书画残卷",
     description: "优先对书画揭示3件品质格，若不足则补其他品类。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealQuality({
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealQuality({
         count: 3,
         category: "书画",
         allowCategoryFallback: true
@@ -119,8 +133,8 @@ export const ITEM_DEFS = [
     name: "木器图录",
     description: "优先对木器揭示3件轮廓，若不足则补其他品类。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealOutline({
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealOutline({
         count: 3,
         category: "木器",
         allowCategoryFallback: true
@@ -132,8 +146,8 @@ export const ITEM_DEFS = [
     name: "金石拓本",
     description: "优先对金石揭示2件品质格，若不足则补其他品类。",
     initialCount: 99,
-    execute(context: any) {
-      return context.revealQuality({
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealQuality({
         count: 2,
         category: "金石",
         allowCategoryFallback: true
@@ -148,7 +162,7 @@ interface ItemRuntime {
   description: string
   initialCount: number
   count: number
-  execute: (context: any) => { ok: boolean; revealed: number; message?: string }
+  execute: (context: unknown) => { ok: boolean; revealed: number; message: string }
 }
 
 interface ItemState {
@@ -175,7 +189,7 @@ export class ItemManager {
     )
   }
 
-  use(itemId: string, context: any): RevealResult {
+  use(itemId: string, context: unknown): RevealResult {
     return applyUse(itemId, context, {
       entries: this.items,
       getRemaining: (e) => e.count,

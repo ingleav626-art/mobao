@@ -95,8 +95,14 @@ export function createPersistSlice(deps: BattleRecordDeps): {
       const hasLlm = typeof this.canUseLlmDecision === "function" && this.canUseLlmDecision()
       const runLog = this.currentRunLog
       let aiDecisionPanelText: string | null = null
-      if (hasLlm && this.lastAiDecisionTelemetry && (this.lastAiDecisionTelemetry as unknown as Record<string, unknown>).mode === "llm") {
-        aiDecisionPanelText = this.buildAiDecisionPanelSnapshot(this.lastAiDecisionTelemetry as unknown as Record<string, unknown>) as string | null
+      if (
+        hasLlm &&
+        this.lastAiDecisionTelemetry &&
+        (this.lastAiDecisionTelemetry as unknown as Record<string, unknown>).mode === "llm"
+      ) {
+        aiDecisionPanelText = this.buildAiDecisionPanelSnapshot(
+          this.lastAiDecisionTelemetry as unknown as Record<string, unknown>
+        ) as string | null
       }
       const record: BattleRecord = {
         id: `rec-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -122,12 +128,20 @@ export function createPersistSlice(deps: BattleRecordDeps): {
         logs:
           hasLlm && aiDecisionPanelText
             ? ({
-              aiDecisionPanelText,
-              runNo: runLog && Number.isFinite(Number(runLog.runNo)) ? Math.round(Number(runLog.runNo)) : null,
-              aiThoughtLogs: (runLog && Array.isArray(runLog.aiThoughtLogs) ? runLog.aiThoughtLogs : []) as AiThoughtLogEntry[],
-              roundLogsByRound: (runLog && runLog.roundLogsByRound ? runLog.roundLogsByRound : {}) as Record<string, string[]>,
-              roundPanelTexts: (runLog && runLog.roundPanelTexts ? runLog.roundPanelTexts : {}) as Record<string, string>
-            } as BattleRecordLogs)
+                aiDecisionPanelText,
+                runNo: runLog && Number.isFinite(Number(runLog.runNo)) ? Math.round(Number(runLog.runNo)) : null,
+                aiThoughtLogs: (runLog && Array.isArray(runLog.aiThoughtLogs)
+                  ? runLog.aiThoughtLogs
+                  : []) as AiThoughtLogEntry[],
+                roundLogsByRound: (runLog && runLog.roundLogsByRound ? runLog.roundLogsByRound : {}) as Record<
+                  string,
+                  string[]
+                >,
+                roundPanelTexts: (runLog && runLog.roundPanelTexts ? runLog.roundPanelTexts : {}) as Record<
+                  string,
+                  string
+                >
+              } as BattleRecordLogs)
             : null,
         logsRound: this.round || 0
       }

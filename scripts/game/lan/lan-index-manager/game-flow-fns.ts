@@ -19,7 +19,7 @@ export function lanResolveRound(deps: LanIndexManagerDeps, state: LanIndexState,
   state.roundResolving = true
   deps.stopRoundTimer()
   const allBids = state.players.map((p) => {
-    const lanId = (p as unknown as Record<string, unknown>).lanId as string || p.id
+    const lanId = ((p as unknown as Record<string, unknown>).lanId as string) || p.id
     const bid = state.lanHostBids[lanId] || 0
     const wallet = state.lanHostWallets[lanId] || DEFAULT_START_MONEY
     return { playerId: lanId, bid: Math.min(Math.max(0, bid), wallet) }
@@ -59,12 +59,13 @@ export function lanResolveRound(deps: LanIndexManagerDeps, state: LanIndexState,
     const winner = { playerId: winnerSlotId, bid: first.bid }
     bridge?.broadcastSettle({
       winnerId: first.playerId,
-      winnerName: state.players.find((p) => (p as unknown as Record<string, unknown>).lanId === first.playerId)?.name || "?",
+      winnerName:
+        state.players.find((p) => (p as unknown as Record<string, unknown>).lanId === first.playerId)?.name || "?",
       winnerBid: first.bid,
       totalValue: state.warehouseTrueValue,
       winnerProfit: state.warehouseTrueValue - first.bid,
       secondHighestBid: second.bid,
-      mode,
+      mode
     })
     lanDoFinishAuction(deps, state, winner, mode)
   } else {
@@ -111,7 +112,7 @@ export function lanComputeAiBids(deps: LanIndexManagerDeps, state: LanIndexState
     bidStep: GAME_SETTINGS.bidStep,
     aiIntelMap: remappedIntel,
     aiToolEffectMap: remappedEffects,
-    itemCount: state.items.length,
+    itemCount: state.items.length
   })
 
   aiPlayers.forEach((ai) => {
@@ -125,18 +126,32 @@ export function lanComputeAiBids(deps: LanIndexManagerDeps, state: LanIndexState
       "[lanComputeAiBids] " + ai.id + " slotId=" + slotId + " plan:",
       plan
         ? {
-          failed: (plan as Record<string, unknown>).failed,
-          hasBidDecision: (plan as Record<string, unknown>).hasBidDecision,
-          bid: (plan as Record<string, unknown>).bid,
-          canUseLlm: deps.canUseLlmDecisionForPlayer(slotId),
-        }
-        : "null",
+            failed: (plan as Record<string, unknown>).failed,
+            hasBidDecision: (plan as Record<string, unknown>).hasBidDecision,
+            bid: (plan as Record<string, unknown>).bid,
+            canUseLlm: deps.canUseLlmDecisionForPlayer(slotId)
+          }
+        : "null"
     )
-    if (!plan || (plan as Record<string, unknown>).failed || !(plan as Record<string, unknown>).hasBidDecision || !deps.canUseLlmDecisionForPlayer(slotId)) return
+    if (
+      !plan ||
+      (plan as Record<string, unknown>).failed ||
+      !(plan as Record<string, unknown>).hasBidDecision ||
+      !deps.canUseLlmDecisionForPlayer(slotId)
+    )
+      return
     const wallet = state.lanHostWallets[ai.id] || DEFAULT_START_MONEY
     const normalizedBid = deps.normalizeAiBidValue(slotId, (plan as Record<string, unknown>).bid as number, wallet)
     console.log(
-      "[lanComputeAiBids] " + ai.id + " LLM bid override: " + ruleBids[ai.id] + " -> " + normalizedBid + " (wallet=" + wallet + ")",
+      "[lanComputeAiBids] " +
+        ai.id +
+        " LLM bid override: " +
+        ruleBids[ai.id] +
+        " -> " +
+        normalizedBid +
+        " (wallet=" +
+        wallet +
+        ")"
     )
     ruleBids[ai.id] = normalizedBid
   })
@@ -147,7 +162,7 @@ export function lanComputeAiBids(deps: LanIndexManagerDeps, state: LanIndexState
 export function lanOnRoundStart(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
-  msg: { round: number; currentBid?: number; ts?: number; roundSeconds?: number },
+  msg: { round: number; currentBid?: number; ts?: number; roundSeconds?: number }
 ): void {
   state.round = msg.round
   state.currentBid = msg.currentBid || 0
@@ -166,19 +181,14 @@ export function lanOnRoundStart(
 
 export function lanBroadcastRoundStart(deps: LanIndexManagerDeps, state: LanIndexState): void {
   const bridge = deps.getLanBridge()
-  bridge?.broadcastRoundStart(
-    state.round,
-    GAME_SETTINGS.maxRounds,
-    state.currentBid,
-    GAME_SETTINGS.roundSeconds,
-  )
+  bridge?.broadcastRoundStart(state.round, GAME_SETTINGS.maxRounds, state.currentBid, GAME_SETTINGS.roundSeconds)
 }
 
 export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): void {
   if (window.NativeBridge && window.NativeBridge.isNative && window.NativeBridge.isNative()) {
     try {
       window.NativeBridge.setGameRunning(true)
-    } catch (_) { }
+    } catch (_) {}
   }
   deps.beginRunTracking()
   state.battleRecordReplayActive = false
@@ -239,8 +249,8 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
     state.publicInfoEntries = [
       {
         source: state.currentPublicEvent.category,
-        text: state.currentPublicEvent.text,
-      },
+        text: state.currentPublicEvent.text
+      }
     ]
   }
 
@@ -252,7 +262,7 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
       warehouse: warehouseData,
       warehouseTrueValue: state.warehouseTrueValue,
       currentBid: state.currentBid,
-      aiMaxBid: state.aiMaxBid,
+      aiMaxBid: state.aiMaxBid
     })
   }
 
@@ -265,7 +275,7 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
     isAI: !!p.isAI,
     isSelf: !p.isAI && p.id === deps.getLanBridge()?.playerId,
     characterId: p.characterId || null,
-    carryItems: p.carryItems || [],
+    carryItems: p.carryItems || []
   })) as unknown as typeof state.players
 
   state.lanIdToSlotId = {}
@@ -290,7 +300,7 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
       if (CHARACTERS) {
         var charData = CHARACTERS.find((c) => c.id === p.characterId)
         if (charData) {
-          (p as unknown as Record<string, string>).characterName = charData.name
+          ;(p as unknown as Record<string, string>).characterName = charData.name
           ;(p as unknown as Record<string, string>).avatar = charData.avatar || charData.name.substring(0, 2)
         }
       }
@@ -318,7 +328,7 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
   deps.initAiIntelSystems()
   deps.aiEngine.resetForNewRun({
     startingBid: state.currentBid,
-    itemCount: state.items.length,
+    itemCount: state.items.length
   })
 
   if (state.lanIsHost) {
@@ -366,29 +376,31 @@ export async function lanOnRoundTimeout(deps: LanIndexManagerDeps, state: LanInd
 export function lanOnRoundResult(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
-  msg: { bids?: Array<{ playerId: string; bid: number }> },
+  msg: { bids?: Array<{ playerId: string; bid: number }> }
 ): void {
   const roundBids = msg.bids || []
-  deps.revealRoundBidsSequential(
-    state.players.map((p) => {
-      const found = roundBids.find((b) => b.playerId === (p as unknown as Record<string, unknown>).lanId)
-      return { playerId: p.id, bid: found ? found.bid : 0 }
-    }),
-  ).then(() => {
-    deps.recordRoundHistory(
+  deps
+    .revealRoundBidsSequential(
       state.players.map((p) => {
         const found = roundBids.find((b) => b.playerId === (p as unknown as Record<string, unknown>).lanId)
         return { playerId: p.id, bid: found ? found.bid : 0 }
-      }),
+      })
     )
-  })
+    .then(() => {
+      deps.recordRoundHistory(
+        state.players.map((p) => {
+          const found = roundBids.find((b) => b.playerId === (p as unknown as Record<string, unknown>).lanId)
+          return { playerId: p.id, bid: found ? found.bid : 0 }
+        })
+      )
+    })
 }
 
 export function lanDoFinishAuction(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
   winner: { playerId: string; bid: number },
-  mode: string,
+  mode: string
 ): void {
   deps.finishAuction(winner, mode)
   const myPid = deps.getLanBridge()?.playerId
@@ -398,7 +410,7 @@ export function lanDoFinishAuction(
   const finalWallets: Record<string, number> = {}
   const profitDetails: Array<{ playerId: string; playerName: string; bid: number; value: number; profit: number }> = []
   state.players.forEach((p) => {
-    const lanId = (p as unknown as Record<string, unknown>).lanId as string || p.id
+    const lanId = ((p as unknown as Record<string, unknown>).lanId as string) || p.id
     const bid = state.lanHostBids[lanId] || 0
     if (p.id === winner.playerId) {
       finalWallets[lanId] = (state.lanHostWallets[lanId] || 0) - bid + state.warehouseTrueValue
@@ -407,7 +419,7 @@ export function lanDoFinishAuction(
         playerName: p.name,
         bid,
         value: state.warehouseTrueValue,
-        profit: state.warehouseTrueValue - bid,
+        profit: state.warehouseTrueValue - bid
       })
     } else {
       finalWallets[lanId] = state.lanHostWallets[lanId] || 0

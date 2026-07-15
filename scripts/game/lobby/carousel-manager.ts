@@ -7,13 +7,7 @@
  *              Manager 可独立单测（注入 state 后验证 offset 变更），过渡期 Mixin 保留为薄代理层。
  */
 import type { CarouselState } from "./carousel"
-import {
-  renderCarousel,
-  bindCarouselTouch,
-  carouselScroll,
-  updateCarouselPosition,
-  renderMapDetail,
-} from "./carousel"
+import { renderCarousel, bindCarouselTouch, carouselScroll, updateCarouselPosition, renderMapDetail } from "./carousel"
 
 /**
  * 大厅地图轮播管理器。

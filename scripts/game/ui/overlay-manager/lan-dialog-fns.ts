@@ -104,8 +104,7 @@ export function showLanPauseOverlay(deps: UiOverlayManagerDeps): void {
   box.appendChild(title)
   const hint = document.createElement("div")
   hint.style.cssText = "color:#a09070;margin-bottom:16px;"
-  hint.textContent =
-    deps.getIsLanMode() && deps.getLanIsHost() ? "点击下方按钮继续游戏" : "等待主机继续游戏..."
+  hint.textContent = deps.getIsLanMode() && deps.getLanIsHost() ? "点击下方按钮继续游戏" : "等待主机继续游戏..."
   box.appendChild(hint)
   if (deps.getIsLanMode() && deps.getLanIsHost()) {
     const resumeBtn = document.createElement("button")

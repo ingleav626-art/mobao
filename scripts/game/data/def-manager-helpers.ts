@@ -13,7 +13,7 @@
 export interface DefEntry {
   id: string
   name: string
-  execute: (context: any) => { ok: boolean; revealed: number; message?: string }
+  execute: (context: unknown) => { ok: boolean; revealed: number; message: string }
 }
 
 export interface RevealResult {
@@ -36,7 +36,7 @@ export interface UseHelperConfig<T extends DefEntry> {
 }
 
 /** 统一 use 流程：find->不存在->depleted->execute->!ok 短路->扣减->成功消息。剩余耗尽时不调用 execute。 */
-export function applyUse<T extends DefEntry>(id: string, context: any, config: UseHelperConfig<T>): RevealResult {
+export function applyUse<T extends DefEntry>(id: string, context: unknown, config: UseHelperConfig<T>): RevealResult {
   const entry = config.entries.find((e) => e.id === id)
   if (!entry) {
     return { ok: false, revealed: 0, message: config.notFoundMessage() }

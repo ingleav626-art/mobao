@@ -16,10 +16,7 @@ import { getLastRoundBidMap, shouldDirectTake } from "../index"
 /**
  * 等待回合恢复（暂停状态轮询）
  */
-export function waitUntilResumed(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState
-): Promise<void> {
+export function waitUntilResumed(deps: BiddingManagerDeps, state: BiddingManagerState): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!deps.getRoundPaused()) {
       resolve()
@@ -43,10 +40,7 @@ export function waitUntilResumed(
 /**
  * 触发 AI 出价决策（异步，独立并发）
  */
-export async function kickoffAiRoundDecisions(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState
-): Promise<void> {
+export async function kickoffAiRoundDecisions(deps: BiddingManagerDeps, state: BiddingManagerState): Promise<void> {
   console.log("[kickoffAiRoundDecisions] >>> ENTERED")
   const indicator = deps.dom.aiThinkingIndicator
   if (indicator && !indicator.dataset.aiThinking) {
@@ -69,12 +63,7 @@ export async function kickoffAiRoundDecisions(
 /**
  * 设置玩家出价显示（DOM 动画）
  */
-export function setPlayerBidDisplay(
-  deps: BiddingManagerDeps,
-  playerId: string,
-  bid: number,
-  order: number
-): void {
+export function setPlayerBidDisplay(deps: BiddingManagerDeps, playerId: string, bid: number, order: number): void {
   const bidEl = document.getElementById(`bid-${playerId}`)
   const cardEl = document.getElementById(`playerCard-${playerId}`)
   if (bidEl) {
@@ -124,10 +113,7 @@ export function buildRoundBids(
   state: BiddingManagerState
 ): Array<{ playerId: string; bid: number }> {
   const items = deps.getItems()
-  const clueRate =
-    items.length === 0
-      ? 0
-      : items.filter((item) => deps.hasAnyInfo(item)).length / items.length
+  const clueRate = items.length === 0 ? 0 : items.filter((item) => deps.hasAnyInfo(item)).length / items.length
   const lastRoundBids = getLastRoundBidMap(deps.getPlayerRoundHistory())
   const aiIntelMap = deps.buildAiIntelSnapshot()
 
@@ -135,17 +121,17 @@ export function buildRoundBids(
   const aiEngine = deps.getAiEngine()
   const aiBidMap = aiEngine
     ? aiEngine.buildAIBids({
-      aiPlayers,
-      clueRate,
-      round: state.round,
-      maxRounds: GAME_SETTINGS.maxRounds,
-      currentBid: state.currentBid,
-      lastRoundBids,
-      bidStep: GAME_SETTINGS.bidStep,
-      aiIntelMap,
-      aiToolEffectMap: deps.getAiRoundEffects(),
-      itemCount: items.length
-    })
+        aiPlayers,
+        clueRate,
+        round: state.round,
+        maxRounds: GAME_SETTINGS.maxRounds,
+        currentBid: state.currentBid,
+        lastRoundBids,
+        bidStep: GAME_SETTINGS.bidStep,
+        aiIntelMap,
+        aiToolEffectMap: deps.getAiRoundEffects(),
+        itemCount: items.length
+      })
     : {}
 
   aiPlayers.forEach((player) => {
@@ -154,11 +140,11 @@ export function buildRoundBids(
       `[buildRoundBids] ${player.id} aiLlmPlan:`,
       plan
         ? {
-          failed: plan.failed,
-          hasBidDecision: plan.hasBidDecision,
-          bid: plan.bid,
-          canUseLlm: deps.canUseLlmDecisionForPlayer(player.id)
-        }
+            failed: plan.failed,
+            hasBidDecision: plan.hasBidDecision,
+            bid: plan.bid,
+            canUseLlm: deps.canUseLlmDecisionForPlayer(player.id)
+          }
         : "null"
     )
     if (!plan || plan.failed || !plan.hasBidDecision || !deps.canUseLlmDecisionForPlayer(player.id)) {
@@ -265,11 +251,7 @@ export async function resolveRoundBids(
     )
 
     if (state.round === GAME_SETTINGS.maxRounds || directTakeFlag || forceSettle) {
-      const mode = forceSettle
-        ? "manual"
-        : state.round === GAME_SETTINGS.maxRounds
-          ? "final"
-          : "direct"
+      const mode = forceSettle ? "manual" : state.round === GAME_SETTINGS.maxRounds ? "final" : "direct"
       await deps.finishAuction(first, mode)
       return
     }
@@ -301,10 +283,7 @@ export async function resolveRoundBids(
 /**
  * 结算当前对局（手动触发）
  */
-export function settleCurrentRun(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState
-): void {
+export function settleCurrentRun(deps: BiddingManagerDeps, state: BiddingManagerState): void {
   if (deps.getIsLanMode() && !deps.getLanIsHost()) return
   if (deps.getSettled()) {
     deps.writeLog("本局已结算，请重新开局。")

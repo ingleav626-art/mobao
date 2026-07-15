@@ -6,10 +6,7 @@
 import type { Artifact } from "../../../../types/game"
 import type { AiIntelSignal, AiItemKnowledge, HighValueTrack, AiSignalStats } from "../../../../types/ai"
 import type { AiIntelManagerDeps, AiIntelState } from "../intel-manager"
-import {
-  pickRandomItemCell,
-  determineRevealLevel,
-} from "../intel/pure"
+import { pickRandomItemCell, determineRevealLevel } from "../intel/pure"
 import { toCellKey, shuffle, formatTrackIndex } from "../../core/utils"
 import { QUALITY_CONFIG, toSizeTag } from "../../data/artifacts"
 import { ensureAiPrivateIntel, isHighValueArtifact } from "./init-fns"
@@ -52,16 +49,31 @@ interface RevealFullyResult {
 
 /** 构建技能上下文（供 SkillDef.execute 调用） */
 export function buildSkillContext(deps: AiIntelManagerDeps): {
-  revealOutline: (opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }) => unknown
-  revealQuality: (opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }) => unknown
-  revealAll: (opts: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }) => unknown
+  revealOutline: (opts: {
+    count: number
+    category: string | null
+    allowCategoryFallback?: boolean
+    sortStrategy: string | null
+  }) => unknown
+  revealQuality: (opts: {
+    count: number
+    category: string | null
+    allowCategoryFallback?: boolean
+    sortStrategy: string | null
+  }) => unknown
+  revealAll: (opts: {
+    count: number
+    sortStrategy: string
+    category: string | null
+    allowCategoryFallback: boolean
+  }) => unknown
 } {
   return {
     revealOutline: ({
       count,
       category,
       allowCategoryFallback = false,
-      sortStrategy,
+      sortStrategy
     }: {
       count: number
       category: string | null
@@ -72,7 +84,7 @@ export function buildSkillContext(deps: AiIntelManagerDeps): {
       count,
       category,
       allowCategoryFallback = false,
-      sortStrategy,
+      sortStrategy
     }: {
       count: number
       category: string | null
@@ -83,68 +95,110 @@ export function buildSkillContext(deps: AiIntelManagerDeps): {
       count,
       sortStrategy,
       category,
-      allowCategoryFallback,
+      allowCategoryFallback
     }: {
       count: number
       sortStrategy: string
       category: string | null
       allowCategoryFallback: boolean
-    }) => deps.revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback }),
+    }) => deps.revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback })
   }
 }
 
 /** 构建 AI 私有揭示上下文（供技能/道具 execute 调用） */
-export function buildAiPrivateRevealContext(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string): {
-  revealOutline: (opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }) => unknown
-  revealQuality: (opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string }) => unknown
-  revealAll: (opts: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }) => unknown
+export function buildAiPrivateRevealContext(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string
+): {
+  revealOutline: (opts: {
+    count: number
+    category: string | null
+    allowCategoryFallback?: boolean
+    sortStrategy: string | null
+  }) => unknown
+  revealQuality: (opts: {
+    count: number
+    category: string | null
+    allowCategoryFallback?: boolean
+    sortStrategy: string
+  }) => unknown
+  revealAll: (opts: {
+    count: number
+    sortStrategy: string
+    category: string | null
+    allowCategoryFallback: boolean
+  }) => unknown
 } {
   return {
     revealOutline: ({
       count,
       category,
       allowCategoryFallback = false,
-      sortStrategy,
+      sortStrategy
     }: {
       count: number
       category: string | null
       allowCategoryFallback?: boolean
       sortStrategy: string | null
-    }) => revealPrivateIntelBatch(deps, state, playerId, "outline", count, category, allowCategoryFallback, sortStrategy ?? ""),
+    }) =>
+      revealPrivateIntelBatch(
+        deps,
+        state,
+        playerId,
+        "outline",
+        count,
+        category,
+        allowCategoryFallback,
+        sortStrategy ?? ""
+      ),
     revealQuality: ({
       count,
       category,
       allowCategoryFallback = false,
-      sortStrategy,
+      sortStrategy
     }: {
       count: number
       category: string | null
       allowCategoryFallback?: boolean
       sortStrategy: string
-    }) => revealPrivateIntelBatch(deps, state, playerId, "quality", count, category, allowCategoryFallback, sortStrategy),
+    }) =>
+      revealPrivateIntelBatch(deps, state, playerId, "quality", count, category, allowCategoryFallback, sortStrategy),
     revealAll: ({
       count,
       sortStrategy,
       category,
-      allowCategoryFallback,
+      allowCategoryFallback
     }: {
       count: number
       sortStrategy: string
       category: string | null
       allowCategoryFallback: boolean
-    }) => revealPrivateIntelFully(deps, state, playerId, { count, sortStrategy, category, allowCategoryFallback }),
+    }) => revealPrivateIntelFully(deps, state, playerId, { count, sortStrategy, category, allowCategoryFallback })
   }
 }
 
 /** 标记 AI 已知格子状态 */
-export function markAiKnownCellState(state: AiIntelState, playerId: string, x: number, y: number, cellState: string): void {
+export function markAiKnownCellState(
+  state: AiIntelState,
+  playerId: string,
+  x: number,
+  y: number,
+  cellState: string
+): void {
   const pool = ensureAiPrivateIntel(state, playerId)
   const key = toCellKey(x, y)
   pool.knownCellStates[key] = cellState || "empty"
 }
 
 /** 扫描指定格子周围的邻居状态 */
-export function scanNeighborIntelAroundCell(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string, x: number, y: number): void {
+export function scanNeighborIntelAroundCell(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string,
+  x: number,
+  y: number
+): void {
   const offsets = [
     [-1, -1],
     [0, -1],
@@ -153,7 +207,7 @@ export function scanNeighborIntelAroundCell(deps: AiIntelManagerDeps, state: AiI
     [1, 0],
     [-1, 1],
     [0, 1],
-    [1, 1],
+    [1, 1]
   ]
 
   offsets.forEach(([dx, dy]) => {
@@ -168,7 +222,12 @@ export function scanNeighborIntelAroundCell(deps: AiIntelManagerDeps, state: AiI
 }
 
 /** 标记藏品所有格子为已占用 */
-export function markAllItemCellsAsOccupied(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string, item: Artifact): void {
+export function markAllItemCellsAsOccupied(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string,
+  item: Artifact
+): void {
   for (let y = item.y; y < item.y + item.h; y += 1) {
     for (let x = item.x; x < item.x + item.w; x += 1) {
       if (deps.isInBoundsCell(x, y)) {
@@ -179,7 +238,12 @@ export function markAllItemCellsAsOccupied(deps: AiIntelManagerDeps, state: AiIn
 }
 
 /** 扫描藏品边界邻居状态 */
-export function scanItemBoundaryNeighbors(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string, item: Artifact): void {
+export function scanItemBoundaryNeighbors(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string,
+  item: Artifact
+): void {
   const scanned = new Set<string>()
   for (let y = item.y; y < item.y + item.h; y += 1) {
     for (let x = item.x; x < item.x + item.w; x += 1) {
@@ -191,7 +255,7 @@ export function scanItemBoundaryNeighbors(deps: AiIntelManagerDeps, state: AiInt
         [1, 0],
         [-1, 1],
         [0, 1],
-        [1, 1],
+        [1, 1]
       ]
       offsets.forEach(([dx, dy]) => {
         const nx = x + dx
@@ -215,19 +279,25 @@ export function scanItemBoundaryNeighbors(deps: AiIntelManagerDeps, state: AiInt
 }
 
 /** 构建 AI 私有信号（轮廓或品质） */
-export function buildAiPrivateSignal(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string, item: Artifact, mode: string): AiIntelSignal {
+export function buildAiPrivateSignal(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string,
+  item: Artifact,
+  mode: string
+): AiIntelSignal {
   const cell = pickRandomItemCell(item)
   const baseSignal: AiIntelSignal & { round: number; mode: string } = {
     itemId: item.id,
     round: deps.getRound(),
-    mode,
+    mode
   }
 
   if (mode === "outline") {
     Object.assign(baseSignal, {
       category: item.category,
       sizeTag: toSizeTag(item.w, item.h),
-      sampleCell: cell,
+      sampleCell: cell
     })
 
     markAllItemCellsAsOccupied(deps, state, playerId, item)
@@ -235,7 +305,7 @@ export function buildAiPrivateSignal(deps: AiIntelManagerDeps, state: AiIntelSta
   } else {
     Object.assign(baseSignal, {
       qualityKey: item.qualityKey,
-      sampleCell: cell,
+      sampleCell: cell
     })
 
     if (cell) {
@@ -257,7 +327,7 @@ export function ensureAiItemKnowledge(state: AiIntelState, playerId: string, ite
       category: null,
       qualityKey: null,
       sizeTag: null,
-      knownCells: new Set(),
+      knownCells: new Set()
     }
   }
   return pool.itemKnowledge[itemId]
@@ -268,7 +338,7 @@ export function ensureAiHighValueTrack(
   deps: AiIntelManagerDeps,
   state: AiIntelState,
   playerId: string,
-  item: Artifact,
+  item: Artifact
 ): { trackId: string; created: boolean } | null {
   if (!isHighValueArtifact(deps, item)) {
     return null
@@ -284,13 +354,13 @@ export function ensureAiHighValueTrack(
       trackId,
       itemId: item.id,
       createdRound: deps.getRound(),
-      lastSeenRound: deps.getRound(),
+      lastSeenRound: deps.getRound()
     })
     return { trackId, created: true }
   }
 
   const track: HighValueTrack | undefined = pool.highValueTracks.find(
-    (entry: HighValueTrack) => entry.itemId === item.id,
+    (entry: HighValueTrack) => entry.itemId === item.id
   )
   if (track) {
     track.lastSeenRound = deps.getRound()
@@ -305,7 +375,7 @@ export function updateAiItemKnowledge(
   playerId: string,
   item: Artifact,
   signal: { sampleCell?: { x: number; y: number } } | null,
-  mode: string,
+  mode: string
 ): AiItemKnowledge & {
   trackUpdate?: {
     trackId: string
@@ -333,14 +403,14 @@ export function updateAiItemKnowledge(
   const trackId = pool.highValueTrackByItemId[item.id]
   if (trackId) {
     const track: HighValueTrack | undefined = pool.highValueTracks.find(
-      (entry: HighValueTrack) => entry.itemId === item.id,
+      (entry: HighValueTrack) => entry.itemId === item.id
     )
     if (track) {
       track.lastSeenRound = deps.getRound()
       const revealState = {
         qualityKey: intel.qualityKey,
         category: intel.category,
-        sizeTag: intel.sizeTag,
+        sizeTag: intel.sizeTag
       }
       const candidatePreview = buildTrackCandidatePreview(deps, revealState)
       const exactKnown = candidatePreview.total === 1
@@ -358,13 +428,13 @@ export function updateAiItemKnowledge(
                 : intel.qualityKey
               : "未知",
             category: intel.category ? intel.category : "未知",
-            exactArtifact: exactKnown && candidatePreview.list[0] ? candidatePreview.list[0].name : null,
+            exactArtifact: exactKnown && candidatePreview.list[0] ? candidatePreview.list[0].name : null
           },
           candidates: {
             total: candidatePreview.total,
-            truncated: candidatePreview.truncated,
-          },
-        },
+            truncated: candidatePreview.truncated
+          }
+        }
       }
     }
   }
@@ -381,7 +451,7 @@ export function revealPrivateIntelBatch(
   count: number,
   category: string | null,
   allowCategoryFallback = false,
-  sortStrategy: string | null,
+  sortStrategy: string | null
 ): RevealBatchResult {
   const targets = pickPrivateRevealTargets(deps, state, {
     playerId,
@@ -389,7 +459,7 @@ export function revealPrivateIntelBatch(
     count,
     category,
     allowCategoryFallback,
-    sortStrategy,
+    sortStrategy
   })
 
   if (targets.length === 0) {
@@ -445,7 +515,7 @@ export function revealPrivateIntelBatch(
     signals,
     signalStats,
     trackUpdates,
-    bottomCell,
+    bottomCell
   }
 }
 
@@ -458,12 +528,12 @@ export function revealPrivateIntelFully(
     count,
     sortStrategy,
     category,
-    allowCategoryFallback,
-  }: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean },
+    allowCategoryFallback
+  }: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }
 ): RevealFullyResult {
   const pool = ensureAiPrivateIntel(state, playerId)
   const unrevealed = deps.items.filter(
-    (item: Artifact) => !pool.knownOutlineIds.has(item.id) || !pool.knownQualityIds.has(item.id),
+    (item: Artifact) => !pool.knownOutlineIds.has(item.id) || !pool.knownQualityIds.has(item.id)
   )
 
   const sortByArea = (arr: Artifact[], strategy: string | null) => {
@@ -546,7 +616,7 @@ export function revealPrivateIntelFully(
     revealed: targets.length,
     signals,
     signalStats,
-    trackUpdates,
+    trackUpdates
   }
 }
 
@@ -560,7 +630,7 @@ export function pickPrivateRevealTargets(
     count,
     category,
     allowCategoryFallback = false,
-    sortStrategy,
+    sortStrategy
   }: {
     playerId: string
     mode: string
@@ -568,7 +638,7 @@ export function pickPrivateRevealTargets(
     category: string | null
     allowCategoryFallback?: boolean
     sortStrategy: string | null
-  },
+  }
 ): Artifact[] {
   const pool = ensureAiPrivateIntel(state, playerId)
   const knownSet = mode === "outline" ? pool.knownOutlineIds : pool.knownQualityIds

@@ -16,7 +16,7 @@ import {
   CELL_SIZE,
   MARGIN,
   AI_LLM_SWITCH_STORAGE_KEY,
-  BATTLE_RECORD_STORAGE_KEY,
+  BATTLE_RECORD_STORAGE_KEY
 } from "./core/constants"
 import {
   clamp,
@@ -29,7 +29,7 @@ import {
   delay,
   tweenToPromise,
   settlementRevealDelayByQuality,
-  settlementSearchDurationByQuality,
+  settlementSearchDurationByQuality
 } from "./core/utils"
 import { normalizeActionToken, isNoneActionText } from "../llm/core/llm-error"
 import { GAME_SETTINGS as _GAME_SETTINGS } from "./core/settings"
@@ -129,7 +129,8 @@ initDeps({ LLM_BRIDGE, BATTLE_RECORD_BRIDGE, SETTLEMENT_BRIDGE })
 
 // ─── Mixin 合并 ───
 
-Object.assign(WarehouseScene.prototype,
+Object.assign(
+  WarehouseScene.prototype,
   // scene/ 提取的方法（含实现逻辑的非代理方法）
   SceneAiPanel,
   SceneCharacter,
@@ -166,7 +167,7 @@ Object.assign(WarehouseScene.prototype,
 // ─── Phaser 启动 ───
 
 const config = {
-  type: (Phaser as any).AUTO,
+  type: (Phaser as unknown as { AUTO: number }).AUTO,
   parent: "game-root",
   width: MARGIN * 2 + _GRID_COLS * CELL_SIZE,
   height: MARGIN * 2 + _GRID_ROWS * CELL_SIZE,
@@ -192,6 +193,6 @@ if (document.readyState === "loading") {
   LlmUiBridge.initialize()
 }
 
-new (Phaser as any).Game(config)
+new (Phaser as unknown as { Game: new (config: Record<string, unknown>) => void }).Game(config)
 
 export { WarehouseScene }

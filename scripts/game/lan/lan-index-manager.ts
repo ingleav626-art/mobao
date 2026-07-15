@@ -19,7 +19,7 @@ import {
   lanOnAllBidsIn,
   lanOnRoundTimeout,
   lanOnRoundResult,
-  lanDoFinishAuction,
+  lanDoFinishAuction
 } from "./lan-index-manager/game-flow-fns"
 import {
   lanBuildFullSyncData,
@@ -28,18 +28,11 @@ import {
   lanAttemptReconnect,
   toggleLanPause,
   onLanBackground,
-  onLanForeground,
+  onLanForeground
 } from "./lan-index-manager/sync-fns"
-import {
-  lanOnSettleFinal,
-  lanOnSettle,
-  lanOnRestartGo,
-} from "./lan-index-manager/settle-fns"
+import { lanOnSettleFinal, lanOnSettle, lanOnRestartGo } from "./lan-index-manager/settle-fns"
 import { tryAutoReconnect } from "./lan-index-manager/reconnect-fns"
-import {
-  startLanLive2dLoop,
-  stopLanLive2dLoop,
-} from "./lan-index-manager/live2d-fns"
+import { startLanLive2dLoop, stopLanLive2dLoop } from "./lan-index-manager/live2d-fns"
 import { bindLanEvents } from "./lan-index-manager/events-fns"
 
 // ─── LanBridge 子集接口 ───
@@ -245,7 +238,19 @@ export interface LanIndexManagerDeps {
   }
 
   // 地图配置
-  getProfile: ((profileId: string) => { name: string; params: { maxRounds: number; directTakeRatio: number; qualityWeights?: Record<string, number>; categoryWeights?: Record<string, number> } } | null) | null
+  getProfile:
+    | ((
+        profileId: string
+      ) => {
+        name: string
+        params: {
+          maxRounds: number
+          directTakeRatio: number
+          qualityWeights?: Record<string, number>
+          categoryWeights?: Record<string, number>
+        }
+      } | null)
+    | null
   getSelectedProfileId: (() => string) | null
 }
 
@@ -271,27 +276,39 @@ export class LanIndexManager {
       tryAutoReconnect: (pid, rc, pn, ih) => this.tryAutoReconnect(pid, rc, pn, ih),
       bindLanEvents: (bridge, ctx) => this.bindLanEvents(bridge, ctx),
       startLanLive2dLoop: (src, va, vb) => this.startLanLive2dLoop(src, va, vb),
-      stopLanLive2dLoop: () => this.stopLanLive2dLoop(),
+      stopLanLive2dLoop: () => this.stopLanLive2dLoop()
     })
   }
 
   // ═════════════ 游戏流程方法（game-flow-fns.ts） ═════════════
 
-  lanResolveRound(reason: string): void { return lanResolveRound(this.deps, this.state, reason) }
+  lanResolveRound(reason: string): void {
+    return lanResolveRound(this.deps, this.state, reason)
+  }
 
-  lanComputeAiBids(): Record<string, number> { return lanComputeAiBids(this.deps, this.state) }
+  lanComputeAiBids(): Record<string, number> {
+    return lanComputeAiBids(this.deps, this.state)
+  }
 
   lanOnRoundStart(msg: { round: number; currentBid?: number; ts?: number; roundSeconds?: number }): void {
     return lanOnRoundStart(this.deps, this.state, msg)
   }
 
-  lanBroadcastRoundStart(): void { return lanBroadcastRoundStart(this.deps, this.state) }
+  lanBroadcastRoundStart(): void {
+    return lanBroadcastRoundStart(this.deps, this.state)
+  }
 
-  startLanRun(): void { return startLanRun(this.deps, this.state) }
+  startLanRun(): void {
+    return startLanRun(this.deps, this.state)
+  }
 
-  lanOnAllBidsIn(_msg: Record<string, unknown>): Promise<void> { return lanOnAllBidsIn(this.deps, this.state) }
+  lanOnAllBidsIn(_msg: Record<string, unknown>): Promise<void> {
+    return lanOnAllBidsIn(this.deps, this.state)
+  }
 
-  lanOnRoundTimeout(): Promise<void> { return lanOnRoundTimeout(this.deps, this.state) }
+  lanOnRoundTimeout(): Promise<void> {
+    return lanOnRoundTimeout(this.deps, this.state)
+  }
 
   lanOnRoundResult(msg: { bids?: Array<{ playerId: string; bid: number }> }): void {
     return lanOnRoundResult(this.deps, this.state, msg)
@@ -307,19 +324,29 @@ export class LanIndexManager {
     return lanBuildFullSyncData(this.deps, this.state, targetPlayerId)
   }
 
-  lanOnFullSync(msg: Record<string, unknown>): void { return lanOnFullSync(this.deps, this.state, msg) }
+  lanOnFullSync(msg: Record<string, unknown>): void {
+    return lanOnFullSync(this.deps, this.state, msg)
+  }
 
   lanRestoreWarehouseFromSync(msg: Record<string, unknown>): void {
     return lanRestoreWarehouseFromSync(this.deps, this.state, msg)
   }
 
-  lanAttemptReconnect(): void { return lanAttemptReconnect(this.deps, this.state) }
+  lanAttemptReconnect(): void {
+    return lanAttemptReconnect(this.deps, this.state)
+  }
 
-  toggleLanPause(pause: boolean): void { return toggleLanPause(this.deps, this.state, pause) }
+  toggleLanPause(pause: boolean): void {
+    return toggleLanPause(this.deps, this.state, pause)
+  }
 
-  onLanBackground(): void { return onLanBackground(this.deps, this.state) }
+  onLanBackground(): void {
+    return onLanBackground(this.deps, this.state)
+  }
 
-  onLanForeground(): void { return onLanForeground(this.deps, this.state) }
+  onLanForeground(): void {
+    return onLanForeground(this.deps, this.state)
+  }
 
   // ═════════════ 结算方法（settle-fns.ts） ═════════════
 
@@ -332,11 +359,22 @@ export class LanIndexManager {
   }
 
   lanOnRestartGo(msg: {
-    players: Array<{ id: string; name: string; isAI: boolean; isHost: boolean; isReady?: boolean; characterId?: string | null; carryItems?: string[]; llm?: boolean }>
+    players: Array<{
+      id: string
+      name: string
+      isAI: boolean
+      isHost: boolean
+      isReady?: boolean
+      characterId?: string | null
+      carryItems?: string[]
+      llm?: boolean
+    }>
     hostId: string
     aiPlayers: Array<{ id: string; name: string; isAI: boolean; isHost: boolean; llm?: boolean }>
     aiLlmEnabled: boolean
-  }): void { return lanOnRestartGo(this.deps, this.state, msg) }
+  }): void {
+    return lanOnRestartGo(this.deps, this.state, msg)
+  }
 
   // ═════════════ 重连方法（reconnect-fns.ts） ═════════════
 
@@ -350,7 +388,9 @@ export class LanIndexManager {
     return startLanLive2dLoop(src, videoA, videoB)
   }
 
-  stopLanLive2dLoop(): void { return stopLanLive2dLoop() }
+  stopLanLive2dLoop(): void {
+    return stopLanLive2dLoop()
+  }
 
   // ═════════════ 事件绑定方法（events-fns.ts） ═════════════
 

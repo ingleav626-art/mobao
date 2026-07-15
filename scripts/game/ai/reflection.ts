@@ -1,4 +1,4 @@
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 /**
  * @file reflection.ts
@@ -63,7 +63,7 @@ export function applyMemoryOperations(array: string[], operations: Record<string
   }
 
   if (Array.isArray(operations.modify)) {
-    (operations.modify as unknown[][]).forEach((item) => {
+    ;(operations.modify as unknown[][]).forEach((item) => {
       if (Array.isArray(item) && item.length >= 2) {
         const idx = item[0] as number
         const newContent = item[1] as string
@@ -75,7 +75,7 @@ export function applyMemoryOperations(array: string[], operations: Record<string
   }
 
   if (Array.isArray(operations.add)) {
-    (operations.add as string[]).forEach((content) => {
+    ;(operations.add as string[]).forEach((content) => {
       if (typeof content === "string" && content.trim() && !array.includes(content.trim())) {
         array.push(content.trim())
       }
@@ -98,12 +98,23 @@ export function updateCrossGameMemory(
   if (!memory.stats) {
     memory.stats = {
       totalGames: 0,
-      warehouseValueMax: 0, warehouseValueMin: 0, warehouseValueAvg: 0,
-      winRate: 0, avgProfit: 0,
-      totalCellsMax: 0, totalCellsMin: 0, totalCellsAvg: 0,
-      totalItemsMax: 0, totalItemsMin: 0, totalItemsAvg: 0,
-      legendaryMax: 0, legendaryMin: 0, legendaryAvg: 0,
-      rareMax: 0, rareMin: 0, rareAvg: 0
+      warehouseValueMax: 0,
+      warehouseValueMin: 0,
+      warehouseValueAvg: 0,
+      winRate: 0,
+      avgProfit: 0,
+      totalCellsMax: 0,
+      totalCellsMin: 0,
+      totalCellsAvg: 0,
+      totalItemsMax: 0,
+      totalItemsMin: 0,
+      totalItemsAvg: 0,
+      legendaryMax: 0,
+      legendaryMin: 0,
+      legendaryAvg: 0,
+      rareMax: 0,
+      rareMin: 0,
+      rareAvg: 0
     }
   }
   if (!memory.lessons) memory.lessons = []
@@ -137,8 +148,10 @@ export function updateCrossGameMemory(
   stats.avgProfit = (stats.avgProfit * (totalGames - 1) + profit) / totalGames
 
   if (warehouseValue > 0) {
-    if (stats.warehouseValueMax === 0 || warehouseValue > stats.warehouseValueMax) stats.warehouseValueMax = warehouseValue
-    if (stats.warehouseValueMin === 0 || warehouseValue < stats.warehouseValueMin) stats.warehouseValueMin = warehouseValue
+    if (stats.warehouseValueMax === 0 || warehouseValue > stats.warehouseValueMax)
+      stats.warehouseValueMax = warehouseValue
+    if (stats.warehouseValueMin === 0 || warehouseValue < stats.warehouseValueMin)
+      stats.warehouseValueMin = warehouseValue
     stats.warehouseValueAvg = (stats.warehouseValueAvg * (totalGames - 1) + warehouseValue) / totalGames
   }
 
@@ -186,7 +199,11 @@ export const AiReflectionMixin: ThisType<WarehouseSceneThis> = {
     return this.aiReflectionManager.applyMemoryOperations(array, operations, maxLength)
   },
 
-  updateCrossGameMemory(playerId: string, record: Record<string, unknown>, parsedReflection: Record<string, unknown>): void {
+  updateCrossGameMemory(
+    playerId: string,
+    record: Record<string, unknown>,
+    parsedReflection: Record<string, unknown>
+  ): void {
     return this.aiReflectionManager.updateCrossGameMemory(playerId, record, parsedReflection)
   },
 

@@ -16,7 +16,7 @@ export const KeyboardPart: ThisType<MobileHandlerType> = {
   setupNativeKeyboardListener: function () {
     var self = this
 
-    ;(window as any).__onKeyboardChange = function (height: number) {
+    ;(window as unknown as Record<string, unknown>).__onKeyboardChange = function (height: number) {
       self.handleKeyboardHeightChange(parseInt(String(height)) || 0)
     }
 
@@ -58,14 +58,20 @@ export const KeyboardPart: ThisType<MobileHandlerType> = {
 
     this.stopPolling()
 
-    if (typeof (window as any).AndroidKeyboard !== "undefined" && (window as any).AndroidKeyboard.getKeyboardHeight) {
+    if (
+      typeof (window as unknown as Record<string, unknown>).AndroidKeyboard !== "undefined" &&
+      ((window as unknown as Record<string, unknown>).AndroidKeyboard as { getKeyboardHeight: () => number })
+        .getKeyboardHeight
+    ) {
       this.pollIntervalId = setInterval(function () {
         if (!self.fixedInputOverlay || !self.fixedInputOverlay.classList.contains("show")) {
           self.stopPolling()
           return
         }
 
-        var rawHeight = (window as any).AndroidKeyboard.getKeyboardHeight()
+        var rawHeight = (
+          (window as unknown as Record<string, unknown>).AndroidKeyboard as { getKeyboardHeight: () => number }
+        ).getKeyboardHeight()
         self.handleKeyboardHeightChange(rawHeight)
       }, 200)
     }

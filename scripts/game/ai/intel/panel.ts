@@ -14,12 +14,7 @@ import type { AiIntelSignal, HighValueTrack } from "../../../../types/ai"
 import { toCellKey, fromCellKey } from "../../core/utils"
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } from "../../data/artifacts"
 import { sizeTagToCellCount } from "../../core/utils"
-import {
-  determineRevealLevel,
-  truncateCandidateList,
-  buildNeighborStateLabel,
-  getNeighborOffsets
-} from "./pure"
+import { determineRevealLevel, truncateCandidateList, buildNeighborStateLabel, getNeighborOffsets } from "./pure"
 
 export const PanelMixin: ThisType<WarehouseSceneThis> = {
   getPlayerById(playerId: number | string) {
@@ -200,8 +195,8 @@ export const PanelMixin: ThisType<WarehouseSceneThis> = {
       const knownCells =
         knowledge && knowledge.knownCells
           ? [...knowledge.knownCells]
-            .map((cellKey) => fromCellKey(cellKey))
-            .filter((c): c is { x: number; y: number } => c !== null)
+              .map((cellKey) => fromCellKey(cellKey))
+              .filter((c): c is { x: number; y: number } => c !== null)
           : []
       const anchorCell = knownCells[0] || null
 

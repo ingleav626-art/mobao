@@ -26,7 +26,13 @@ export const MobaoSummarizer = {
   },
 
   buildSummaryPrompt(
-    recentRecords: Array<{ run: number; result: string; winnerProfit: number; qualityCounts: Record<string, number>; reflection: string | null }>,
+    recentRecords: Array<{
+      run: number
+      result: string
+      winnerProfit: number
+      qualityCounts: Record<string, number>
+      reflection: string | null
+    }>,
     currentMemory: { praises: string[]; strategies: string[]; lessons: string[] },
     totalGames: number
   ): string {
@@ -82,5 +88,4 @@ export const MobaoSummarizer = {
     }
   }
 }
-
 ;(window as unknown as Record<string, unknown>).MobaoSummarizer = MobaoSummarizer

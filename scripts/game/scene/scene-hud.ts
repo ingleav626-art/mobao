@@ -12,6 +12,7 @@ import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { GRID_COLS as _GRID_COLS, GRID_ROWS as _GRID_ROWS } from "../core/constants"
 import { GAME_SETTINGS as _GAME_SETTINGS } from "../core/settings"
 import { MobaoAnimations } from "../animations"
+import { useGameStore } from "../../vue/stores/gameStore"
 
 /**
  * 更新操作可用性（按钮禁用/启用状态）
@@ -128,4 +129,17 @@ export function updateHud(this: WarehouseSceneThis): void {
   this.renderItemDrawer()
   this.updateSidePanels(skillState, itemState, clueCount, occupiedCells, capacity, bidState)
   this.updateActionAvailability()
+
+  // 同步到 Pinia store（Vue HUD 渐进迁移）
+  try {
+    const gameStore = useGameStore()
+    gameStore.updateRound(this.round, _GAME_SETTINGS.maxRounds, this.roundTimeLeft, this.actionsLeft)
+    gameStore.updateMoney(this.playerMoney)
+    gameStore.updateBid(this.currentBid, this.bidLeader, this.playerRoundBid, this.playerBidSubmitted)
+    gameStore.updateTimer(this.roundTimeLeft, this.roundPaused)
+    gameStore.updateSettled(this.settled)
+    gameStore.updateRoundResolving(this.roundResolving)
+  } catch {
+    // Pinia 尚未初始化（Vue 应用未挂载），静默忽略
+  }
 }

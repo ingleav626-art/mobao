@@ -10,13 +10,14 @@
 "use strict"
 
 import { LlmManager, createNormalizeSettings } from "../core/llm-manager"
+import type { ChatRequestOptions, ChatResult } from "../core/provider-factory"
 
 const { createOpenAICompatibleProvider } = LlmManager
 
 const DEEPSEEK_STORAGE_KEY = "mobao_deepseek_settings_v2"
 const DEEPSEEK_API_KEY_STORAGE_KEY = "mobao_deepseek_api_key_v1"
 
-function defaultDeepSeekSettings(): any {
+function defaultDeepSeekSettings(): Record<string, unknown> {
   return {
     provider: "deepseek",
     enabled: false,
@@ -79,10 +80,13 @@ function isThinkingModel(model: string): boolean {
   return /deepseek-(v4|reasoner)|qwen.*think|glm.*z1|o1-|o3-/i.test(model)
 }
 
-function buildRequestBody(settings: any, context: any): any {
+function buildRequestBody(
+  settings: Record<string, unknown>,
+  context: { isThinking: boolean; temperature: number }
+): Record<string, unknown> {
   const { isThinking, temperature } = context
-  const isV4OrReasoner = isDeepSeekThinkingModel(settings.model)
-  const body: any = {}
+  const isV4OrReasoner = isDeepSeekThinkingModel(settings.model as string)
+  const body: Record<string, unknown> = {}
 
   if (isV4OrReasoner) {
     if (isThinking) {
@@ -96,9 +100,9 @@ function buildRequestBody(settings: any, context: any): any {
     body.temperature = temperature
   }
 
-  if (isV4OrReasoner && isThinking && settings.thinkingParams) {
+  if (isV4OrReasoner && isThinking && (settings.thinkingParams as string)) {
     try {
-      const customParams = JSON.parse(settings.thinkingParams)
+      const customParams = JSON.parse(settings.thinkingParams as string)
       if (customParams && typeof customParams === "object") {
         Object.assign(body, customParams)
       }
@@ -143,22 +147,22 @@ export const DeepSeekProvider = {
   normalizeDeepSeekSettings,
   isDeepSeekThinkingModel,
   isThinkingModel,
-  getSettings: function (): any {
+  getSettings: function (): Record<string, unknown> {
     return provider.loadSettings()
   },
-  applySettings: function (settings: any): any {
+  applySettings: function (settings: Record<string, unknown>): Record<string, unknown> {
     return provider.saveSettings(settings)
   },
-  getLogs: function (): any[] {
+  getLogs: function (): Array<Record<string, unknown>> {
     return provider.getLogs()
   },
   clearLogs: function (): void {
     provider.clearLogs()
   },
-  requestChat: function (options: any): Promise<any> {
+  requestChat: function (options: ChatRequestOptions): Promise<ChatResult> {
     return provider.requestChat(options)
   },
-  testConnection: function (overrideSettings?: any): Promise<any> {
+  testConnection: function (overrideSettings?: Record<string, unknown>): Promise<ChatResult> {
     return provider.testConnection(overrideSettings)
   }
 }

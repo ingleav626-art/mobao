@@ -187,9 +187,7 @@ export function initPlayersUI(deps: LobbyIndexManagerDeps, state: LobbyIndexStat
             if (Deps.LLM_BRIDGE) {
               Deps.LLM_BRIDGE.saveAiLlmPlayerSwitches(state.aiLlmPlayerEnabled)
             }
-            deps.writeLog(
-              `${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`
-            )
+            deps.writeLog(`${player.name} 的大模型${input.checked ? "已启用" : "已关闭"}（总开关关闭时仍不会调用）。`)
           })
 
           const text = document.createElement("span")

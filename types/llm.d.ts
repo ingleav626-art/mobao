@@ -19,7 +19,7 @@ export interface LlmSettings {
   maxTokens: number
   timeout: number
   aiLlmEnabled: boolean               // AI LLM 总开关
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /** 用户自定义 LLM 提供商 */

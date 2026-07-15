@@ -21,6 +21,14 @@ export function showInfoPopup(deps: UiOverlayManagerDeps, title: string, sourceS
   } else {
     deps.dom.infoPopupOverlay!.classList.remove("hidden")
   }
+  // 同步到 Vue uiStore
+  import("../../../vue/stores/uiStore")
+    .then(({ useUiStore }) => {
+      useUiStore().showInfoPopup(title, deps.dom.infoPopupContent?.innerHTML ?? "")
+    })
+    .catch(() => {
+      // Vue 未初始化时跳过
+    })
 }
 
 export function hideInfoPopup(deps: UiOverlayManagerDeps): void {
@@ -29,6 +37,14 @@ export function hideInfoPopup(deps: UiOverlayManagerDeps): void {
   } else {
     deps.dom.infoPopupOverlay!.classList.add("hidden")
   }
+  // 同步到 Vue uiStore
+  import("../../../vue/stores/uiStore")
+    .then(({ useUiStore }) => {
+      useUiStore().hideInfoPopup()
+    })
+    .catch(() => {
+      // Vue 未初始化时跳过
+    })
 }
 
 export function showPlayerInfoPopover(title: string, htmlContent: string, x: number, y: number): void {

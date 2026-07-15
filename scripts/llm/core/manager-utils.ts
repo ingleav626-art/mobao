@@ -84,7 +84,7 @@ export function broadcastToTokenMonitor(result: any, options: any): void {
         source: "llm-manager"
       }
     }
-    if ((window as any).BroadcastChannel) {
+    if (typeof BroadcastChannel !== "undefined") {
       const channel = new BroadcastChannel("llm-token-monitor")
       channel.postMessage(payload)
       channel.close()
@@ -100,7 +100,7 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-export function toFiniteNumber(value: any, fallback: number): number {
+export function toFiniteNumber(value: unknown, fallback: number): number {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
 }
@@ -112,7 +112,7 @@ export function normalizeObject(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 
-export function parseJsonSafely(text: any): any {
+export function parseJsonSafely(text: string): any {
   if (typeof text !== "string" || text.length === 0) {
     return null
   }
@@ -123,7 +123,7 @@ export function parseJsonSafely(text: any): any {
   }
 }
 
-export function compactText(value: any, maxLength: number): string {
+export function compactText(value: unknown, maxLength: number): string {
   const input = typeof value === "string" ? value.trim() : ""
   if (input.length <= maxLength) {
     return input
@@ -131,7 +131,7 @@ export function compactText(value: any, maxLength: number): string {
   return `${input.slice(0, maxLength)}...`
 }
 
-export function maskApiKey(value: any): string {
+export function maskApiKey(value: unknown): string {
   const key = typeof value === "string" ? value.trim() : ""
   if (!key) {
     return "(empty)"
@@ -142,7 +142,7 @@ export function maskApiKey(value: any): string {
   return `${key.slice(0, 4)}...${key.slice(-4)}`
 }
 
-export function isProxyEndpoint(endpoint: any): boolean {
+export function isProxyEndpoint(endpoint: unknown): boolean {
   const value = typeof endpoint === "string" ? endpoint.trim() : ""
   if (!value) {
     return false
@@ -179,7 +179,7 @@ export function loadStoredApiKey(providerId: string): string {
   }
 }
 
-export function saveStoredApiKey(providerId: string, value: any): void {
+export function saveStoredApiKey(providerId: string, value: string): void {
   const normalized = typeof value === "string" ? value.trim() : ""
   try {
     if (normalized) {
@@ -187,5 +187,5 @@ export function saveStoredApiKey(providerId: string, value: any): void {
     } else {
       window.localStorage.removeItem(`mobao_${providerId}_api_key_v1`)
     }
-  } catch (_error) { }
+  } catch (_error) {}
 }

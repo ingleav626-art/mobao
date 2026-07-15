@@ -11,10 +11,7 @@
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { GRID_COLS as _GRID_COLS, GRID_ROWS as _GRID_ROWS } from "../core/constants"
 import { GAME_SETTINGS as _GAME_SETTINGS } from "../core/settings"
-import {
-  getActiveCharacter,
-  resetForNewGame,
-} from "../data/character-system"
+import { getActiveCharacter, resetForNewGame } from "../data/character-system"
 import { pickRandomPublicEvent } from "../data/public-events"
 
 /**

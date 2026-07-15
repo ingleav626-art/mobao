@@ -13,7 +13,7 @@ export function shuffle<T>(list: T[]): T[] {
   const arr = [...list]
   for (let i = arr.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1))
-      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
   }
   return arr
 }
@@ -24,7 +24,11 @@ export function delay(ms: number): Promise<void> {
   })
 }
 
-export function tweenToPromise(scene: any, targets: any, config: any): Promise<void> {
+export function tweenToPromise(
+  scene: { tweens: { add: (config: Record<string, unknown>) => void } },
+  targets: unknown,
+  config: Record<string, unknown>
+): Promise<void> {
   return new Promise((resolve) => {
     scene.tweens.add({
       targets,
@@ -159,7 +163,7 @@ export function indentMultiline(value: string, indent: string): string {
     .join("\n")
 }
 
-export function pickFirstDefined(...values: any[]): any {
+export function pickFirstDefined(...values: unknown[]): unknown {
   for (const value of values) {
     if (value !== undefined && value !== null) {
       return value
@@ -170,34 +174,51 @@ export function pickFirstDefined(...values: any[]): any {
 
 export function qualityPulseDuration(qualityKey: string): number {
   switch (qualityKey) {
-    case "legendary": return 380
-    case "rare": return 520
-    case "fine": return 660
-    case "normal": return 760
-    default: return 880
+    case "legendary":
+      return 380
+    case "rare":
+      return 520
+    case "fine":
+      return 660
+    case "normal":
+      return 760
+    default:
+      return 880
   }
 }
 
 export function settlementRevealDelayByQuality(qualityKey: string): number {
   const multiplier = 1
   switch (qualityKey) {
-    case "legendary": return Math.round(360 * multiplier)
-    case "rare": return Math.round(320 * multiplier)
-    case "fine": return Math.round(280 * multiplier)
-    case "normal": return Math.round(240 * multiplier)
-    case "poor": return Math.round(220 * multiplier)
-    default: return Math.round(260 * multiplier)
+    case "legendary":
+      return Math.round(360 * multiplier)
+    case "rare":
+      return Math.round(320 * multiplier)
+    case "fine":
+      return Math.round(280 * multiplier)
+    case "normal":
+      return Math.round(240 * multiplier)
+    case "poor":
+      return Math.round(220 * multiplier)
+    default:
+      return Math.round(260 * multiplier)
   }
 }
 
 export function settlementSearchDurationByQuality(qualityKey: string): number {
   const multiplier = 1
   switch (qualityKey) {
-    case "legendary": return Math.round(1250 * multiplier)
-    case "rare": return Math.round(920 * multiplier)
-    case "fine": return Math.round(680 * multiplier)
-    case "normal": return Math.round(500 * multiplier)
-    case "poor": return Math.round(360 * multiplier)
-    default: return Math.round(540 * multiplier)
+    case "legendary":
+      return Math.round(1250 * multiplier)
+    case "rare":
+      return Math.round(920 * multiplier)
+    case "fine":
+      return Math.round(680 * multiplier)
+    case "normal":
+      return Math.round(500 * multiplier)
+    case "poor":
+      return Math.round(360 * multiplier)
+    default:
+      return Math.round(540 * multiplier)
   }
 }

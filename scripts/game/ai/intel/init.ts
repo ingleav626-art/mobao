@@ -94,7 +94,7 @@ export const InitMixin: ThisType<WarehouseSceneThis> = {
             wrap.appendChild(nameTag)
           }
           nameTag.textContent = charName
-            ; (nameTag as HTMLElement).style.display = ""
+          ;(nameTag as HTMLElement).style.display = ""
         }
       }
     })

@@ -46,14 +46,14 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
       if (this.isLanMode) {
         llmGroup.classList.add("settings-group-disabled")
         const inputs = llmGroup.querySelectorAll("input, button")
-        inputs.forEach((el: any) => {
-          el.disabled = true
+        inputs.forEach((el: Element) => {
+          ;(el as HTMLInputElement).disabled = true
         })
       } else {
         llmGroup.classList.remove("settings-group-disabled")
         const inputs = llmGroup.querySelectorAll("input, button")
-        inputs.forEach((el: any) => {
-          el.disabled = false
+        inputs.forEach((el: Element) => {
+          ;(el as HTMLInputElement).disabled = false
         })
       }
     }
@@ -153,7 +153,7 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
       if (!input) {
         return
       }
-      ; (input as HTMLInputElement).value = String(values[field])
+      ;(input as HTMLInputElement).value = String(values[field])
     })
     const roundSecondsInput = document.getElementById("setting-roundSeconds") as HTMLInputElement | null
     const roundSecondsDecrease = document.getElementById("roundSecondsDecrease") as HTMLButtonElement | null
@@ -251,7 +251,7 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
       }
       try {
         window.localStorage.setItem(LLM_GLOBAL_SETTINGS_KEY, JSON.stringify(globalSettings))
-      } catch (_e) { }
+      } catch (_e) {}
 
       const llmProvider = this.getLlmProvider()
       console.log("[saveSettingsFromOverlay] llmProvider:", llmProvider ? llmProvider.id : null)

@@ -21,7 +21,7 @@
  * @exports initDeps - 初始化依赖注入容器函数
  */
 
-import type { LlmBridge } from '../../../types/llm'
+import type { LlmBridge } from "../../../types/llm"
 
 /** 战绩记录桥接器方法接口（createBattleRecordBridge 返回的 methods 对象） */
 export interface BattleRecordBridgeMethods {

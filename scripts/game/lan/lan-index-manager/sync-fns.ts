@@ -16,7 +16,7 @@ import type { QualityLevel, ArtifactView, Artifact } from "../../../../types/gam
 export function lanBuildFullSyncData(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
-  targetPlayerId: string,
+  targetPlayerId: string
 ): Record<string, unknown> {
   var wallets: Record<string, number> = {}
   state.players.forEach((p) => {
@@ -63,7 +63,7 @@ export function lanBuildFullSyncData(
     playerCharacters: playerCharacters,
     mapProfileId: getSelectedProfileId(),
     warehouse: deps.buildWarehouseSnapshotForSync(),
-    publicInfoEntries: state.publicInfoEntries || [],
+    publicInfoEntries: state.publicInfoEntries || []
   }
 }
 
@@ -177,7 +177,7 @@ export function lanOnFullSync(deps: LanIndexManagerDeps, state: LanIndexState, m
 export function lanRestoreWarehouseFromSync(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
-  msg: Record<string, unknown>,
+  msg: Record<string, unknown>
 ): void {
   const warehouseData = (msg.warehouse || []) as Record<string, unknown>[]
   if (warehouseData.length === 0) return
@@ -191,7 +191,8 @@ export function lanRestoreWarehouseFromSync(
   state.revealedCells = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
 
   warehouseData.forEach((saved, idx) => {
-    const qualityKey = saved.qualityKey && QUALITY_CONFIG[saved.qualityKey as string] ? (saved.qualityKey as string) : "normal"
+    const qualityKey =
+      saved.qualityKey && QUALITY_CONFIG[saved.qualityKey as string] ? (saved.qualityKey as string) : "normal"
     const quality = QUALITY_CONFIG[qualityKey] || { label: "良品", color: 0x2f78ff, glow: 0x9ec0ff, weight: 1 }
     const safeW = Math.max(1, Math.round(Number(saved.w) || 1))
     const safeH = Math.max(1, Math.round(Number(saved.h) || 1))
@@ -200,11 +201,11 @@ export function lanRestoreWarehouseFromSync(
     const trueValue = Math.max(0, Math.round(Number(saved.trueValue) || 0))
 
     const item = {
-      id: String(saved.id || ("sync-item-" + idx)),
+      id: String(saved.id || "sync-item-" + idx),
       key: (saved.key as string) || "synced",
       majorCategory: (saved.majorCategory as string) || "未知",
       category: (saved.category as string) || "未知",
-      name: (saved.name as string) || ("藏品" + (idx + 1)),
+      name: (saved.name as string) || "藏品" + (idx + 1),
       basePrice: trueValue,
       trueValue,
       qualityKey: qualityKey as QualityLevel,
@@ -216,7 +217,7 @@ export function lanRestoreWarehouseFromSync(
       revealed: { outline: false, qualityCell: null, exact: false },
       expectedPrice: trueValue,
       previewSizeTag: safeW + "x" + safeH,
-      view: {} as ArtifactView,
+      view: {} as ArtifactView
     }
 
     item as Artifact
@@ -234,8 +235,8 @@ export function lanRestoreWarehouseFromSync(
     state.publicInfoEntries = [
       {
         source: state.currentPublicEvent.category,
-        text: state.currentPublicEvent.text,
-      },
+        text: state.currentPublicEvent.text
+      }
     ]
   }
 }
@@ -253,9 +254,7 @@ export function lanAttemptReconnect(deps: LanIndexManagerDeps, state: LanIndexSt
   }
   state.lanReconnectAttempts++
   var delay = Math.min(1000 * Math.pow(2, state.lanReconnectAttempts - 1), 8000)
-  deps.writeLog(
-    "重连尝试 " + state.lanReconnectAttempts + "/" + state.lanMaxReconnectAttempts + " (" + delay + "ms后)",
-  )
+  deps.writeLog("重连尝试 " + state.lanReconnectAttempts + "/" + state.lanMaxReconnectAttempts + " (" + delay + "ms后)")
   const lastServerUrl = state.lanLastServerUrl
   const lastRoomCode = state.lanLastRoomCode
   const lastPlayerId = state.lanLastPlayerId

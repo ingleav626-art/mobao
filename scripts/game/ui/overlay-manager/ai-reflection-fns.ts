@@ -22,9 +22,7 @@ export function updateReflectionStatusUI(deps: UiOverlayManagerDeps): void {
     deps.shouldGenerateSummary()
   const summaryLabel = needsSummary ? "并总结" : ""
   const progress =
-    deps.getAiReflectionTotal() > 1
-      ? ` ${deps.getAiReflectionCompleted()}/${deps.getAiReflectionTotal()}`
-      : ""
+    deps.getAiReflectionTotal() > 1 ? ` ${deps.getAiReflectionCompleted()}/${deps.getAiReflectionTotal()}` : ""
   switch (deps.getAiReflectionState()) {
     case "pending":
       el.classList.add("is-pending")

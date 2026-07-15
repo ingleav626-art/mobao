@@ -61,7 +61,9 @@ export function renderAiModelConfigContent(deps: UiOverlayManagerDeps): void {
       </div>
     `
   const providerIds = new Set(providers.map((p: { id: string }) => p.id))
-  const providerOptions = providers.map((p: { id: string; name: string }) => `<option value="${p.id}">${p.name}</option>`).join("")
+  const providerOptions = providers
+    .map((p: { id: string; name: string }) => `<option value="${p.id}">${p.name}</option>`)
+    .join("")
   ;["ai1", "ai2", "ai3"].forEach((aiId, i) => {
     const savedProviderId = aiModelConfigs[aiId] || ""
     const isSavedValid = !savedProviderId || providerIds.has(savedProviderId)

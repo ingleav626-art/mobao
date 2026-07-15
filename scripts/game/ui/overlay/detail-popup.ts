@@ -20,8 +20,8 @@ export const DetailPopupMixin: ThisType<WarehouseSceneThis> = {
   showItemDetailPopup(itemId: string, itemName: string | null, x: number, y: number) {
     const itemDefs = ITEM_DEFS || []
     const skillDefs = SKILL_DEFS || []
-    const itemDef = itemDefs.find((item: any) => item.id === itemId) as any
-    const skillDef = skillDefs.find((skill: any) => skill.id === itemId) as any
+    const itemDef = itemDefs.find((item: { id: string }) => item.id === itemId) as any
+    const skillDef = skillDefs.find((skill: { id: string }) => skill.id === itemId)
 
     if (itemDef) {
       const title = itemName || itemDef.name || "道具详情"
@@ -52,20 +52,26 @@ export const DetailPopupMixin: ThisType<WarehouseSceneThis> = {
   },
 
   showCharacterInfoPopup(playerId: string, x: number, y: number) {
-    const player = this.players.find((p: any) => p.id === playerId)
+    const player = this.players.find((p: { id: string }) => p.id === playerId)
     if (!player) {
       return
     }
 
-    let characterInfo: { name: string; desc: string; skillName: string; skillDesc: string; passive: any } | null = null
+    let characterInfo: {
+      name: string
+      desc: string
+      skillName: string
+      skillDesc: string
+      passive: { label?: string } | null
+    } | null = null
     if (player.isHuman) {
       const char = getActiveCharacter()
       if (char) {
         characterInfo = {
           name: char.name,
-          desc: (char as any).desc,
+          desc: (char as unknown as { desc: string }).desc,
           skillName: char.skillName,
-          skillDesc: (char as any).skillDesc,
+          skillDesc: (char as unknown as { skillDesc: string }).skillDesc,
           passive: char.passive
         }
       }

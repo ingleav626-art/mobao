@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia"
 
 export interface Player {
   id: string
@@ -6,7 +6,7 @@ export interface Player {
   money: number
 }
 
-export const useGameStore = defineStore('game', {
+export const useGameStore = defineStore("game", {
   state: () => ({
     // 回合状态
     round: 1,
@@ -29,10 +29,43 @@ export const useGameStore = defineStore('game', {
 
     // 仓库状态
     warehouseTrueValue: 0,
-    aiMaxBid: 0,
+    aiMaxBid: 0
   }),
 
   actions: {
-    // Phase 2 填充
-  },
+    updateRound(round: number, maxRounds: number, roundTimeLeft: number, actionsLeft: number): void {
+      this.round = round
+      this.maxRounds = maxRounds
+      this.roundTimeLeft = roundTimeLeft
+      this.actionsLeft = actionsLeft
+    },
+
+    updateMoney(playerMoney: number): void {
+      this.playerMoney = playerMoney
+    },
+
+    updateTimer(roundTimeLeft: number, roundPaused: boolean): void {
+      this.roundTimeLeft = roundTimeLeft
+      this.roundPaused = roundPaused
+    },
+
+    updateBid(currentBid: number, bidLeader: string | null, playerBid: number, playerBidSubmitted: boolean): void {
+      this.currentBid = currentBid
+      this.bidLeader = bidLeader ?? ""
+      this.playerBid = playerBid
+      this.playerBidSubmitted = playerBidSubmitted
+    },
+
+    togglePause(): void {
+      this.roundPaused = !this.roundPaused
+    },
+
+    updateSettled(settled: boolean): void {
+      this.settled = settled
+    },
+
+    updateRoundResolving(roundResolving: boolean): void {
+      this.roundResolving = roundResolving
+    }
+  }
 })

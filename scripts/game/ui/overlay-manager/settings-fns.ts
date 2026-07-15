@@ -10,6 +10,7 @@ import { SETTINGS_FIELDS } from "../../core/constants"
 import { GAME_SETTINGS, saveGameSettings, normalizeGameSettings } from "../../core/settings"
 import { clamp } from "../../core/utils"
 import { DeepSeekProvider } from "../../../llm/providers/deepseek-provider"
+import { useSettingsStore } from "../../../vue/stores/settingsStore"
 import { LlmManager } from "../../../llm/core/llm-manager"
 import { LLM_GLOBAL_SETTINGS_KEY } from "../../../llm/core/llm-ui-bridge"
 import { hideInfoPopup } from "./info-popup-fns"
@@ -18,6 +19,21 @@ import { showGameConfirm } from "./confirm-dialog-fns"
 const loadDeepSeekSettings = DeepSeekProvider.getSettings
 const saveDeepSeekSettings = DeepSeekProvider.applySettings
 const maskApiKey = LlmManager.utils.maskApiKey
+
+/**
+ * 同步当前 DOM 设置面板的值到 Vue Pinia store
+ * 使用 try/catch 确保不破坏现有 DOM 操作
+ */
+function syncToSettingsStore(): void {
+  try {
+    const gameValues = normalizeGameSettings(readSettingsForm(), GAME_SETTINGS)
+    const store = useSettingsStore()
+    store.syncGameSettings(gameValues)
+    store.resetDirty()
+  } catch (_e) {
+    // Pinia store 尚未初始化，忽略
+  }
+}
 
 export function openSettingsOverlay(deps: UiOverlayManagerDeps, state: UiOverlayManagerState): void {
   deps.closeBidKeypad()
@@ -71,6 +87,14 @@ export function openSettingsOverlay(deps: UiOverlayManagerDeps, state: UiOverlay
     MobaoAnimations.animateOverlayOpen(deps.dom.settingsOverlay!, deps.dom.settingsPanel!)
   } else {
     deps.dom.settingsOverlay!.classList.remove("hidden")
+  }
+
+  // 桥接：同步到 Vue Pinia store
+  syncToSettingsStore()
+  try {
+    useSettingsStore().openSettings()
+  } catch (_e) {
+    // Pinia store 尚未初始化，忽略
   }
 }
 
@@ -129,6 +153,14 @@ export function closeSettingsOverlay(
       setSettingsStatus(deps, "设置保存在本地浏览器中。", false)
     }
   }
+
+  // 桥接：同步到 Vue Pinia store
+  syncToSettingsStore()
+  try {
+    useSettingsStore().closeSettings()
+  } catch (_e) {
+    // Pinia store 尚未初始化，忽略
+  }
 }
 
 export function isSettingsOverlayOpen(deps: UiOverlayManagerDeps): boolean {
@@ -159,9 +191,7 @@ export function fillSettingsForm(values: Record<string, unknown>): void {
       roundSecondsIncrease.disabled = value >= 180
     }
   }
-  const settlementSpeedInput = document.getElementById(
-    "setting-settlementSpeedMultiplier"
-  ) as HTMLInputElement | null
+  const settlementSpeedInput = document.getElementById("setting-settlementSpeedMultiplier") as HTMLInputElement | null
   const settlementSpeedDecrease = document.getElementById("settlementSpeedDecrease") as HTMLButtonElement | null
   const settlementSpeedIncrease = document.getElementById("settlementSpeedIncrease") as HTMLButtonElement | null
   if (settlementSpeedInput) {
@@ -274,10 +304,7 @@ export function saveSettingsFromOverlay(deps: UiOverlayManagerDeps, state: UiOve
       llmProvider.applySettings(llmNext)
     }
     Object.assign(LLM_SETTINGS, llmNext)
-    console.log(
-      "[saveSettingsFromOverlay] LLM_SETTINGS.independentModelEnabled:",
-      LLM_SETTINGS.independentModelEnabled
-    )
+    console.log("[saveSettingsFromOverlay] LLM_SETTINGS.independentModelEnabled:", LLM_SETTINGS.independentModelEnabled)
     if (oldMultiGameMemoryEnabled && !LLM_SETTINGS.multiGameMemoryEnabled) {
       deps.writeLog("已关闭多局AI上下文：仅停止发送，不删除记忆。")
     }
@@ -307,5 +334,9 @@ export function saveSettingsFromOverlay(deps: UiOverlayManagerDeps, state: UiOve
     LLM_SETTINGS.apiKey ? "success" : "normal"
   )
   deps.writeLog(`设置已应用：对局参数生效；${modelName} ${LLM_SETTINGS.enabled ? "已启用" : "未启用"}。`)
+
+  // 桥接：同步到 Vue Pinia store
+  syncToSettingsStore()
+
   closeSettingsOverlay(deps, state, true)
 }

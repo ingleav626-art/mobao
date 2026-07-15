@@ -9,14 +9,14 @@
  * @requires data/artifacts - 品质配置
  * @exports createLlmPromptModule - Prompt 构建模块工厂函数
  */
-import { tryExtractDecisionJson } from './llm-error.js'
-import { QUALITY_CONFIG } from '../../game/data/artifacts'
+import { tryExtractDecisionJson } from "./llm-error.js"
+import { QUALITY_CONFIG } from "../../game/data/artifacts"
 import type { Player, SkillDef, ItemDef } from "../../../types/game"
 import type { LlmPlanResult } from "../../../types/llm"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 interface LlmPromptDeps {
-  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number;[key: string]: unknown }
+  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number; [key: string]: unknown }
   SKILL_DEFS: SkillDef[]
   ITEM_DEFS: ItemDef[]
   pickFirstDefined: (...args: unknown[]) => unknown
@@ -32,7 +32,17 @@ interface LlmMessage {
 }
 
 interface LlmPayload {
-  gameState?: { round?: { current?: number; total?: number }; selfId?: string; selfName?: string; wallet?: number; directWinRatio?: number; folded?: boolean; Previousbid?: number | null; currentLeader?: string;[key: string]: unknown }
+  gameState?: {
+    round?: { current?: number; total?: number }
+    selfId?: string
+    selfName?: string
+    wallet?: number
+    directWinRatio?: number
+    folded?: boolean
+    Previousbid?: number | null
+    currentLeader?: string
+    [key: string]: unknown
+  }
   selfRoleAndTools?: Record<string, unknown>
   otherPlayersPublic?: unknown
   catalogSummary?: unknown
@@ -42,7 +52,7 @@ interface LlmPayload {
   privateIntel?: unknown
   actionConstraints?: Record<string, unknown>
   lastRoundResult?: Record<string, unknown>
-  round?: { current?: number; total?: number;[key: string]: unknown }
+  round?: { current?: number; total?: number; [key: string]: unknown }
   currentWallet?: number
   currentLeader?: string
   currentBid?: number
@@ -112,24 +122,24 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
 
   const methods = {
     buildAiLlmRoundPayload(this: WarehouseSceneThis, player: Player) {
-      const playerId = player.id;
-      const isInitialRound = this.round <= 1;
-      const compact = !isInitialRound;
-      const persona = this.aiEngine?.personalityMap[playerId] || null;
-      const actionConstraint = this.buildAiActionConstraintBlock(playerId);
-      const resource = this.getAiResourceSnapshot(playerId);
+      const playerId = player.id
+      const isInitialRound = this.round <= 1
+      const compact = !isInitialRound
+      const persona = this.aiEngine?.personalityMap[playerId] || null
+      const actionConstraint = this.buildAiActionConstraintBlock(playerId)
+      const resource = this.getAiResourceSnapshot(playerId)
 
-      const bidHistory = this.buildBidHistorySnapshot();
-      const publicEvents = this.buildPublicEventSnapshot({ compact, viewerId: playerId });
+      const bidHistory = this.buildBidHistorySnapshot()
+      const publicEvents = this.buildPublicEventSnapshot({ compact, viewerId: playerId })
 
-      const charAssign = this.aiCharacterAssignments?.[playerId];
+      const charAssign = this.aiCharacterAssignments?.[playerId]
       const characterInfo = charAssign
         ? {
-          characterId: charAssign.characterId,
-          characterName: charAssign.characterName,
-          skillName: charAssign.skillName,
-          passive: charAssign.passive?.label || null
-        }
+            characterId: charAssign.characterId,
+            characterName: charAssign.characterName,
+            skillName: charAssign.skillName,
+            passive: charAssign.passive?.label || null
+          }
         : null
 
       const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number(resource.skills[entry.id] || 0) > 0).map(
@@ -142,13 +152,15 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         })
       )
 
-      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number(resource.items[entry.id] || 0) > 0).map((entry: ItemDef) => ({
-        name: entry.name,
-        description: entry.description,
-        remaining: Number(resource.items[entry.id] || 0),
-        timing: "出价前",
-        resultPublic: false
-      }))
+      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number(resource.items[entry.id] || 0) > 0).map(
+        (entry: ItemDef) => ({
+          name: entry.name,
+          description: entry.description,
+          remaining: Number(resource.items[entry.id] || 0),
+          timing: "出价前",
+          resultPublic: false
+        })
+      )
 
       return {
         gameState: {
@@ -190,13 +202,15 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
     },
 
     buildAiIncrementalPayload(this: WarehouseSceneThis, player: Player) {
-      const playerId = player.id;
-      const previousRound = this.round - 1;
-      const actionConstraint = this.buildAiActionConstraintBlock(playerId);
-      const resource = this.getAiResourceSnapshot(playerId);
+      const playerId = player.id
+      const previousRound = this.round - 1
+      const actionConstraint = this.buildAiActionConstraintBlock(playerId)
+      const resource = this.getAiResourceSnapshot(playerId)
 
-      const bidHistory = this.buildBidHistorySnapshot();
-      const lastRoundBid = (bidHistory as Array<{ round: number; bids: Record<string, unknown>; winner: string | null }>).find((entry) => entry.round === previousRound);
+      const bidHistory = this.buildBidHistorySnapshot()
+      const lastRoundBid = (
+        bidHistory as Array<{ round: number; bids: Record<string, unknown>; winner: string | null }>
+      ).find((entry) => entry.round === previousRound)
 
       const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number(resource.skills[entry.id] || 0) > 0).map(
         (entry: SkillDef) => ({
@@ -205,20 +219,25 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         })
       )
 
-      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number(resource.items[entry.id] || 0) > 0).map((entry: ItemDef) => ({
-        name: entry.name,
-        remaining: Number(resource.items[entry.id] || 0)
-      }))
+      const availableItems = ITEM_DEFS.filter((entry: ItemDef) => Number(resource.items[entry.id] || 0) > 0).map(
+        (entry: ItemDef) => ({
+          name: entry.name,
+          remaining: Number(resource.items[entry.id] || 0)
+        })
+      )
 
-      const lastRoundActions: Record<string, { playerName: string; actions: Array<{ type: string; name: string; description: string }> }> = {};
+      const lastRoundActions: Record<
+        string,
+        { playerName: string; actions: Array<{ type: string; name: string; description: string }> }
+      > = {}
       this.players.forEach((p: Player) => {
-        if (p.id === playerId) return;
-        const usage = (this.playerUsageHistory[p.id] || []).find((entry) => entry.round === previousRound);
+        if (p.id === playerId) return
+        const usage = (this.playerUsageHistory[p.id] || []).find((entry) => entry.round === previousRound)
         if (usage?.actions && usage.actions.length > 0) {
           lastRoundActions[p.id] = {
             playerName: p.name,
             actions: usage.actions.map((actionId: string) => {
-              const def = this.getActionDefById(actionId);
+              const def = this.getActionDefById(actionId)
               return { type: def.type, name: def.name, description: def.description || "" }
             })
           }
@@ -252,8 +271,13 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       }
     },
 
-    buildAiFollowupRoundPayload(this: WarehouseSceneThis, player: Player, currentPlan: LlmDecision & { toolResultSummary?: string; toolActionType?: string; toolActionId?: string }, toolSummary?: string) {
-      const resolvedToolSummary = toolSummary || (currentPlan && currentPlan.toolResultSummary) || "";
+    buildAiFollowupRoundPayload(
+      this: WarehouseSceneThis,
+      player: Player,
+      currentPlan: LlmDecision & { toolResultSummary?: string; toolActionType?: string; toolActionId?: string },
+      toolSummary?: string
+    ) {
+      const resolvedToolSummary = toolSummary || (currentPlan && currentPlan.toolResultSummary) || ""
       return {
         requestStage: "followup-after-tool",
         round: this.round,
@@ -278,32 +302,37 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       }
     },
 
-    buildAiDecisionUserPrompt(this: WarehouseSceneThis, payload: LlmPayload, extraBlocks: string[] = [], options: { requestStage?: string; isFirstRound?: boolean } = {}) {
-      const requestStage = options.requestStage || "initial";
-      const isFollowup = requestStage === "followup-after-tool";
-      const isFirstRound = options.isFirstRound === true;
+    buildAiDecisionUserPrompt(
+      this: WarehouseSceneThis,
+      payload: LlmPayload,
+      extraBlocks: string[] = [],
+      options: { requestStage?: string; isFirstRound?: boolean } = {}
+    ) {
+      const requestStage = options.requestStage || "initial"
+      const isFollowup = requestStage === "followup-after-tool"
+      const isFirstRound = options.isFirstRound === true
       const roundNoRaw = pickFirstDefined(
         payload && payload.gameState && payload.gameState.round && payload.gameState.round.current,
         payload && payload.round,
         this.round
-      );
+      )
       const totalRoundRaw = pickFirstDefined(
         payload && payload.gameState && payload.gameState.round && payload.gameState.round.total,
         GAME_SETTINGS.maxRounds
-      );
+      )
       const roundNo = Number.isFinite(Number(roundNoRaw))
         ? Math.max(1, Math.round(Number(roundNoRaw)))
-        : Math.max(1, this.round);
+        : Math.max(1, this.round)
       const totalRounds = Number.isFinite(Number(totalRoundRaw))
         ? Math.max(roundNo, Math.round(Number(totalRoundRaw)))
-        : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo);
-      const isFinalRound = roundNo >= totalRounds;
-      const roundStateText = isFinalRound ? "最终轮" : "后续轮";
+        : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo)
+      const isFinalRound = roundNo >= totalRounds
+      const roundStateText = isFinalRound ? "最终轮" : "后续轮"
       const finalRoundHint = isFinalRound
         ? "【最终轮提醒】本轮直接按最高出价者获胜，不再看相对第二名高出比例。"
-        : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。";
+        : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。"
 
-      let base: string[];
+      let base: string[]
       if (isFollowup) {
         base = [
           "【任务】第 " + roundNo + "/" + totalRounds + " 轮 follow-up。根据工具结果修正最终出价。",
@@ -313,12 +342,12 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       } else if (isFirstRound) {
         base = [
           "【任务】第 " +
-          roundNo +
-          "/" +
-          totalRounds +
-          " 轮（" +
-          roundStateText +
-          "）。给出合法竞拍决策（bid/skill/item/thought）。",
+            roundNo +
+            "/" +
+            totalRounds +
+            " 轮（" +
+            roundStateText +
+            "）。给出合法竞拍决策（bid/skill/item/thought）。",
           finalRoundHint,
           "【当前状态数据】",
           JSON.stringify(payload)
@@ -326,12 +355,12 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       } else {
         base = [
           "【任务】第 " +
-          roundNo +
-          "/" +
-          totalRounds +
-          " 轮（" +
-          roundStateText +
-          "）。给出合法竞拍决策（bid/skill/item/thought）。",
+            roundNo +
+            "/" +
+            totalRounds +
+            " 轮（" +
+            roundStateText +
+            "）。给出合法竞拍决策（bid/skill/item/thought）。",
           finalRoundHint,
           "【上一轮结算信息】",
           JSON.stringify(payload)
@@ -349,7 +378,17 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       return base.join("\n")
     },
 
-    buildAiDecisionMessages(this: WarehouseSceneThis, payload: LlmPayload, options: { requestStage?: string; isFirstRound?: boolean; systemPrompt?: string; historyMessages?: LlmMessage[]; extraBlocks?: string[] } = {}) {
+    buildAiDecisionMessages(
+      this: WarehouseSceneThis,
+      payload: LlmPayload,
+      options: {
+        requestStage?: string
+        isFirstRound?: boolean
+        systemPrompt?: string
+        historyMessages?: LlmMessage[]
+        extraBlocks?: string[]
+      } = {}
+    ) {
       const requestStage = options.requestStage || "initial"
       const isFollowup = requestStage === "followup-after-tool"
       const systemPrompt = options.systemPrompt || ""
@@ -459,22 +498,22 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
           ? payload.gameState.round.current
           : payload && payload.round && payload.round.current
             ? payload.round.current
-            : this.round;
+            : this.round
       const totalRoundRaw =
         payload && payload.gameState && payload.gameState.round && payload.gameState.round.total
           ? payload.gameState.round.total
-          : GAME_SETTINGS.maxRounds;
+          : GAME_SETTINGS.maxRounds
       const roundNo = Number.isFinite(Number(roundNoRaw))
         ? Math.max(1, Math.round(Number(roundNoRaw)))
-        : Math.max(1, this.round);
+        : Math.max(1, this.round)
       const totalRounds = Number.isFinite(Number(totalRoundRaw))
         ? Math.max(roundNo, Math.round(Number(totalRoundRaw)))
-        : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo);
-      const isFinalRound = roundNo >= totalRounds;
-      const roundStateText = isFinalRound ? "最终轮" : "后续轮";
+        : Math.max(roundNo, Number(GAME_SETTINGS.maxRounds) || roundNo)
+      const isFinalRound = roundNo >= totalRounds
+      const roundStateText = isFinalRound ? "最终轮" : "后续轮"
       const finalRoundHint = isFinalRound
         ? "【最终轮提醒】本轮直接按最高出价者获胜，不再看相对第二名高出比例。"
-        : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。";
+        : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。"
 
       let taskContent: string
       if (isFollowup) {
@@ -486,12 +525,12 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       } else {
         taskContent = [
           "【任务】第 " +
-          roundNo +
-          "/" +
-          totalRounds +
-          " 轮（" +
-          roundStateText +
-          "）。给出合法竞拍决策（bid/skill/item/thought）。",
+            roundNo +
+            "/" +
+            totalRounds +
+            " 轮（" +
+            roundStateText +
+            "）。给出合法竞拍决策（bid/skill/item/thought）。",
           finalRoundHint
         ].join("\n")
       }
@@ -550,16 +589,16 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         return { actionId: null as string | null, target }
       }
 
-      const normalized = normalizeActionToken(namePart);
+      const normalized = normalizeActionToken(namePart)
       for (const actionId of availableIds) {
-        const def = this.getActionDefById(actionId);
+        const def = this.getActionDefById(actionId)
         const aliases = [actionId, def.name, this.getItemInfo(actionId).label]
           .filter(Boolean)
-          .map((entry: string) => normalizeActionToken(entry));
+          .map((entry: string) => normalizeActionToken(entry))
 
         const matched = aliases.some((alias: string) => {
           return alias === normalized || alias.includes(normalized) || normalized.includes(alias)
-        });
+        })
 
         if (matched) {
           return { actionId, target }
@@ -569,7 +608,13 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       return { actionId: null as string | null, target }
     },
 
-    normalizeAiLlmPlan(this: WarehouseSceneThis, playerId: string, decision: LlmDecision | null, rawContent: string, options: { allowAction?: boolean } = {}): LlmPlanResult {
+    normalizeAiLlmPlan(
+      this: WarehouseSceneThis,
+      playerId: string,
+      decision: LlmDecision | null,
+      rawContent: string,
+      options: { allowAction?: boolean } = {}
+    ): LlmPlanResult {
       const bidRaw = pickFirstDefined(decision && decision.bid, decision && decision.出价, decision && decision.报价)
       const skillRaw = pickFirstDefined(
         decision && decision.skill,
@@ -587,22 +632,22 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         decision && decision.reason
       )
 
-      const actionState = this.getAiAvailableActionState(playerId);
-      const allowAction = options.allowAction !== false;
-      const bidParsed = Number(bidRaw);
-      const hasBidDecision = Number.isFinite(bidParsed);
-      let bid = hasBidDecision ? Math.round(bidParsed) : 0;
+      const actionState = this.getAiAvailableActionState(playerId)
+      const allowAction = options.allowAction !== false
+      const bidParsed = Number(bidRaw)
+      const hasBidDecision = Number.isFinite(bidParsed)
+      let bid = hasBidDecision ? Math.round(bidParsed) : 0
       if (hasBidDecision) {
-        const wallet = this.getAiWallet(playerId);
-        bid = this.normalizeAiBidValue(playerId, bid, wallet);
+        const wallet = this.getAiWallet(playerId)
+        bid = this.normalizeAiBidValue(playerId, bid, wallet)
       }
 
       const skillPick = allowAction
         ? this.resolveActionPick(String(skillRaw), "skill", actionState.availableSkillIds)
-        : { actionId: null as string | null, target: "" };
+        : { actionId: null as string | null, target: "" }
       const itemPick = allowAction
         ? this.resolveActionPick(String(itemRaw), "item", actionState.availableItemIds)
-        : { actionId: null as string | null, target: "" };
+        : { actionId: null as string | null, target: "" }
 
       let actionType = "none"
       let actionId = "none"
@@ -639,37 +684,42 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       }
     },
 
-    buildAiToolResultSummary(this: WarehouseSceneThis, result: ToolResult | null, actionType: string, actionId: string) {
-      const info = this.getItemInfo(actionId);
-      const stats = result && result.signalStats && result.signalStats.aggregate ? result.signalStats.aggregate : null;
-      const parts: string[] = [];
-      parts.push(`action=${actionType}:${actionId}`);
-      parts.push(`name=${info.label}`);
-      parts.push(`ok=${Boolean(result && result.ok)}`);
-      parts.push(`revealed=${Number(result && result.revealed) || 0}`);
+    buildAiToolResultSummary(
+      this: WarehouseSceneThis,
+      result: ToolResult | null,
+      actionType: string,
+      actionId: string
+    ) {
+      const info = this.getItemInfo(actionId)
+      const stats = result && result.signalStats && result.signalStats.aggregate ? result.signalStats.aggregate : null
+      const parts: string[] = []
+      parts.push(`action=${actionType}:${actionId}`)
+      parts.push(`name=${info.label}`)
+      parts.push(`ok=${Boolean(result && result.ok)}`)
+      parts.push(`revealed=${Number(result && result.revealed) || 0}`)
 
       if (result && Array.isArray(result.signals) && result.signals.length > 0) {
-        const revealDetails: string[] = [];
-        const itemIdSet = new Set<string>();
+        const revealDetails: string[] = []
+        const itemIdSet = new Set<string>()
         result.signals.forEach((signal: SignalData) => {
-          if (!signal || !signal.itemId) return;
-          if (itemIdSet.has(signal.itemId as string)) return;
-          itemIdSet.add(signal.itemId as string);
+          if (!signal || !signal.itemId) return
+          if (itemIdSet.has(signal.itemId as string)) return
+          itemIdSet.add(signal.itemId as string)
 
-          const item = this.items.find((i) => i.id === (signal.itemId as string));
-          if (!item) return;
+          const item = this.items.find((i) => i.id === (signal.itemId as string))
+          if (!item) return
 
-          const detailParts: string[] = [];
+          const detailParts: string[] = []
           if (signal.mode === "outline") {
-            detailParts.push(`轮廓:${signal.sizeTag || "?"}格`);
-            detailParts.push(`品类:${signal.category || "?"}`);
+            detailParts.push(`轮廓:${signal.sizeTag || "?"}格`)
+            detailParts.push(`品类:${signal.category || "?"}`)
           }
           if (signal.mode === "quality") {
-            const qualityConfig = QUALITY_CONFIG || {};
-            const qualityKey = signal.qualityKey as string;
-            const qualityLabel = qualityConfig[qualityKey]?.label || qualityKey || "?";
-            detailParts.push(`品质:${qualityLabel}`);
-            detailParts.push(`基价:${item.basePrice || "?"}`);
+            const qualityConfig = QUALITY_CONFIG || {}
+            const qualityKey = signal.qualityKey as string
+            const qualityLabel = qualityConfig[qualityKey]?.label || qualityKey || "?"
+            detailParts.push(`品质:${qualityLabel}`)
+            detailParts.push(`基价:${item.basePrice || "?"}`)
           }
           if (signal.sampleCell) {
             detailParts.push(`位置:(${signal.sampleCell.x},${signal.sampleCell.y})`)

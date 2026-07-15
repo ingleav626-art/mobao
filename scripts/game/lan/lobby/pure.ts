@@ -42,13 +42,22 @@ export interface LanServerInfo {
 export function processRoomData(
   data: {
     rooms?: Array<{ code: string; name: string; hostName: string; playerCount: number; maxPlayers: number }>
-    remoteRooms?: Array<{ code: string; name: string; hostName: string; playerCount: number; maxPlayers: number; serverIp: string }>
+    remoteRooms?: Array<{
+      code: string
+      name: string
+      hostName: string
+      playerCount: number
+      maxPlayers: number
+      serverIp: string
+    }>
   },
   serverIp: string,
   found: LanServerInfo[]
 ): void {
   if (data && data.rooms && data.rooms.length > 0) {
-    const exists = found.some(function (f) { return f.serverIp === serverIp })
+    const exists = found.some(function (f) {
+      return f.serverIp === serverIp
+    })
     if (!exists) found.push({ serverIp: serverIp, serverPort: 9720, rooms: data.rooms })
   }
   if (data && data.remoteRooms && data.remoteRooms.length > 0) {
@@ -61,7 +70,9 @@ export function processRoomData(
       grouped[ip].rooms.push(r)
     })
     Object.keys(grouped).forEach(function (ip) {
-      const exists = found.some(function (f) { return f.serverIp === ip })
+      const exists = found.some(function (f) {
+        return f.serverIp === ip
+      })
       if (!exists) found.push(grouped[ip])
     })
   }
@@ -98,10 +109,16 @@ export function dedupFound(found: LanServerInfo[]): void {
  * @returns 头像 HTML（img 标签或 emoji 占位符）
  */
 export function getCharAvatarHtml(characterId: string): string {
-  if (!getCharacterById) return "<span class=\"lan-avatar-emoji\">👤</span>"
+  if (!getCharacterById) return '<span class="lan-avatar-emoji">👤</span>'
   const char = getCharacterById(characterId)
   if (char && char.avatar) {
-    return "<img src=\"" + char.avatar + "\" alt=\"" + char.name + "\" onerror=\"this.style.display='none';this.nextElementSibling.style.display='inline';\"><span class=\"lan-avatar-emoji\" style=\"display:none;\">👤</span>"
+    return (
+      '<img src="' +
+      char.avatar +
+      '" alt="' +
+      char.name +
+      '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\';"><span class="lan-avatar-emoji" style="display:none;">👤</span>'
+    )
   }
-  return "<span class=\"lan-avatar-emoji\">👤</span>"
+  return '<span class="lan-avatar-emoji">👤</span>'
 }

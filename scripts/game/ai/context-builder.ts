@@ -31,7 +31,11 @@ import { GRID_COLS, GRID_ROWS } from "../core/constants"
 import { SKILL_DEFS } from "../data/skills"
 import { ITEM_DEFS } from "../data/items"
 
-export function buildBidHistorySnapshot(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>): Array<{ round: number; bids: Record<string, number> }> {
+export function buildBidHistorySnapshot(
+  round: number,
+  players: Player[],
+  playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>
+): Array<{ round: number; bids: Record<string, number> }> {
   const rounds = Array.from({ length: Math.max(0, round - 1) }, (_v, idx) => idx + 1)
   return rounds.map((roundNo) => {
     const bids: Record<string, number> = {}
@@ -47,12 +51,23 @@ export function buildBidHistorySnapshot(round: number, players: Player[], player
   })
 }
 
-export function buildPublicEventSnapshot(players: Player[], playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, currentRoundUsage: Record<string, string[]>, round: number, getActionDefByIdFn: (id: string) => ActionDef, currentPublicEvent: { category: string; id: string; text: string } | null, options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
+export function buildPublicEventSnapshot(
+  players: Player[],
+  playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>,
+  currentRoundUsage: Record<string, string[]>,
+  round: number,
+  getActionDefByIdFn: (id: string) => ActionDef,
+  currentPublicEvent: { category: string; id: string; text: string } | null,
+  options: Record<string, unknown> = {}
+): Array<Record<string, unknown>> {
   const compact = Boolean(options.compact)
   const viewerId = options.viewerId || ""
   const events = []
 
-  const pushEventsFromUsage = (usageMap: Record<string, Array<{ round: number; actions: string[] }>>, stageLabelBuilder: (round: number) => string) => {
+  const pushEventsFromUsage = (
+    usageMap: Record<string, Array<{ round: number; actions: string[] }>>,
+    stageLabelBuilder: (round: number) => string
+  ) => {
     players.forEach((player) => {
       if (viewerId && player.id === viewerId) {
         return
@@ -119,7 +134,14 @@ export function buildPublicEventSnapshot(players: Player[], playerUsageHistory: 
   return events.slice(-30)
 }
 
-export function buildRoundPublicStateTable(round: number, players: Player[], playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>, currentRoundUsage: Record<string, string[]>, playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, viewerId: string): { columns: string[]; rows: unknown[][] } {
+export function buildRoundPublicStateTable(
+  round: number,
+  players: Player[],
+  playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>,
+  currentRoundUsage: Record<string, string[]>,
+  playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>,
+  viewerId: string
+): { columns: string[]; rows: unknown[][] } {
   const bidHistory = buildBidHistorySnapshot(round, players, playerRoundHistory)
   const bidByRound = new Map(bidHistory.map((entry) => [entry.round, entry.bids || {}]))
   const actionPlayers = players.filter((player) => player.id !== viewerId)
@@ -148,7 +170,9 @@ export function buildRoundPublicStateTable(round: number, players: Player[], pla
     var actionValues = actionPlayers.map((player) => {
       var actionIds = isCurrentRound
         ? currentRoundUsage[player.id] || []
-        : (playerUsageHistory[player.id] || []).find(function (entry) { return entry.round === roundNo })?.actions || []
+        : (playerUsageHistory[player.id] || []).find(function (entry) {
+            return entry.round === roundNo
+          })?.actions || []
       if (!Array.isArray(actionIds) || actionIds.length === 0) {
         return "none"
       }
@@ -200,8 +224,13 @@ export function buildCatalogSummaryInner(options: Record<string, unknown> = {}):
     ...(compact
       ? {}
       : {
-        warehouseDefinition: "仓库是隐藏在 " + GRID_COLS + "x" + GRID_ROWS + " 网格中的藏品堆栈；每件藏品都有固定的品质、品类、基础价格和占格尺寸，玩家只能通过出价、公开事件和私有探查去推断整座仓库的真实价值。"
-      }),
+          warehouseDefinition:
+            "仓库是隐藏在 " +
+            GRID_COLS +
+            "x" +
+            GRID_ROWS +
+            " 网格中的藏品堆栈；每件藏品都有固定的品质、品类、基础价格和占格尺寸，玩家只能通过出价、公开事件和私有探查去推断整座仓库的真实价值。"
+        }),
     specialMechanismHint: "绝品或高价藏品可能为单格高价，也可能为多格组合高价。",
     poolRestrictionHint: "当前对局未设置朝代子集限制。",
     ...(compact
@@ -225,10 +254,10 @@ export function buildQualityPriceGuide(options: Record<string, unknown> = {}): A
       ...(compact
         ? {}
         : {
-          count: entries.length,
-          minPrice,
-          maxPrice
-        }),
+            count: entries.length,
+            minPrice,
+            maxPrice
+          }),
       avgPrice: prices.length > 0 ? Math.round(total / prices.length) : 0
     }
   })
@@ -263,7 +292,14 @@ export function getActionDefById(actionId: string): ActionDef {
   }
 }
 
-export function buildOtherPlayersPublicInfo(players: Player[], aiEngine: { personalityMap: Record<string, Personality> }, playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>, getActionDefById: (id: string) => ActionDef, viewerId: string, options: Record<string, unknown> = {}): Array<Record<string, unknown>> {
+export function buildOtherPlayersPublicInfo(
+  players: Player[],
+  aiEngine: { personalityMap: Record<string, Personality> },
+  playerUsageHistory: Record<string, Array<{ round: number; actions: string[] }>>,
+  getActionDefById: (id: string) => ActionDef,
+  viewerId: string,
+  options: Record<string, unknown> = {}
+): Array<Record<string, unknown>> {
   var compact = Boolean(options.compact)
   return players
     .filter((player) => player.id !== viewerId)
@@ -271,25 +307,30 @@ export function buildOtherPlayersPublicInfo(players: Player[], aiEngine: { perso
       var persona = aiEngine.personalityMap[player.id] || null
       var usageNames: string[] = []
 
-        ; (playerUsageHistory[player.id] || []).forEach((entry) => {
-          ; (entry.actions || []).forEach((actionId) => {
-            usageNames.push(getActionDefById(actionId).name)
-          })
+      ;(playerUsageHistory[player.id] || []).forEach((entry) => {
+        ;(entry.actions || []).forEach((actionId) => {
+          usageNames.push(getActionDefById(actionId).name)
         })
+      })
 
       return {
         playerId: player.id,
         playerName: player.name,
         roleName: persona ? persona.archetype : "玩家",
         passiveSkillText: persona
-          ? "倾向：激进" + persona.aggression.toFixed(2) + "，纪律" + persona.discipline.toFixed(2) + "，跟风" + persona.followRate.toFixed(2)
+          ? "倾向：激进" +
+            persona.aggression.toFixed(2) +
+            "，纪律" +
+            persona.discipline.toFixed(2) +
+            "，跟风" +
+            persona.followRate.toFixed(2)
           : "未知",
         activeSkillList: compact
           ? SKILL_DEFS.map((entry) => ({ name: entry.name }))
           : SKILL_DEFS.map((entry) => ({
-            name: entry.name,
-            description: entry.description
-          })),
+              name: entry.name,
+              description: entry.description
+            })),
         folded: false,
         publicUsedActions: [...new Set(usageNames)].slice(-10)
       }

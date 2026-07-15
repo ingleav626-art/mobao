@@ -105,7 +105,12 @@ export function getAiMinimumBid(ctx: AiWalletContext, playerId: string, wallet: 
   return roundToStep(step, step)
 }
 
-export function normalizeAiBidValue(ctx: AiWalletContext, playerId: string, bid: number, wallet: number | null = null): number {
+export function normalizeAiBidValue(
+  ctx: AiWalletContext,
+  playerId: string,
+  bid: number,
+  wallet: number | null = null
+): number {
   const safeWallet = wallet === null ? getAiWallet(ctx, playerId) : Math.max(0, Math.round(Number(wallet) || 0))
   const step = Math.max(1, Math.round(Number(GAME_SETTINGS.bidStep) || 1))
   const minBid = getAiMinimumBid(ctx, playerId, safeWallet)
@@ -119,11 +124,25 @@ export function normalizeAiBidValue(ctx: AiWalletContext, playerId: string, bid:
 // ─── Mixin 薄代理（Phase 2：代理到 AiWalletManager，向后兼容 Object.assign 混入）───
 
 export const AiWalletMixin: ThisType<WarehouseSceneThis> = {
-  loadAiWalletsFromStorage() { return this.walletManager.loadAiWalletsFromStorage() },
-  saveAiWalletsToStorage() { return this.walletManager.saveAiWalletsToStorage() },
-  resetAiWallets() { return this.walletManager.resetAiWallets() },
-  initAiWallets() { return this.walletManager.initAiWallets() },
-  getAiWallet(playerId: string) { return this.walletManager.getAiWallet(playerId) },
-  getAiMinimumBid(playerId: string, wallet: number | null = null) { return this.walletManager.getAiMinimumBid(playerId, wallet) },
-  normalizeAiBidValue(playerId: string, bid: number, wallet: number | null = null) { return this.walletManager.normalizeAiBidValue(playerId, bid, wallet) },
+  loadAiWalletsFromStorage() {
+    return this.walletManager.loadAiWalletsFromStorage()
+  },
+  saveAiWalletsToStorage() {
+    return this.walletManager.saveAiWalletsToStorage()
+  },
+  resetAiWallets() {
+    return this.walletManager.resetAiWallets()
+  },
+  initAiWallets() {
+    return this.walletManager.initAiWallets()
+  },
+  getAiWallet(playerId: string) {
+    return this.walletManager.getAiWallet(playerId)
+  },
+  getAiMinimumBid(playerId: string, wallet: number | null = null) {
+    return this.walletManager.getAiMinimumBid(playerId, wallet)
+  },
+  normalizeAiBidValue(playerId: string, bid: number, wallet: number | null = null) {
+    return this.walletManager.normalizeAiBidValue(playerId, bid, wallet)
+  }
 }

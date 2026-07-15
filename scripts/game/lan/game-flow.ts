@@ -129,11 +129,11 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
         `[lanComputeAiBids] ${ai.id} slotId=${slotId} plan:`,
         plan
           ? {
-            failed: plan.failed,
-            hasBidDecision: plan.hasBidDecision,
-            bid: plan.bid,
-            canUseLlm: this.canUseLlmDecisionForPlayer(slotId)
-          }
+              failed: plan.failed,
+              hasBidDecision: plan.hasBidDecision,
+              bid: plan.bid,
+              canUseLlm: this.canUseLlmDecisionForPlayer(slotId)
+            }
           : "null"
       )
       if (!plan || plan.failed || !plan.hasBidDecision || !this.canUseLlmDecisionForPlayer(slotId)) return
@@ -177,7 +177,7 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
     if (window.NativeBridge && window.NativeBridge.isNative && window.NativeBridge.isNative()) {
       try {
         window.NativeBridge.setGameRunning(true)
-      } catch (_) { }
+      } catch (_) {}
     }
     this.beginRunTracking()
     this.battleRecordReplayActive = false
@@ -388,7 +388,8 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
       this.lanHostWallets[myPid] = this.playerMoney
     }
     const finalWallets: Record<string, number> = {}
-    const profitDetails: Array<{ playerId: string; playerName: string; bid: number; value: number; profit: number }> = []
+    const profitDetails: Array<{ playerId: string; playerName: string; bid: number; value: number; profit: number }> =
+      []
     this.players.forEach((p) => {
       const lanId = p.lanId || p.id
       const bid = this.lanHostBids[lanId] || 0

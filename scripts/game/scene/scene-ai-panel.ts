@@ -109,7 +109,13 @@ export function getLlmSettings(this: WarehouseSceneThis): LlmSettings {
 
   // 从 globalSettings 排除 provider 级字段，防止旧数据（如 endpoint）覆盖 provider 正确值
   const providerLevelFields = new Set([
-    "endpoint", "apiKey", "model", "maxTokens", "timeoutMs", "temperature", "thinkingParams"
+    "endpoint",
+    "apiKey",
+    "model",
+    "maxTokens",
+    "timeoutMs",
+    "temperature",
+    "thinkingParams"
   ])
   const safeGlobal: Record<string, unknown> = {}
   for (const key of Object.keys(globalSettings)) {
@@ -135,7 +141,7 @@ export function getLlmProvider(this: WarehouseSceneThis) {
     return provider
   }
   return {
-    requestChat: (options: unknown) => DeepSeekProvider.requestChat(options),
+    requestChat: (options: unknown) => DeepSeekProvider.requestChat(options as Record<string, unknown>),
     applySettings: (settings: Record<string, unknown>) => DeepSeekProvider.applySettings(settings)
   }
 }

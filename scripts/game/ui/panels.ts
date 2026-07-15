@@ -41,7 +41,7 @@ export function addPublicInfoEntry(
   entries: IntelEntry[],
   round: number,
   entry: { source?: string; text?: string },
-  lanBridge?: { send: (msg: any) => void } | null,
+  lanBridge?: { send: (msg: Record<string, unknown>) => void } | null,
   isLanMode?: boolean,
   lanIsHost?: boolean
 ): void {
@@ -66,10 +66,7 @@ export function renderPrivateIntelPanel(
   versionRef: { current: string }
 ): void {
   if (!container) return
-  const version =
-    entries.length +
-    "|" +
-    (entries[entries.length - 1]?.text || "")
+  const version = entries.length + "|" + (entries[entries.length - 1]?.text || "")
   if (versionRef.current === version) return
   versionRef.current = version
   if (entries.length === 0) {
@@ -88,10 +85,7 @@ export function renderPrivateIntelPanel(
   }
 }
 
-export function renderPublicInfoPanel(
-  container: HTMLElement | null,
-  entries: IntelEntry[]
-): void {
+export function renderPublicInfoPanel(container: HTMLElement | null, entries: IntelEntry[]): void {
   if (!container) return
   if (entries.length === 0) {
     container.innerHTML = '<div class="public-line intel-empty">暂无公共信息</div>'
@@ -109,10 +103,7 @@ export function renderPublicInfoPanel(
   }
 }
 
-export function updateSidePanels(
-  renderPrivate: () => void,
-  renderPublic: () => void
-): void {
+export function updateSidePanels(renderPrivate: () => void, renderPublic: () => void): void {
   renderPrivate()
   renderPublic()
 }

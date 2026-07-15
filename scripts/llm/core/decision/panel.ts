@@ -12,7 +12,13 @@
 import type { Player } from "../../../../types/game"
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { LlmDecisionDeps, RuleDecisionEntry, RoundBidEntry, TelemetryEntry } from "./types"
-import { getControlModeLabel, buildDecisionSourceLabel, resolveControlMode, renderLlmEntryDetails, renderRuleEntryDetails } from "./pure"
+import {
+  getControlModeLabel,
+  buildDecisionSourceLabel,
+  resolveControlMode,
+  renderLlmEntryDetails,
+  renderRuleEntryDetails
+} from "./pure"
 
 export function createLlmPanelMethods(deps: LlmDecisionDeps) {
   const { formatBidRevealNumber } = deps
@@ -35,7 +41,12 @@ export function createLlmPanelMethods(deps: LlmDecisionDeps) {
         ((rulePayload && rulePayload.entries) || []).map((entry: RuleDecisionEntry) => [entry.playerId, entry])
       )
 
-      const bidByPlayerId = new Map<string, number>((roundBids || []).map((entry) => [String((entry as RoundBidEntry).playerId), Number((entry as RoundBidEntry).bid) || 0]))
+      const bidByPlayerId = new Map<string, number>(
+        (roundBids || []).map((entry) => [
+          String((entry as RoundBidEntry).playerId),
+          Number((entry as RoundBidEntry).bid) || 0
+        ])
+      )
       const entries = aiPlayers.map((player: Player) => {
         const plan = this.aiLlmRoundPlans[player.id] || null
         const llmSeatEnabled = this.canUseLlmDecisionForPlayer(player.id)
@@ -116,19 +127,18 @@ export function createLlmPanelMethods(deps: LlmDecisionDeps) {
       headerDiv.style.cssText = "padding: 8px 12px; font-size: 12px; color: #6b5a48; border-bottom: 1px solid #e8d8b8;"
       headerDiv.textContent = `回合 ${telemetry.round} | 决策模式：混合（大模型+规则AI）`
       fragment.appendChild(headerDiv)
+      ;(telemetry.entries || []).forEach((entry: TelemetryEntry) => {
+        const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected"
+        const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback")
 
-        ; (telemetry.entries || []).forEach((entry: TelemetryEntry) => {
-          const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected"
-          const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback")
+        const card = document.createElement("div")
+        card.className = "ai-player-card"
 
-          const card = document.createElement("div")
-          card.className = "ai-player-card"
+        const badgeClass = isFallback ? "badge-fallback" : isLlm ? "badge-llm" : "badge-rule"
+        const badgeText = isFallback ? "回退" : isLlm ? "大模型" : "规则AI"
+        const modeLabel = getControlModeLabel(entry.controlMode)
 
-          const badgeClass = isFallback ? "badge-fallback" : isLlm ? "badge-llm" : "badge-rule"
-          const badgeText = isFallback ? "回退" : isLlm ? "大模型" : "规则AI"
-          const modeLabel = getControlModeLabel(entry.controlMode)
-
-          card.innerHTML = `
+        card.innerHTML = `
           <div class="ai-player-card-header">
             <span class="player-name">${entry.playerName}（${entry.playerId}）</span>
             <span class="control-badge ${badgeClass}">${badgeText}</span>
@@ -145,8 +155,8 @@ export function createLlmPanelMethods(deps: LlmDecisionDeps) {
             ${isLlm ? renderLlmEntryDetails(entry, formatBidRevealNumber) : renderRuleEntryDetails(entry, ruleEntryById, formatBidRevealNumber)}
           </div>
         `
-          fragment.appendChild(card)
-        })
+        fragment.appendChild(card)
+      })
 
       const aiLogicContent = this.dom.aiLogicContent
       if (aiLogicContent) {

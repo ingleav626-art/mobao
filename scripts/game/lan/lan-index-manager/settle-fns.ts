@@ -14,7 +14,7 @@ import type { LanPlayer } from "../../../../types/lan"
 export function lanOnSettleFinal(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
-  msg: { wallets: Record<string, number> },
+  msg: { wallets: Record<string, number> }
 ): void {
   const bridge = deps.getLanBridge()
   const myLanId = bridge?.playerId ?? ""
@@ -27,14 +27,14 @@ export function lanOnSettleFinal(
   if (window.NativeBridge && window.NativeBridge.isNative && window.NativeBridge.isNative()) {
     try {
       window.NativeBridge.setGameRunning(false)
-    } catch (_) { }
+    } catch (_) {}
   }
 }
 
 export function lanOnSettle(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
-  msg: { winnerId: string; winnerBid: number; mode: string },
+  msg: { winnerId: string; winnerBid: number; mode: string }
 ): void {
   const slotId = state.lanIdToSlotId[msg.winnerId]
   let winner = state.players.find((p) => p.id === slotId)
@@ -53,11 +53,20 @@ export function lanOnRestartGo(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
   msg: {
-    players: Array<{ id: string; name: string; isAI: boolean; isHost: boolean; isReady?: boolean; characterId?: string | null; carryItems?: string[]; llm?: boolean }>
+    players: Array<{
+      id: string
+      name: string
+      isAI: boolean
+      isHost: boolean
+      isReady?: boolean
+      characterId?: string | null
+      carryItems?: string[]
+      llm?: boolean
+    }>
     hostId: string
     aiPlayers: Array<{ id: string; name: string; isAI: boolean; isHost: boolean; llm?: boolean }>
     aiLlmEnabled: boolean
-  },
+  }
 ): void {
   state.isLanMode = true
   state.lanPlayers = (msg.players || []).map((p) => ({
@@ -67,7 +76,7 @@ export function lanOnRestartGo(
     isReady: p.isReady ?? false,
     characterId: p.characterId ?? null,
     carryItems: p.carryItems ?? [],
-    isHost: p.isHost,
+    isHost: p.isHost
   }))
   const bridge = deps.getLanBridge()
   state.lanIsHost = msg.hostId === (bridge?.playerId ?? "")
@@ -86,7 +95,7 @@ export function lanOnRestartGo(
       isReady: false,
       characterId: null,
       carryItems: [] as string[],
-      llm: ai.llm,
+      llm: ai.llm
     }))
     state.lanAiPlayers.forEach((ai) => {
       state.lanPlayers.push(ai as LanPlayer)
@@ -101,7 +110,7 @@ export function lanOnRestartGo(
       isReady: false,
       characterId: null,
       carryItems: [] as string[],
-      llm: ai.llm,
+      llm: ai.llm
     }))
     state.lanAiPlayers.forEach((ai) => {
       state.lanPlayers.push(ai as LanPlayer)

@@ -15,7 +15,7 @@
  * @requires core/app-state - 应用状态
  */
 
-import type { MapProfile } from '../../../types/game'
+import type { MapProfile } from "../../../types/game"
 import { set as setAppState, get as getAppState } from "../core/app-state"
 
 export const MAP_PROFILES: MapProfile[] = [
@@ -23,7 +23,7 @@ export const MAP_PROFILES: MapProfile[] = [
     id: "default",
     name: "废弃仓库",
     desc: "均衡配置，适合入门",
-    icon: "\u{1F3DA}\uFE0F",  // 🏚️
+    icon: "\u{1F3DA}\uFE0F", // 🏚️
     background: "game-warehouse.png",
     params: {
       maxRounds: 5,
@@ -49,7 +49,7 @@ export const MAP_PROFILES: MapProfile[] = [
     id: "treasure-vault",
     name: "珍宝密室",
     desc: "高品质藏品更多，竞争更激烈",
-    icon: "\u{1F48E}",  // 💎
+    icon: "\u{1F48E}", // 💎
     background: null,
     params: {
       maxRounds: 6,
@@ -75,7 +75,7 @@ export const MAP_PROFILES: MapProfile[] = [
     id: "junkyard",
     name: "废品角落",
     desc: "低品质居多，考验捡漏眼光",
-    icon: "\u{1F5D1}\uFE0F",  // 🗑️
+    icon: "\u{1F5D1}\uFE0F", // 🗑️
     background: null,
     params: {
       maxRounds: 4,
@@ -101,7 +101,7 @@ export const MAP_PROFILES: MapProfile[] = [
     id: "scholar-study",
     name: "书斋雅集",
     desc: "书画金石为主，文人之选",
-    icon: "\u{1F4DC}",  // 📜
+    icon: "\u{1F4DC}", // 📜
     background: null,
     params: {
       maxRounds: 5,

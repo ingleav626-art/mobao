@@ -53,15 +53,28 @@ export function bindLanEvents(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
   bridge: LanBridgeLike,
-  ctx: Record<string, unknown>,
+  ctx: Record<string, unknown>
 ): void {
   const c = ctx as unknown as LanEventsCtx
   const {
-    setOnlineStatus, showPanel, showLanAlert,
-    connectBtn, roomCodeEl, hostBadge, startBtn, roomManageBtn, connectPanel, roomPanel,
-    renderSlots, syncSlotsFromPlayers, initLanCharacterFromStorage,
-    renderLanCarryItems, updateModeMapCardState,
-    lanCarryItems, lanSlotConfig, mapCardLabel,
+    setOnlineStatus,
+    showPanel,
+    showLanAlert,
+    connectBtn,
+    roomCodeEl,
+    hostBadge,
+    startBtn,
+    roomManageBtn,
+    connectPanel,
+    roomPanel,
+    renderSlots,
+    syncSlotsFromPlayers,
+    initLanCharacterFromStorage,
+    renderLanCarryItems,
+    updateModeMapCardState,
+    lanCarryItems,
+    lanSlotConfig,
+    mapCardLabel
   } = c
   let lanSelectedMapId = c.lanSelectedMapId
 
@@ -105,7 +118,12 @@ export function bindLanEvents(
     renderLanCarryItems()
     updateModeMapCardState(true)
     if (bridge && bridge.connected) {
-      bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it: { id: string }) { return it.id }) })
+      bridge.send({
+        type: "lan:carry-items",
+        carryItems: lanCarryItems.map(function (it: { id: string }) {
+          return it.id
+        })
+      })
     }
     var statusText = "房间 " + msg.roomCode + " 等待玩家加入"
     if (msg.visibility === "private" && msg.password) {
@@ -116,7 +134,16 @@ export function bindLanEvents(
 
   bridge.on("room:joined", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
-    deps.writeLog("加入房间 " + msg.roomCode + " | players=" + ((msg.players as unknown[]) || []).length + " | aiSlots=" + ((msg.aiSlots as unknown[]) || []).length + " | map=" + (msg.mapProfileId || "default"))
+    deps.writeLog(
+      "加入房间 " +
+        msg.roomCode +
+        " | players=" +
+        ((msg.players as unknown[]) || []).length +
+        " | aiSlots=" +
+        ((msg.aiSlots as unknown[]) || []).length +
+        " | map=" +
+        (msg.mapProfileId || "default")
+    )
     showPanel(roomPanel)
     if (roomCodeEl) roomCodeEl.textContent = (msg.roomCode as string) ?? null
     if (hostBadge) hostBadge.classList.add("hidden")
@@ -148,7 +175,12 @@ export function bindLanEvents(
       }
     }
     if (bridge && bridge.connected) {
-      bridge.send({ type: "lan:carry-items", carryItems: lanCarryItems.map(function (it: { id: string }) { return it.id }) })
+      bridge.send({
+        type: "lan:carry-items",
+        carryItems: lanCarryItems.map(function (it: { id: string }) {
+          return it.id
+        })
+      })
     }
     setOnlineStatus("房间 " + msg.roomCode + " 等待主机开始", "connected")
   })
@@ -241,7 +273,14 @@ export function bindLanEvents(
 
   bridge.on("lan:room:return", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
-    deps.writeLog("主机已返回房间 | players=" + ((msg.players as unknown[]) || []).length + " | aiSlots=" + ((msg.aiSlots as unknown[]) || []).length + " | map=" + (msg.mapProfileId || "default"))
+    deps.writeLog(
+      "主机已返回房间 | players=" +
+        ((msg.players as unknown[]) || []).length +
+        " | aiSlots=" +
+        ((msg.aiSlots as unknown[]) || []).length +
+        " | map=" +
+        (msg.mapProfileId || "default")
+    )
     deps.enterLanRoom()
     if (msg.players) {
       c.syncSlotsFromPlayers(msg.players as unknown[], true)
@@ -331,16 +370,25 @@ export function bindLanEvents(
 
     if (state.lanIsHost) {
       state.lanHostWallets = {}
-      state.lanPlayers.forEach((p) => { state.lanHostWallets[p.id] = DEFAULT_START_MONEY })
-      state.lanAiPlayers = aiPlayersFromMsg.length > 0
-        ? aiPlayersFromMsg.map((ai) => ({ id: ai.id, name: ai.name, isAI: true, isHost: false, llm: ai.llm }))
-        : []
+      state.lanPlayers.forEach((p) => {
+        state.lanHostWallets[p.id] = DEFAULT_START_MONEY
+      })
+      state.lanAiPlayers =
+        aiPlayersFromMsg.length > 0
+          ? aiPlayersFromMsg.map((ai) => ({ id: ai.id, name: ai.name, isAI: true, isHost: false, llm: ai.llm }))
+          : []
       state.lanAiPlayers.forEach((ai) => {
         state.lanPlayers.push(ai as unknown as LanPlayer)
         state.lanHostWallets[ai.id] = DEFAULT_START_MONEY
       })
     } else {
-      state.lanAiPlayers = aiPlayersFromMsg.map((ai) => ({ id: ai.id, name: ai.name, isAI: true, isHost: false, llm: ai.llm }))
+      state.lanAiPlayers = aiPlayersFromMsg.map((ai) => ({
+        id: ai.id,
+        name: ai.name,
+        isAI: true,
+        isHost: false,
+        llm: ai.llm
+      }))
       state.lanAiPlayers.forEach((ai) => {
         state.lanPlayers.push(ai as unknown as LanPlayer)
       })
@@ -354,7 +402,11 @@ export function bindLanEvents(
   bridge.on("round:start", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
     if (!state.lanIsHost) {
-      lanOnRoundStart(deps, state, msg as unknown as { round: number; currentBid?: number; ts?: number; roundSeconds?: number })
+      lanOnRoundStart(
+        deps,
+        state,
+        msg as unknown as { round: number; currentBid?: number; ts?: number; roundSeconds?: number }
+      )
     } else {
       if (msg.ts && msg.roundSeconds) {
         const elapsed = Math.round((Date.now() - (msg.ts as number)) / 1000)
@@ -384,18 +436,22 @@ export function bindLanEvents(
     const slotId = state.lanIdToSlotId ? state.lanIdToSlotId[msg.playerId as string] : null
     if (slotId) {
       deps.setPlayerBidReady(slotId, true)
-      deps.writeLog((msg.playerName as string || "玩家") + " 已提交出价")
+      deps.writeLog(((msg.playerName as string) || "玩家") + " 已提交出价")
     }
   })
 
   bridge.on("all-bids-in", () => {
     if (!state.lanIsHost) return
-    lanOnAllBidsIn(deps, state).catch((e: Error) => deps.writeLog("AI行动异常：" + (e && e.message ? e.message : String(e))))
+    lanOnAllBidsIn(deps, state).catch((e: Error) =>
+      deps.writeLog("AI行动异常：" + (e && e.message ? e.message : String(e)))
+    )
   })
 
   bridge.on("round:timeout", () => {
     if (state.lanIsHost) {
-      lanOnRoundTimeout(deps, state).catch((e: Error) => deps.writeLog("AI行动异常：" + (e && e.message ? e.message : String(e))))
+      lanOnRoundTimeout(deps, state).catch((e: Error) =>
+        deps.writeLog("AI行动异常：" + (e && e.message ? e.message : String(e)))
+      )
     }
   })
 
@@ -464,7 +520,7 @@ export function bindLanEvents(
   bridge.on("ai-bids-ready", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
     if (!state.lanIdToSlotId) return
-    ;(msg.aiPlayerIds as string[] || []).forEach((aiId: string) => {
+    ;((msg.aiPlayerIds as string[]) || []).forEach((aiId: string) => {
       const slotId = state.lanIdToSlotId[aiId]
       if (slotId) deps.setPlayerBidReady(slotId, true)
     })
@@ -475,7 +531,7 @@ export function bindLanEvents(
     if (!state.lanIdToSlotId || !msg.aiPlayerId) return
     const slotId = state.lanIdToSlotId[msg.aiPlayerId as string]
     if (slotId) {
-      deps.writeLog((msg.aiPlayerName as string || "AI") + " 使用了 " + (msg.itemName as string || "道具"))
+      deps.writeLog(((msg.aiPlayerName as string) || "AI") + " 使用了 " + ((msg.itemName as string) || "道具"))
       if (msg.actionId) {
         deps.recordPlayerUsage(slotId, msg.actionId as string)
         const usageArr = state.playerUsageHistory[slotId]
@@ -495,7 +551,7 @@ export function bindLanEvents(
     if (!state.lanIdToSlotId || !msg.playerId) return
     const slotId = state.lanIdToSlotId[msg.playerId as string]
     if (slotId) {
-      deps.writeLog((msg.playerName as string || "玩家") + " 使用了 " + (msg.itemName as string || "道具"))
+      deps.writeLog(((msg.playerName as string) || "玩家") + " 使用了 " + ((msg.itemName as string) || "道具"))
       if (msg.actionId) {
         deps.recordPlayerUsage(slotId, msg.actionId as string)
         const usageArr = state.playerUsageHistory[slotId]
@@ -514,8 +570,7 @@ export function bindLanEvents(
     const msg = raw as Record<string, unknown>
     deps.addPublicInfoEntry({
       source: (msg.source as string) || "未知",
-      text: (msg.text as string) || "",
+      text: (msg.text as string) || ""
     })
   })
 }
-

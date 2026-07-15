@@ -53,7 +53,7 @@ export const LanSettleMixin: ThisType<WarehouseSceneThis> = {
     if (window.NativeBridge && window.NativeBridge.isNative && window.NativeBridge.isNative()) {
       try {
         window.NativeBridge.setGameRunning(false)
-      } catch (_) { }
+      } catch (_) {}
     }
   },
 

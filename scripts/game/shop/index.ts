@@ -96,7 +96,9 @@ let sortFilter = "default"
 
 let onPurchaseCallback: ((result?: { ok?: boolean; message?: string; newMoney?: number }) => void) | null = null
 
-function init(options?: { onPurchase?: (result?: { ok?: boolean; message?: string; newMoney?: number }) => void }): void {
+function init(options?: {
+  onPurchase?: (result?: { ok?: boolean; message?: string; newMoney?: number }) => void
+}): void {
   if (options && options.onPurchase) {
     onPurchaseCallback = options.onPurchase
   }
@@ -178,8 +180,8 @@ function open(): void {
   switchTab("all")
 
   const closeBtn = document.getElementById("shopCloseBtn") as HTMLButtonElement | null
-  if (closeBtn && !((closeBtn as unknown as Record<string, unknown>)._shopBound)) {
-    ; (closeBtn as unknown as Record<string, unknown>)._shopBound = true
+  if (closeBtn && !(closeBtn as unknown as Record<string, unknown>)._shopBound) {
+    ;(closeBtn as unknown as Record<string, unknown>)._shopBound = true
     closeBtn.addEventListener("click", close)
   }
 
@@ -192,7 +194,11 @@ function close(): void {
   const overlay = document.getElementById("shopOverlay")
   if (!overlay) return
   if (typeof MobaoAnimations !== "undefined") {
-    ; (MobaoAnimations as unknown as { animateOverlayClose(overlay: HTMLElement, panel: HTMLElement | null, cb: () => void): void }).animateOverlayClose(overlay, null, function () {
+    ;(
+      MobaoAnimations as unknown as {
+        animateOverlayClose(overlay: HTMLElement, panel: HTMLElement | null, cb: () => void): void
+      }
+    ).animateOverlayClose(overlay, null, function () {
       overlay.classList.add("hidden")
       overlay.style.animation = ""
       overlay.style.opacity = ""
@@ -280,12 +286,12 @@ function renderAllItems(): void {
         "<span>持有 " + owned + "</span>",
         "</div>",
         '<button class="shop-card-buy" data-shop-item-id="' +
-        item.id +
-        '"' +
-        (canBuy ? "" : " disabled") +
-        ' type="button">' +
-        item.price.toLocaleString() +
-        "</button>",
+          item.id +
+          '"' +
+          (canBuy ? "" : " disabled") +
+          ' type="button">' +
+          item.price.toLocaleString() +
+          "</button>",
         "</div>"
       ].join("")
     })
@@ -389,10 +395,10 @@ function renderLimitedOffers(): void {
         '<span class="price-discounted">' + offer.discountedPrice.toLocaleString() + "</span>",
         "</div>",
         '<button class="shop-limited-buy" data-offer-index="' +
-        index +
-        '"' +
-        (canBuy ? "" : " disabled") +
-        ' type="button">',
+          index +
+          '"' +
+          (canBuy ? "" : " disabled") +
+          ' type="button">',
         offer.purchased ? "已购买" : "立即抢购",
         "</button>",
         "</div>"

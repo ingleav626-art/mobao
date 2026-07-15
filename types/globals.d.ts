@@ -190,7 +190,10 @@ interface Window {
     isNative(): boolean
     setGameRunning(running: boolean): void
     shareFile?(data: string, fileName?: string, title?: string): boolean | void
-    openFileImport?(options?: Record<string, any>): void
+    openFileImport?(options?: Record<string, unknown>): void
+    getServerUrl?: () => string
+    llmProxyAsync?: (requestId: string, body: string) => void
+    llmProxyCancel?: (requestId: string) => void
   } | undefined
   MobaoLan: Record<string, any>
   MobaoShopPage: Record<string, any> | undefined
@@ -203,7 +206,9 @@ interface Window {
   MobaoWarehouse: Record<string, any>
   MobaoLobby: Record<string, any>
   MobaoBidding: Record<string, any>
-  WarehouseScene: any
+  WarehouseScene: { instance: Record<string, any> } | undefined
+  __llmProxyResolvers: Map<string, { resolve: (value: string) => void }> | undefined
+  __llmProxyCallback: ((requestId: string, b64Result: string) => void) | undefined
   __onFileImportResult: ((data: string) => void) | null
   __onFileImportError: ((msg: string) => void) | null
   AuctionAI: Record<string, any>

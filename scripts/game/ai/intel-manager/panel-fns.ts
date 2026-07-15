@@ -6,12 +6,7 @@
 import type { Player } from "../../../../types/game"
 import type { AiIntelSignal, HighValueTrack } from "../../../../types/ai"
 import type { AiIntelManagerDeps, AiIntelState } from "../intel-manager"
-import {
-  buildNeighborStateLabel,
-  getNeighborOffsets,
-  determineRevealLevel,
-  truncateCandidateList,
-} from "../intel/pure"
+import { buildNeighborStateLabel, getNeighborOffsets, determineRevealLevel, truncateCandidateList } from "../intel/pure"
 import { toCellKey, fromCellKey, sizeTagToCellCount } from "../../core/utils"
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } from "../../data/artifacts"
 import { ensureAiPrivateIntel, getHighValuePriceThreshold } from "./init-fns"
@@ -22,7 +17,13 @@ export function getPlayerById(deps: AiIntelManagerDeps, playerId: number | strin
 }
 
 /** 获取 AI 邻居状态标签 */
-export function getAiNeighborStateLabel(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string | number, x: number, y: number): string {
+export function getAiNeighborStateLabel(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string | number,
+  x: number,
+  y: number
+): string {
   const inBounds = deps.isInBoundsCell(x, y)
   if (!inBounds) {
     return buildNeighborStateLabel(false, undefined)
@@ -33,7 +34,12 @@ export function getAiNeighborStateLabel(deps: AiIntelManagerDeps, state: AiIntel
 }
 
 /** 构建邻居快照（8 方向状态） */
-export function buildNeighborSnapshot(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string, cell: { x: number; y: number } | null): Record<string, string> | null {
+export function buildNeighborSnapshot(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string,
+  cell: { x: number; y: number } | null
+): Record<string, string> | null {
   if (!cell) {
     return null
   }
@@ -45,31 +51,41 @@ export function buildNeighborSnapshot(deps: AiIntelManagerDeps, state: AiIntelSt
 }
 
 /** 构建聚合情报块（按品质/品类统计） */
-export function buildAiAggregateIntelBlock(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string): {
+export function buildAiAggregateIntelBlock(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string
+): {
   byQuality: Array<{ quality: string; count: number; deepestRow: number | null; estimatedOccupiedCells: number | null }>
   byCategory: Array<{ category: string; count: number; qualityHint: string }>
   signalCount: number
 } {
   const pool = ensureAiPrivateIntel(state, playerId)
-  const qualityMap: Record<string, {
-    count: number
-    deepestRow: number
-    estimatedCellCount: number
-    estimatedCellSamples: number
-    knownQualityCount: number
-    highQualityCount: number
-    qualityLabel: string
-    qualityKey: string
-  }> = {}
-  const categoryMap: Record<string, {
-    count: number
-    deepestRow: number
-    estimatedCellCount: number
-    estimatedCellSamples: number
-    knownQualityCount: number
-    highQualityCount: number
-    category: string
-  }> = {}
+  const qualityMap: Record<
+    string,
+    {
+      count: number
+      deepestRow: number
+      estimatedCellCount: number
+      estimatedCellSamples: number
+      knownQualityCount: number
+      highQualityCount: number
+      qualityLabel: string
+      qualityKey: string
+    }
+  > = {}
+  const categoryMap: Record<
+    string,
+    {
+      count: number
+      deepestRow: number
+      estimatedCellCount: number
+      estimatedCellSamples: number
+      knownQualityCount: number
+      highQualityCount: number
+      category: string
+    }
+  > = {}
 
   pool.qualitySignals.forEach((signal: AiIntelSignal) => {
     if (!signal || !signal.qualityKey) {
@@ -85,7 +101,7 @@ export function buildAiAggregateIntelBlock(deps: AiIntelManagerDeps, state: AiIn
         estimatedCellCount: 0,
         estimatedCellSamples: 0,
         knownQualityCount: 0,
-        highQualityCount: 0,
+        highQualityCount: 0
       }
     }
     qualityMap[key].count += 1
@@ -113,7 +129,7 @@ export function buildAiAggregateIntelBlock(deps: AiIntelManagerDeps, state: AiIn
         estimatedCellCount: 0,
         estimatedCellSamples: 0,
         highQualityCount: 0,
-        knownQualityCount: 0,
+        knownQualityCount: 0
       }
     }
     categoryMap[key].count += 1
@@ -133,7 +149,7 @@ export function buildAiAggregateIntelBlock(deps: AiIntelManagerDeps, state: AiIn
       count: entry.count,
       deepestRow: entry.deepestRow || null,
       estimatedOccupiedCells:
-        entry.estimatedCellSamples > 0 ? Math.round(entry.estimatedCellCount / entry.estimatedCellSamples) : null,
+        entry.estimatedCellSamples > 0 ? Math.round(entry.estimatedCellCount / entry.estimatedCellSamples) : null
     }))
 
   const byCategory = Object.values(categoryMap)
@@ -144,13 +160,13 @@ export function buildAiAggregateIntelBlock(deps: AiIntelManagerDeps, state: AiIn
       qualityHint:
         entry.knownQualityCount > 0
           ? `已知品质中高品质 ${entry.highQualityCount}/${entry.knownQualityCount}`
-          : "暂无品质细分",
+          : "暂无品质细分"
     }))
 
   return {
     byQuality,
     byCategory,
-    signalCount: pool.signalHistory.length,
+    signalCount: pool.signalHistory.length
   }
 }
 
@@ -161,8 +177,20 @@ export function buildTrackCandidatePreview(
     qualityKey: string | null
     category: string | null
     sizeTag: string | null
-  },
-): { total: number; truncated: boolean; list: Array<{ name: string; basePrice: number; w: number; h: number; expectedPrice: number; previewSizeTag: string; qualityKey: string }> } {
+  }
+): {
+  total: number
+  truncated: boolean
+  list: Array<{
+    name: string
+    basePrice: number
+    w: number
+    h: number
+    expectedPrice: number
+    previewSizeTag: string
+    qualityKey: string
+  }>
+} {
   type CandidateItem = {
     name: string
     basePrice: number
@@ -176,22 +204,26 @@ export function buildTrackCandidatePreview(
   if (!candidates || candidates.length === 0) {
     const threshold = getHighValuePriceThreshold(deps)
     candidates = ARTIFACT_LIBRARY.filter(
-      (entry) => entry.qualityKey === "legendary" || entry.basePrice >= threshold,
+      (entry) => entry.qualityKey === "legendary" || entry.basePrice >= threshold
     ).map((entry) => ({
       ...entry,
       expectedPrice: entry.basePrice,
-      previewSizeTag: toSizeTag(entry.w, entry.h),
+      previewSizeTag: toSizeTag(entry.w, entry.h)
     }))
   }
 
   const sorted = [...candidates].sort(
-    (a, b) => (b.expectedPrice || b.basePrice || 0) - (a.expectedPrice || a.basePrice || 0),
+    (a, b) => (b.expectedPrice || b.basePrice || 0) - (a.expectedPrice || a.basePrice || 0)
   )
   return truncateCandidateList(sorted)
 }
 
 /** 构建高价值追踪块 */
-export function buildAiHighValueTrackBlock(deps: AiIntelManagerDeps, state: AiIntelState, playerId: string): Array<{
+export function buildAiHighValueTrackBlock(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string
+): Array<{
   trackId: string
   revealLevel: string
   confirmed: { quality: string; category: string; exactArtifact: string | null }
@@ -223,7 +255,7 @@ export function buildAiHighValueTrackBlock(deps: AiIntelManagerDeps, state: AiIn
     const revealState = {
       qualityKey: knowledge && knowledge.qualityKey ? knowledge.qualityKey : null,
       category: knowledge && knowledge.category ? knowledge.category : null,
-      sizeTag: knowledge && knowledge.sizeTag ? knowledge.sizeTag : null,
+      sizeTag: knowledge && knowledge.sizeTag ? knowledge.sizeTag : null
     }
     const candidatePreview = buildTrackCandidatePreview(deps, revealState)
     const exactKnown = candidatePreview.total === 1
@@ -240,7 +272,7 @@ export function buildAiHighValueTrackBlock(deps: AiIntelManagerDeps, state: AiIn
               : knowledge.qualityKey
             : "未知",
         category: knowledge && knowledge.category ? knowledge.category : "未知",
-        exactArtifact: exactKnown && candidatePreview.list[0] ? candidatePreview.list[0].name : null,
+        exactArtifact: exactKnown && candidatePreview.list[0] ? candidatePreview.list[0].name : null
       },
       candidates: {
         total: candidatePreview.total,
@@ -249,16 +281,16 @@ export function buildAiHighValueTrackBlock(deps: AiIntelManagerDeps, state: AiIn
           name: entry.name,
           refPriceRange: [
             Math.round((entry.expectedPrice || entry.basePrice || 0) * 0.9),
-            Math.round((entry.expectedPrice || entry.basePrice || 0) * 1.1),
+            Math.round((entry.expectedPrice || entry.basePrice || 0) * 1.1)
           ],
-          sizeCells: entry.w && entry.h ? entry.w * entry.h : sizeTagToCellCount(entry.previewSizeTag),
-        })),
+          sizeCells: entry.w && entry.h ? entry.w * entry.h : sizeTagToCellCount(entry.previewSizeTag)
+        }))
       },
       spatial: {
         knownCells: knownCells.map((cell: { x: number; y: number }) => ({ row: cell.y + 1, col: cell.x + 1 })),
-        neighborState: buildNeighborSnapshot(deps, state, playerId, anchorCell),
+        neighborState: buildNeighborSnapshot(deps, state, playerId, anchorCell)
       },
-      internalRef: item ? item.id : track.itemId,
+      internalRef: item ? item.id : track.itemId
     }
   })
 }
@@ -267,13 +299,13 @@ export function buildAiHighValueTrackBlock(deps: AiIntelManagerDeps, state: AiIn
 export function buildAiPrivateIntelBlock(
   deps: AiIntelManagerDeps,
   state: AiIntelState,
-  playerId: string,
+  playerId: string
 ): {
   aggregate: ReturnType<typeof buildAiAggregateIntelBlock>
   highValueTracks: ReturnType<typeof buildAiHighValueTrackBlock>
 } {
   return {
     aggregate: buildAiAggregateIntelBlock(deps, state, playerId),
-    highValueTracks: buildAiHighValueTrackBlock(deps, state, playerId),
+    highValueTracks: buildAiHighValueTrackBlock(deps, state, playerId)
   }
 }

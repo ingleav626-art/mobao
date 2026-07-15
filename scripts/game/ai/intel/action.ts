@@ -11,10 +11,7 @@
  */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { Player, RevealResult } from "../../../../types/game"
-import type {
-  AiSignalStats,
-  IntelActionPlan
-} from "../../../../types/ai"
+import type { AiSignalStats, IntelActionPlan } from "../../../../types/ai"
 import type { LlmPlan, LlmPlanResult } from "../../../../types/llm"
 import { SKILL_DEFS } from "../../data/skills"
 import { ITEM_DEFS } from "../../data/items"
@@ -154,22 +151,22 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
       `[processSingleAiIntelAction] ${player.id} plan:`,
       plan
         ? {
-          actionType: plan.actionType,
-          actionId: plan.actionId,
-          decisionSource: plan.decisionSource,
-          lockedByLlm: plan.lockedByLlm
-        }
+            actionType: plan.actionType,
+            actionId: plan.actionId,
+            decisionSource: plan.decisionSource,
+            lockedByLlm: plan.lockedByLlm
+          }
         : "null"
     )
     console.log(
       `[processSingleAiIntelAction] ${player.id} llmPlan:`,
       llmPlan
         ? {
-          failed: llmPlan.failed,
-          hasBidDecision: llmPlan.hasBidDecision,
-          bid: llmPlan.bid,
-          actionId: llmPlan.actionId
-        }
+            failed: llmPlan.failed,
+            hasBidDecision: llmPlan.hasBidDecision,
+            bid: llmPlan.bid,
+            actionId: llmPlan.actionId
+          }
         : "null"
     )
 
@@ -331,11 +328,11 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
                 `[processSingleAiIntelAction] ${player.id} correction followup result:`,
                 followup
                   ? {
-                    ok: followup.ok,
-                    failed: followup.failed,
-                    hasBidDecision: followup.hasBidDecision,
-                    bid: followup.bid
-                  }
+                      ok: followup.ok,
+                      failed: followup.failed,
+                      hasBidDecision: followup.hasBidDecision,
+                      bid: followup.bid
+                    }
                   : "null"
               )
               if (followup && !followup.failed && followup.hasBidDecision) {

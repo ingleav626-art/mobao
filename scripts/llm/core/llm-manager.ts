@@ -7,6 +7,7 @@
  * @exports LlmManager - LLM 管理器对象（对象字面量单例）
  */
 import type { CustomProvider } from "../../../types/llm"
+import type { BaseProvider, OpenAICompatibleProvider, ChatRequestOptions, ChatResult } from "./provider-factory"
 import {
   LLM_MANAGER_STORAGE_KEY,
   CUSTOM_PROVIDERS_STORAGE_KEY,
@@ -47,7 +48,26 @@ export type { NormalizeSettingsConfig } from "./provider-factory"
 
 export type { UsageInput, NormalizedUsage } from "./manager-utils"
 
-const providers: Map<string, any> = new Map()
+/** Provider 注册表描述符 */
+export interface ProviderDescriptor {
+  id: string
+  name: string
+  description: string
+  defaultSettings: () => any
+  normalizeSettings: (s: any, fallback?: any) => any
+  loadSettings: () => any
+  saveSettings: (settings: any) => void
+  requestChat: (options: ChatRequestOptions) => Promise<ChatResult>
+  testConnection?: (overrideSettings?: any) => Promise<ChatResult>
+  getSettings?: () => any
+  applySettings?: (s: any) => any
+  getLogs?: () => Array<Record<string, unknown>>
+  clearLogs?: () => void
+  isThinkingModel?: (model: string) => boolean
+  supportsFeature?: (feature: string) => boolean
+}
+
+const providers: Map<string, ProviderDescriptor> = new Map()
 let activeProviderId: string | null = null
 
 function loadManagerSettings(): any {
@@ -104,7 +124,7 @@ function saveCustomProviders(list: CustomProvider[]): void {
   } catch (_error) {}
 }
 
-function registerProvider(provider: any): void {
+function registerProvider(provider: ProviderDescriptor): void {
   if (!provider || typeof provider !== "object") {
     throw new Error("Provider must be an object")
   }
@@ -186,7 +206,7 @@ function unregisterProvider(providerId: string): boolean {
   return true
 }
 
-function getProvider(providerId?: string): any {
+function getProvider(providerId?: string): ProviderDescriptor | null {
   if (providerId) {
     const p = providers.get(providerId) || null
     console.log("[LlmManager.getProvider] by id:", providerId, "result:", p ? p.id : null)
@@ -222,7 +242,7 @@ function listProviders(): Array<{ id: string; name: string; description: string 
   })
 }
 
-async function defaultTestConnection(overrideSettings?: any): Promise<any> {
+async function defaultTestConnection(overrideSettings?: Record<string, unknown>): Promise<ChatResult> {
   const provider = getProvider()
   if (!provider) {
     return {
@@ -249,7 +269,7 @@ async function defaultTestConnection(overrideSettings?: any): Promise<any> {
   }
 }
 
-async function requestChat(options: any): Promise<any> {
+async function requestChat(options: ChatRequestOptions): Promise<ChatResult> {
   const provider = getProvider()
   if (!provider) {
     return {
@@ -262,7 +282,7 @@ async function requestChat(options: any): Promise<any> {
   return provider.requestChat(options)
 }
 
-async function testConnection(providerId: string, overrideSettings?: any): Promise<any> {
+async function testConnection(providerId: string, overrideSettings?: Record<string, unknown>): Promise<ChatResult> {
   const provider = getProvider(providerId)
   if (!provider) {
     return {
@@ -271,7 +291,15 @@ async function testConnection(providerId: string, overrideSettings?: any): Promi
       code: "PROVIDER_NOT_FOUND"
     }
   }
-  return provider.testConnection(overrideSettings)
+  return provider.testConnection ? provider.testConnection(overrideSettings) : defaultTestConnection(overrideSettings)
+}
+
+export interface DynamicProviderConfig {
+  id?: string
+  name: string
+  description?: string
+  endpoint?: string
+  model?: string
 }
 
 export const LlmManager = {
@@ -287,7 +315,7 @@ export const LlmManager = {
   createOpenAICompatibleProvider,
   loadCustomProviders,
   saveCustomProviders,
-  createDynamicProvider: function (config: any): any {
+  createDynamicProvider: function (config: DynamicProviderConfig): OpenAICompatibleProvider {
     console.log("[createDynamicProvider] config:", config)
     const providerId = config.id || `custom_${Date.now()}`
     console.log("[createDynamicProvider] providerId:", providerId)
@@ -329,7 +357,10 @@ export const LlmManager = {
       isThinkingModel: function (_model: string) {
         return false
       },
-      buildRequestBody: function (settings: any, context: any) {
+      buildRequestBody: function (
+        settings: Record<string, unknown>,
+        context: { temperature: number; isThinking: boolean }
+      ) {
         return { temperature: context.temperature }
       },
       supportsFeature: function (_feature: string) {
@@ -417,7 +448,10 @@ export const LlmManager = {
           isThinkingModel: function (_model: string) {
             return false
           },
-          buildRequestBody: function (settings: any, context: any) {
+          buildRequestBody: function (
+            settings: Record<string, unknown>,
+            context: { temperature: number; isThinking: boolean }
+          ) {
             return { temperature: context.temperature }
           },
           supportsFeature: function (_feature: string) {

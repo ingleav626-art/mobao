@@ -12,7 +12,10 @@ import { ITEM_DEFS } from "../../data/items"
 import { ensureAiPrivateIntel } from "./init-fns"
 
 /** 获取 AI 情报汇总（线索率、品质率、不确定性、信号统计） */
-export function getAiIntelSummary(deps: AiIntelManagerDeps, playerId: string): IntelSummary & {
+export function getAiIntelSummary(
+  deps: AiIntelManagerDeps,
+  playerId: string
+): IntelSummary & {
   clueCount: number
   outlineCount: number
   qualityCount: number
@@ -41,7 +44,7 @@ export function getAiIntelSummary(deps: AiIntelManagerDeps, playerId: string): I
     lowerEdge: 0,
     std: 0,
     iqr: 0,
-    count: 0,
+    count: 0
   }
 
   const uncertainty = calcUncertainty({
@@ -50,7 +53,7 @@ export function getAiIntelSummary(deps: AiIntelManagerDeps, playerId: string): I
     totalItems: deps.items.length,
     spreadRatio: aggregateStats.spreadRatio,
     upperEdge: aggregateStats.upperEdge,
-    lowerEdge: aggregateStats.lowerEdge,
+    lowerEdge: aggregateStats.lowerEdge
   })
 
   return {
@@ -66,7 +69,7 @@ export function getAiIntelSummary(deps: AiIntelManagerDeps, playerId: string): I
     upperEdge: aggregateStats.upperEdge,
     lowerEdge: aggregateStats.lowerEdge,
     std: aggregateStats.std,
-    iqr: aggregateStats.iqr,
+    iqr: aggregateStats.iqr
   }
 }
 
@@ -82,22 +85,28 @@ export function buildAiIntelSnapshot(deps: AiIntelManagerDeps): Record<string, I
 }
 
 /** 获取 AI 资源快照（技能/道具剩余次数的副本） */
-export function getAiResourceSnapshot(deps: AiIntelManagerDeps, playerId: string): { skills: Record<string, number>; items: Record<string, number> } {
+export function getAiResourceSnapshot(
+  deps: AiIntelManagerDeps,
+  playerId: string
+): { skills: Record<string, number>; items: Record<string, number> } {
   const resourceState = deps.state.aiResourceState[playerId]
   if (!resourceState) {
     return {
       skills: {},
-      items: {},
+      items: {}
     }
   }
   return {
     skills: { ...resourceState.skills },
-    items: { ...resourceState.items },
+    items: { ...resourceState.items }
   }
 }
 
 /** 获取可用动作状态（可用技能/道具 ID 与名称） */
-export function getAiAvailableActionState(deps: AiIntelManagerDeps, playerId: string): {
+export function getAiAvailableActionState(
+  deps: AiIntelManagerDeps,
+  playerId: string
+): {
   availableSkillIds: string[]
   availableItemIds: string[]
   availableSkillNames: string[]
@@ -108,7 +117,10 @@ export function getAiAvailableActionState(deps: AiIntelManagerDeps, playerId: st
 }
 
 /** 构建动作约束块（LLM 决策用） */
-export function buildAiActionConstraintBlock(deps: AiIntelManagerDeps, playerId: string): {
+export function buildAiActionConstraintBlock(
+  deps: AiIntelManagerDeps,
+  playerId: string
+): {
   canBid: boolean
   canFold: boolean
   availableSkills: string[]
@@ -129,8 +141,8 @@ export function buildAiActionConstraintBlock(deps: AiIntelManagerDeps, playerId:
     availableItems: actionState.availableItemNames,
     notes: [
       "本轮最多选择一个情报动作（技能或道具二选一）。",
-      "当前技能/道具不需要目标参数；若填写目标，只会作为日志记录。",
+      "当前技能/道具不需要目标参数；若填写目标，只会作为日志记录。"
     ],
-    _internal: actionState,
+    _internal: actionState
   }
 }

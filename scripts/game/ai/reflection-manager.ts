@@ -10,11 +10,7 @@ import type { Player } from "../../../types/game"
 import type { RunLog } from "./decision"
 import { AudioManager } from "../../audio/audio-manager"
 import { MobaoGameHistory } from "./game-history"
-import {
-  applyMemoryOperations,
-  updateCrossGameMemory,
-  type CrossGameMemory,
-} from "./reflection"
+import { applyMemoryOperations, updateCrossGameMemory, type CrossGameMemory } from "./reflection"
 
 // ─── 类型定义 ───
 
@@ -177,19 +173,11 @@ export class AiReflectionManager {
 
   /** 检查是否应显示反思 UI */
   shouldShowReflectionUI(): boolean {
-    return (
-      this.isAiReflectionEnabled() &&
-      this.deps.canUseLlmDecision() &&
-      this.deps.llmEverUsedThisRun()
-    )
+    return this.isAiReflectionEnabled() && this.deps.canUseLlmDecision() && this.deps.llmEverUsedThisRun()
   }
 
   /** 对经验本数组执行增删改操作 */
-  applyMemoryOperations(
-    array: string[],
-    operations: Record<string, unknown>,
-    maxLength: number,
-  ): void {
+  applyMemoryOperations(array: string[], operations: Record<string, unknown>, maxLength: number): void {
     applyMemoryOperations(array, operations, maxLength)
   }
 
@@ -197,7 +185,7 @@ export class AiReflectionManager {
   updateCrossGameMemory(
     playerId: string,
     record: Record<string, unknown>,
-    parsedReflection: Record<string, unknown>,
+    parsedReflection: Record<string, unknown>
   ): void {
     const memory = this.deps.ensureAiCrossGameMemory(playerId)
     if (!memory) return
@@ -244,13 +232,9 @@ export class AiReflectionManager {
       "canUseLlmDecision:",
       this.deps.canUseLlmDecision(),
       "llmEverUsedThisRun:",
-      this.deps.llmEverUsedThisRun(),
+      this.deps.llmEverUsedThisRun()
     )
-    if (
-      !this.isAiReflectionEnabled() ||
-      !this.deps.canUseLlmDecision() ||
-      !this.deps.llmEverUsedThisRun()
-    ) {
+    if (!this.isAiReflectionEnabled() || !this.deps.canUseLlmDecision() || !this.deps.llmEverUsedThisRun()) {
       console.log("[triggerAiReflection] EARLY RETURN: conditions not met")
       return
     }
@@ -264,9 +248,7 @@ export class AiReflectionManager {
     }
     window.addEventListener("beforeunload", status.beforeUnloadHandler)
     const originalCrossGameMemory = this.deps.getAiCrossGameMemory()
-    const aiPlayers = this.deps.players.filter(
-      (p: Player) => !p.isHuman && this.deps.canUseLlmDecisionForPlayer(p.id),
-    )
+    const aiPlayers = this.deps.players.filter((p: Player) => !p.isHuman && this.deps.canUseLlmDecisionForPlayer(p.id))
     status.total = aiPlayers.length
     this.deps.updateReflectionStatusUI()
     console.log("[triggerAiReflection] aiPlayers count:", aiPlayers.length)
@@ -322,16 +304,14 @@ export class AiReflectionManager {
             : "",
           stats.rareMax > 0
             ? `- 珍品件数: ${stats.rareMin}~${stats.rareMax}, 平均${(stats.rareAvg || 0).toFixed(1)}`
-            : "",
+            : ""
         ]
           .filter(Boolean)
           .join("\n")
       }
 
       const needsSummary =
-        this.deps.isAiMultiGameMemoryEnabled() &&
-        this.deps.shouldGenerateSummary &&
-        this.deps.shouldGenerateSummary()
+        this.deps.isAiMultiGameMemoryEnabled() && this.deps.shouldGenerateSummary && this.deps.shouldGenerateSummary()
 
       const reflectionPrompt = [
         "请根据本局表现更新经验本，返回JSON格式：",
@@ -347,9 +327,7 @@ export class AiReflectionManager {
         "- 如果条数已满，但又必须增加条目时思考如何优化现有经验书",
         "- 不要写本局，本次等一些很限定的词，同时不要写违反游戏规定的条例",
         "- 每一个条目的字数限制在50字",
-        needsSummary
-          ? "- summary：将最近几局的胜率、关键教训、出价规律压缩为一段话，用于下局开局时快速回忆"
-          : "",
+        needsSummary ? "- summary：将最近几局的胜率、关键教训、出价规律压缩为一段话，用于下局开局时快速回忆" : "",
         "操作说明：",
         "- add: 添加新条目，数组形式",
         "- delete: 删除条目，索引号数组（如 [0, 2] 删除第0和第2条）",
@@ -365,7 +343,7 @@ export class AiReflectionManager {
         `- 成功经验(${praises.length}/${MAX_ENTRIES}): ${praiseList || "无"}`,
         `- 策略建议(${strategies.length}/${MAX_ENTRIES}): ${strategyList || "无"}`,
         `- 经验教训(${lessons.length}/${MAX_ENTRIES}): ${lessonList || "无"}`,
-        statsInfo ? `\n${statsInfo}` : "",
+        statsInfo ? `\n${statsInfo}` : ""
       ]
 
       try {
@@ -379,32 +357,20 @@ export class AiReflectionManager {
         let settings: ReflectionLlmSettings | null = this.deps.getLlmSettings()
         const reflectionScope = (settings && settings.reflectionScope) || "current"
         if (reflectionScope === "full" && MobaoGameHistory) {
-          const historyContext = MobaoGameHistory.buildReflectionContext(
-            player.id,
-            "full",
-            null,
-            this.deps.isLanMode(),
-          )
+          const historyContext = MobaoGameHistory.buildReflectionContext(player.id, "full", null, this.deps.isLanMode())
           if (historyContext) {
             reflectionPrompt.push("", historyContext)
           }
         }
         if (needsSummary && reflectionScope !== "full" && MobaoGameHistory) {
-          const historyContext = MobaoGameHistory.buildReflectionContext(
-            player.id,
-            "full",
-            null,
-            this.deps.isLanMode(),
-          )
+          const historyContext = MobaoGameHistory.buildReflectionContext(player.id, "full", null, this.deps.isLanMode())
           if (historyContext) {
             reflectionPrompt.push("", "【多局历史（用于总结）】", historyContext)
           }
         }
         const reflectionPromptText = reflectionPrompt.join("\n")
         const independentReflectionEnabled =
-          settings && settings.independentReflectionEnabled !== undefined
-            ? settings.independentReflectionEnabled
-            : true
+          settings && settings.independentReflectionEnabled !== undefined ? settings.independentReflectionEnabled : true
         console.log("[triggerAiReflection] independentReflectionEnabled:", independentReflectionEnabled)
         if (independentReflectionEnabled && this.deps.getAiModelConfigForPlayer) {
           const aiModelConfig = this.deps.getAiModelConfigForPlayer(player.id)
@@ -416,9 +382,9 @@ export class AiReflectionManager {
                   apiKey: aiModelConfig.apiKey ? "(已设置)" : "(空)",
                   endpoint: aiModelConfig.endpoint,
                   model: aiModelConfig.model,
-                  thinkingEnabled: aiModelConfig.thinkingEnabled,
+                  thinkingEnabled: aiModelConfig.thinkingEnabled
                 }
-              : null,
+              : null
           )
           if (aiModelConfig) {
             settings = {
@@ -429,16 +395,14 @@ export class AiReflectionManager {
               maxTokens: aiModelConfig.maxTokens || settings?.maxTokens,
               timeoutMs: aiModelConfig.timeoutMs || settings?.timeoutMs,
               thinkingEnabled:
-                aiModelConfig.thinkingEnabled !== undefined
-                  ? aiModelConfig.thinkingEnabled
-                  : settings?.thinkingEnabled,
+                aiModelConfig.thinkingEnabled !== undefined ? aiModelConfig.thinkingEnabled : settings?.thinkingEnabled
             }
             console.log("[triggerAiReflection] merged settings for player:", player.id, {
               apiKey: settings.apiKey ? "(已设置)" : "(空)",
               endpoint: settings.endpoint,
               model: settings.model,
               thinkingEnabled: settings.thinkingEnabled,
-              timeoutMs: settings.timeoutMs,
+              timeoutMs: settings.timeoutMs
             })
           }
         }
@@ -457,9 +421,9 @@ export class AiReflectionManager {
           messages = [
             {
               role: "system",
-              content: `你是仓库摸宝竞拍AI玩家${player.name}(${player.id})，正在对本局自己的表现进行反思总结。只反思你自己的出价和决策，不要混淆其他玩家的行为。`,
+              content: `你是仓库摸宝竞拍AI玩家${player.name}(${player.id})，正在对本局自己的表现进行反思总结。只反思你自己的出价和决策，不要混淆其他玩家的行为。`
             },
-            { role: "user", content: reflectionPromptText },
+            { role: "user", content: reflectionPromptText }
           ]
           console.log("[triggerAiReflection] no cache, using simple prompt")
         }
@@ -472,7 +436,7 @@ export class AiReflectionManager {
           "maxTokens:",
           maxTokens,
           "timeoutMs:",
-          timeoutMs,
+          timeoutMs
         )
         const result = await llmProvider.requestChat({
           temperature: 0.3,
@@ -480,7 +444,7 @@ export class AiReflectionManager {
           timeoutMs,
           isThinking: thinkingEnabled,
           messages,
-          settings,
+          settings
         })
         console.log(
           "[triggerAiReflection] result for player:",
@@ -494,7 +458,7 @@ export class AiReflectionManager {
           "contentLength:",
           result.content ? result.content.length : 0,
           "reasoningContentLength:",
-          result.reasoningContent ? result.reasoningContent.length : 0,
+          result.reasoningContent ? result.reasoningContent.length : 0
         )
         if (result.ok && (result.content || result.reasoningContent)) {
           const rawContent = result.content || result.reasoningContent || ""
@@ -503,22 +467,21 @@ export class AiReflectionManager {
             "[triggerAiReflection] SUCCESS for player:",
             player.id,
             "reflection length:",
-            reflectionText.length,
+            reflectionText.length
           )
 
           const usage = result && result.usage ? result.usage : null
           const cacheHitTokens = usage && usage.prompt_cache_hit_tokens ? usage.prompt_cache_hit_tokens : 0
           const cacheMissTokens = usage && usage.prompt_cache_miss_tokens ? usage.prompt_cache_miss_tokens : 0
           const totalPromptTokens = cacheHitTokens + cacheMissTokens
-          const cacheHitRate =
-            totalPromptTokens > 0 ? Math.round((cacheHitTokens / totalPromptTokens) * 100) : 0
+          const cacheHitRate = totalPromptTokens > 0 ? Math.round((cacheHitTokens / totalPromptTokens) * 100) : 0
           console.log(
-            `[triggerAiReflection] ${player.id} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`,
+            `[triggerAiReflection] ${player.id} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`
           )
 
           let parsedReflection: { lessons: unknown[]; strategies: unknown[]; summary?: string } = {
             lessons: [],
-            strategies: [],
+            strategies: []
           }
           try {
             const jsonMatch = reflectionText.match(/\{[\s\S]*\}/)
@@ -549,8 +512,7 @@ export class AiReflectionManager {
                   aiCrossGameMemory[pid] = originalCrossGameMemory[pid]
                 }
               })
-              aiCrossGameMemory[player.id] =
-                originalCrossGameMemory[player.id] || aiCrossGameMemory[player.id]
+              aiCrossGameMemory[player.id] = originalCrossGameMemory[player.id] || aiCrossGameMemory[player.id]
             }
             this.deps.saveAiMemoryToStorage()
           } else {
@@ -581,7 +543,7 @@ export class AiReflectionManager {
               cacheHitTokens: cacheHitTokens,
               cacheMissTokens: cacheMissTokens,
               cacheHitRate: cacheHitRate,
-              at: Date.now(),
+              at: Date.now()
             })
             if (currentRunLog.aiThoughtLogs.length > 80) {
               currentRunLog.aiThoughtLogs = currentRunLog.aiThoughtLogs.slice(-80)
@@ -594,7 +556,7 @@ export class AiReflectionManager {
             reflection: reflectionText,
             cacheHitTokens,
             cacheMissTokens,
-            cacheHitRate,
+            cacheHitRate
           }
         }
         status.completed++
@@ -604,7 +566,7 @@ export class AiReflectionManager {
             playerId: player.id,
             playerName: player.name,
             reason: `超时(${timeoutMs}ms)`,
-            thinkingEnabled: thinkingEnabled || undefined,
+            thinkingEnabled: thinkingEnabled || undefined
           })
           console.log(
             "[triggerAiReflection] TIMEOUT for player:",
@@ -612,7 +574,7 @@ export class AiReflectionManager {
             "timeoutMs:",
             timeoutMs,
             "thinkingEnabled:",
-            thinkingEnabled,
+            thinkingEnabled
           )
         } else {
           const errorDetail = result.error || result.code || "未知错误"
@@ -623,7 +585,7 @@ export class AiReflectionManager {
             reason: errorDetail,
             code: result.code,
             status: statusCode,
-            thinkingEnabled: thinkingEnabled || undefined,
+            thinkingEnabled: thinkingEnabled || undefined
           })
           console.log(
             "[triggerAiReflection] FAILED for player:",
@@ -635,7 +597,7 @@ export class AiReflectionManager {
             "status:",
             statusCode,
             "thinkingEnabled:",
-            thinkingEnabled,
+            thinkingEnabled
           )
         }
         status.completed++
@@ -653,15 +615,17 @@ export class AiReflectionManager {
     const pendingSummary = this.deps.getPendingSettlementSummary()
     const aiCrossGameMessagesByPlayer = this.deps.getAiCrossGameMessagesByPlayer()
     if (pendingSummary && aiCrossGameMessagesByPlayer) {
-      this.deps.players.filter((p: Player) => !p.isHuman).forEach((p: Player) => {
-        const messages = aiCrossGameMessagesByPlayer[p.id]
-        if (Array.isArray(messages) && messages.length > 0) {
-          const lastGame = messages[messages.length - 1]
-          if (Array.isArray(lastGame)) {
-            lastGame.push({ role: "user", content: pendingSummary })
+      this.deps.players
+        .filter((p: Player) => !p.isHuman)
+        .forEach((p: Player) => {
+          const messages = aiCrossGameMessagesByPlayer[p.id]
+          if (Array.isArray(messages) && messages.length > 0) {
+            const lastGame = messages[messages.length - 1]
+            if (Array.isArray(lastGame)) {
+              lastGame.push({ role: "user", content: pendingSummary })
+            }
           }
-        }
-      })
+        })
       this.deps.setPendingSettlementSummary("")
       this.deps.saveAiMemoryToStorage()
     }
@@ -676,9 +640,7 @@ export class AiReflectionManager {
     } else if (failedPlayers.length > 0) {
       status.state = "error"
       const failedInfo = failedPlayers
-        .map(
-          (p) => `${p.playerName}(${p.reason}${p.code ? `,${p.code}` : ""}${p.thinkingEnabled ? ",思考模式" : ""})`,
-        )
+        .map((p) => `${p.playerName}(${p.reason}${p.code ? `,${p.code}` : ""}${p.thinkingEnabled ? ",思考模式" : ""})`)
         .join("; ")
       status.detail = failedInfo
       console.log("[triggerAiReflection] FAILED players:", failedInfo)

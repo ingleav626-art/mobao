@@ -13,7 +13,7 @@
  *
  * @exports UiHistoryMixin - 向后兼容的 Mixin 薄包装
  */
-import type { ItemDef } from '../../../types/game'
+import type { ItemDef } from "../../../types/game"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { escapeHtml, formatCompactNumber } from "../core/utils"
 import { GAME_SETTINGS } from "../core/settings"
@@ -52,21 +52,13 @@ export function resetPlayerHistoryState(
   refreshUI()
 }
 
-export function clearCurrentRoundUsage(
-  players: Array<{ id: string }>,
-  data: HistoryData
-): void {
+export function clearCurrentRoundUsage(players: Array<{ id: string }>, data: HistoryData): void {
   for (const player of players) {
     data.currentRoundUsage[player.id] = []
   }
 }
 
-export function recordPlayerUsage(
-  data: HistoryData,
-  playerId: string,
-  itemId: string,
-  refreshUI: () => void
-): void {
+export function recordPlayerUsage(data: HistoryData, playerId: string, itemId: string, refreshUI: () => void): void {
   if (!data.currentRoundUsage[playerId]) {
     data.currentRoundUsage[playerId] = []
   }
@@ -109,12 +101,16 @@ export function refreshPlayerHistoryUI(
     const rounds = Array.from({ length: GAME_SETTINGS.maxRounds }, (_, idx) => idx + 1)
     const bidByRoundArray = (data.playerRoundHistory[player.id] || []).map((e) => [e.round, e.bid] as [number, number])
     const bidByRound = new Map<number, number>(bidByRoundArray)
-    const usageByRoundArray = (data.playerUsageHistory[player.id] || []).map((e) => [e.round, e.actions] as [number, string[]])
+    const usageByRoundArray = (data.playerUsageHistory[player.id] || []).map(
+      (e) => [e.round, e.actions] as [number, string[]]
+    )
     const usageByRound = new Map<number, string[]>(usageByRoundArray)
 
     const roundHeaders = rounds.map((v) => `<td>${v}</td>`).join("")
     const itemCells = rounds.map((r) => `<td>${renderItemUsageCell(usageByRound.get(r) || [])}</td>`).join("")
-    const bidCells = rounds.map((r) => `<td>${bidByRound.has(r) ? formatCompactNumber(bidByRound.get(r) as number) : "-"}</td>`).join("")
+    const bidCells = rounds
+      .map((r) => `<td>${bidByRound.has(r) ? formatCompactNumber(bidByRound.get(r) as number) : "-"}</td>`)
+      .join("")
 
     panel.innerHTML = [
       '<table class="player-history-table">',
@@ -128,10 +124,7 @@ export function refreshPlayerHistoryUI(
   }
 }
 
-export function renderItemUsageCell(
-  actions: string[],
-  getItemInfo: (itemId: string) => ItemDef
-): string {
+export function renderItemUsageCell(actions: string[], getItemInfo: (itemId: string) => ItemDef): string {
   if (!actions || actions.length === 0) {
     return '<span class="history-empty">-</span>'
   }
@@ -143,7 +136,11 @@ export function renderItemUsageCell(
     .join(" ")
 }
 
-export function toggleItemDrawer(dom: Record<string, HTMLElement | null>, openFn: () => void, closeFn: () => void): void {
+export function toggleItemDrawer(
+  dom: Record<string, HTMLElement | null>,
+  openFn: () => void,
+  closeFn: () => void
+): void {
   if (!dom.itemDrawer) return
   if (dom.itemDrawer.classList.contains("hidden")) {
     openFn()
@@ -195,7 +192,7 @@ export function renderItemDrawer(
         const parsed = JSON.parse(raw)
         hasCarryItems = Array.isArray(parsed) && parsed.length > 0
       }
-    } catch (_e) { }
+    } catch (_e) {}
     const msg = hasCarryItems ? "道具已全部使用" : "未携带道具"
     dom.itemDrawerList.innerHTML = `<div class="item-drawer-empty">${msg}</div>`
     return

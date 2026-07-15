@@ -5,13 +5,7 @@
  */
 import type { Artifact } from "../../../../types/game"
 import type { WarehouseManagerDeps } from "./types"
-import {
-  GRID_COLS,
-  GRID_ROWS,
-  CELL_SIZE,
-  MARGIN,
-  CANVAS_NATIVE_HEIGHT,
-} from "../../core/constants"
+import { GRID_COLS, GRID_ROWS, CELL_SIZE, MARGIN, CANVAS_NATIVE_HEIGHT } from "../../core/constants"
 import { shuffle, qualityPulseDuration } from "../../core/utils"
 import { pickBottomCellFromTargets, pickRevealTargets, type RevealMode } from "../index"
 import { drawGridLines } from "./core-fns"
@@ -22,9 +16,20 @@ export function revealOutlineBatch(
   count: number,
   category: string | null,
   allowCategoryFallback: boolean,
-  sortStrategy: string | null,
-): { ok: boolean; revealed: number; message?: string; bottomCell?: { x: number; y: number; col: number; row: number } | null } {
-  const targets = pickRevealTargets(deps.state.items, { mode: "outline", count, category, allowCategoryFallback, sortStrategy })
+  sortStrategy: string | null
+): {
+  ok: boolean
+  revealed: number
+  message?: string
+  bottomCell?: { x: number; y: number; col: number; row: number } | null
+} {
+  const targets = pickRevealTargets(deps.state.items, {
+    mode: "outline",
+    count,
+    category,
+    allowCategoryFallback,
+    sortStrategy
+  })
   if (targets.length === 0) {
     return { ok: false, revealed: 0, message: "没有可揭示轮廓的目标。" }
   }
@@ -35,7 +40,7 @@ export function revealOutlineBatch(
   return {
     ok: true,
     revealed: targets.length,
-    bottomCell,
+    bottomCell
   }
 }
 
@@ -45,9 +50,15 @@ export function revealQualityBatch(
   count: number,
   category: string | null,
   allowCategoryFallback: boolean,
-  sortStrategy: string | null,
+  sortStrategy: string | null
 ): { ok: boolean; revealed: number; message?: string } {
-  const targets = pickRevealTargets(deps.state.items, { mode: "quality", count, category, allowCategoryFallback, sortStrategy })
+  const targets = pickRevealTargets(deps.state.items, {
+    mode: "quality",
+    count,
+    category,
+    allowCategoryFallback,
+    sortStrategy
+  })
   if (targets.length === 0) {
     return { ok: false, revealed: 0, message: "没有可揭示品质格的目标。" }
   }
@@ -61,7 +72,7 @@ export function revealQualityBatch(
 export function revealArtifactFully(
   deps: WarehouseManagerDeps,
   item: Artifact,
-  options: Record<string, unknown> = {},
+  options: Record<string, unknown> = {}
 ): { ok: boolean; item?: Artifact; message: string } {
   if (!item || !item.revealed) {
     return { ok: false, message: "无效的藏品目标。" }
@@ -107,14 +118,20 @@ export function revealArtifactFullyBatch(
     count,
     sortStrategy,
     category,
-    allowCategoryFallback,
+    allowCategoryFallback
   }: {
     count: number
     sortStrategy: string | null
     category: string | null
     allowCategoryFallback: boolean
-  },
-): { ok: boolean; revealed: number; message?: string; items?: Artifact[]; bottomCell?: { x: number; y: number; col: number; row: number } | null } {
+  }
+): {
+  ok: boolean
+  revealed: number
+  message?: string
+  items?: Artifact[]
+  bottomCell?: { x: number; y: number; col: number; row: number } | null
+} {
   const unrevealed = deps.state.items.filter((item: Artifact) => !item.revealed.exact)
 
   const sortByArea = (arr: Artifact[], strategy: string | null) => {
@@ -160,7 +177,7 @@ export function revealArtifactFullyBatch(
     ok: true,
     revealed: results.length,
     items: results.map((r: { ok: boolean; item: Artifact; message: string }) => r.item),
-    bottomCell,
+    bottomCell
   }
 }
 
@@ -197,7 +214,7 @@ export function playFullRevealEffect(deps: WarehouseManagerDeps, item: Artifact)
     alpha: { from: 0.7, to: 0 },
     duration: 700,
     ease: "Quad.easeOut",
-    onComplete: () => outerRing.destroy(),
+    onComplete: () => outerRing.destroy()
   })
 
   const innerBurst = deps.getAdd().rectangle(cx, cy, width, height, qualityColor, 0.6)
@@ -210,7 +227,7 @@ export function playFullRevealEffect(deps: WarehouseManagerDeps, item: Artifact)
     alpha: { from: 0.8, to: 0 },
     duration: 500,
     ease: "Sine.easeOut",
-    onComplete: () => innerBurst.destroy(),
+    onComplete: () => innerBurst.destroy()
   })
 
   if (item.view && item.view.border) {
@@ -220,7 +237,7 @@ export function playFullRevealEffect(deps: WarehouseManagerDeps, item: Artifact)
       targets: border,
       alpha: { from: 0, to: 1 },
       duration: 250,
-      ease: "Sine.easeOut",
+      ease: "Sine.easeOut"
     })
   }
 
@@ -242,9 +259,9 @@ export function playFullRevealEffect(deps: WarehouseManagerDeps, item: Artifact)
           scaleX: baseScale,
           scaleY: baseScale,
           duration: 200,
-          ease: "Sine.easeInOut",
+          ease: "Sine.easeInOut"
         })
-      },
+      }
     })
   }
 }
@@ -263,7 +280,11 @@ export function hideRevealScrollHints(deps: WarehouseManagerDeps): void {
 }
 
 /** 为目标藏品显示揭示滚动提示 */
-export function showRevealScrollHintsForTargets(deps: WarehouseManagerDeps, targets: Artifact[], message: string): void {
+export function showRevealScrollHintsForTargets(
+  deps: WarehouseManagerDeps,
+  targets: Artifact[],
+  message: string
+): void {
   if (!targets || targets.length === 0) {
     return
   }
@@ -354,7 +375,7 @@ export function revealOutline(deps: WarehouseManagerDeps, item: Artifact, option
       duration: qualityPulseDuration(item.qualityKey),
       yoyo: true,
       repeat: -1,
-      ease: "Sine.easeInOut",
+      ease: "Sine.easeInOut"
     })
   }
 
@@ -377,7 +398,11 @@ export function revealOutline(deps: WarehouseManagerDeps, item: Artifact, option
 }
 
 /** 揭示藏品品质格 */
-export function revealQualityCell(deps: WarehouseManagerDeps, item: Artifact, options: Record<string, unknown> = {}): void {
+export function revealQualityCell(
+  deps: WarehouseManagerDeps,
+  item: Artifact,
+  options: Record<string, unknown> = {}
+): void {
   if (item.revealed.qualityCell) {
     return
   }
@@ -430,7 +455,7 @@ export function playOutlineRevealEffect(deps: WarehouseManagerDeps, item: Artifa
     targets: border,
     alpha: { from: 0, to: 1 },
     duration: 180,
-    ease: "Sine.easeOut",
+    ease: "Sine.easeOut"
   })
 
   const pulseRing = deps.getAdd().rectangle(cx, cy, width, height)
@@ -444,7 +469,7 @@ export function playOutlineRevealEffect(deps: WarehouseManagerDeps, item: Artifa
     alpha: { from: 0.8, to: 0 },
     duration: 400,
     ease: "Sine.easeOut",
-    onComplete: () => pulseRing.destroy(),
+    onComplete: () => pulseRing.destroy()
   })
 
   const flashOverlay = deps.getAdd().rectangle(cx, cy, width, height, 0xffffff, 0.5)
@@ -457,7 +482,7 @@ export function playOutlineRevealEffect(deps: WarehouseManagerDeps, item: Artifa
     alpha: { from: 0.6, to: 0 },
     duration: 400,
     ease: "Sine.easeOut",
-    onComplete: () => flashOverlay.destroy(),
+    onComplete: () => flashOverlay.destroy()
   })
 
   const lightSweep = deps.getAdd().graphics()
@@ -470,7 +495,7 @@ export function playOutlineRevealEffect(deps: WarehouseManagerDeps, item: Artifa
     alpha: { from: 0.7, to: 0 },
     duration: 500,
     ease: "Quad.easeOut",
-    onComplete: () => lightSweep.destroy(),
+    onComplete: () => lightSweep.destroy()
   })
 }
 
@@ -518,7 +543,7 @@ export function playQualityRevealEffect(deps: WarehouseManagerDeps, item: Artifa
     alpha: { from: 0.6, to: 0 },
     duration: 500,
     ease: "Quad.easeOut",
-    onComplete: () => burstRing.destroy(),
+    onComplete: () => burstRing.destroy()
   })
 
   const qualityFlash = deps.getAdd().rectangle(cx, cy, areaW, areaH, qualityColor, 0.5)
@@ -531,7 +556,7 @@ export function playQualityRevealEffect(deps: WarehouseManagerDeps, item: Artifa
     alpha: { from: 0.55, to: 0 },
     duration: 500,
     ease: "Sine.easeOut",
-    onComplete: () => qualityFlash.destroy(),
+    onComplete: () => qualityFlash.destroy()
   })
 
   if (item.view.artifactImage) {
@@ -545,7 +570,7 @@ export function playQualityRevealEffect(deps: WarehouseManagerDeps, item: Artifa
       targets: img,
       alpha: 1,
       duration: 300,
-      ease: "Sine.easeIn",
+      ease: "Sine.easeIn"
     })
 
     deps.getTweens().add({
@@ -560,9 +585,9 @@ export function playQualityRevealEffect(deps: WarehouseManagerDeps, item: Artifa
           scaleX: baseScale,
           scaleY: baseScale,
           duration: 150,
-          ease: "Sine.easeInOut",
+          ease: "Sine.easeInOut"
         })
-      },
+      }
     })
   }
 }
@@ -590,7 +615,11 @@ export function clearQualityVisual(deps: WarehouseManagerDeps, item: Artifact, k
 }
 
 /** 渲染品质视觉（品质格标记 + 藏品图片 + 光晕脉冲） */
-export function renderQualityVisual(deps: WarehouseManagerDeps, item: Artifact, options: Record<string, unknown> = {}): void {
+export function renderQualityVisual(
+  deps: WarehouseManagerDeps,
+  item: Artifact,
+  options: Record<string, unknown> = {}
+): void {
   if (!item.revealed.qualityCell) {
     return
   }
@@ -620,8 +649,7 @@ export function renderQualityVisual(deps: WarehouseManagerDeps, item: Artifact, 
   }
 
   const isFullyRevealed = item.revealed.exact === true
-  const shouldShowArtifactImage =
-    (isFullyRevealed || deps.getIsSettlementRevealMode()) && item.key
+  const shouldShowArtifactImage = (isFullyRevealed || deps.getIsSettlementRevealMode()) && item.key
   const textureKey = `artifact-${item.key}`
   const hasArtifactImage = shouldShowArtifactImage && deps.getTextures().exists(textureKey)
   const skipImage = options.settlementSkipImage === true
@@ -635,11 +663,7 @@ export function renderQualityVisual(deps: WarehouseManagerDeps, item: Artifact, 
         artifactImage.setScale(existingScale.x, existingScale.y)
       }
     } else {
-      const artifactImage = deps.getAdd().image(
-        markerX + markerW / 2,
-        markerY + markerH / 2,
-        textureKey,
-      )
+      const artifactImage = deps.getAdd().image(markerX + markerW / 2, markerY + markerH / 2, textureKey)
       artifactImage.setOrigin(0.5, 0.5)
       artifactImage.setDisplaySize(markerW, markerH)
       item.view.qualityMarkers.add(artifactImage)
@@ -647,14 +671,16 @@ export function renderQualityVisual(deps: WarehouseManagerDeps, item: Artifact, 
     }
   }
 
-  const marker = deps.getAdd().rectangle(
-    markerX + markerW / 2,
-    markerY + markerH / 2,
-    markerW,
-    markerH,
-    item.quality.color,
-    hasArtifactImage ? 0.35 : 0.45,
-  )
+  const marker = deps
+    .getAdd()
+    .rectangle(
+      markerX + markerW / 2,
+      markerY + markerH / 2,
+      markerW,
+      markerH,
+      item.quality.color,
+      hasArtifactImage ? 0.35 : 0.45
+    )
   marker.setOrigin(0.5, 0.5)
   marker.setStrokeStyle(2, item.quality.color, 1)
   marker.setScale(0)
@@ -673,9 +699,9 @@ export function renderQualityVisual(deps: WarehouseManagerDeps, item: Artifact, 
         scaleX: 1,
         scaleY: 1,
         duration: 120,
-        ease: "Sine.easeOut",
+        ease: "Sine.easeOut"
       })
-    },
+    }
   })
 
   item.view.qualityGlowTween = deps.getTweens().add({
@@ -684,7 +710,7 @@ export function renderQualityVisual(deps: WarehouseManagerDeps, item: Artifact, 
     duration: qualityPulseDuration(item.qualityKey),
     yoyo: true,
     repeat: -1,
-    ease: "Sine.easeInOut",
+    ease: "Sine.easeInOut"
   }) as Phaser.Tweens.Tween
 
   if (item.revealed.outline && !item.view.borderPulseStarted) {
@@ -696,23 +722,26 @@ export function renderQualityVisual(deps: WarehouseManagerDeps, item: Artifact, 
       duration: qualityPulseDuration(item.qualityKey),
       yoyo: true,
       repeat: -1,
-      ease: "Sine.easeInOut",
+      ease: "Sine.easeInOut"
     })
   }
 }
 
 /** 同步已揭示轮廓藏品的品质标记 */
-export function syncQualityMarkersForOutlinedItem(deps: WarehouseManagerDeps, item: Artifact, options: Record<string, unknown> = {}): void {
+export function syncQualityMarkersForOutlinedItem(
+  deps: WarehouseManagerDeps,
+  item: Artifact,
+  options: Record<string, unknown> = {}
+): void {
   if (!item.revealed.outline || !item.revealed.qualityCell || item.view.qualitySynced) {
     return
   }
 
   item.view.qualitySynced = true
-  const showName =
-    options.settlementShowName === true ? true : options.settlementShowName === false ? false : undefined
+  const showName = options.settlementShowName === true ? true : options.settlementShowName === false ? false : undefined
   renderQualityVisual(deps, item, {
     showName,
-    settlementSkipImage: options.settlementSkipImage,
+    settlementSkipImage: options.settlementSkipImage
   })
 }
 

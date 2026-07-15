@@ -18,8 +18,9 @@ import {
   toggleItemDrawer,
   openItemDrawer,
   closeItemDrawer,
-  renderItemDrawer,
+  renderItemDrawer
 } from "./history"
+import { useInventoryStore } from "../../vue/stores/inventoryStore"
 
 /** 道具抽屉动态状态（从场景读取的瞬时值） */
 export interface DrawerState {
@@ -38,7 +39,11 @@ export interface HistoryManagerDeps {
   /** DOM 元素映射（引用，抽屉/面板渲染用） */
   dom: Record<string, HTMLElement | null>
   /** 道具管理器（引用，renderItemDrawer 读取道具状态） */
-  itemManager: { getItemState(): Array<{ id: string; count: number }> }
+  itemManager: { getItemState(): Array<{ id: string; name: string; count: number; initialCount: number }> }
+  /** 技能管理器（引用，Vue 桥接读取技能状态） */
+  skillManager?: {
+    getSkillState(): Array<{ id: string; name: string; remainingThisRound: number; maxPerRound: number }>
+  }
   /** 获取当前回合号（动态值） */
   getRound: () => number
   /** 获取道具抽屉状态（动态值：settled/roundResolving 等） */
@@ -82,20 +87,14 @@ export class HistoryManager {
 
   /** 记录一轮结束后各玩家的出价和道具使用 */
   recordRoundHistory(roundBids: Array<{ playerId: string; bid: number }>): void {
-    recordRoundHistory(
-      this.deps.players,
-      this.deps.data,
-      this.deps.getRound(),
-      roundBids,
-      () => this.refreshPlayerHistoryUI(),
+    recordRoundHistory(this.deps.players, this.deps.data, this.deps.getRound(), roundBids, () =>
+      this.refreshPlayerHistoryUI()
     )
   }
 
   /** 刷新所有玩家的历史面板 */
   refreshPlayerHistoryUI(): void {
-    refreshPlayerHistoryUI(this.deps.players, this.deps.data, (actions: string[]) =>
-      this.renderItemUsageCell(actions),
-    )
+    refreshPlayerHistoryUI(this.deps.players, this.deps.data, (actions: string[]) => this.renderItemUsageCell(actions))
   }
 
   /** 渲染道具使用单元格 */
@@ -105,7 +104,17 @@ export class HistoryManager {
 
   /** 切换道具抽屉开关 */
   toggleItemDrawer(): void {
-    toggleItemDrawer(this.deps.dom, () => this.openItemDrawer(), () => this.closeItemDrawer())
+    toggleItemDrawer(
+      this.deps.dom,
+      () => this.openItemDrawer(),
+      () => this.closeItemDrawer()
+    )
+    try {
+      const store = useInventoryStore()
+      store.toggleDrawer()
+    } catch (_e) {
+      // Pinia 尚未初始化
+    }
   }
 
   /** 打开道具抽屉 */
@@ -118,35 +127,46 @@ export class HistoryManager {
         playerBidSubmitted: state.playerBidSubmitted,
         roundTimeLeft: state.roundTimeLeft,
         itemManager: this.deps.itemManager,
-        dom: this.deps.dom,
+        dom: this.deps.dom
       },
       () => this.deps.closeBidKeypad(),
       () => this.deps.isSettingsOverlayOpen(),
       () => this.deps.isSettlementPageActive(),
-      () => this.renderItemDrawer(),
+      () => this.renderItemDrawer()
     )
+    try {
+      const store = useInventoryStore()
+      store.openDrawer()
+    } catch (_e) {
+      // Pinia 尚未初始化
+    }
   }
 
   /** 关闭道具抽屉 */
   closeItemDrawer(): void {
     closeItemDrawer(this.deps.dom)
+    try {
+      const store = useInventoryStore()
+      store.closeDrawer()
+    } catch (_e) {
+      // Pinia 尚未初始化
+    }
   }
 
   /** 渲染道具抽屉内容 */
   renderItemDrawer(): void {
     const state = this.deps.getDrawerState()
-    const canUse = !(
-      state.settled ||
-      state.roundResolving ||
-      state.playerBidSubmitted ||
-      state.roundTimeLeft <= 0
+    const canUse = !(state.settled || state.roundResolving || state.playerBidSubmitted || state.roundTimeLeft <= 0)
+    renderItemDrawer(this.deps.dom, canUse, this.deps.itemManager, this.drawerVersionRef, (itemId: string) =>
+      this.deps.getItemInfo(itemId)
     )
-    renderItemDrawer(
-      this.deps.dom,
-      canUse,
-      this.deps.itemManager,
-      this.drawerVersionRef,
-      (itemId: string) => this.deps.getItemInfo(itemId),
-    )
+    try {
+      const store = useInventoryStore()
+      const items = this.deps.itemManager.getItemState()
+      const skills = this.deps.skillManager?.getSkillState() ?? []
+      store.updateItems(items, skills)
+    } catch (_e) {
+      // Pinia 尚未初始化
+    }
   }
 }

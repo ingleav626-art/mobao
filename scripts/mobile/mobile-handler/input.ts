@@ -146,8 +146,10 @@ export const InputPart: ThisType<MobileHandlerType> = {
       return
     }
 
-    if (typeof (window as any).AndroidKeyboard !== "undefined") {
-      var rawHeight = (window as any).AndroidKeyboard.getKeyboardHeight()
+    if (typeof (window as unknown as Record<string, unknown>).AndroidKeyboard !== "undefined") {
+      var rawHeight = (
+        (window as unknown as Record<string, unknown>).AndroidKeyboard as { getKeyboardHeight: () => number }
+      ).getKeyboardHeight()
       this.handleKeyboardHeightChange(rawHeight)
     } else {
       this.updateInputPosition()

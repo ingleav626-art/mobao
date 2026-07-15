@@ -21,11 +21,14 @@
  * @requires ui/overlay - getCollectionCategories, filterCollectionItems（re-export 纯函数）
  */
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { ArtifactDef } from "../../../types/game"
 import { MobaoAnimations } from "../animations"
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY } from "../data/artifacts"
 import { rgbHex } from "../core/utils"
 import { MobileHandler } from "../../mobile/mobile-handler"
 import { getCollectionCategories as _getCollectionCategories, filterCollectionItems } from "../ui/overlay"
+import { getActivePinia } from "pinia"
+import { useCollectionStore } from "../../vue/stores/collectionStore"
 
 // ─── 独立函数（可独立测试）───
 
@@ -77,6 +80,17 @@ export const LobbyCollectionMixin: ThisType<WarehouseSceneThis> = {
         if (e.target === overlay) this.closeCollectionOverlay()
       })
     }
+
+    // ─── Vue bridge ───
+    try {
+      const pinia = getActivePinia()
+      if (pinia) {
+        const store = useCollectionStore(pinia)
+        store.openCollection(ARTIFACT_LIBRARY as ArtifactDef[])
+      }
+    } catch {
+      // Vue 未初始化，静默跳过
+    }
   },
 
   closeCollectionOverlay() {
@@ -88,6 +102,17 @@ export const LobbyCollectionMixin: ThisType<WarehouseSceneThis> = {
       MobaoAnimations.animateOverlayClose(overlay, panel)
     } else {
       overlay.classList.add("hidden")
+    }
+
+    // ─── Vue bridge ───
+    try {
+      const pinia = getActivePinia()
+      if (pinia) {
+        const store = useCollectionStore(pinia)
+        store.closeCollection()
+      }
+    } catch {
+      // Vue 未初始化，静默跳过
     }
   },
 
@@ -203,5 +228,16 @@ export const LobbyCollectionMixin: ThisType<WarehouseSceneThis> = {
         `
       })
       .join("")
+
+    // ─── Vue bridge ───
+    try {
+      const pinia = getActivePinia()
+      if (pinia) {
+        const store = useCollectionStore(pinia)
+        store.updateArtifacts(artifacts as ArtifactDef[], total, artifacts.length)
+      }
+    } catch {
+      // Vue 未初始化，静默跳过
+    }
   }
 }

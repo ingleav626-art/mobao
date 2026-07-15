@@ -62,14 +62,26 @@ export function parsePanelTextToHtml(text: string, escapeHtml: (s: string) => st
       const badgeClass = isFallback ? "badge-fallback" : isLlm ? "badge-llm" : "badge-rule"
       const badgeText = isFallback ? "回退" : isLlm ? "大模型" : "规则AI"
 
-      htmlParts.push(`<div class="ai-player-card"><div class="ai-player-card-header"><span class="player-name">${escapeHtml(playerName)}（${escapeHtml(playerId)}）</span><span class="control-badge ${badgeClass}">${badgeText}</span></div><div class="ai-player-card-body">`)
-      htmlParts.push(`<div class="ai-decision-summary"><span class="label">出价</span><span class="value bid-value">${escapeHtml(bid)}</span><span class="label">来源</span><span class="value">${escapeHtml(source)}</span></div>`)
-      if (isFallback) htmlParts.push(`<div class="ai-error-box">⚠️ ${escapeHtml(entryText.match(/⚠️\s*(.+)/)?.[1] || "回退")}</div>`)
+      htmlParts.push(
+        `<div class="ai-player-card"><div class="ai-player-card-header"><span class="player-name">${escapeHtml(playerName)}（${escapeHtml(playerId)}）</span><span class="control-badge ${badgeClass}">${badgeText}</span></div><div class="ai-player-card-body">`
+      )
+      htmlParts.push(
+        `<div class="ai-decision-summary"><span class="label">出价</span><span class="value bid-value">${escapeHtml(bid)}</span><span class="label">来源</span><span class="value">${escapeHtml(source)}</span></div>`
+      )
+      if (isFallback)
+        htmlParts.push(`<div class="ai-error-box">⚠️ ${escapeHtml(entryText.match(/⚠️\s*(.+)/)?.[1] || "回退")}</div>`)
       if (cacheInfo) htmlParts.push(`<div class="ai-cache-info">缓存: ${escapeHtml(cacheInfo)}</div>`)
       if (memoryInfo) htmlParts.push(`<div class="ai-memory-inject-info">跨局记忆注入: ${escapeHtml(memoryInfo)}</div>`)
-      if (actionInfo) htmlParts.push(`<div class="ai-decision-summary"><span class="label">动作</span><span class="value">${escapeHtml(actionInfo)}</span></div>`)
-      if (fallbackBid) htmlParts.push(`<div class="ai-decision-summary"><span class="label">回退参考</span><span class="value">${escapeHtml(fallbackBid)}</span></div>`)
-      if (thought) htmlParts.push(`<div class="ai-thought-box"><div class="thought-label">思考</div>${escapeHtml(thought)}</div>`)
+      if (actionInfo)
+        htmlParts.push(
+          `<div class="ai-decision-summary"><span class="label">动作</span><span class="value">${escapeHtml(actionInfo)}</span></div>`
+        )
+      if (fallbackBid)
+        htmlParts.push(
+          `<div class="ai-decision-summary"><span class="label">回退参考</span><span class="value">${escapeHtml(fallbackBid)}</span></div>`
+        )
+      if (thought)
+        htmlParts.push(`<div class="ai-thought-box"><div class="thought-label">思考</div>${escapeHtml(thought)}</div>`)
       if (error) htmlParts.push(`<div class="ai-error-box">错误: ${escapeHtml(error)}</div>`)
       htmlParts.push("</div></div>")
     } else if (entryText.match(/信心\s*\d+%.*人格/)) {
@@ -87,9 +99,16 @@ export function parsePanelTextToHtml(text: string, escapeHtml: (s: string) => st
       const behaviorMatch = entryText.match(/行为:\s*(.+)/)
       const behavior = behaviorMatch ? behaviorMatch[1] : ""
 
-      htmlParts.push(`<div class="ai-player-card"><div class="ai-player-card-header"><span class="player-name">规则AI</span><span class="control-badge badge-rule">规则AI</span></div><div class="ai-player-card-body">`)
-      htmlParts.push(`<div class="ai-decision-summary"><span class="label">信心</span><span class="value">${escapeHtml(confidence)}% | 人格 ${escapeHtml(archetype)}</span><span class="label">估值</span><span class="value">${escapeHtml(perceivedValue)} | 上限 ${escapeHtml(hardCap)}</span><span class="label">心理预期</span><span class="value">${escapeHtml(psychExpected)}</span><span class="label">超预期</span><span class="value">${escapeHtml(overheat)}% | 回撤阈值 ${escapeHtml(threshold)}%</span></div>`)
-      if (behavior) htmlParts.push(`<div class="ai-decision-summary"><span class="label">行为</span><span class="value">${escapeHtml(behavior)}</span></div>`)
+      htmlParts.push(
+        `<div class="ai-player-card"><div class="ai-player-card-header"><span class="player-name">规则AI</span><span class="control-badge badge-rule">规则AI</span></div><div class="ai-player-card-body">`
+      )
+      htmlParts.push(
+        `<div class="ai-decision-summary"><span class="label">信心</span><span class="value">${escapeHtml(confidence)}% | 人格 ${escapeHtml(archetype)}</span><span class="label">估值</span><span class="value">${escapeHtml(perceivedValue)} | 上限 ${escapeHtml(hardCap)}</span><span class="label">心理预期</span><span class="value">${escapeHtml(psychExpected)}</span><span class="label">超预期</span><span class="value">${escapeHtml(overheat)}% | 回撤阈值 ${escapeHtml(threshold)}%</span></div>`
+      )
+      if (behavior)
+        htmlParts.push(
+          `<div class="ai-decision-summary"><span class="label">行为</span><span class="value">${escapeHtml(behavior)}</span></div>`
+        )
       htmlParts.push("</div></div>")
     } else {
       htmlParts.push(`<div style="font-size:12px;color:#6b5a48;padding:4px 0;">${escapeHtml(entryText)}</div>`)
@@ -106,7 +125,9 @@ export function parsePanelTextToHtml(text: string, escapeHtml: (s: string) => st
     }
     if (inPromptBlock) {
       if (line === "" && currentEntry.length > 0) {
-        htmlParts.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">${escapeHtml(promptTitle)}</summary><pre>${escapeHtml(currentEntry.join("\n"))}</pre></details>`)
+        htmlParts.push(
+          `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">${escapeHtml(promptTitle)}</summary><pre>${escapeHtml(currentEntry.join("\n"))}</pre></details>`
+        )
         currentEntry = []
         inPromptBlock = false
       } else {
@@ -125,7 +146,9 @@ export function parsePanelTextToHtml(text: string, escapeHtml: (s: string) => st
   }
   flushEntry()
   if (inPromptBlock && currentEntry.length > 0) {
-    htmlParts.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">${escapeHtml(promptTitle)}</summary><pre>${escapeHtml(currentEntry.join("\n"))}</pre></details>`)
+    htmlParts.push(
+      `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">${escapeHtml(promptTitle)}</summary><pre>${escapeHtml(currentEntry.join("\n"))}</pre></details>`
+    )
   }
 
   return htmlParts.join("")

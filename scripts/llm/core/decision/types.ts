@@ -90,7 +90,13 @@ export interface TelemetryEntry {
 }
 
 export interface LlmDecisionDeps {
-  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number; roundSeconds: number;[key: string]: unknown }
+  GAME_SETTINGS: {
+    maxRounds: number
+    bidStep: number
+    directTakeRatio: number
+    roundSeconds: number
+    [key: string]: unknown
+  }
   LLM_SETTINGS: LlmSettings
   isNoneActionText: (text: string) => boolean
   compactOneLine: (text: string, maxLen?: number) => string

@@ -10,13 +10,14 @@
 "use strict"
 
 import { LlmManager, createNormalizeSettings } from "../core/llm-manager"
+import type { ChatRequestOptions, ChatResult } from "../core/provider-factory"
 
 const { createOpenAICompatibleProvider } = LlmManager
 
 const KIMI_STORAGE_KEY = "mobao_kimi_settings_v1"
 const KIMI_API_KEY_STORAGE_KEY = "mobao_kimi_api_key_v1"
 
-function defaultKimiSettings(): any {
+function defaultKimiSettings(): Record<string, unknown> {
   return {
     provider: "kimi",
     enabled: false,
@@ -53,7 +54,10 @@ const kimiProvider = createOpenAICompatibleProvider({
   isThinkingModel: function (_model: string): boolean {
     return false
   },
-  buildRequestBody: function (settings: any, context: any): any {
+  buildRequestBody: function (
+    settings: Record<string, unknown>,
+    context: { isThinking: boolean; temperature: number }
+  ): Record<string, unknown> {
     return { temperature: context.temperature }
   },
   supportsFeature: function (feature: string): boolean {
@@ -77,22 +81,22 @@ export const KimiProvider = {
   KIMI_API_KEY_STORAGE_KEY,
   defaultKimiSettings,
   normalizeKimiSettings,
-  getSettings: function (): any {
+  getSettings: function (): Record<string, unknown> {
     return provider.loadSettings()
   },
-  applySettings: function (settings: any): any {
+  applySettings: function (settings: Record<string, unknown>): Record<string, unknown> {
     return provider.saveSettings(settings)
   },
-  getLogs: function (): any[] {
+  getLogs: function (): Array<Record<string, unknown>> {
     return provider.getLogs()
   },
   clearLogs: function (): void {
     provider.clearLogs()
   },
-  requestChat: function (options: any): Promise<any> {
+  requestChat: function (options: ChatRequestOptions): Promise<ChatResult> {
     return provider.requestChat(options)
   },
-  testConnection: function (overrideSettings?: any): Promise<any> {
+  testConnection: function (overrideSettings?: Record<string, unknown>): Promise<ChatResult> {
     return provider.testConnection(overrideSettings)
   }
 }

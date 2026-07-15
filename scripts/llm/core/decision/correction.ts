@@ -22,7 +22,13 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
   const { GAME_SETTINGS, LLM_SETTINGS } = deps
 
   const methods: ThisType<WarehouseSceneThis> = {
-    async requestAiLlmErrorCorrection(player: Player, currentPlan: Record<string, unknown>, errorInfo: string, correctionHistory: Array<Record<string, unknown>>, previousMessages: Array<Record<string, unknown>> = []): Promise<LlmPlanResult | null> {
+    async requestAiLlmErrorCorrection(
+      player: Player,
+      currentPlan: Record<string, unknown>,
+      errorInfo: string,
+      correctionHistory: Array<Record<string, unknown>>,
+      previousMessages: Array<Record<string, unknown>> = []
+    ): Promise<LlmPlanResult | null> {
       const correctionCount = correctionHistory ? correctionHistory.length : 0
       const maxCorrections = 2
 
@@ -49,8 +55,11 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
       const previousCorrections =
         correctionHistory && correctionHistory.length > 0
           ? correctionHistory
-            .map((entry: Record<string, unknown>, idx: number) => `第${idx + 1}次纠错: ${entry.error} -> AI回复: ${entry.aiResponse || "无"}`)
-            .join("\n")
+              .map(
+                (entry: Record<string, unknown>, idx: number) =>
+                  `第${idx + 1}次纠错: ${entry.error} -> AI回复: ${entry.aiResponse || "无"}`
+              )
+              .join("\n")
           : ""
 
       const errorCorrectionBlock = [
@@ -106,23 +115,23 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
           passive: currentPlan && currentPlan.passive ? currentPlan.passive : "默认规则人格",
           activeSkills: this.getAiResourceSnapshot(player.id).skills
             ? Object.entries(this.getAiResourceSnapshot(player.id).skills).map(([id, remain]) => {
-              const def = this.getActionDefById(id)
-              return {
-                name: def ? def.name : id,
-                description: def ? def.description : "",
-                remaining: Number(remain) || 0
-              }
-            })
+                const def = this.getActionDefById(id)
+                return {
+                  name: def ? def.name : id,
+                  description: def ? def.description : "",
+                  remaining: Number(remain) || 0
+                }
+              })
             : [],
           items: this.getAiResourceSnapshot(player.id).items
             ? Object.entries(this.getAiResourceSnapshot(player.id).items).map(([id, remain]) => {
-              const def = this.getActionDefById(id)
-              return {
-                name: def ? def.name : id,
-                description: def ? def.description : "",
-                remaining: Number(remain) || 0
-              }
-            })
+                const def = this.getActionDefById(id)
+                return {
+                  name: def ? def.name : id,
+                  description: def ? def.description : "",
+                  remaining: Number(remain) || 0
+                }
+              })
             : []
         },
         actionConstraints: this.buildAiActionConstraintBlock(player.id)
@@ -132,7 +141,12 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
       const systemPrompt = LLM_DECISION_SYSTEM_PROMPT
 
       const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000))
-      const isNativeEnv = !!((window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge && (window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge.llmProxyAsync)
+      const isNativeEnv = !!(
+        (window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>)
+          .NativeBridge &&
+        (window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge
+          .llmProxyAsync
+      )
       let settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
       const aiModelConfig = this.getAiModelConfigForPlayer(player.id)
       if (aiModelConfig) {
@@ -493,7 +507,14 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
               }
             }
 
-            await this.processSingleAiIntelAction(player, plan as unknown as IntelActionPlan | undefined, llmPlan, roundProgress, batchId, startTime)
+            await this.processSingleAiIntelAction(
+              player,
+              plan as unknown as IntelActionPlan | undefined,
+              llmPlan,
+              roundProgress,
+              batchId,
+              startTime
+            )
 
             const endTime = Date.now()
             console.log(`[processAiDecision] ${player.id}-${startTime} END, elapsed: ${endTime - startTime}ms`)
@@ -559,7 +580,10 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
             summary.push(`${player.name}:出价无效(hasBidDecision=false)`)
             return
           }
-          const actionName = plan.actionId && plan.actionId && plan.actionId !== "none" ? this.getActionDefById(plan.actionId).name : "无"
+          const actionName =
+            plan.actionId && plan.actionId && plan.actionId !== "none"
+              ? this.getActionDefById(plan.actionId).name
+              : "无"
           summary.push(`${player.name}:出价${plan.bid} 计划动作${actionName}`)
         })
 

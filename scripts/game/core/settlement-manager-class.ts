@@ -14,6 +14,7 @@ import {
 } from "./settlement-manager"
 import { savePlayerMoney } from "./player-money"
 import { recordGameFinished } from "./app-state"
+import { useSettlementStore } from "../../vue/stores/settlementStore"
 
 /** 结算玩家（含联机字段） */
 export interface SettlementPlayer {
@@ -248,6 +249,21 @@ export class SettlementManager {
       }
     }
 
+    // 桥接：同步结算数据到 Vue settlementStore
+    try {
+      const settlementStore = useSettlementStore()
+      settlementStore.showSettlement(
+        { id: winnerPlayer.id, name: winnerPlayer.name },
+        winnerBid,
+        totalValue,
+        winnerProfit,
+        0,
+        dividendTicketInfo.mechanism
+      )
+    } catch (_bridgeErr) {
+      // Vue store 未就绪时静默失败
+    }
+
     return {
       winnerPlayer,
       winnerBid,
@@ -393,6 +409,18 @@ export class SettlementManager {
       100
     )
     this.deps.triggerSettlementFinalAnimation(ctx.winnerProfit, ctx.winnerPlayer.isSelf)
+
+    // 桥接：同步最终结算数据到 Vue settlementStore
+    try {
+      const settlementStore = useSettlementStore()
+      settlementStore.updateSettlementData(ctx.totalValue, ctx.winnerProfit)
+      settlementStore.updateProgress(1)
+      if (ctx.humanNonWinner || profitInfo.profit !== 0) {
+        settlementStore.setPlayerProfit(profitInfo.profit, profitInfo.label)
+      }
+    } catch (_bridgeErr) {
+      // Vue store 未就绪时静默失败
+    }
   }
 
   /** 保存结算战绩记录 */

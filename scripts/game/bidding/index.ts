@@ -1,4 +1,4 @@
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 /**
  * @file bidding/index.ts
@@ -10,9 +10,7 @@ import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
 
 // ─── 独立函数（可独立测试）───
 
-export function getLastRoundBidMap(
-  playerRoundHistory: Record<string, Array<{ bid: number }>>
-): Record<string, number> {
+export function getLastRoundBidMap(playerRoundHistory: Record<string, Array<{ bid: number }>>): Record<string, number> {
   const map: Record<string, number> = {}
   for (const [playerId, history] of Object.entries(playerRoundHistory)) {
     if (history.length > 0) {

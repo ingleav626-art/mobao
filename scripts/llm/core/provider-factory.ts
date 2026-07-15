@@ -24,6 +24,79 @@ export interface NormalizeSettingsConfig {
   normalizeEndpoint?: (raw: string, fallback: string) => string
 }
 
+/** 提供商标识接口 */
+export interface ProviderIdentity {
+  id: string
+  name: string
+  description: string
+}
+
+/** Provider 配置（createBaseProvider 参数） */
+export interface BaseProviderConfig extends ProviderIdentity {
+  storageKey: string
+  apiKeyStorageKey: string
+  defaultSettings: () => any
+  normalizeSettings: (source: any, fallback?: any) => any
+  isThinkingModel?: (model: string) => boolean
+  supportsFeature?: (feature: string) => boolean
+}
+
+/** Provider 对象（createBaseProvider 返回值） */
+export interface BaseProvider extends ProviderIdentity {
+  defaultSettings: () => any
+  normalizeSettings: (source: any, fallback?: any) => any
+  loadSettings: () => any
+  saveSettings: (settings: any) => any
+  log: (level: string, event: string, detail: unknown) => void
+  getLogs: () => Array<Record<string, unknown>>
+  clearLogs: () => void
+  isThinkingModel: (model: string) => boolean
+  supportsFeature: (feature: string) => boolean
+  storageKey: string
+  apiKeyStorageKey: string
+}
+
+/** OpenAI 兼容 Provider 配置（createOpenAICompatibleProvider 参数） */
+export interface OpenAICompatibleProviderConfig extends BaseProviderConfig {
+  buildRequestBody?: (settings: any, context: { isThinking: boolean; temperature: number }) => any
+}
+
+/** Chat 请求选项 */
+export interface ChatRequestOptions {
+  settings?: any
+  messages?: Array<{ role: string; content: string }>
+  temperature?: number
+  maxTokens?: number
+  timeoutMs?: number
+  isThinking?: boolean
+  _playerId?: string
+  _playerName?: string
+}
+
+/** Chat 响应结果 */
+export interface ChatResult {
+  ok: boolean
+  requestId?: string
+  status?: number
+  elapsedMs?: number
+  content?: string
+  reasoningContent?: string
+  model?: string
+  error?: string
+  code?: string
+  stage?: string
+  usage?: any
+  meta?: any
+  raw?: any
+  message?: string
+}
+
+/** OpenAI 兼容 Provider（createOpenAICompatibleProvider 返回值） */
+export interface OpenAICompatibleProvider extends BaseProvider {
+  requestChat: (options: ChatRequestOptions) => Promise<ChatResult>
+  testConnection: (overrideSettings?: any) => Promise<ChatResult>
+}
+
 export function createNormalizeSettings(config: NormalizeSettingsConfig) {
   return function normalizeSettings(source: any, fallback?: any): any {
     const defaults: any = { ...config.defaultSettings(), ...normalizeObject(fallback) }
@@ -32,11 +105,13 @@ export function createNormalizeSettings(config: NormalizeSettingsConfig) {
     const endpointRaw = typeof input.endpoint === "string" ? input.endpoint.trim() : String(defaults.endpoint)
     const modelRaw = typeof input.model === "string" ? input.model.trim() : String(defaults.model)
     const apiKeyRaw =
-      typeof input.apiKey === "string" && input.apiKey.trim() ? input.apiKey.trim() : String(defaults.apiKey || "")
+      typeof input.apiKey === "string" && (input.apiKey as string).trim()
+        ? (input.apiKey as string).trim()
+        : String(defaults.apiKey || "")
 
     const endpoint = config.normalizeEndpoint
-      ? config.normalizeEndpoint(endpointRaw, defaults.endpoint)
-      : endpointRaw || defaults.endpoint
+      ? config.normalizeEndpoint(endpointRaw, String(defaults.endpoint))
+      : endpointRaw || String(defaults.endpoint)
 
     return {
       provider: config.providerId,
@@ -65,7 +140,7 @@ export function createNormalizeSettings(config: NormalizeSettingsConfig) {
   }
 }
 
-export function createBaseProvider(config: any): any {
+export function createBaseProvider(config: BaseProviderConfig): BaseProvider {
   const id = config.id
   const name = config.name || id
   const description = config.description || ""
@@ -103,7 +178,7 @@ export function createBaseProvider(config: any): any {
     }
   }
 
-  function saveProviderApiKey(value: any): void {
+  function saveProviderApiKey(value: string): void {
     const normalized = typeof value === "string" ? value.trim() : ""
     try {
       if (normalized) {
@@ -222,10 +297,10 @@ export function createBaseProvider(config: any): any {
   }
 }
 
-export function createOpenAICompatibleProvider(config: any): any {
+export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderConfig): OpenAICompatibleProvider {
   const base = createBaseProvider(config)
 
-  async function requestChat(options: any): Promise<any> {
+  async function requestChat(options: ChatRequestOptions): Promise<ChatResult> {
     const callStartTime = Date.now()
     const callId = `${base.id}-${callStartTime}-${Math.random().toString(16).slice(2, 6)}`
     console.log(`[requestChat] ${callId} START, provider: ${base.id}, model: ${options.settings?.model || "unknown"}`)
@@ -236,8 +311,8 @@ export function createOpenAICompatibleProvider(config: any): any {
       `[requestChat] ${callId} settings merged, model: ${mergedSettings.model}, endpoint: ${mergedSettings.endpoint}, elapsed: ${Date.now() - callStartTime}ms`
     )
     const useProxyEndpoint = isProxyEndpoint(mergedSettings.endpoint)
-    const isNativeEnv = !!((window as any).NativeBridge && (window as any).NativeBridge.getServerUrl)
-    const useNativeProxy = isNativeEnv && (window as any).NativeBridge.llmProxyAsync
+    const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.getServerUrl)
+    const useNativeProxy = isNativeEnv && window.NativeBridge?.llmProxyAsync
     const isLocalEndpoint = /^(https?:\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?\//i.test(
       mergedSettings.endpoint || ""
     )
@@ -263,7 +338,7 @@ export function createOpenAICompatibleProvider(config: any): any {
     const maxTokens = Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens)))
 
     const isThinking = input.isThinking === true
-    const requestBody: any = {
+    const requestBody: Record<string, unknown> = {
       model: mergedSettings.model,
       messages,
       max_tokens: maxTokens,
@@ -318,11 +393,11 @@ export function createOpenAICompatibleProvider(config: any): any {
       }
 
       let fetchBody = Object.assign({}, requestBody)
-      let response: any, rawText: string
+      let response: { ok: boolean; status: number }, rawText: string
 
-      if (isNativeEnv && (window as any).NativeBridge.llmProxyAsync) {
+      if (isNativeEnv && window.NativeBridge?.llmProxyAsync) {
         if (mergedSettings.apiKey) {
-          fetchBody.apiKey = mergedSettings.apiKey
+          fetchBody.apiKey = mergedSettings.apiKey as string
         }
         if (fetchEndpoint && !isProxyEndpoint(fetchEndpoint)) {
           try {
@@ -331,14 +406,15 @@ export function createOpenAICompatibleProvider(config: any): any {
           } catch (_) {}
         }
         console.log(
-          `[requestChat] ${callId} native proxy path, proxyTarget: ${fetchBody.proxyTarget || "(proxy endpoint)"}, model: ${fetchBody.model}, timeout: ${timeoutMs}ms`
+          `[requestChat] ${callId} native proxy path, proxyTarget: ${String(fetchBody.proxyTarget) || "(proxy endpoint)"}, model: ${String(fetchBody.model)}, timeout: ${timeoutMs}ms`
         )
 
-        const llmProxyResolvers: Map<string, any> = (window as any).__llmProxyResolvers || new Map()
-        ;(window as any).__llmProxyResolvers = llmProxyResolvers
+        const llmProxyResolvers: Map<string, { resolve: (value: string) => void }> =
+          window.__llmProxyResolvers || new Map()
+        window.__llmProxyResolvers = llmProxyResolvers
 
-        if (!(window as any).__llmProxyCallback) {
-          ;(window as any).__llmProxyCallback = function (requestId: string, b64Result: string) {
+        if (!window.__llmProxyCallback) {
+          window.__llmProxyCallback = function (requestId: string, b64Result: string) {
             const entry = llmProxyResolvers.get(requestId)
             if (entry) {
               llmProxyResolvers.delete(requestId)
@@ -371,7 +447,7 @@ export function createOpenAICompatibleProvider(config: any): any {
         const proxyResultJson = await Promise.race([
           new Promise<string>(function (resolve) {
             llmProxyResolvers.set(requestId, { resolve: resolve })
-            ;(window as any).NativeBridge.llmProxyAsync(requestId, JSON.stringify(fetchBody))
+            window.NativeBridge!.llmProxyAsync!(requestId, JSON.stringify(fetchBody))
           }),
           new Promise<never>(function (_, reject) {
             setTimeout(function () {
@@ -407,7 +483,14 @@ export function createOpenAICompatibleProvider(config: any): any {
           headers.Authorization = `Bearer ${mergedSettings.apiKey}`
         }
 
-        console.log("[requestChat] fetchEndpoint:", fetchEndpoint, "type:", typeof fetchEndpoint, "startsWith https:", typeof fetchEndpoint === "string" && fetchEndpoint.startsWith("https://"))
+        console.log(
+          "[requestChat] fetchEndpoint:",
+          fetchEndpoint,
+          "type:",
+          typeof fetchEndpoint,
+          "startsWith https:",
+          typeof fetchEndpoint === "string" && fetchEndpoint.startsWith("https://")
+        )
         const fetchResponse = await window.fetch(fetchEndpoint, {
           method: "POST",
           headers,
@@ -507,11 +590,11 @@ export function createOpenAICompatibleProvider(config: any): any {
     } catch (error) {
       const elapsedMs = Date.now() - startedAt
       const timeoutError = error && (error as Error).name === "AbortError"
-      if (timeoutError && isNativeEnv && (window as any).NativeBridge && (window as any).NativeBridge.llmProxyCancel) {
-        ;(window as any).NativeBridge.llmProxyCancel(requestId)
+      if (timeoutError && isNativeEnv && window.NativeBridge?.llmProxyCancel) {
+        window.NativeBridge.llmProxyCancel!(requestId)
       }
-      if ((window as any).__llmProxyResolvers) {
-        ;(window as any).__llmProxyResolvers.delete(requestId)
+      if (window.__llmProxyResolvers) {
+        window.__llmProxyResolvers.delete(requestId)
       }
       const message = timeoutError
         ? `请求超时（>${timeoutMs}ms）`
@@ -548,13 +631,13 @@ export function createOpenAICompatibleProvider(config: any): any {
       return errorResult
     } finally {
       window.clearTimeout(timeoutId)
-      if ((window as any).__llmProxyResolvers) {
-        ;(window as any).__llmProxyResolvers.delete(requestId)
+      if (window.__llmProxyResolvers) {
+        window.__llmProxyResolvers.delete(requestId)
       }
     }
   }
 
-  async function testConnection(overrideSettings?: any): Promise<any> {
+  async function testConnection(overrideSettings?: Record<string, unknown>): Promise<ChatResult> {
     const settings = config.normalizeSettings(overrideSettings, base.loadSettings())
     const result = await requestChat({
       settings,

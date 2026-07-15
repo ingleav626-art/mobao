@@ -12,7 +12,7 @@ import type {
   CrossGameMemory,
   CrossGameStats,
   ConversationMessage,
-  ConversationBucketEntry,
+  ConversationBucketEntry
 } from "../../../types/ai"
 import type { LlmSettings } from "../../../types/llm"
 import { AI_MEMORY_STORAGE_KEY } from "../core/constants"
@@ -23,7 +23,7 @@ import {
   loadAiMemoryFromStorage,
   getQualityCounts,
   getTotalOccupiedCells,
-  ensureCrossGameMemory,
+  ensureCrossGameMemory
 } from "./memory"
 
 /** AI 记忆可变状态（引用共享：Manager 内部读写均作用于同一对象） */
@@ -100,7 +100,7 @@ export class AiMemoryManager {
   shouldGenerateSummary(): boolean {
     const settings = this.deps.getLlmSettings()
     if (!settings || !settings.autoSummarizeEnabled || !settings.multiGameMemoryEnabled) return false
-    const contextLength = settings.contextLength || 5
+    const contextLength = (settings.contextLength as number) || 5
     if (!MobaoGameHistory) return false
     const aiPlayers = this.deps.players.filter((p) => !p.isHuman)
     if (aiPlayers.length === 0) return false
@@ -131,7 +131,7 @@ export class AiMemoryManager {
         crossGameMessages: data.aiCrossGameMessagesByPlayer || {},
         pendingSummaryByPlayer: data.pendingNextRunAiSummaryByPlayer || {},
         runSerial: data.runSerial || 0,
-        savedAt: Date.now(),
+        savedAt: Date.now()
       }
       window.localStorage.setItem(storageKey, JSON.stringify(payload))
     } catch (_error) {}
@@ -172,14 +172,14 @@ export class AiMemoryManager {
               stats: mergedStats,
               lessons: Array.isArray(memObj.lessons) ? (memObj.lessons as string[]).slice(-10) : [],
               strategies: Array.isArray(memObj.strategies) ? (memObj.strategies as string[]).slice(-10) : [],
-              praises: Array.isArray(memObj.praises) ? (memObj.praises as string[]).slice(-10) : [],
+              praises: Array.isArray(memObj.praises) ? (memObj.praises as string[]).slice(-10) : []
             }
           } else if (Array.isArray(memData)) {
             data.aiCrossGameMemory[playerId] = {
               stats: { ...DEFAULT_CROSS_GAME_STATS },
               lessons: [],
               strategies: [],
-              praises: [],
+              praises: []
             }
           }
         }
@@ -286,7 +286,7 @@ export class AiMemoryManager {
       skill: String(plan && plan.actionType === "skill" && plan.actionId ? plan.actionId : "无"),
       item: String(plan && plan.actionType === "item" && plan.actionId ? plan.actionId : "无"),
       thought: plan && plan.thought ? String(plan.thought).slice(0, 120) : "",
-      result: "",
+      result: ""
     }
     bucket.push(entry)
     if (bucket.length > 30) {
@@ -340,7 +340,7 @@ export class AiMemoryManager {
       pendingSummaryByPlayer: data.pendingNextRunAiSummaryByPlayer || {},
       runSerial: data.runSerial || 0,
       exportedAt: Date.now(),
-      version: "v1",
+      version: "v1"
     }
     return JSON.stringify(payload, null, 2)
   }
@@ -394,7 +394,7 @@ export class AiMemoryManager {
               stats: { ...DEFAULT_CROSS_GAME_STATS },
               lessons: [],
               strategies: [],
-              praises: [],
+              praises: []
             }
           } else if (memData && typeof memData === "object") {
             const storedStats = (memData as { stats?: Partial<CrossGameStats> }).stats || {}
@@ -402,14 +402,14 @@ export class AiMemoryManager {
             data.aiCrossGameMemory[playerId] = {
               stats: mergedStats,
               lessons: Array.isArray((memData as { lessons?: unknown[] }).lessons)
-                ? (memData as { lessons: unknown[] }).lessons.slice(-10) as string[]
+                ? ((memData as { lessons: unknown[] }).lessons.slice(-10) as string[])
                 : [],
               strategies: Array.isArray((memData as { strategies?: unknown[] }).strategies)
-                ? (memData as { strategies: unknown[] }).strategies.slice(-10) as string[]
+                ? ((memData as { strategies: unknown[] }).strategies.slice(-10) as string[])
                 : [],
               praises: Array.isArray((memData as { praises?: unknown[] }).praises)
-                ? (memData as { praises: unknown[] }).praises.slice(-10) as string[]
-                : [],
+                ? ((memData as { praises: unknown[] }).praises.slice(-10) as string[])
+                : []
             }
           }
         })
@@ -431,7 +431,7 @@ export class AiMemoryManager {
     } catch (error) {
       return {
         ok: false,
-        error: "JSON解析失败: " + ((error instanceof Error ? error.message : String(error)) || "未知错误"),
+        error: "JSON解析失败: " + ((error instanceof Error ? error.message : String(error)) || "未知错误")
       }
     }
   }
@@ -448,9 +448,10 @@ export class AiMemoryManager {
     const totalValue = Math.round(Number(result && result.totalValue) || 0)
     const winnerProfit = Math.round(Number(result && result.winnerProfit) || 0)
     const reasonText = result && result.reasonText ? String(result.reasonText) : "结算"
-    const dtInfo = result && result.dividendTicketInfo
-      ? (result.dividendTicketInfo as { mechanism?: string; dividendPerPlayer?: number; ticketPerPlayer?: number })
-      : null
+    const dtInfo =
+      result && result.dividendTicketInfo
+        ? (result.dividendTicketInfo as { mechanism?: string; dividendPerPlayer?: number; ticketPerPlayer?: number })
+        : null
     const mechanism: string = dtInfo?.mechanism ?? "none"
     const dividendAmt = dtInfo ? Math.round(Number(dtInfo.dividendPerPlayer) || 0) : 0
     const ticketAmt = dtInfo ? Math.round(Number(dtInfo.ticketPerPlayer) || 0) : 0
@@ -466,7 +467,7 @@ export class AiMemoryManager {
       `【系统事件】第 ${data.runSerial} 局已结算：${winnerName} 以 ${winnerBid} 拿下整仓（${reasonText}）。`,
       `本局揭示总值 ${totalValue}，拍下者利润 ${winnerProfit >= 0 ? "+" : ""}${winnerProfit}。`,
       mechanismText,
-      `第 ${data.runSerial + 1} 局已经开始。`,
+      `第 ${data.runSerial + 1} 局已经开始。`
     ]
       .filter(Boolean)
       .join(" ")
@@ -488,7 +489,7 @@ export class AiMemoryManager {
     if (MobaoGameHistory) {
       const qualityCounts = this.getQualityCounts()
       const settings = this.deps.getLlmSettings()
-      const maxRecords = (settings && settings.contextLength) || 5
+      const maxRecords = (settings && (settings.contextLength as number)) || 5
       this.deps.players
         .filter((p) => !p.isHuman)
         .forEach((p) => {
@@ -498,7 +499,7 @@ export class AiMemoryManager {
             skill: entry.skill || "无",
             item: entry.item || "无",
             thought: entry.thought || "",
-            result: entry.result || "",
+            result: entry.result || ""
           }))
           const record = {
             run: data.runSerial || 0,
@@ -509,16 +510,14 @@ export class AiMemoryManager {
             winnerProfit,
             reasonText,
             dividendTicket:
-              mechanism !== "none"
-                ? { mechanism, dividendPerPlayer: dividendAmt, ticketPerPlayer: ticketAmt }
-                : null,
+              mechanism !== "none" ? { mechanism, dividendPerPlayer: dividendAmt, ticketPerPlayer: ticketAmt } : null,
             qualityCounts,
             totalItems: this.deps.getItems().length,
             totalCells: this.getTotalOccupiedCells(),
             roundBids: [],
             reflection: null,
             aiDecisions: playerDecisions,
-            timestamp: Date.now(),
+            timestamp: Date.now()
           }
           MobaoGameHistory.append(p.id, record, maxRecords, this.deps.getIsLanMode())
         })
@@ -556,9 +555,10 @@ export class AiMemoryManager {
     const totalValue = Math.round(Number(result && result.totalValue) || 0)
     const winnerProfit = Math.round(Number(result && result.winnerProfit) || 0)
     const reasonText = result && result.reasonText ? result.reasonText : "结算"
-    const dtInfo = result && result.dividendTicketInfo
-      ? (result.dividendTicketInfo as { mechanism?: string; dividendPerPlayer?: number; ticketPerPlayer?: number })
-      : null
+    const dtInfo =
+      result && result.dividendTicketInfo
+        ? (result.dividendTicketInfo as { mechanism?: string; dividendPerPlayer?: number; ticketPerPlayer?: number })
+        : null
     const mechanism: string = dtInfo?.mechanism ?? "none"
     const dividendAmt = dtInfo ? Math.round(Number(dtInfo.dividendPerPlayer) || 0) : 0
     const ticketAmt = dtInfo ? Math.round(Number(dtInfo.ticketPerPlayer) || 0) : 0
@@ -574,7 +574,7 @@ export class AiMemoryManager {
           round: entry.round,
           playerId: player.id,
           playerName: player.name,
-          bid: entry.bid,
+          bid: entry.bid
         })
       })
     })
@@ -586,15 +586,13 @@ export class AiMemoryManager {
       warehouseValue: totalValue,
       winnerProfit,
       dividendTicket:
-        mechanism !== "none"
-          ? { mechanism, dividendPerPlayer: dividendAmt, ticketPerPlayer: ticketAmt }
-          : null,
+        mechanism !== "none" ? { mechanism, dividendPerPlayer: dividendAmt, ticketPerPlayer: ticketAmt } : null,
       qualityCounts,
       totalItems,
       totalCells,
       roundBids,
       reflection: null,
-      reflectionEnabled: this.deps.isAiReflectionEnabled(),
+      reflectionEnabled: this.deps.isAiReflectionEnabled()
     }
     return record
   }
@@ -605,9 +603,7 @@ export class AiMemoryManager {
       return []
     }
 
-    const blocks = [
-      `【系统事件】第 ${this.deps.data.runSerial} 局开始。本局仓库随机生成，技能与道具已重置。`,
-    ]
+    const blocks = [`【系统事件】第 ${this.deps.data.runSerial} 局开始。本局仓库随机生成，技能与道具已重置。`]
 
     const targetId = playerId || this.deps.players.find((p) => !p.isHuman)?.id || ""
     const playerSummary = this.deps.data.pendingNextRunAiSummaryByPlayer?.[targetId]
@@ -731,7 +727,7 @@ export class AiMemoryManager {
           touchStartScrollTop = content.scrollTop
         }
       },
-      { passive: true },
+      { passive: true }
     )
     content.addEventListener(
       "touchmove",
@@ -742,7 +738,7 @@ export class AiMemoryManager {
         if (maxScroll <= 0) return
         content.scrollTop = Math.max(0, Math.min(touchStartScrollTop + dy, maxScroll))
       },
-      { passive: true },
+      { passive: true }
     )
   }
 

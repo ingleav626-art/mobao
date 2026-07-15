@@ -24,20 +24,14 @@ export function setPlayerBidReady(
 /**
  * 检查所有玩家是否已提交出价
  */
-export function areAllPlayersBidReady(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState
-): boolean {
+export function areAllPlayersBidReady(deps: BiddingManagerDeps, state: BiddingManagerState): boolean {
   return deps.players.every((player) => Boolean(state.roundBidReadyState[player.id]))
 }
 
 /**
  * 打开出价数字键盘
  */
-export function openBidKeypad(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState
-): void {
+export function openBidKeypad(deps: BiddingManagerDeps, state: BiddingManagerState): void {
   if (deps.getSettled() || state.roundResolving || state.playerBidSubmitted) {
     return
   }
@@ -73,10 +67,7 @@ export function closeBidKeypad(deps: BiddingManagerDeps): void {
 /**
  * 同步键盘屏幕显示当前出价值
  */
-export function syncBidKeypadScreen(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState
-): void {
+export function syncBidKeypadScreen(deps: BiddingManagerDeps, state: BiddingManagerState): void {
   if (deps.dom.keypadScreen) {
     deps.dom.keypadScreen.textContent = state.keypadValue
   }
@@ -86,10 +77,7 @@ export function syncBidKeypadScreen(
 /**
  * 更新键盘上"可直接拿下"提示
  */
-export function updateKeypadDirectHint(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState
-): void {
+export function updateKeypadDirectHint(deps: BiddingManagerDeps, state: BiddingManagerState): void {
   const hintEl = deps.dom.keypadDirectHint
   if (!hintEl) return
 
@@ -118,11 +106,7 @@ export function updateKeypadDirectHint(
 /**
  * 处理键盘输入（数字键/清除/删除/确认）
  */
-export function handleBidKeyInput(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState,
-  key: string
-): void {
+export function handleBidKeyInput(deps: BiddingManagerDeps, state: BiddingManagerState, key: string): void {
   if (key === "clear") {
     state.keypadValue = "0"
     syncBidKeypadScreen(deps, state)
@@ -152,10 +136,7 @@ export function handleBidKeyInput(
 /**
  * 玩家提交出价
  */
-export function playerBid(
-  deps: BiddingManagerDeps,
-  state: BiddingManagerState
-): void {
+export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState): void {
   deps.closeItemDrawer()
 
   if (deps.getSettled()) {

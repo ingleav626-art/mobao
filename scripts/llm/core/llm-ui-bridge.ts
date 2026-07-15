@@ -44,7 +44,7 @@
     */
 "use strict"
 import { LlmManager } from "./llm-manager"
-import type { CustomProvider } from '../../../types/llm'
+import type { CustomProvider } from "../../../types/llm"
 
 export const LLM_GLOBAL_SETTINGS_KEY = "mobao_llm_global_settings_v1"
 
@@ -79,7 +79,7 @@ function loadGlobalSettings(): LlmGlobalSettings {
       const parsed = JSON.parse(raw)
       return { ...DEFAULT_GLOBAL_SETTINGS, ...parsed }
     }
-  } catch (_e) { }
+  } catch (_e) {}
   return { ...DEFAULT_GLOBAL_SETTINGS }
 }
 
@@ -88,7 +88,7 @@ function saveGlobalSettings(settings: Partial<LlmGlobalSettings>): void {
     const current = loadGlobalSettings()
     const merged = { ...current, ...settings }
     window.localStorage.setItem(LLM_GLOBAL_SETTINGS_KEY, JSON.stringify(merged))
-  } catch (_e) { }
+  } catch (_e) {}
 }
 
 interface ProviderConfig {
@@ -265,15 +265,15 @@ function updateUiForProvider(providerId: string): void {
   }
 
   if (els.apiKeyInput) {
-    (els.apiKeyInput as HTMLInputElement).placeholder = config.placeholder
+    ;(els.apiKeyInput as HTMLInputElement).placeholder = config.placeholder
   }
 
   if (els.endpointInput) {
-    (els.endpointInput as HTMLInputElement).placeholder = config.endpointPlaceholder
+    ;(els.endpointInput as HTMLInputElement).placeholder = config.endpointPlaceholder
   }
 
   if (els.modelInput && !(els.modelInput as HTMLInputElement).value) {
-    (els.modelInput as HTMLInputElement).placeholder = config.defaultModel || "model-name"
+    ;(els.modelInput as HTMLInputElement).placeholder = config.defaultModel || "model-name"
   }
 
   if (els.deleteProviderBtn) {
@@ -358,10 +358,12 @@ function loadProviderSettings(providerId: string): void {
     if (els.timeoutMsInput) (els.timeoutMsInput as HTMLInputElement).value = settings.timeoutMs || 40000
     if (els.thinkingParamsInput) (els.thinkingParamsInput as HTMLInputElement).value = settings.thinkingParams || ""
     if (els.enabledCheckbox) (els.enabledCheckbox as HTMLInputElement).checked = globalSettings.enabled
-    if (els.multiGameMemoryCheckbox) (els.multiGameMemoryCheckbox as HTMLInputElement).checked = globalSettings.multiGameMemoryEnabled
+    if (els.multiGameMemoryCheckbox)
+      (els.multiGameMemoryCheckbox as HTMLInputElement).checked = globalSettings.multiGameMemoryEnabled
     if (els.reflectionCheckbox) (els.reflectionCheckbox as HTMLInputElement).checked = globalSettings.reflectionEnabled
     if (els.thinkingCheckbox) (els.thinkingCheckbox as HTMLInputElement).checked = globalSettings.thinkingEnabled
-    if (els.independentModelCheckbox) (els.independentModelCheckbox as HTMLInputElement).checked = globalSettings.independentModelEnabled
+    if (els.independentModelCheckbox)
+      (els.independentModelCheckbox as HTMLInputElement).checked = globalSettings.independentModelEnabled
   } else {
     console.log("[loadProviderSettings] provider not found, using defaults")
     const config = getProviderConfig(providerId)
@@ -372,10 +374,12 @@ function loadProviderSettings(providerId: string): void {
     if (els.timeoutMsInput) (els.timeoutMsInput as HTMLInputElement).value = String(40000)
     if (els.thinkingParamsInput) (els.thinkingParamsInput as HTMLInputElement).value = ""
     if (els.enabledCheckbox) (els.enabledCheckbox as HTMLInputElement).checked = globalSettings.enabled
-    if (els.multiGameMemoryCheckbox) (els.multiGameMemoryCheckbox as HTMLInputElement).checked = globalSettings.multiGameMemoryEnabled
+    if (els.multiGameMemoryCheckbox)
+      (els.multiGameMemoryCheckbox as HTMLInputElement).checked = globalSettings.multiGameMemoryEnabled
     if (els.reflectionCheckbox) (els.reflectionCheckbox as HTMLInputElement).checked = globalSettings.reflectionEnabled
     if (els.thinkingCheckbox) (els.thinkingCheckbox as HTMLInputElement).checked = globalSettings.thinkingEnabled
-    if (els.independentModelCheckbox) (els.independentModelCheckbox as HTMLInputElement).checked = globalSettings.independentModelEnabled
+    if (els.independentModelCheckbox)
+      (els.independentModelCheckbox as HTMLInputElement).checked = globalSettings.independentModelEnabled
   }
 
   updateThinkingParamsVisibility(els)
@@ -436,10 +440,14 @@ function saveProviderSettings(providerId: string): {
 
   saveGlobalSettings({
     enabled: els.enabledCheckbox ? (els.enabledCheckbox as HTMLInputElement).checked : false,
-    multiGameMemoryEnabled: els.multiGameMemoryCheckbox ? (els.multiGameMemoryCheckbox as HTMLInputElement).checked : false,
+    multiGameMemoryEnabled: els.multiGameMemoryCheckbox
+      ? (els.multiGameMemoryCheckbox as HTMLInputElement).checked
+      : false,
     reflectionEnabled: els.reflectionCheckbox ? (els.reflectionCheckbox as HTMLInputElement).checked : false,
     thinkingEnabled: els.thinkingCheckbox ? (els.thinkingCheckbox as HTMLInputElement).checked : false,
-    independentModelEnabled: els.independentModelCheckbox ? (els.independentModelCheckbox as HTMLInputElement).checked : false
+    independentModelEnabled: els.independentModelCheckbox
+      ? (els.independentModelCheckbox as HTMLInputElement).checked
+      : false
   })
 
   const providerSettings = {
@@ -450,10 +458,7 @@ function saveProviderSettings(providerId: string): {
     timeoutMs: els.timeoutMsInput ? parseInt((els.timeoutMsInput as HTMLInputElement).value, 10) || 40000 : 40000,
     thinkingParams: els.thinkingParamsInput ? (els.thinkingParamsInput as HTMLInputElement).value.trim() : ""
   }
-  console.log(
-    "[saveProviderSettings] providerSettings:",
-    providerSettings
-  )
+  console.log("[saveProviderSettings] providerSettings:", providerSettings)
 
   if (LlmManager) {
     const provider = LlmManager.getProvider(providerId)
@@ -466,7 +471,9 @@ function saveProviderSettings(providerId: string): {
   return providerSettings
 }
 
-async function testConnection(providerId: string): Promise<any> {
+async function testConnection(
+  providerId: string
+): Promise<{ ok: boolean; error?: string; message?: string; code?: string; stack?: string }> {
   const els = getElements()
   const settings = saveProviderSettings(providerId)
   const config = getProviderConfig(providerId)
@@ -556,8 +563,8 @@ function hideAddProviderModal(forceClose = false): void {
     if (okBtn) okBtn.textContent = "确认离开"
     if (cancelBtn) cancelBtn.textContent = "继续填写"
 
-    if ((window as any).WarehouseScene && (window as any).WarehouseScene.instance) {
-      (window as any).WarehouseScene.instance.showGameConfirm(
+    if (window.WarehouseScene && window.WarehouseScene.instance) {
+      window.WarehouseScene.instance.showGameConfirm(
         "离开后不会保存已填写的内容，是否离开？",
         () => {
           if (okBtn) okBtn.textContent = originalOkText
@@ -631,18 +638,18 @@ function addCustomProvider(): void {
 
       refreshProviderSelect(newProviderId)
       loadProviderSettings(newProviderId)
-        ; LlmManager.setActiveProvider(newProviderId)
+      LlmManager.setActiveProvider(newProviderId)
 
       hideAddProviderModal(true)
 
       const aiModelConfigOverlay = document.getElementById("aiModelConfigOverlay")
       if (aiModelConfigOverlay && !aiModelConfigOverlay.classList.contains("hidden")) {
         if (
-          (window as any).WarehouseScene &&
-          (window as any).WarehouseScene.instance &&
-          typeof (window as any).WarehouseScene.instance.renderAiModelConfigContent === "function"
+          window.WarehouseScene &&
+          window.WarehouseScene.instance &&
+          typeof window.WarehouseScene.instance.renderAiModelConfigContent === "function"
         ) {
-          (window as any).WarehouseScene.instance.renderAiModelConfigContent()
+          window.WarehouseScene.instance.renderAiModelConfigContent()
         }
       }
     } catch (error) {
@@ -658,8 +665,8 @@ function deleteCurrentProvider(): void {
   const els = getElements()
 
   if (config.builtin) {
-    if ((window as any).WarehouseScene && (window as any).WarehouseScene.instance) {
-      (window as any).WarehouseScene.instance.showGameConfirm("预定义模型不能删除", null, null)
+    if (window.WarehouseScene && window.WarehouseScene.instance) {
+      window.WarehouseScene.instance.showGameConfirm("预定义模型不能删除", null, null)
       const cancelBtn = document.getElementById("gameConfirmCancelBtn")
       if (cancelBtn) cancelBtn.classList.add("hidden")
       const okBtn = document.getElementById("gameConfirmOkBtn")
@@ -670,8 +677,8 @@ function deleteCurrentProvider(): void {
     return
   }
 
-  if ((window as any).WarehouseScene && (window as any).WarehouseScene.instance) {
-    (window as any).WarehouseScene.instance.showGameConfirm(
+  if (window.WarehouseScene && window.WarehouseScene.instance) {
+    window.WarehouseScene.instance.showGameConfirm(
       `确定要删除模型 "${config.name}" 吗？此操作不可恢复。`,
       () => {
         if (LlmManager) {
@@ -679,18 +686,18 @@ function deleteCurrentProvider(): void {
           refreshProviderSelect("deepseek")
 
           if (els.providerSelect) {
-            (els.providerSelect as HTMLSelectElement).value = "deepseek"
+            ;(els.providerSelect as HTMLSelectElement).value = "deepseek"
             loadProviderSettings("deepseek")
           }
 
           const aiModelConfigOverlay = document.getElementById("aiModelConfigOverlay")
           if (aiModelConfigOverlay && !aiModelConfigOverlay.classList.contains("hidden")) {
             if (
-              (window as any).WarehouseScene &&
-              (window as any).WarehouseScene.instance &&
-              typeof (window as any).WarehouseScene.instance.renderAiModelConfigContent === "function"
+              window.WarehouseScene &&
+              window.WarehouseScene.instance &&
+              typeof window.WarehouseScene.instance.renderAiModelConfigContent === "function"
             ) {
-              (window as any).WarehouseScene.instance.renderAiModelConfigContent()
+              window.WarehouseScene.instance.renderAiModelConfigContent()
             }
           }
         }
@@ -713,7 +720,7 @@ function deleteCurrentProvider(): void {
       refreshProviderSelect("deepseek")
 
       if (els.providerSelect) {
-        (els.providerSelect as HTMLSelectElement).value = "deepseek"
+        ;(els.providerSelect as HTMLSelectElement).value = "deepseek"
         loadProviderSettings("deepseek")
       }
     }

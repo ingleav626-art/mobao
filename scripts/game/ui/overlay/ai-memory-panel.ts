@@ -28,7 +28,26 @@ export const AiMemoryPanelMixin: ThisType<WarehouseSceneThis> = {
         const color = colors[idx % colors.length]
         let inner = ""
 
-        const stats: CrossGameStats = memory.stats || { totalGames: 0, warehouseValueMax: 0, warehouseValueMin: 0, warehouseValueAvg: 0, winRate: 0, avgProfit: 0, totalCellsMax: 0, totalCellsMin: 0, totalCellsAvg: 0, totalItemsMax: 0, totalItemsMin: 0, totalItemsAvg: 0, legendaryMax: 0, legendaryMin: 0, legendaryAvg: 0, rareMax: 0, rareMin: 0, rareAvg: 0 }
+        const stats: CrossGameStats = memory.stats || {
+          totalGames: 0,
+          warehouseValueMax: 0,
+          warehouseValueMin: 0,
+          warehouseValueAvg: 0,
+          winRate: 0,
+          avgProfit: 0,
+          totalCellsMax: 0,
+          totalCellsMin: 0,
+          totalCellsAvg: 0,
+          totalItemsMax: 0,
+          totalItemsMin: 0,
+          totalItemsAvg: 0,
+          legendaryMax: 0,
+          legendaryMin: 0,
+          legendaryAvg: 0,
+          rareMax: 0,
+          rareMin: 0,
+          rareAvg: 0
+        }
         const praises = memory.praises || []
         const strategies = memory.strategies || []
         const lessons = memory.lessons || []

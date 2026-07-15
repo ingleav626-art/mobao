@@ -431,7 +431,7 @@ const AudioManager: AudioManagerType = {
 
   resumeBgm(): void {
     if (this._bgmAudio && this._bgmAudio.paused && this._bgmEnabled) {
-      this._bgmAudio.play().catch(() => { })
+      this._bgmAudio.play().catch(() => {})
     }
   },
 

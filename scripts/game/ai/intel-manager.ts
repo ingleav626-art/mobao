@@ -14,7 +14,7 @@ import type {
   IntelActionPlan,
   ToolEffect,
   ActionDef,
-  ConversationMessage,
+  ConversationMessage
 } from "../../../types/ai"
 import type { LlmPlan, LlmPlanResult } from "../../../types/llm"
 import type { RunLog } from "./decision"
@@ -25,14 +25,14 @@ import {
   resetAiRoundResources,
   ensureAiPrivateIntel,
   getHighValuePriceThreshold,
-  isHighValueArtifact,
+  isHighValueArtifact
 } from "./intel-manager/init-fns"
 import {
   getAiIntelSummary,
   buildAiIntelSnapshot,
   getAiResourceSnapshot,
   getAiAvailableActionState,
-  buildAiActionConstraintBlock,
+  buildAiActionConstraintBlock
 } from "./intel-manager/snapshot-fns"
 import {
   buildSkillContext,
@@ -47,7 +47,7 @@ import {
   updateAiItemKnowledge,
   revealPrivateIntelBatch,
   revealPrivateIntelFully,
-  pickPrivateRevealTargets,
+  pickPrivateRevealTargets
 } from "./intel-manager/reveal-fns"
 import {
   getPlayerById,
@@ -56,14 +56,14 @@ import {
   buildAiAggregateIntelBlock,
   buildTrackCandidatePreview,
   buildAiHighValueTrackBlock,
-  buildAiPrivateIntelBlock,
+  buildAiPrivateIntelBlock
 } from "./intel-manager/panel-fns"
 import {
   executeAiIntelAction,
   processAiIntelActions,
   processSingleAiIntelAction,
   formatAiIntelActionPublicLine,
-  canUseIntelActions,
+  canUseIntelActions
 } from "./intel-manager/action-fns"
 import { pickRandomItemCell } from "./intel/pure"
 
@@ -113,7 +113,15 @@ export interface ArtifactManagerDep {
     qualityKey: string | null
     category: string | null
     sizeTag: string | null
-  }): Array<{ name: string; basePrice: number; w: number; h: number; expectedPrice: number; previewSizeTag: string; qualityKey: string }>
+  }): Array<{
+    name: string
+    basePrice: number
+    w: number
+    h: number
+    expectedPrice: number
+    previewSizeTag: string
+    qualityKey: string
+  }>
 }
 
 /** AiEngine 子集（情报系统所需） */
@@ -177,13 +185,13 @@ export interface AiIntelManagerDeps {
     count: number,
     category: string | null,
     allowCategoryFallback: boolean,
-    sortStrategy: string | null,
+    sortStrategy: string | null
   ) => unknown
   revealQualityBatch: (
     count: number,
     category: string | null,
     allowCategoryFallback: boolean,
-    sortStrategy: string | null,
+    sortStrategy: string | null
   ) => unknown
   revealArtifactFullyBatch: (options: {
     count: number
@@ -198,7 +206,7 @@ export interface AiIntelManagerDeps {
     plan: LlmPlan,
     error: string,
     history: Array<{ error: string; aiResponse: string; at: number }>,
-    messages: ConversationMessage[],
+    messages: ConversationMessage[]
   ) => Promise<LlmPlanResult | null>
   getAiConversationMessages: (playerId: string) => ConversationMessage[]
   recordPlayerUsage: (playerId: string, actionId: string) => void
@@ -208,7 +216,7 @@ export interface AiIntelManagerDeps {
   requestAiLlmFollowupBid: (
     player: Player,
     plan: LlmPlanResult | null,
-    toolSummary: string,
+    toolSummary: string
   ) => Promise<LlmPlanResult | null>
   setPlayerBidReady: (playerId: string, ready: boolean) => void
   updateHud: () => void
@@ -229,44 +237,79 @@ export class AiIntelManager {
 
   // ═════════════ 初始化方法（init-fns.ts） ═════════════
 
-  initAiIntelSystems(): void { return initAiIntelSystems(this.deps) }
-  refreshAllPlayerAvatars(): void { return refreshAllPlayerAvatars(this.deps) }
-  resetAiRoundResources(): void { return resetAiRoundResources(this.deps) }
-  ensureAiPrivateIntel(playerId: string): AiPrivateIntelPool { return ensureAiPrivateIntel(this.deps.state, playerId) }
+  initAiIntelSystems(): void {
+    return initAiIntelSystems(this.deps)
+  }
+  refreshAllPlayerAvatars(): void {
+    return refreshAllPlayerAvatars(this.deps)
+  }
+  resetAiRoundResources(): void {
+    return resetAiRoundResources(this.deps)
+  }
+  ensureAiPrivateIntel(playerId: string): AiPrivateIntelPool {
+    return ensureAiPrivateIntel(this.deps.state, playerId)
+  }
 
   // ═════════════ 摘要快照方法（snapshot-fns.ts） ═════════════
 
   getAiIntelSummary(playerId: string): IntelSummary & {
-    clueCount: number; outlineCount: number; qualityCount: number
-    signalCount: number; meanEstimate: number; std: number; iqr: number
-  } { return getAiIntelSummary(this.deps, playerId) }
+    clueCount: number
+    outlineCount: number
+    qualityCount: number
+    signalCount: number
+    meanEstimate: number
+    std: number
+    iqr: number
+  } {
+    return getAiIntelSummary(this.deps, playerId)
+  }
 
-  buildAiIntelSnapshot(): Record<string, IntelSummary> { return buildAiIntelSnapshot(this.deps) }
+  buildAiIntelSnapshot(): Record<string, IntelSummary> {
+    return buildAiIntelSnapshot(this.deps)
+  }
 
   getAiResourceSnapshot(playerId: string): { skills: Record<string, number>; items: Record<string, number> } {
     return getAiResourceSnapshot(this.deps, playerId)
   }
 
   getAiAvailableActionState(playerId: string): {
-    availableSkillIds: string[]; availableItemIds: string[]
-    availableSkillNames: string[]; availableItemNames: string[]
-  } { return getAiAvailableActionState(this.deps, playerId) }
+    availableSkillIds: string[]
+    availableItemIds: string[]
+    availableSkillNames: string[]
+    availableItemNames: string[]
+  } {
+    return getAiAvailableActionState(this.deps, playerId)
+  }
 
   buildAiActionConstraintBlock(playerId: string): {
-    canBid: boolean; canFold: boolean
-    availableSkills: string[]; availableItems: string[]; notes: string[]
-    _internal: { availableSkillIds: string[]; availableItemIds: string[]; availableSkillNames: string[]; availableItemNames: string[] }
-  } { return buildAiActionConstraintBlock(this.deps, playerId) }
+    canBid: boolean
+    canFold: boolean
+    availableSkills: string[]
+    availableItems: string[]
+    notes: string[]
+    _internal: {
+      availableSkillIds: string[]
+      availableItemIds: string[]
+      availableSkillNames: string[]
+      availableItemNames: string[]
+    }
+  } {
+    return buildAiActionConstraintBlock(this.deps, playerId)
+  }
 
   // ═════════════ 揭示执行方法（reveal-fns.ts） ═════════════
 
-  buildSkillContext(): ReturnType<typeof buildSkillContext> { return buildSkillContext(this.deps) }
+  buildSkillContext(): ReturnType<typeof buildSkillContext> {
+    return buildSkillContext(this.deps)
+  }
 
   buildAiPrivateRevealContext(playerId: string): ReturnType<typeof buildAiPrivateRevealContext> {
     return buildAiPrivateRevealContext(this.deps, this.deps.state, playerId)
   }
 
-  pickRandomItemCell(item: Artifact): { x: number; y: number } | null { return pickRandomItemCell(item) }
+  pickRandomItemCell(item: Artifact): { x: number; y: number } | null {
+    return pickRandomItemCell(item)
+  }
 
   markAiKnownCellState(playerId: string, x: number, y: number, state: string): void {
     return markAiKnownCellState(this.deps.state, playerId, x, y, state)
@@ -292,43 +335,77 @@ export class AiIntelManager {
     return ensureAiItemKnowledge(this.deps.state, playerId, itemId)
   }
 
-  getHighValuePriceThreshold(): number { return getHighValuePriceThreshold(this.deps) }
+  getHighValuePriceThreshold(): number {
+    return getHighValuePriceThreshold(this.deps)
+  }
 
-  isHighValueArtifact(item: Artifact): boolean { return isHighValueArtifact(this.deps, item) }
+  isHighValueArtifact(item: Artifact): boolean {
+    return isHighValueArtifact(this.deps, item)
+  }
 
   ensureAiHighValueTrack(playerId: string, item: Artifact): { trackId: string; created: boolean } | null {
     return ensureAiHighValueTrack(this.deps, this.deps.state, playerId, item)
   }
 
   updateAiItemKnowledge(
-    playerId: string, item: Artifact,
-    signal: { sampleCell?: { x: number; y: number } } | null, mode: string,
+    playerId: string,
+    item: Artifact,
+    signal: { sampleCell?: { x: number; y: number } } | null,
+    mode: string
   ): AiItemKnowledge & {
-    trackUpdate?: { trackId: string; revealLevel: string; confirmed: { quality: string; category: string; exactArtifact: string | null }; candidates: { total: number; truncated: boolean } }
-  } { return updateAiItemKnowledge(this.deps, this.deps.state, playerId, item, signal, mode) }
+    trackUpdate?: {
+      trackId: string
+      revealLevel: string
+      confirmed: { quality: string; category: string; exactArtifact: string | null }
+      candidates: { total: number; truncated: boolean }
+    }
+  } {
+    return updateAiItemKnowledge(this.deps, this.deps.state, playerId, item, signal, mode)
+  }
 
   revealPrivateIntelBatch(
-    playerId: string, mode: string, count: number, category: string | null,
-    allowCategoryFallback = false, sortStrategy: string | null,
+    playerId: string,
+    mode: string,
+    count: number,
+    category: string | null,
+    allowCategoryFallback = false,
+    sortStrategy: string | null
   ): ReturnType<typeof revealPrivateIntelBatch> {
-    return revealPrivateIntelBatch(this.deps, this.deps.state, playerId, mode, count, category, allowCategoryFallback, sortStrategy)
+    return revealPrivateIntelBatch(
+      this.deps,
+      this.deps.state,
+      playerId,
+      mode,
+      count,
+      category,
+      allowCategoryFallback,
+      sortStrategy
+    )
   }
 
   revealPrivateIntelFully(
     playerId: string,
-    opts: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean },
+    opts: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }
   ): ReturnType<typeof revealPrivateIntelFully> {
     return revealPrivateIntelFully(this.deps, this.deps.state, playerId, opts)
   }
 
   pickPrivateRevealTargets(opts: {
-    playerId: string; mode: string; count: number; category: string | null
-    allowCategoryFallback?: boolean; sortStrategy: string | null
-  }): Artifact[] { return pickPrivateRevealTargets(this.deps, this.deps.state, opts) }
+    playerId: string
+    mode: string
+    count: number
+    category: string | null
+    allowCategoryFallback?: boolean
+    sortStrategy: string | null
+  }): Artifact[] {
+    return pickPrivateRevealTargets(this.deps, this.deps.state, opts)
+  }
 
   // ═════════════ 面板渲染方法（panel-fns.ts） ═════════════
 
-  getPlayerById(playerId: number | string): Player | null { return getPlayerById(this.deps, playerId) }
+  getPlayerById(playerId: number | string): Player | null {
+    return getPlayerById(this.deps, playerId)
+  }
 
   getAiNeighborStateLabel(playerId: string | number, x: number, y: number): string {
     return getAiNeighborStateLabel(this.deps, this.deps.state, playerId, x, y)
@@ -343,8 +420,12 @@ export class AiIntelManager {
   }
 
   buildTrackCandidatePreview(revealState: {
-    qualityKey: string | null; category: string | null; sizeTag: string | null
-  }): ReturnType<typeof buildTrackCandidatePreview> { return buildTrackCandidatePreview(this.deps, revealState) }
+    qualityKey: string | null
+    category: string | null
+    sizeTag: string | null
+  }): ReturnType<typeof buildTrackCandidatePreview> {
+    return buildTrackCandidatePreview(this.deps, revealState)
+  }
 
   buildAiHighValueTrackBlock(playerId: string): ReturnType<typeof buildAiHighValueTrackBlock> {
     return buildAiHighValueTrackBlock(this.deps, this.deps.state, playerId)
@@ -356,20 +437,35 @@ export class AiIntelManager {
 
   // ═════════════ 动作执行方法（action-fns.ts） ═════════════
 
-  executeAiIntelAction(playerId: string, plan: IntelActionPlan): RevealResult & {
+  executeAiIntelAction(
+    playerId: string,
+    plan: IntelActionPlan
+  ): RevealResult & {
     signalStats?: { aggregate: AiSignalStats; latest: AiSignalStats }
-  } { return executeAiIntelAction(this.deps, playerId, plan) }
+  } {
+    return executeAiIntelAction(this.deps, playerId, plan)
+  }
 
-  processAiIntelActions(): Promise<void> { return processAiIntelActions(this.deps) }
+  processAiIntelActions(): Promise<void> {
+    return processAiIntelActions(this.deps)
+  }
 
   processSingleAiIntelAction(
-    player: Player, plan?: IntelActionPlan, llmPlan?: LlmPlanResult | null,
-    roundProgress?: number, batchId?: string, batchStartTime?: number,
-  ): Promise<void> { return processSingleAiIntelAction(this.deps, player, plan, llmPlan, roundProgress, batchId, batchStartTime) }
+    player: Player,
+    plan?: IntelActionPlan,
+    llmPlan?: LlmPlanResult | null,
+    roundProgress?: number,
+    batchId?: string,
+    batchStartTime?: number
+  ): Promise<void> {
+    return processSingleAiIntelAction(this.deps, player, plan, llmPlan, roundProgress, batchId, batchStartTime)
+  }
 
   formatAiIntelActionPublicLine(entry: LastAiIntelAction): string {
     return formatAiIntelActionPublicLine(this.deps, entry)
   }
 
-  canUseIntelActions(): boolean { return canUseIntelActions(this.deps) }
+  canUseIntelActions(): boolean {
+    return canUseIntelActions(this.deps)
+  }
 }

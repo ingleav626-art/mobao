@@ -97,10 +97,7 @@ export function createSettlementBridge(deps: SettlementDeps) {
         .filter((item) => item.revealed.settlementPreRevealed)
         .reduce((sum, item) => sum + item.trueValue, 0)
 
-      this.updateSettlementPanelMetrics(
-        revealedValue,
-        revealedValue - (this.settlementSession?.winnerBid ?? 0)
-      )
+      this.updateSettlementPanelMetrics(revealedValue, revealedValue - (this.settlementSession?.winnerBid ?? 0))
       this.setSettlementProgress(
         `正在揭示藏品 ${revealedCount}/${totalCount}，点击游戏区可跳过。`,
         revealedCount / totalCount
@@ -141,10 +138,7 @@ export function createSettlementBridge(deps: SettlementDeps) {
             }
           }
           revealedValue = this.warehouseTrueValue
-          this.updateSettlementPanelMetrics(
-            revealedValue,
-            revealedValue - (this.settlementSession?.winnerBid ?? 0)
-          )
+          this.updateSettlementPanelMetrics(revealedValue, revealedValue - (this.settlementSession?.winnerBid ?? 0))
           this.setSettlementProgress(`已快速揭示全部藏品 ${totalCount}/${totalCount}`, 1)
           break
         }
@@ -176,10 +170,7 @@ export function createSettlementBridge(deps: SettlementDeps) {
 
         revealedValue += item.trueValue
         revealedCount += 1
-        this.updateSettlementPanelMetrics(
-          revealedValue,
-          revealedValue - (this.settlementSession?.winnerBid ?? 0)
-        )
+        this.updateSettlementPanelMetrics(revealedValue, revealedValue - (this.settlementSession?.winnerBid ?? 0))
         this.setSettlementProgress(
           `正在揭示藏品 ${revealedCount}/${totalCount}：${item.name}`,
           revealedCount / totalCount
@@ -388,7 +379,11 @@ export function createSettlementBridge(deps: SettlementDeps) {
      * @param {string} reasonText - 获胜原因描述
      * @returns {void}
      */
-    enterSettlementPage(winnerPlayer: { id?: string; name?: string;[key: string]: unknown }, winnerBid: number, reasonText: string) {
+    enterSettlementPage(
+      winnerPlayer: { id?: string; name?: string; [key: string]: unknown },
+      winnerBid: number,
+      reasonText: string
+    ) {
       this.settlementSession = {
         winnerId: winnerPlayer.id,
         winnerName: winnerPlayer.name,
@@ -473,12 +468,7 @@ export function createSettlementBridge(deps: SettlementDeps) {
       const settlePage = this.dom.settlementPage
       if (settlePage) {
         settlePage.classList.add("hidden")
-        settlePage.classList.remove(
-          "settle-slide-in",
-          "settle-glow",
-          "settle-glow-enhanced",
-          "settle-screen-shake"
-        )
+        settlePage.classList.remove("settle-slide-in", "settle-glow", "settle-glow-enhanced", "settle-screen-shake")
       }
       const profitEl = this.dom.settleWinnerProfit
       if (profitEl) {

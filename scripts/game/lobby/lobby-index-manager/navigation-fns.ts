@@ -67,8 +67,7 @@ export function showLobbySubPage(deps: LobbyIndexManagerDeps, state: LobbyIndexS
 
     const roomPanel = document.getElementById("lobbyOnlineRoom")
     const connectPanel = document.getElementById("lobbyOnlineConnect")
-    const isInRoom =
-      deps.lanBridge && deps.lanBridge.roomCode && roomPanel && !roomPanel.classList.contains("hidden")
+    const isInRoom = deps.lanBridge && deps.lanBridge.roomCode && roomPanel && !roomPanel.classList.contains("hidden")
 
     if (!isInRoom) {
       if (roomPanel) roomPanel.classList.add("hidden")

@@ -9,6 +9,26 @@
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { AiThoughtLogEntry, BattleRecordDeps } from "./types"
 import { parsePanelTextToHtml, formatRecordTime } from "./pure"
+import { useBattleRecordStore } from "../../../vue/stores/battleRecordStore"
+
+// 同步到 Vue battleRecordStore（try/catch 兼容非 Vue 环境）
+function syncStoreOpenLogs(recordId: string, page: number): void {
+  try {
+    const store = useBattleRecordStore()
+    store.openLogs(recordId, page)
+  } catch {
+    // 非 Vue 环境或 store 未加载，静默忽略
+  }
+}
+
+function syncStoreCloseLogs(): void {
+  try {
+    const store = useBattleRecordStore()
+    store.closeLogs()
+  } catch {
+    // 非 Vue 环境或 store 未加载，静默忽略
+  }
+}
 
 export function createLogViewSlice(deps: BattleRecordDeps): {
   methods: ThisType<WarehouseSceneThis>
@@ -29,11 +49,16 @@ export function createLogViewSlice(deps: BattleRecordDeps): {
         page: Math.max(1, Math.round(Number(page) || 1))
       }
       this.renderBattleRecordLogView(recordId)
+      // 同步到 Vue store
+      const pageNum = Math.max(1, Math.round(Number(page) || 1))
+      syncStoreOpenLogs(recordId, pageNum)
     },
 
     closeBattleRecordLogs() {
       this.battleRecordLogView = null
       this.renderBattleRecordPanel()
+      // 同步到 Vue store
+      syncStoreCloseLogs()
     },
 
     renderBattleRecordLogView(recordId?: string) {
@@ -72,9 +97,14 @@ export function createLogViewSlice(deps: BattleRecordDeps): {
       const winnerName = record.winnerName || "未知玩家"
       const runNo =
         record.logs && Number.isFinite(Number(record.logs.runNo)) ? Math.round(Number(record.logs.runNo)) : null
-      const aiThoughtLogs: AiThoughtLogEntry[] = record.logs && Array.isArray(record.logs.aiThoughtLogs) ? record.logs.aiThoughtLogs as AiThoughtLogEntry[] : []
-      const roundLogsByRound: Record<string, string[]> = record.logs && record.logs.roundLogsByRound ? record.logs.roundLogsByRound as Record<string, string[]> : {}
-      const roundPanelTexts: Record<string, string> = record.logs && record.logs.roundPanelTexts ? record.logs.roundPanelTexts : {}
+      const aiThoughtLogs: AiThoughtLogEntry[] =
+        record.logs && Array.isArray(record.logs.aiThoughtLogs)
+          ? (record.logs.aiThoughtLogs as AiThoughtLogEntry[])
+          : []
+      const roundLogsByRound: Record<string, string[]> =
+        record.logs && record.logs.roundLogsByRound ? (record.logs.roundLogsByRound as Record<string, string[]>) : {}
+      const roundPanelTexts: Record<string, string> =
+        record.logs && record.logs.roundPanelTexts ? record.logs.roundPanelTexts : {}
 
       const roundSet = new Set<number>()
       aiThoughtLogs.forEach((e) => {
@@ -103,7 +133,9 @@ export function createLogViewSlice(deps: BattleRecordDeps): {
       if (maxRound > 0) {
         const roundPanelText = roundPanelTexts[String(currentPage)]
         const roundThoughts = aiThoughtLogs.filter((e) => e.round === currentPage)
-        const roundActionLogs: string[] = Array.isArray(roundLogsByRound[String(currentPage)]) ? roundLogsByRound[String(currentPage)] as string[] : []
+        const roundActionLogs: string[] = Array.isArray(roundLogsByRound[String(currentPage)])
+          ? (roundLogsByRound[String(currentPage)] as string[])
+          : []
 
         const lines: string[] = []
         lines.push(`<div class="ai-round-header">第 ${currentPage} 轮 / 共 ${maxRound} 轮</div>`)
@@ -123,9 +155,13 @@ export function createLogViewSlice(deps: BattleRecordDeps): {
             const badgeClass = isLlm ? "badge-llm" : "badge-rule"
             const badgeText = isLlm ? "大模型" : "规则AI"
             lines.push(`<div class="ai-player-card" style="margin:6px 0;">`)
-            lines.push(`<div class="ai-player-card-header"><span class="player-name">${escapeHtml(entry.playerName || "AI")}</span><span class="control-badge ${badgeClass}">${badgeText}</span></div>`)
+            lines.push(
+              `<div class="ai-player-card-header"><span class="player-name">${escapeHtml(entry.playerName || "AI")}</span><span class="control-badge ${badgeClass}">${badgeText}</span></div>`
+            )
             lines.push(`<div class="ai-player-card-body">`)
-            lines.push(`<div class="ai-decision-summary"><span class="label">出价</span><span class="value bid-value">${formatBidRevealNumber(entry.finalBid ?? 0)}</span><span class="label">来源</span><span class="value">${escapeHtml(entry.decisionSource || "?")}</span></div>`)
+            lines.push(
+              `<div class="ai-decision-summary"><span class="label">出价</span><span class="value bid-value">${formatBidRevealNumber(entry.finalBid ?? 0)}</span><span class="label">来源</span><span class="value">${escapeHtml(entry.decisionSource || "?")}</span></div>`
+            )
             if (isLlm) {
               const cacheHit = entry.cacheHitTokens || 0
               const cacheMiss = entry.cacheMissTokens || 0
@@ -141,7 +177,9 @@ export function createLogViewSlice(deps: BattleRecordDeps): {
               lines.push(`<div class="ai-error-box">错误: ${escapeHtml(entry.error)}</div>`)
             }
             if (entry.thought) {
-              lines.push(`<div class="ai-thought-box"><div class="thought-label">思考</div>${escapeHtml(entry.thought)}</div>`)
+              lines.push(
+                `<div class="ai-thought-box"><div class="thought-label">思考</div>${escapeHtml(entry.thought)}</div>`
+              )
             }
             lines.push(`</div></div>`)
           })

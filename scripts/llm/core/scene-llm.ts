@@ -17,9 +17,9 @@
  * @requires llm/core/llm-prompt - Prompt 构建模块
  * @requires llm/core/llm-decision - 决策模块
  */
-import { createLlmSettingsModule } from './llm-settings.js'
-import { createLlmPromptModule } from './llm-prompt.js'
-import { createLlmDecisionModule } from './llm-decision.js'
+import { createLlmSettingsModule } from "./llm-settings.js"
+import { createLlmPromptModule } from "./llm-prompt.js"
+import { createLlmDecisionModule } from "./llm-decision.js"
 
 /**
  * 创建场景 LLM 桥接器

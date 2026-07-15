@@ -40,7 +40,12 @@ export function hasAnyInfo(item: { revealed: { outline: boolean; qualityCell: un
   return item.revealed.outline || Boolean(item.revealed.qualityCell)
 }
 
-export function getItemKnownText(item: { revealed: { outline: boolean; qualityCell: unknown }; quality: { label: string }; w: number; h: number }): string {
+export function getItemKnownText(item: {
+  revealed: { outline: boolean; qualityCell: unknown }
+  quality: { label: string }
+  w: number
+  h: number
+}): string {
   const segments: string[] = []
   if (item.revealed.qualityCell) {
     segments.push(`品质=${item.quality.label}`)
@@ -80,9 +85,17 @@ export function pickBottomCellFromTargets(
 
 export type RevealMode = "outline" | "quality"
 
-export function pickRevealTargets<T extends { id: string; category: string; revealed: { outline: boolean; qualityCell: unknown }; w: number; h: number }>(
+export function pickRevealTargets<
+  T extends { id: string; category: string; revealed: { outline: boolean; qualityCell: unknown }; w: number; h: number }
+>(
   items: T[],
-  opts: { mode: RevealMode; count: number; category: string | null; allowCategoryFallback: boolean; sortStrategy: string | null }
+  opts: {
+    mode: RevealMode
+    count: number
+    category: string | null
+    allowCategoryFallback: boolean
+    sortStrategy: string | null
+  }
 ): T[] {
   const { mode, count, category, allowCategoryFallback, sortStrategy } = opts
 

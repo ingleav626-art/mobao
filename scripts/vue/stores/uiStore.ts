@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia"
 
-export const useUiStore = defineStore('ui', {
+export const useUiStore = defineStore("ui", {
   state: () => ({
     // 面板开关
     settingsOpen: false,
@@ -19,9 +19,44 @@ export const useUiStore = defineStore('ui', {
     settingsInitialValues: "",
     gameConfirmCallback: null as (() => void) | null,
     gameCancelCallback: null as (() => void) | null,
+
+    // 确认对话框状态
+    confirmMessage: "",
+    confirmVisible: false,
+    confirmCallback: null as (() => void) | null,
+    cancelCallback: null as (() => void) | null,
+
+    // 信息弹窗状态
+    infoPopupTitle: "",
+    infoPopupContent: "",
+    infoPopupVisible: false
   }),
 
   actions: {
-    // Phase 2 填充
-  },
+    showConfirm(message: string, onConfirm: () => void, onCancel?: () => void): void {
+      this.confirmMessage = message
+      this.confirmCallback = onConfirm
+      this.cancelCallback = onCancel ?? null
+      this.confirmVisible = true
+    },
+
+    hideConfirm(): void {
+      this.confirmVisible = false
+      this.confirmMessage = ""
+      this.confirmCallback = null
+      this.cancelCallback = null
+    },
+
+    showInfoPopup(title: string, content: string): void {
+      this.infoPopupTitle = title
+      this.infoPopupContent = content
+      this.infoPopupVisible = true
+    },
+
+    hideInfoPopup(): void {
+      this.infoPopupVisible = false
+      this.infoPopupTitle = ""
+      this.infoPopupContent = ""
+    }
+  }
 })

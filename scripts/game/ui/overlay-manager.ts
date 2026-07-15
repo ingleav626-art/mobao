@@ -8,15 +8,63 @@
 import type { RunLog } from "../ai/decision"
 import type { CrossGameMemory } from "../../../types/ai"
 
-import { hideSettleOverlay, showSettleOverlay, openAiLogicPanel, closeAiLogicPanel, renderAiThoughtLog, openShopOverlay, closeShopOverlay } from "./overlay-manager/core-fns"
-import { showInfoPopup, hideInfoPopup, showPlayerInfoPopover, positionPlayerInfoPopover, hidePlayerInfoPopover } from "./overlay-manager/info-popup-fns"
-import { showItemDetailPopup, hideItemDetailPopup, showCharacterInfoPopup, hideCharacterInfoPopup } from "./overlay-manager/detail-popup-fns"
+import {
+  hideSettleOverlay,
+  showSettleOverlay,
+  openAiLogicPanel,
+  closeAiLogicPanel,
+  renderAiThoughtLog,
+  openShopOverlay,
+  closeShopOverlay
+} from "./overlay-manager/core-fns"
+import {
+  showInfoPopup,
+  hideInfoPopup,
+  showPlayerInfoPopover,
+  positionPlayerInfoPopover,
+  hidePlayerInfoPopover
+} from "./overlay-manager/info-popup-fns"
+import {
+  showItemDetailPopup,
+  hideItemDetailPopup,
+  showCharacterInfoPopup,
+  hideCharacterInfoPopup
+} from "./overlay-manager/detail-popup-fns"
 import { showGameConfirm, hideGameConfirm } from "./overlay-manager/confirm-dialog-fns"
-import { openSettingsOverlay, closeSettingsOverlay, isSettingsOverlayOpen, settingsInputId, fillSettingsForm, readSettingsForm, setSettingsStatus, saveSettingsFromOverlay } from "./overlay-manager/settings-fns"
-import { showLanRestartVoteDialog, removeLanRestartDialog, showLanRestartWaitingDialog, showLanRestartDeclinedDialog, showLanPauseOverlay, hideLanPauseOverlay } from "./overlay-manager/lan-dialog-fns"
-import { loadAiModelConfigs, saveAiModelConfigs, openAiModelConfigOverlay, closeAiModelConfigOverlay, renderAiModelConfigContent, saveAiModelConfigFromForm, getAiModelConfig } from "./overlay-manager/ai-config-fns"
+import {
+  openSettingsOverlay,
+  closeSettingsOverlay,
+  isSettingsOverlayOpen,
+  settingsInputId,
+  fillSettingsForm,
+  readSettingsForm,
+  setSettingsStatus,
+  saveSettingsFromOverlay
+} from "./overlay-manager/settings-fns"
+import {
+  showLanRestartVoteDialog,
+  removeLanRestartDialog,
+  showLanRestartWaitingDialog,
+  showLanRestartDeclinedDialog,
+  showLanPauseOverlay,
+  hideLanPauseOverlay
+} from "./overlay-manager/lan-dialog-fns"
+import {
+  loadAiModelConfigs,
+  saveAiModelConfigs,
+  openAiModelConfigOverlay,
+  closeAiModelConfigOverlay,
+  renderAiModelConfigContent,
+  saveAiModelConfigFromForm,
+  getAiModelConfig
+} from "./overlay-manager/ai-config-fns"
 import { openAiMemoryPanel, setupAiMemoryTouchScroll, closeAiMemoryPanel } from "./overlay-manager/ai-memory-fns"
-import { updateReflectionStatusUI, showReflectionPendingDialog, showReflectionPendingDialogForBack, removeReflectionPendingDialog } from "./overlay-manager/ai-reflection-fns"
+import {
+  updateReflectionStatusUI,
+  showReflectionPendingDialog,
+  showReflectionPendingDialogForBack,
+  removeReflectionPendingDialog
+} from "./overlay-manager/ai-reflection-fns"
 
 /** 联机桥最小接口（仅约束 send 方法） */
 export type OverlayLanBridge = { send: (msg: unknown) => void } | null
@@ -115,69 +163,165 @@ export class UiOverlayManager {
   constructor(private readonly deps: UiOverlayManagerDeps) {}
 
   // ==================== CoreOverlayMixin ====================
-  hideSettleOverlay(): void { hideSettleOverlay(this.deps) }
-  showSettleOverlay(html: string): void { showSettleOverlay(this.deps, html) }
-  openAiLogicPanel(): void { openAiLogicPanel(this.deps) }
-  closeAiLogicPanel(): void { closeAiLogicPanel(this.deps) }
-  renderAiThoughtLog(): void { renderAiThoughtLog(this.deps) }
-  openShopOverlay(): void { openShopOverlay(this.deps) }
-  closeShopOverlay(): void { closeShopOverlay(this.deps) }
+  hideSettleOverlay(): void {
+    hideSettleOverlay(this.deps)
+  }
+  showSettleOverlay(html: string): void {
+    showSettleOverlay(this.deps, html)
+  }
+  openAiLogicPanel(): void {
+    openAiLogicPanel(this.deps)
+  }
+  closeAiLogicPanel(): void {
+    closeAiLogicPanel(this.deps)
+  }
+  renderAiThoughtLog(): void {
+    renderAiThoughtLog(this.deps)
+  }
+  openShopOverlay(): void {
+    openShopOverlay(this.deps)
+  }
+  closeShopOverlay(): void {
+    closeShopOverlay(this.deps)
+  }
 
   // ==================== InfoPopupMixin ====================
-  showInfoPopup(title: string, sourceScrollEl: HTMLElement | null): void { showInfoPopup(this.deps, title, sourceScrollEl) }
-  hideInfoPopup(): void { hideInfoPopup(this.deps) }
-  showPlayerInfoPopover(title: string, htmlContent: string, x: number, y: number): void { showPlayerInfoPopover(title, htmlContent, x, y) }
-  positionPlayerInfoPopover(x: number, y: number): void { positionPlayerInfoPopover(x, y) }
-  hidePlayerInfoPopover(): void { hidePlayerInfoPopover() }
+  showInfoPopup(title: string, sourceScrollEl: HTMLElement | null): void {
+    showInfoPopup(this.deps, title, sourceScrollEl)
+  }
+  hideInfoPopup(): void {
+    hideInfoPopup(this.deps)
+  }
+  showPlayerInfoPopover(title: string, htmlContent: string, x: number, y: number): void {
+    showPlayerInfoPopover(title, htmlContent, x, y)
+  }
+  positionPlayerInfoPopover(x: number, y: number): void {
+    positionPlayerInfoPopover(x, y)
+  }
+  hidePlayerInfoPopover(): void {
+    hidePlayerInfoPopover()
+  }
 
   // ==================== DetailPopupMixin ====================
-  showItemDetailPopup(itemId: string, itemName: string | null, x: number, y: number): void { showItemDetailPopup(itemId, itemName, x, y) }
-  hideItemDetailPopup(): void { hideItemDetailPopup() }
-  showCharacterInfoPopup(playerId: string, x: number, y: number): void { showCharacterInfoPopup(this.deps, playerId, x, y) }
-  hideCharacterInfoPopup(): void { hideCharacterInfoPopup() }
+  showItemDetailPopup(itemId: string, itemName: string | null, x: number, y: number): void {
+    showItemDetailPopup(itemId, itemName, x, y)
+  }
+  hideItemDetailPopup(): void {
+    hideItemDetailPopup()
+  }
+  showCharacterInfoPopup(playerId: string, x: number, y: number): void {
+    showCharacterInfoPopup(this.deps, playerId, x, y)
+  }
+  hideCharacterInfoPopup(): void {
+    hideCharacterInfoPopup()
+  }
 
   // ==================== ConfirmDialogMixin ====================
-  showGameConfirm(message: string, onConfirm: () => void, onCancel?: () => void): void { showGameConfirm(this.deps, this.state, message, onConfirm, onCancel) }
-  hideGameConfirm(): void { hideGameConfirm(this.deps, this.state) }
+  showGameConfirm(message: string, onConfirm: () => void, onCancel?: () => void): void {
+    showGameConfirm(this.deps, this.state, message, onConfirm, onCancel)
+  }
+  hideGameConfirm(): void {
+    hideGameConfirm(this.deps, this.state)
+  }
   /** 供 events-overlay 读取确认回调（由 Manager 的 showGameConfirm 写入 state） */
-  getGameConfirmCallback(): (() => void) | null { return this.state.gameConfirmCallback }
-  getGameCancelCallback(): (() => void) | null { return this.state.gameCancelCallback }
+  getGameConfirmCallback(): (() => void) | null {
+    return this.state.gameConfirmCallback
+  }
+  getGameCancelCallback(): (() => void) | null {
+    return this.state.gameCancelCallback
+  }
 
   // ==================== SettingsMixin ====================
-  openSettingsOverlay(): void { openSettingsOverlay(this.deps, this.state) }
-  closeSettingsOverlay(keepStatus: boolean = false, forceClose: boolean = false): void { closeSettingsOverlay(this.deps, this.state, keepStatus, forceClose) }
-  isSettingsOverlayOpen(): boolean { return isSettingsOverlayOpen(this.deps) }
-  settingsInputId(field: string): string { return settingsInputId(field) }
-  fillSettingsForm(values: Record<string, unknown>): void { fillSettingsForm(values) }
-  readSettingsForm(): Record<string, unknown> { return readSettingsForm() }
-  setSettingsStatus(text: string, saved: boolean): void { setSettingsStatus(this.deps, text, saved) }
-  saveSettingsFromOverlay(): void { saveSettingsFromOverlay(this.deps, this.state) }
+  openSettingsOverlay(): void {
+    openSettingsOverlay(this.deps, this.state)
+  }
+  closeSettingsOverlay(keepStatus: boolean = false, forceClose: boolean = false): void {
+    closeSettingsOverlay(this.deps, this.state, keepStatus, forceClose)
+  }
+  isSettingsOverlayOpen(): boolean {
+    return isSettingsOverlayOpen(this.deps)
+  }
+  settingsInputId(field: string): string {
+    return settingsInputId(field)
+  }
+  fillSettingsForm(values: Record<string, unknown>): void {
+    fillSettingsForm(values)
+  }
+  readSettingsForm(): Record<string, unknown> {
+    return readSettingsForm()
+  }
+  setSettingsStatus(text: string, saved: boolean): void {
+    setSettingsStatus(this.deps, text, saved)
+  }
+  saveSettingsFromOverlay(): void {
+    saveSettingsFromOverlay(this.deps, this.state)
+  }
 
   // ==================== LanDialogMixin ====================
-  showLanRestartVoteDialog(hostName: string): void { showLanRestartVoteDialog(this.deps, hostName) }
-  removeLanRestartDialog(): void { removeLanRestartDialog() }
-  showLanRestartWaitingDialog(): void { showLanRestartWaitingDialog(this.deps) }
-  showLanRestartDeclinedDialog(declinerName: string): void { showLanRestartDeclinedDialog(declinerName) }
-  showLanPauseOverlay(): void { showLanPauseOverlay(this.deps) }
-  hideLanPauseOverlay(): void { hideLanPauseOverlay() }
+  showLanRestartVoteDialog(hostName: string): void {
+    showLanRestartVoteDialog(this.deps, hostName)
+  }
+  removeLanRestartDialog(): void {
+    removeLanRestartDialog()
+  }
+  showLanRestartWaitingDialog(): void {
+    showLanRestartWaitingDialog(this.deps)
+  }
+  showLanRestartDeclinedDialog(declinerName: string): void {
+    showLanRestartDeclinedDialog(declinerName)
+  }
+  showLanPauseOverlay(): void {
+    showLanPauseOverlay(this.deps)
+  }
+  hideLanPauseOverlay(): void {
+    hideLanPauseOverlay()
+  }
 
   // ==================== AiModelConfigMixin ====================
-  loadAiModelConfigs(): Record<string, string | null> { return loadAiModelConfigs() }
-  saveAiModelConfigs(configs: Record<string, string | null>): void { saveAiModelConfigs(configs) }
-  openAiModelConfigOverlay(): void { openAiModelConfigOverlay(this.deps) }
-  closeAiModelConfigOverlay(): void { closeAiModelConfigOverlay() }
-  renderAiModelConfigContent(): void { renderAiModelConfigContent(this.deps) }
-  saveAiModelConfigFromForm(): void { saveAiModelConfigFromForm(this.deps) }
-  getAiModelConfig(aiIndex: number): Record<string, unknown> | null { return getAiModelConfig(aiIndex) }
+  loadAiModelConfigs(): Record<string, string | null> {
+    return loadAiModelConfigs()
+  }
+  saveAiModelConfigs(configs: Record<string, string | null>): void {
+    saveAiModelConfigs(configs)
+  }
+  openAiModelConfigOverlay(): void {
+    openAiModelConfigOverlay(this.deps)
+  }
+  closeAiModelConfigOverlay(): void {
+    closeAiModelConfigOverlay()
+  }
+  renderAiModelConfigContent(): void {
+    renderAiModelConfigContent(this.deps)
+  }
+  saveAiModelConfigFromForm(): void {
+    saveAiModelConfigFromForm(this.deps)
+  }
+  getAiModelConfig(aiIndex: number): Record<string, unknown> | null {
+    return getAiModelConfig(aiIndex)
+  }
 
   // ==================== AiMemoryPanelMixin ====================
-  openAiMemoryPanel(): void { openAiMemoryPanel(this.deps, this.state) }
-  setupAiMemoryTouchScroll(): void { setupAiMemoryTouchScroll(this.deps) }
-  closeAiMemoryPanel(): void { closeAiMemoryPanel(this.deps) }
+  openAiMemoryPanel(): void {
+    openAiMemoryPanel(this.deps, this.state)
+  }
+  setupAiMemoryTouchScroll(): void {
+    setupAiMemoryTouchScroll(this.deps)
+  }
+  closeAiMemoryPanel(): void {
+    closeAiMemoryPanel(this.deps)
+  }
 
   // ==================== AiReflectionDialogMixin ====================
-  updateReflectionStatusUI(): void { updateReflectionStatusUI(this.deps) }
-  showReflectionPendingDialog(): void { showReflectionPendingDialog(this.deps) }
-  showReflectionPendingDialogForBack(): void { showReflectionPendingDialogForBack(this.deps) }
-  removeReflectionPendingDialog(): void { removeReflectionPendingDialog() }
+  updateReflectionStatusUI(): void {
+    updateReflectionStatusUI(this.deps)
+  }
+  showReflectionPendingDialog(): void {
+    showReflectionPendingDialog(this.deps)
+  }
+  showReflectionPendingDialogForBack(): void {
+    showReflectionPendingDialogForBack(this.deps)
+  }
+  removeReflectionPendingDialog(): void {
+    removeReflectionPendingDialog()
+  }
 }

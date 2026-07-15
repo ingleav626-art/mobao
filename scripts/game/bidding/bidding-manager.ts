@@ -8,8 +8,25 @@
 import type { Player, Artifact } from "../../../types/game"
 import type { IntelSummary } from "../../../types/ai"
 
-import { resolveRoundBids, buildRoundBids, revealRoundBidsSequential, setPlayerBidDisplay, settleCurrentRun, kickoffAiRoundDecisions, waitUntilResumed } from "./bidding-manager/flow-fns"
-import { setPlayerBidReady, areAllPlayersBidReady, openBidKeypad, closeBidKeypad, syncBidKeypadScreen, updateKeypadDirectHint, handleBidKeyInput, playerBid } from "./bidding-manager/keypad-fns"
+import {
+  resolveRoundBids,
+  buildRoundBids,
+  revealRoundBidsSequential,
+  setPlayerBidDisplay,
+  settleCurrentRun,
+  kickoffAiRoundDecisions,
+  waitUntilResumed
+} from "./bidding-manager/flow-fns"
+import {
+  setPlayerBidReady,
+  areAllPlayersBidReady,
+  openBidKeypad,
+  closeBidKeypad,
+  syncBidKeypadScreen,
+  updateKeypadDirectHint,
+  handleBidKeyInput,
+  playerBid
+} from "./bidding-manager/keypad-fns"
 
 /** AI 出价引擎最小接口（仅约束 buildAIBids 方法） */
 export interface BiddingAiEngine {

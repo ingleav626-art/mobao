@@ -17,9 +17,7 @@
  * @exports CHARACTERS, getCharacterById, ... - 命名导出
  */
 
-
-
-import type { Character, PassiveEffect } from '../../../types/game'
+import type { Character, PassiveEffect } from "../../../types/game"
 
 export const CHARACTERS: Character[] = [
   {

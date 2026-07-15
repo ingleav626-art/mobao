@@ -28,7 +28,9 @@ export function startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB
   if (loadingPlaceholder) loadingPlaceholder.classList.add("visible")
 
   var hasRVFC = "requestVideoFrameCallback" in HTMLVideoElement.prototype
-  var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
+  var isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768
   var PREWARM_TIME = isMobile ? 5.0 : 2.0
   var SWITCH_TIME = isMobile ? 4.0 : 0.033
 
@@ -43,15 +45,22 @@ export function startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB
     rafId: null,
     loadRetries: 0,
     maxRetries: 3,
-    loadTimeout: null,
+    loadTimeout: null
   }
   _lanLive2dState = state
 
-  var getCurrent = function () { return state.current === "A" ? videoA : videoB }
-  var getNext = function () { return state.current === "A" ? videoB : videoA }
+  var getCurrent = function () {
+    return state.current === "A" ? videoA : videoB
+  }
+  var getNext = function () {
+    return state.current === "A" ? videoB : videoA
+  }
 
   var clearLoadTimeout = function () {
-    if (state.loadTimeout) { clearTimeout(state.loadTimeout); state.loadTimeout = null }
+    if (state.loadTimeout) {
+      clearTimeout(state.loadTimeout)
+      state.loadTimeout = null
+    }
   }
 
   var retryLoad = function () {
@@ -91,7 +100,10 @@ export function startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB
   setupLoadTimeout()
 
   var stopPolling = function () {
-    if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null }
+    if (state.rafId) {
+      cancelAnimationFrame(state.rafId)
+      state.rafId = null
+    }
   }
 
   var startPolling = function () {
@@ -116,12 +128,14 @@ export function startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB
       var waitSeek = function () {
         if (!state.running) return
         if (next.readyState >= 3) {
-          next.play().catch(function () { })
+          next.play().catch(function () {})
           if (hasRVFC) {
-            ;(next as unknown as { requestVideoFrameCallback: (cb: () => void) => void }).requestVideoFrameCallback(function () {
-              next.pause()
-              markFrameReady()
-            })
+            ;(next as unknown as { requestVideoFrameCallback: (cb: () => void) => void }).requestVideoFrameCallback(
+              function () {
+                next.pause()
+                markFrameReady()
+              }
+            )
           } else {
             requestAnimationFrame(function () {
               next.pause()
@@ -136,12 +150,14 @@ export function startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB
       return
     }
 
-    next.play().catch(function () { })
+    next.play().catch(function () {})
     if (hasRVFC) {
-      ;(next as unknown as { requestVideoFrameCallback: (cb: () => void) => void }).requestVideoFrameCallback(function () {
-        next.pause()
-        markFrameReady()
-      })
+      ;(next as unknown as { requestVideoFrameCallback: (cb: () => void) => void }).requestVideoFrameCallback(
+        function () {
+          next.pause()
+          markFrameReady()
+        }
+      )
     } else {
       var checkFrame = function () {
         if (!state.running) return
@@ -165,7 +181,7 @@ export function startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB
 
     next.style.opacity = "1"
     next.classList.add("active")
-    next.play().catch(function () { })
+    next.play().catch(function () {})
 
     setTimeout(function () {
       current.pause()
@@ -221,13 +237,17 @@ export function startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB
     state.duration = videoA.duration
     if (loadingPlaceholder) loadingPlaceholder.classList.remove("visible")
     videoA.style.opacity = "1"
-    videoA.play().catch(function () { })
+    videoA.play().catch(function () {})
     startPolling()
     setTimeout(function () {
       if (!state.running) return
-      videoB.play().catch(function () { })
+      videoB.play().catch(function () {})
       if (hasRVFC) {
-        ;(videoB as unknown as { requestVideoFrameCallback: (cb: () => void) => void }).requestVideoFrameCallback(function () { videoB.pause() })
+        ;(videoB as unknown as { requestVideoFrameCallback: (cb: () => void) => void }).requestVideoFrameCallback(
+          function () {
+            videoB.pause()
+          }
+        )
       }
     }, 100)
   }

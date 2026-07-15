@@ -17,7 +17,7 @@
  *
  * @requires data/map-profiles - 地图配置数据
  */
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { getAllProfiles, getSelectedProfileId, setSelectedProfileId, getProfile } from "../data/map-profiles"
 
 export interface CarouselState {
@@ -128,7 +128,13 @@ export function renderMapDetail(): void {
   if (!profile) return
 
   const p = profile.params as unknown as Record<string, unknown> | undefined
-  const qualityLabels: Record<string, string> = { poor: "粗品", normal: "良品", fine: "精品", rare: "珍品", legendary: "绝品" }
+  const qualityLabels: Record<string, string> = {
+    poor: "粗品",
+    normal: "良品",
+    fine: "精品",
+    rare: "珍品",
+    legendary: "绝品"
+  }
   const toLevel = (v: number, thresholds: [number, string][]): string => {
     for (let i = 0; i < thresholds.length; i++) {
       if (v < thresholds[i][0]) return thresholds[i][1]
@@ -137,8 +143,7 @@ export function renderMapDetail(): void {
   }
   const qw: Record<string, number> = (p?.qualityWeights as Record<string, number>) || {}
   const totalQ = Object.values(qw).reduce((s: number, v: number) => s + v, 0) || 1
-  const highQ =
-    ((qw.fine || 0) + (qw.rare || 0) + (qw.legendary || 0)) / totalQ
+  const highQ = ((qw.fine || 0) + (qw.rare || 0) + (qw.legendary || 0)) / totalQ
   const lowQ = (qw.poor || 0) / totalQ
   const takeRatio = (p?.directTakeRatio as number) || 0.2
   const rounds = (p?.maxRounds as number) || 5
@@ -193,17 +198,17 @@ export function renderMapDetail(): void {
   detail.innerHTML = [
     '<div class="lobby-map-detail-title">' + profile.icon + " " + profile.name + "</div>",
     '<div class="lobby-map-detail-row"><span class="lobby-map-detail-label">回合数</span><span class="lobby-map-detail-value">' +
-    roundLevel +
-    "</span></div>",
+      roundLevel +
+      "</span></div>",
     '<div class="lobby-map-detail-row"><span class="lobby-map-detail-label">直接拿下</span><span class="lobby-map-detail-value">' +
-    takeLevel +
-    "</span></div>",
+      takeLevel +
+      "</span></div>",
     '<div class="lobby-map-detail-row"><span class="lobby-map-detail-label">高品质占比</span><span class="lobby-map-detail-value">' +
-    qualityLevel +
-    "</span></div>",
+      qualityLevel +
+      "</span></div>",
     '<div class="lobby-map-detail-row"><span class="lobby-map-detail-label">低品质占比</span><span class="lobby-map-detail-value">' +
-    lowLevel +
-    "</span></div>",
+      lowLevel +
+      "</span></div>",
     qualityLines,
     '<div class="lobby-map-detail-hint" id="mapDetailHint">↓ 向下滑动查看更多</div>'
   ].join("")
@@ -214,7 +219,10 @@ export function renderMapDetail(): void {
       const atBottom = detail.scrollHeight - detail.scrollTop <= detail.clientHeight + 4
       hint.style.display = atBottom ? "none" : ""
     }
-    detail.removeEventListener("scroll", (detail as unknown as Record<string, unknown>)._mapDetailScrollHandler as EventListener)
+    detail.removeEventListener(
+      "scroll",
+      (detail as unknown as Record<string, unknown>)._mapDetailScrollHandler as EventListener
+    )
     ;(detail as unknown as Record<string, unknown>)._mapDetailScrollHandler = checkScroll
     detail.addEventListener("scroll", checkScroll)
     requestAnimationFrame(checkScroll)

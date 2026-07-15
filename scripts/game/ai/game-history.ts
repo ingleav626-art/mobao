@@ -65,7 +65,9 @@ function saveStore(playerId: string, store: GameHistoryStore, isLan: boolean): v
   const key = isLan ? `${GAME_HISTORY_STORAGE_KEY}_lan_${playerId}` : `${GAME_HISTORY_STORAGE_KEY}_${playerId}`
   try {
     window.localStorage.setItem(key, JSON.stringify(store))
-  } catch { /* quota exceeded, ignore */ }
+  } catch {
+    /* quota exceeded, ignore */
+  }
 }
 
 function trimToWindow(records: GameRecord[], maxRecords: number): GameRecord[] {
@@ -75,7 +77,9 @@ function trimToWindow(records: GameRecord[], maxRecords: number): GameRecord[] {
 
 function buildContextBlock(record: GameRecord): string {
   const lines: string[] = []
-  lines.push(`${record.winnerName}以${record.winnerBid}中标，总值${record.totalValue}，利润${record.winnerProfit >= 0 ? "+" : ""}${record.winnerProfit}`)
+  lines.push(
+    `${record.winnerName}以${record.winnerBid}中标，总值${record.totalValue}，利润${record.winnerProfit >= 0 ? "+" : ""}${record.winnerProfit}`
+  )
 
   if (record.dividendTicket) {
     const dt = record.dividendTicket
@@ -87,7 +91,9 @@ function buildContextBlock(record: GameRecord): string {
   }
 
   const qc = record.qualityCounts
-  lines.push(`粗${qc.poor || 0} 良${qc.normal || 0} 精${qc.fine || 0} 珍${qc.rare || 0} 绝${qc.legendary || 0} | ${record.totalItems}件 ${record.totalCells}格`)
+  lines.push(
+    `粗${qc.poor || 0} 良${qc.normal || 0} 精${qc.fine || 0} 珍${qc.rare || 0} 绝${qc.legendary || 0} | ${record.totalItems}件 ${record.totalCells}格`
+  )
 
   if (record.aiDecisions && record.aiDecisions.length > 0) {
     record.aiDecisions.forEach((d) => {
@@ -138,7 +144,11 @@ export const MobaoGameHistory = {
     return loadStore(playerId, isLan).records.length
   },
 
-  buildContextMessages(playerId: string, maxGames: number, isLan: boolean = false): Array<{ role: string; content: string }> {
+  buildContextMessages(
+    playerId: string,
+    maxGames: number,
+    isLan: boolean = false
+  ): Array<{ role: string; content: string }> {
     const records = loadStore(playerId, isLan).records
     if (records.length === 0) return []
 
@@ -149,7 +159,12 @@ export const MobaoGameHistory = {
     return [{ role: "user", content }]
   },
 
-  buildReflectionContext(playerId: string, scope: string, currentRecord: GameRecord | null, isLan: boolean = false): string {
+  buildReflectionContext(
+    playerId: string,
+    scope: string,
+    currentRecord: GameRecord | null,
+    isLan: boolean = false
+  ): string {
     if (scope === "current") {
       return currentRecord ? buildContextBlock(currentRecord) : ""
     }
@@ -183,5 +198,4 @@ export const MobaoGameHistory = {
     }
   }
 }
-
-  ; (window as unknown as Record<string, unknown>).MobaoGameHistory = MobaoGameHistory
+;(window as unknown as Record<string, unknown>).MobaoGameHistory = MobaoGameHistory

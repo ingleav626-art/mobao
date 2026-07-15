@@ -15,6 +15,21 @@
 
 import { applyUse, resetEntries, type RevealResult } from "./def-manager-helpers"
 
+/** 技能执行上下文接口 */
+interface SkillExecContext {
+  revealOutline: (options: { count: number; category?: string; allowCategoryFallback?: boolean }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
+  revealQuality: (options: { count: number; category?: string; allowCategoryFallback?: boolean }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
+  revealAll: (options: { count: number; sortStrategy: string }) => { ok: boolean; revealed: number; message: string }
+}
+
 // 技能配置：控制每回合可用次数、揭露类型与数量。
 export const SKILL_DEFS = [
   {
@@ -22,8 +37,8 @@ export const SKILL_DEFS = [
     name: "技能-拓影侦测",
     description: "揭示3件藏品的完整轮廓。",
     maxPerRound: 99,
-    execute(context: any) {
-      return context.revealOutline({ count: 3 })
+    execute(context: unknown) {
+      return (context as SkillExecContext).revealOutline({ count: 3 })
     }
   },
   {
@@ -31,8 +46,8 @@ export const SKILL_DEFS = [
     name: "技能-玉脉鉴质",
     description: "优先对玉器揭示2件品质格，若不足则补其他品类。",
     maxPerRound: 99,
-    execute(context: any) {
-      return context.revealQuality({
+    execute(context: unknown) {
+      return (context as SkillExecContext).revealQuality({
         count: 2,
         category: "玉器",
         allowCategoryFallback: true
@@ -44,8 +59,8 @@ export const SKILL_DEFS = [
     name: "技能-鉴踪直取",
     description: "直接揭示轮廓最大的1件藏品的所有信息（不是价值最高）。",
     maxPerRound: 99,
-    execute(context: any) {
-      return context.revealAll({
+    execute(context: unknown) {
+      return (context as SkillExecContext).revealAll({
         count: 1,
         sortStrategy: "largestFirst"
       })
@@ -59,7 +74,7 @@ interface SkillRuntime {
   description: string
   maxPerRound: number
   remainingThisRound: number
-  execute: (context: any) => { ok: boolean; revealed: number; message?: string }
+  execute: (context: unknown) => { ok: boolean; revealed: number; message: string }
 }
 
 interface SkillState {
@@ -94,7 +109,7 @@ export class SkillManager {
     this.resetForNewRun()
   }
 
-  use(skillId: string, context: any): RevealResult {
+  use(skillId: string, context: unknown): RevealResult {
     return applyUse(skillId, context, {
       entries: this.skills,
       getRemaining: (e) => e.remainingThisRound,

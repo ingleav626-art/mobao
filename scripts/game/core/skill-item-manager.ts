@@ -12,8 +12,8 @@
  * @exports SkillItemManagerMixin - 技能/道具管理 Mixin
  * @exports 纯函数 - getItemInfo, getPlayerActionId, consumeActionState, wrapContextWithCharacterBonus
  */
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
-import type { SkillContext } from '../../../types/game'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { SkillContext } from "../../../types/game"
 
 import { SKILL_DEFS } from "../data/skills"
 import { ITEM_DEFS } from "../data/items"
@@ -36,7 +36,7 @@ export function getItemInfo(
 }
 
 export function getPlayerActionId(isLanMode: boolean, lanMySlotId: string | null): string {
-  return isLanMode ? (lanMySlotId || "p2") : "p2"
+  return isLanMode ? lanMySlotId || "p2" : "p2"
 }
 
 export function consumeActionState(
@@ -76,8 +76,7 @@ export function wrapContextWithCharacterBonus(
         count: ((opts.count as number) || 0) + qualityBonus,
         sortStrategy: opts.sortStrategy || sortStrategy
       }),
-    revealAll: (opts) =>
-      context.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy || "" })
+    revealAll: (opts) => context.revealAll({ ...opts, sortStrategy: opts.sortStrategy || sortStrategy || "" })
   }
 }
 

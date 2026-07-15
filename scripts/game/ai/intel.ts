@@ -95,13 +95,37 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
   updateAiItemKnowledge(playerId: string, item: any, signal: any, mode: string) {
     return this.aiIntelManager.updateAiItemKnowledge(playerId, item, signal, mode)
   },
-  revealPrivateIntelBatch(playerId: string, mode: string, count: number, category: string | null, allowCategoryFallback: boolean, sortStrategy: string) {
-    return this.aiIntelManager.revealPrivateIntelBatch(playerId, mode, count, category, allowCategoryFallback, sortStrategy)
+  revealPrivateIntelBatch(
+    playerId: string,
+    mode: string,
+    count: number,
+    category: string | null,
+    allowCategoryFallback: boolean,
+    sortStrategy: string
+  ) {
+    return this.aiIntelManager.revealPrivateIntelBatch(
+      playerId,
+      mode,
+      count,
+      category,
+      allowCategoryFallback,
+      sortStrategy
+    )
   },
-  revealPrivateIntelFully(playerId: string, options: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }) {
+  revealPrivateIntelFully(
+    playerId: string,
+    options: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }
+  ) {
     return this.aiIntelManager.revealPrivateIntelFully(playerId, options)
   },
-  pickPrivateRevealTargets(options: { playerId: string; mode: string; count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }) {
+  pickPrivateRevealTargets(options: {
+    playerId: string
+    mode: string
+    count: number
+    category: string | null
+    allowCategoryFallback?: boolean
+    sortStrategy: string | null
+  }) {
     return this.aiIntelManager.pickPrivateRevealTargets(options)
   },
 
@@ -118,7 +142,11 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
   buildAiAggregateIntelBlock(playerId: string) {
     return this.aiIntelManager.buildAiAggregateIntelBlock(playerId)
   },
-  buildTrackCandidatePreview(revealState: { qualityKey: string | null; category: string | null; sizeTag: string | null }) {
+  buildTrackCandidatePreview(revealState: {
+    qualityKey: string | null
+    category: string | null
+    sizeTag: string | null
+  }) {
     return this.aiIntelManager.buildTrackCandidatePreview(revealState)
   },
   buildAiHighValueTrackBlock(playerId: string) {
@@ -135,7 +163,14 @@ export const AiIntelMixin: ThisType<WarehouseSceneThis> = {
   async processAiIntelActions() {
     return this.aiIntelManager.processAiIntelActions()
   },
-  async processSingleAiIntelAction(player: any, plan?: any, llmPlan?: any, roundProgress?: number, batchId?: string, batchStartTime?: number) {
+  async processSingleAiIntelAction(
+    player: any,
+    plan?: any,
+    llmPlan?: any,
+    roundProgress?: number,
+    batchId?: string,
+    batchStartTime?: number
+  ) {
     return this.aiIntelManager.processSingleAiIntelAction(player, plan, llmPlan, roundProgress, batchId, batchStartTime)
   },
   formatAiIntelActionPublicLine(entry: any) {

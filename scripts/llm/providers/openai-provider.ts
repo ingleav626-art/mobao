@@ -10,13 +10,14 @@
 "use strict"
 
 import { LlmManager, createNormalizeSettings } from "../core/llm-manager"
+import type { ChatRequestOptions, ChatResult } from "../core/provider-factory"
 
 const { createOpenAICompatibleProvider } = LlmManager
 
 const OPENAI_STORAGE_KEY = "mobao_openai_settings_v1"
 const OPENAI_API_KEY_STORAGE_KEY = "mobao_openai_api_key_v1"
 
-function defaultOpenAISettings(): any {
+function defaultOpenAISettings(): Record<string, unknown> {
   return {
     provider: "openai",
     enabled: false,
@@ -49,10 +50,13 @@ function isOpenAIThinkingModel(model: string): boolean {
   return /o1-|o3-/i.test(model)
 }
 
-function buildRequestBody(settings: any, context: any): any {
+function buildRequestBody(
+  settings: Record<string, unknown>,
+  context: { isThinking: boolean; temperature: number }
+): Record<string, unknown> {
   const { isThinking, temperature } = context
-  const isOpenAIThinkingModelName = isOpenAIThinkingModel(settings.model)
-  const body: any = {}
+  const isOpenAIThinkingModelName = isOpenAIThinkingModel(settings.model as string)
+  const body: Record<string, unknown> = {}
 
   if (isThinking && isOpenAIThinkingModelName) {
     body.reasoning_effort = "medium"
@@ -60,9 +64,9 @@ function buildRequestBody(settings: any, context: any): any {
     body.temperature = temperature
   }
 
-  if (isThinking && settings.thinkingParams) {
+  if (isThinking && (settings.thinkingParams as string)) {
     try {
-      const customParams = JSON.parse(settings.thinkingParams)
+      const customParams = JSON.parse(settings.thinkingParams as string)
       if (customParams && typeof customParams === "object") {
         Object.assign(body, customParams)
       }
@@ -106,22 +110,22 @@ export const OpenAIProvider = {
   defaultOpenAISettings,
   normalizeOpenAISettings,
   isOpenAIThinkingModel,
-  getSettings: function (): any {
+  getSettings: function (): Record<string, unknown> {
     return provider.loadSettings()
   },
-  applySettings: function (settings: any): any {
+  applySettings: function (settings: Record<string, unknown>): Record<string, unknown> {
     return provider.saveSettings(settings)
   },
-  getLogs: function (): any[] {
+  getLogs: function (): Array<Record<string, unknown>> {
     return provider.getLogs()
   },
   clearLogs: function (): void {
     provider.clearLogs()
   },
-  requestChat: function (options: any): Promise<any> {
+  requestChat: function (options: ChatRequestOptions): Promise<ChatResult> {
     return provider.requestChat(options)
   },
-  testConnection: function (overrideSettings?: any): Promise<any> {
+  testConnection: function (overrideSettings?: Record<string, unknown>): Promise<ChatResult> {
     return provider.testConnection(overrideSettings)
   }
 }

@@ -1,5 +1,5 @@
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
-import type { LanBridgeLike } from './lan-index-manager'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { LanBridgeLike } from "./lan-index-manager"
 
 /**
  * @file lan/index.ts
@@ -96,7 +96,16 @@ export const LanIndexMixin: ThisType<WarehouseSceneThis> = {
   },
 
   lanOnRestartGo(msg: {
-    players: Array<{ id: string; name: string; isAI: boolean; isHost: boolean; isReady?: boolean; characterId?: string | null; carryItems?: string[]; llm?: boolean }>
+    players: Array<{
+      id: string
+      name: string
+      isAI: boolean
+      isHost: boolean
+      isReady?: boolean
+      characterId?: string | null
+      carryItems?: string[]
+      llm?: boolean
+    }>
     hostId: string
     aiPlayers: Array<{ id: string; name: string; isAI: boolean; isHost: boolean; llm?: boolean }>
     aiLlmEnabled: boolean

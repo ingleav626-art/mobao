@@ -15,7 +15,7 @@ import {
   initAiWallets,
   getAiWallet,
   getAiMinimumBid,
-  normalizeAiBidValue,
+  normalizeAiBidValue
 } from "./wallet"
 
 /**
@@ -35,7 +35,7 @@ export class AiWalletManager {
   constructor(
     private readonly players: Player[],
     private readonly aiWallets: Record<string, number>,
-    private readonly ctxProvider: () => AiWalletContext,
+    private readonly ctxProvider: () => AiWalletContext
   ) {}
 
   /** 从 localStorage 加载钱包数据（纯静态，无实例依赖） */

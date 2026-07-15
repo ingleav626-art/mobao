@@ -13,16 +13,11 @@ import {
   MARGIN,
   MAX_WAREHOUSE_CELLS,
   ARTIFACT_COUNT_RANGE,
-  WAREHOUSE_OCCUPANCY_RATIO_RANGE,
+  WAREHOUSE_OCCUPANCY_RATIO_RANGE
 } from "../../core/constants"
 import { toCellKey } from "../../core/utils"
 import { ARTIFACT_LIBRARY } from "../../data/artifacts"
-import {
-  findFirstEmptySlot,
-  isInBoundsCell,
-  hasAnyInfo,
-  getItemKnownText,
-} from "../index"
+import { findFirstEmptySlot, isInBoundsCell, hasAnyInfo, getItemKnownText } from "../index"
 import { positionPreview, renderSettlementItemPreview, renderPreviewCandidates } from "./preview-fns"
 
 const ARTIFACT_IMAGE_BASE_PATH = "assets/images/artifacts/thumbs/"
@@ -154,9 +149,7 @@ export function drawGridLines(deps: WarehouseManagerDeps): void {
 export function guardWarehouseCapacity(_deps: WarehouseManagerDeps): void {
   const capacity = GRID_COLS * GRID_ROWS
   if (capacity > MAX_WAREHOUSE_CELLS) {
-    throw new Error(
-      `仓库容量超上限：${capacity} > ${MAX_WAREHOUSE_CELLS}，请调整 GRID_COLS / GRID_ROWS / CELL_SIZE。`,
-    )
+    throw new Error(`仓库容量超上限：${capacity} > ${MAX_WAREHOUSE_CELLS}，请调整 GRID_COLS / GRID_ROWS / CELL_SIZE。`)
   }
 }
 
@@ -172,17 +165,13 @@ export function spawnRandomItems(deps: WarehouseManagerDeps): void {
   const occupancy = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
   const capacity = GRID_COLS * GRID_ROWS
   const targetOccupiedCells = Math.round(
-    capacity * Phaser.Math.FloatBetween(WAREHOUSE_OCCUPANCY_RATIO_RANGE.min, WAREHOUSE_OCCUPANCY_RATIO_RANGE.max),
+    capacity * Phaser.Math.FloatBetween(WAREHOUSE_OCCUPANCY_RATIO_RANGE.min, WAREHOUSE_OCCUPANCY_RATIO_RANGE.max)
   )
   let occupiedCellsCount = 0
   const desiredCount = Phaser.Math.Between(ARTIFACT_COUNT_RANGE.min, ARTIFACT_COUNT_RANGE.max)
 
   let attempts = 0
-  while (
-    deps.state.items.length < desiredCount &&
-    attempts < 520 &&
-    occupiedCellsCount < targetOccupiedCells
-  ) {
+  while (deps.state.items.length < desiredCount && attempts < 520 && occupiedCellsCount < targetOccupiedCells) {
     attempts += 1
     const slot = findFirstEmptySlot(occupancy, GRID_ROWS, GRID_COLS)
     if (!slot) {
@@ -196,7 +185,7 @@ export function spawnRandomItems(deps: WarehouseManagerDeps): void {
       gridRows: GRID_ROWS,
       occupancy,
       categoryWeights: deps.getMapCategoryWeights() || undefined,
-      qualityWeights: deps.getMapQualityWeights() || undefined,
+      qualityWeights: deps.getMapQualityWeights() || undefined
     })
 
     if (!item) {
@@ -207,7 +196,7 @@ export function spawnRandomItems(deps: WarehouseManagerDeps): void {
     item.revealed = {
       outline: false,
       qualityCell: null,
-      exact: false,
+      exact: false
     }
     item.trueValue = item.basePrice
 
@@ -220,16 +209,10 @@ export function spawnRandomItems(deps: WarehouseManagerDeps): void {
 
 /** 设置仓库拍卖参数（真实价值、AI 最高出价、当前出价） */
 export function setupWarehouseAuction(deps: WarehouseManagerDeps): void {
-  deps.state.warehouseTrueValue = deps.state.items.reduce(
-    (sum: number, item: Artifact) => sum + item.trueValue,
-    0,
-  )
+  deps.state.warehouseTrueValue = deps.state.items.reduce((sum: number, item: Artifact) => sum + item.trueValue, 0)
   const aiRatio = Phaser.Math.FloatBetween(0.9, 1.12)
   deps.state.aiMaxBid = Math.round(deps.state.warehouseTrueValue * aiRatio)
-  deps.state.currentBid = Math.max(
-    1000,
-    Math.round((deps.state.warehouseTrueValue * 0.18) / 100) * 100,
-  )
+  deps.state.currentBid = Math.max(1000, Math.round((deps.state.warehouseTrueValue * 0.18) / 100) * 100)
   const bidInput = deps.dom.bidInput as HTMLInputElement
   bidInput.value = deps.getRound() <= 1 ? "" : "0"
   bidInput.placeholder = deps.getRound() <= 1 ? "点击出价" : ""
@@ -310,7 +293,7 @@ export function renderItem(deps: WarehouseManagerDeps, item: Artifact): void {
       if (dx < TAP_THRESHOLD && dy < TAP_THRESHOLD && dt < TAP_TIME_THRESHOLD) {
         onArtifactClicked(deps, item, pointer)
       }
-    },
+    }
   )
 
   item.view = {
@@ -321,7 +304,7 @@ export function renderItem(deps: WarehouseManagerDeps, item: Artifact): void {
     artifactImage: null,
     borderPulseStarted: false,
     qualitySynced: false,
-    qualityGlowTween: null,
+    qualityGlowTween: null
   }
 
   deps.state.itemLayer!.add([silhouette, border, qualityMarkers, clickZone])
@@ -367,7 +350,6 @@ export function onArtifactClicked(deps: WarehouseManagerDeps, item: Artifact, po
   }
 
   deps.state.selectedItem = item
-
   ;(deps.dom.previewCategorySelect as HTMLSelectElement).value = "all"
   positionPreview(deps, pointer.x, pointer.y)
   renderPreviewCandidates(deps, item)

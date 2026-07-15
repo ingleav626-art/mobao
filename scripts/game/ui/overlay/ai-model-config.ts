@@ -51,12 +51,11 @@ export const AiModelConfigMixin: ThisType<WarehouseSceneThis> = {
     const aiModelConfigs = this.loadAiModelConfigs()
     const providers = LlmManager ? LlmManager.listProviders() : []
     const activeProviderId = LlmManager ? LlmManager.getActiveProviderId() : "deepseek"
-    const currentSettings: Record<string, any> =
-      typeof this.getLlmSettings === "function" ? this.getLlmSettings() : ({} as Record<string, any>)
+    const currentSettings: Record<string, any> = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : {}
     const currentModel = currentSettings.model || "未配置"
     const currentEndpoint = currentSettings.endpoint || "未配置"
     const hasCurrentApiKey = !!(currentSettings.apiKey && currentSettings.apiKey.trim())
-    const activeProvider = providers.find((p: any) => p.id === activeProviderId)
+    const activeProvider = providers.find((p: { id: string }) => p.id === activeProviderId)
     const activeProviderName = activeProvider ? activeProvider.name : activeProviderId
     let html = `
         <div style="margin-bottom:12px;padding:8px;background:#fff9f0;border:1px solid #d6ba8d;border-radius:6px;">
@@ -66,8 +65,10 @@ export const AiModelConfigMixin: ThisType<WarehouseSceneThis> = {
           <div style="font-size:11px;color:${hasCurrentApiKey ? "#2a7a2a" : "#a04040"};">API Key: ${hasCurrentApiKey ? "已配置" : "未配置"}</div>
         </div>
       `
-    const providerIds = new Set(providers.map((p: any) => p.id))
-    const providerOptions = providers.map((p: any) => `<option value="${p.id}">${p.name}</option>`).join("")
+    const providerIds = new Set(providers.map((p: { id: string }) => p.id))
+    const providerOptions = providers
+      .map((p: { id: string; name: string }) => `<option value="${p.id}">${p.name}</option>`)
+      .join("")
     ;["ai1", "ai2", "ai3"].forEach((aiId, i) => {
       const savedProviderId = aiModelConfigs[aiId] || ""
       const isSavedValid = !savedProviderId || providerIds.has(savedProviderId)
@@ -99,7 +100,7 @@ export const AiModelConfigMixin: ThisType<WarehouseSceneThis> = {
         configs[aiId] = select.value || ""
       }
     })
-    this.saveAiModelConfigs(configs as any)
+    this.saveAiModelConfigs(configs)
     this.closeAiModelConfigOverlay()
     this.writeLog("AI模型配置已保存。")
   },

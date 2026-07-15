@@ -25,7 +25,8 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
     canUseLlmDecision(): boolean {
       const provider = typeof this.getLlmProvider === "function" ? this.getLlmProvider() : null
       const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
-      const nativeBridge = (window as unknown as Record<string, { getServerUrl?: () => string } | undefined>).NativeBridge || null
+      const nativeBridge =
+        (window as unknown as Record<string, { getServerUrl?: () => string } | undefined>).NativeBridge || null
       const result = canUseLlmDecisionCore(settings, provider, nativeBridge)
       if (!result) {
         console.log(
@@ -119,7 +120,9 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
       }
 
       const firstRoundBlocks =
-        isFirstRound && typeof this.getAiFirstRoundExtraBlocks === "function" ? this.getAiFirstRoundExtraBlocks(player.id) : []
+        isFirstRound && typeof this.getAiFirstRoundExtraBlocks === "function"
+          ? this.getAiFirstRoundExtraBlocks(player.id)
+          : []
       const mergedExtraBlocks = [
         ...(Array.isArray(firstRoundBlocks) ? firstRoundBlocks : []),
         ...(Array.isArray(options.extraBlocks) ? options.extraBlocks : [])
@@ -174,10 +177,10 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
           payload && payload.gameState
             ? (payload.gameState as Record<string, unknown>)
             : {
-              currentWallet: payload && payload.currentWallet,
-              currentLeader: payload && payload.currentLeader,
-              currentBid: payload && payload.currentBid
-            }
+                currentWallet: payload && payload.currentWallet,
+                currentLeader: payload && payload.currentLeader,
+                currentBid: payload && payload.currentBid
+              }
         if (
           gameState &&
           (gameState.currentWallet !== undefined ||
@@ -224,12 +227,12 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
           : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。"
         const taskContent = [
           "【任务】第 " +
-          roundNo +
-          "/" +
-          totalRounds +
-          " 轮（" +
-          roundStateText +
-          "）。给出合法竞拍决策（bid/skill/item/thought）。",
+            roundNo +
+            "/" +
+            totalRounds +
+            " 轮（" +
+            roundStateText +
+            "）。给出合法竞拍决策（bid/skill/item/thought）。",
           finalRoundHint
         ].join("\n")
         incrementalMessages.push({ role: "user", content: taskContent })
@@ -241,7 +244,10 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
             })
           })
         }
-        messages = [...(Array.isArray(playerCache) ? playerCache as Array<Record<string, unknown>> : []), ...incrementalMessages]
+        messages = [
+          ...(Array.isArray(playerCache) ? (playerCache as Array<Record<string, unknown>>) : []),
+          ...incrementalMessages
+        ]
       } else {
         messages = this.buildAiDecisionMessages(payload, {
           requestStage,
@@ -290,10 +296,10 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
             "[requestAiLlmPlan] aiModelConfig:",
             aiModelConfig
               ? {
-                apiKey: aiModelConfig.apiKey ? "(已设置)" : "(空)",
-                endpoint: aiModelConfig.endpoint,
-                model: aiModelConfig.model
-              }
+                  apiKey: aiModelConfig.apiKey ? "(已设置)" : "(空)",
+                  endpoint: aiModelConfig.endpoint,
+                  model: aiModelConfig.model
+                }
               : null
           )
           if (aiModelConfig) {
@@ -317,7 +323,12 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
           console.error("[requestAiLlmPlan] getAiModelConfigForPlayer error:", e)
         }
         const requestTimeoutMs = Math.max(3000, Math.round((Number(GAME_SETTINGS.roundSeconds) || 40) * 1000))
-        const isNativeEnv = !!((window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge && (window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>).NativeBridge.llmProxyAsync)
+        const isNativeEnv = !!(
+          (window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>)
+            .NativeBridge &&
+          (window as unknown as Record<string, { llmProxyAsync?: (...args: unknown[]) => Promise<unknown> }>)
+            .NativeBridge.llmProxyAsync
+        )
         const isFlashModel = /deepseek.*flash|qwen.*turbo|glm.*flash|gpt-3\.5|gpt-4o-mini/i.test(settings.model || "")
         let baseTokens = Number(settings.maxTokens) || 600
         if (isNativeEnv && isFlashModel && baseTokens < 1500) {
@@ -328,7 +339,9 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
         console.log(
           `[requestAiLlmPlan] ${requestId} CALLING requestChat, model: ${settings.model}, elapsed so far: ${chatStartTime - requestStartTime}ms`
         )
-        console.log(`[requestAiLlmPlan] ${requestId} messages count: ${messages.length}, historyMessages count: ${historyMessages.length}, crossGameMemoryCount: ${crossGameMemoryCount}`)
+        console.log(
+          `[requestAiLlmPlan] ${requestId} messages count: ${messages.length}, historyMessages count: ${historyMessages.length}, crossGameMemoryCount: ${crossGameMemoryCount}`
+        )
         if (!provider.requestChat) {
           console.log("[requestAiLlmPlan] ERROR: provider.requestChat is undefined")
           return {
@@ -504,7 +517,9 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
         plan.historyMessagesCount = historyMessages.length
         plan.crossGameMemoryCount = crossGameMemoryCount
         plan.inGameHistoryCount = inGameHistoryCount
-        plan.historyMessagesPreview = historyMessages.map((m: Record<string, unknown>) => String(m.content || "").slice(0, 80)).join(" | ")
+        plan.historyMessagesPreview = historyMessages
+          .map((m: Record<string, unknown>) => String(m.content || "").slice(0, 80))
+          .join(" | ")
         plan.crossGameMemoryText =
           !playerCache && useMultiGameMemory && crossGameMemoryCount > 0
             ? String(historyMessages[0]?.content || "")
@@ -563,7 +578,11 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
       }
     },
 
-    async requestAiLlmFollowupBid(player: Player, currentPlan: LlmPlanResult | null, toolSummary: string): Promise<LlmPlanResult | null> {
+    async requestAiLlmFollowupBid(
+      player: Player,
+      currentPlan: LlmPlanResult | null,
+      toolSummary: string
+    ): Promise<LlmPlanResult | null> {
       const { isNoneActionText, compactOneLine } = deps
       const trackHint = String(toolSummary || "").includes("tracks=")
         ? "若 tracks=none，代表本次探查未直接命中高价值追踪目标，不要把它写成已确认。"

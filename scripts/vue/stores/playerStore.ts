@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia"
 
 export interface CarryItem {
   id: string
@@ -12,14 +12,14 @@ export interface RoundHistory {
   action: string
 }
 
-export const usePlayerStore = defineStore('player', {
+export const usePlayerStore = defineStore("player", {
   state: () => ({
     characterId: "",
     carryItems: [] as CarryItem[],
-    history: [] as RoundHistory[],
+    history: [] as RoundHistory[]
   }),
 
   actions: {
     // Phase 2 填充
-  },
+  }
 })

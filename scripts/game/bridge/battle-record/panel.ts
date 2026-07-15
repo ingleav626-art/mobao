@@ -7,9 +7,38 @@
  * @exports createPanelSlice - 面板 slice 工厂，返回 { methods }
  */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
-import type { BattleRecordDeps, WarehouseSnapshotItem } from "./types"
+import type { BattleRecordDeps, WarehouseSnapshotItem, BattleRecord } from "./types"
 import { load as loadAppState } from "../../core/app-state"
 import { formatRecordTime } from "./pure"
+import { useBattleRecordStore } from "../../../vue/stores/battleRecordStore"
+
+// 同步到 Vue battleRecordStore（try/catch 兼容非 Vue 环境）
+function syncStoreOpen(): void {
+  try {
+    const store = useBattleRecordStore()
+    store.openPanel()
+  } catch {
+    // 非 Vue 环境或 store 未加载，静默忽略
+  }
+}
+
+function syncStoreClose(): void {
+  try {
+    const store = useBattleRecordStore()
+    store.closePanel()
+  } catch {
+    // 非 Vue 环境或 store 未加载，静默忽略
+  }
+}
+
+function syncStoreRecords(records: unknown[]): void {
+  try {
+    const store = useBattleRecordStore()
+    store.syncRecords(records as BattleRecord[])
+  } catch {
+    // 非 Vue 环境或 store 未加载，静默忽略
+  }
+}
 
 export function createPanelSlice(deps: BattleRecordDeps): {
   methods: ThisType<WarehouseSceneThis>
@@ -32,6 +61,8 @@ export function createPanelSlice(deps: BattleRecordDeps): {
       } else {
         this.dom.battleRecordOverlay.classList.remove("hidden")
       }
+      // 同步到 Vue store
+      syncStoreOpen()
     },
 
     closeBattleRecordPanel() {
@@ -44,6 +75,8 @@ export function createPanelSlice(deps: BattleRecordDeps): {
       } else {
         this.dom.battleRecordOverlay.classList.add("hidden")
       }
+      // 同步到 Vue store
+      syncStoreClose()
     },
 
     renderBattleRecordSummary() {
@@ -152,6 +185,8 @@ export function createPanelSlice(deps: BattleRecordDeps): {
         .join("")
 
       this.dom.battleRecordContent.innerHTML = html
+      // 同步到 Vue store
+      syncStoreRecords(records)
     }
   }
 

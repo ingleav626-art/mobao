@@ -67,7 +67,11 @@ export function normalizeGameSettings(source: unknown, fallback?: unknown): Game
     actionsPerRound: clamp(Math.round(Number(input.actionsPerRound || defaults.actionsPerRound)), 1, 999),
     roundSeconds: clamp(Math.round(Number(input.roundSeconds || defaults.roundSeconds)), 10, 180),
     directTakeRatio: clamp(Number(input.directTakeRatio || defaults.directTakeRatio), 0.05, 0.6),
-    bidRevealIntervalMs: clamp(Math.round(Number(input.bidRevealIntervalMs || defaults.bidRevealIntervalMs)), 250, 1800),
+    bidRevealIntervalMs: clamp(
+      Math.round(Number(input.bidRevealIntervalMs || defaults.bidRevealIntervalMs)),
+      250,
+      1800
+    ),
     postRevealWaitMs: clamp(Math.round(Number(input.postRevealWaitMs || defaults.postRevealWaitMs)), 800, 6000),
     bidStep: clamp(Math.round(Number(input.bidStep || defaults.bidStep)), 10, 10000),
     bidDefaultRaise: clamp(Math.round(Number(input.bidDefaultRaise || defaults.bidDefaultRaise)), 0, 50000),

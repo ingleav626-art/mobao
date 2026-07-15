@@ -9,8 +9,7 @@
  * @requires data/characters - 角色数据定义
  */
 
-
-import type { Character, PassiveEffect } from '../../../types/game'
+import type { Character, PassiveEffect } from "../../../types/game"
 import { CHARACTERS } from "./characters"
 import { SELECTED_CHARACTER_STORAGE_KEY } from "../core/constants"
 
@@ -32,7 +31,9 @@ export function getActiveCharacter(): Character | null {
         return found
       }
     }
-  } catch (_e) { /* ignore */ }
+  } catch (_e) {
+    /* ignore */
+  }
   const fallback = CHARACTERS || []
   _activeCharacter = fallback[0] || null
   return _activeCharacter
@@ -78,7 +79,9 @@ export function selectCharacter(characterId: string): boolean {
   _activeCharacter = char
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(characterId))
-  } catch (_e) { /* ignore */ }
+  } catch (_e) {
+    /* ignore */
+  }
   return true
 }
 

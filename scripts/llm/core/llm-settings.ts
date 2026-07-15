@@ -8,21 +8,21 @@
  */
 
 interface LlmSettingsModuleThis {
-  dom: Record<string, HTMLInputElement | HTMLElement | null>;
-  getLlmSettings(): any;
-  setLlmSettingsStatus(text: string, state: string): void;
+  dom: Record<string, HTMLInputElement | HTMLElement | null>
+  getLlmSettings(): Record<string, any>
+  setLlmSettingsStatus(text: string, state: string): void
 }
 
 export function createLlmSettingsModule(deps: any) {
-  const { AI_LLM_SWITCH_STORAGE_KEY, LLM_SETTINGS, maskApiKey } = deps;
+  const { AI_LLM_SWITCH_STORAGE_KEY, LLM_SETTINGS, maskApiKey } = deps
 
-  function loadAiLlmPlayerSwitches(players: any[]): Record<string, boolean> {
+  function loadAiLlmPlayerSwitches(players: Array<{ id: string; isHuman?: boolean }>): Record<string, boolean> {
     const defaults: Record<string, boolean> = {}
-      ; (players || []).forEach((player) => {
-        if (!player.isHuman) {
-          defaults[player.id] = true
-        }
-      })
+    ;(players || []).forEach((player) => {
+      if (!player.isHuman) {
+        defaults[player.id] = true
+      }
+    })
 
     const raw = window.localStorage.getItem(AI_LLM_SWITCH_STORAGE_KEY)
     if (!raw) {
@@ -59,7 +59,7 @@ export function createLlmSettingsModule(deps: any) {
     }
   }
 
-  function saveAiLlmPlayerSwitches(value: any): void {
+  function saveAiLlmPlayerSwitches(value: Record<string, unknown>): void {
     if (!value || typeof value !== "object") {
       return
     }
@@ -68,129 +68,153 @@ export function createLlmSettingsModule(deps: any) {
 
   const methods = {
     fillLlmSettingsForm(values?: any) {
-      const self = this as unknown as LlmSettingsModuleThis;
-      const source = values || (typeof self.getLlmSettings === "function" ? self.getLlmSettings() : LLM_SETTINGS);
+      const self = this as unknown as LlmSettingsModuleThis
+      const source = values || (typeof self.getLlmSettings === "function" ? self.getLlmSettings() : LLM_SETTINGS)
       if (self.dom.settingLlmEnabled) {
-        (self.dom.settingLlmEnabled as HTMLInputElement).checked = Boolean(source.enabled);
+        ;(self.dom.settingLlmEnabled as HTMLInputElement).checked = Boolean(source.enabled)
       }
       if (self.dom.settingLlmMultiGameMemoryEnabled) {
-        (self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked = Boolean(source.multiGameMemoryEnabled);
+        ;(self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked = Boolean(
+          source.multiGameMemoryEnabled
+        )
       }
       if (self.dom.settingLlmReflectionEnabled) {
-        (self.dom.settingLlmReflectionEnabled as HTMLInputElement).checked = Boolean(source.reflectionEnabled);
+        ;(self.dom.settingLlmReflectionEnabled as HTMLInputElement).checked = Boolean(source.reflectionEnabled)
       }
       if (self.dom.settingLlmThinkingEnabled) {
-        (self.dom.settingLlmThinkingEnabled as HTMLInputElement).checked = Boolean(source.thinkingEnabled || false);
+        ;(self.dom.settingLlmThinkingEnabled as HTMLInputElement).checked = Boolean(source.thinkingEnabled || false)
       }
-      const thinkingParamsInput = document.getElementById("setting-thinkingParams") as HTMLInputElement | null;
+      const thinkingParamsInput = document.getElementById("setting-thinkingParams") as HTMLInputElement | null
       if (thinkingParamsInput) {
-        thinkingParamsInput.value = source.thinkingParams || "";
+        thinkingParamsInput.value = source.thinkingParams || ""
       }
-      const thinkingModeParams = document.getElementById("thinkingModeParams");
+      const thinkingModeParams = document.getElementById("thinkingModeParams")
       if (thinkingModeParams && self.dom.settingLlmThinkingEnabled) {
         if ((self.dom.settingLlmThinkingEnabled as HTMLInputElement).checked) {
-          thinkingModeParams.classList.remove("hidden");
+          thinkingModeParams.classList.remove("hidden")
         } else {
-          thinkingModeParams.classList.add("hidden");
+          thinkingModeParams.classList.add("hidden")
         }
       }
-      const contextLengthInline = document.getElementById("contextLengthInline");
+      const contextLengthInline = document.getElementById("contextLengthInline")
       if (contextLengthInline) {
-        if (self.dom.settingLlmMultiGameMemoryEnabled && (self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked) {
-          contextLengthInline.classList.remove("hidden");
+        if (
+          self.dom.settingLlmMultiGameMemoryEnabled &&
+          (self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked
+        ) {
+          contextLengthInline.classList.remove("hidden")
         } else {
-          contextLengthInline.classList.add("hidden");
+          contextLengthInline.classList.add("hidden")
         }
       }
-      const summaryConfig = document.getElementById("summaryConfig");
+      const summaryConfig = document.getElementById("summaryConfig")
       if (summaryConfig) {
-        if (self.dom.settingLlmMultiGameMemoryEnabled && (self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked) {
-          summaryConfig.classList.remove("hidden");
+        if (
+          self.dom.settingLlmMultiGameMemoryEnabled &&
+          (self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked
+        ) {
+          summaryConfig.classList.remove("hidden")
         } else {
-          summaryConfig.classList.add("hidden");
+          summaryConfig.classList.add("hidden")
         }
       }
-      const autoSummarizeCheckbox = document.getElementById("setting-autoSummarizeEnabled") as HTMLInputElement | null;
+      const autoSummarizeCheckbox = document.getElementById("setting-autoSummarizeEnabled") as HTMLInputElement | null
       if (autoSummarizeCheckbox) {
-        autoSummarizeCheckbox.checked = source.autoSummarizeEnabled !== false;
+        autoSummarizeCheckbox.checked = source.autoSummarizeEnabled !== false
       }
-      const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null;
+      const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null
       if (contextLengthInput) {
-        contextLengthInput.value = String(source.contextLength || 5);
+        contextLengthInput.value = String(source.contextLength || 5)
       }
-      const reflectionScopeConfig = document.getElementById("reflectionScopeConfig");
+      const reflectionScopeConfig = document.getElementById("reflectionScopeConfig")
       if (reflectionScopeConfig) {
-        if (self.dom.settingLlmReflectionEnabled && (self.dom.settingLlmReflectionEnabled as HTMLInputElement).checked) {
-          reflectionScopeConfig.classList.remove("hidden");
+        if (
+          self.dom.settingLlmReflectionEnabled &&
+          (self.dom.settingLlmReflectionEnabled as HTMLInputElement).checked
+        ) {
+          reflectionScopeConfig.classList.remove("hidden")
         } else {
-          reflectionScopeConfig.classList.add("hidden");
+          reflectionScopeConfig.classList.add("hidden")
         }
       }
-      const reflectionScope = source.reflectionScope || "current";
-      const scopeRadios = document.querySelectorAll('input[name="reflectionScope"]') as NodeListOf<HTMLInputElement>;
+      const reflectionScope = source.reflectionScope || "current"
+      const scopeRadios = document.querySelectorAll('input[name="reflectionScope"]') as NodeListOf<HTMLInputElement>
       scopeRadios.forEach((radio) => {
-        radio.checked = radio.value === reflectionScope;
-      });
+        radio.checked = radio.value === reflectionScope
+      })
       const independentModelCheckbox =
-        (self.dom.settingLlmIndependentModelEnabled as HTMLInputElement | null) || document.getElementById("setting-llmIndependentModelEnabled") as HTMLInputElement | null;
-      console.log("[fillLlmSettingsForm] independentModelCheckbox:", independentModelCheckbox ? "found" : "not found");
+        (self.dom.settingLlmIndependentModelEnabled as HTMLInputElement | null) ||
+        (document.getElementById("setting-llmIndependentModelEnabled") as HTMLInputElement | null)
+      console.log("[fillLlmSettingsForm] independentModelCheckbox:", independentModelCheckbox ? "found" : "not found")
       if (independentModelCheckbox) {
-        independentModelCheckbox.checked = Boolean(source.independentModelEnabled);
-        console.log(
-          "[fillLlmSettingsForm] set independentModelCheckbox.checked to:",
-          independentModelCheckbox.checked
-        );
+        independentModelCheckbox.checked = Boolean(source.independentModelEnabled)
+        console.log("[fillLlmSettingsForm] set independentModelCheckbox.checked to:", independentModelCheckbox.checked)
       }
       if (self.dom.independentModelConfig) {
         if (source.independentModelEnabled) {
-          self.dom.independentModelConfig.classList.remove("hidden");
+          self.dom.independentModelConfig.classList.remove("hidden")
         } else {
-          self.dom.independentModelConfig.classList.add("hidden");
+          self.dom.independentModelConfig.classList.add("hidden")
         }
       }
-      const independentReflectionCheckbox = document.getElementById("setting-llmIndependentReflectionEnabled") as HTMLInputElement | null;
+      const independentReflectionCheckbox = document.getElementById(
+        "setting-llmIndependentReflectionEnabled"
+      ) as HTMLInputElement | null
       if (independentReflectionCheckbox) {
         independentReflectionCheckbox.checked =
-          source.independentReflectionEnabled !== undefined ? Boolean(source.independentReflectionEnabled) : true;
+          source.independentReflectionEnabled !== undefined ? Boolean(source.independentReflectionEnabled) : true
       }
-      const apiKeyInput = (self.dom.settingDeepseekApiKey as HTMLInputElement | null) || document.getElementById("setting-llmApiKey") as HTMLInputElement | null;
+      const apiKeyInput =
+        (self.dom.settingDeepseekApiKey as HTMLInputElement | null) ||
+        (document.getElementById("setting-llmApiKey") as HTMLInputElement | null)
       if (apiKeyInput) {
-        apiKeyInput.value = source.apiKey || "";
+        apiKeyInput.value = source.apiKey || ""
       }
-      const modelInput = (self.dom.settingDeepseekModel as HTMLInputElement | null) || document.getElementById("setting-llmModel") as HTMLInputElement | null;
+      const modelInput =
+        (self.dom.settingDeepseekModel as HTMLInputElement | null) ||
+        (document.getElementById("setting-llmModel") as HTMLInputElement | null)
       if (modelInput) {
-        modelInput.value = source.model || "";
+        modelInput.value = source.model || ""
       }
-      const endpointInput = document.getElementById("setting-llmEndpoint") as HTMLInputElement | null;
+      const endpointInput = document.getElementById("setting-llmEndpoint") as HTMLInputElement | null
       if (endpointInput) {
-        endpointInput.value = source.endpoint || "";
+        endpointInput.value = source.endpoint || ""
       }
       if (self.dom.settingMaxTokens) {
-        (self.dom.settingMaxTokens as HTMLInputElement).value = String(Number(source.maxTokens) || 2048);
+        ;(self.dom.settingMaxTokens as HTMLInputElement).value = String(Number(source.maxTokens) || 2048)
       }
 
       if (!source.apiKey) {
-        self.setLlmSettingsStatus("尚未填写 API Key。", "normal");
-        return;
+        self.setLlmSettingsStatus("尚未填写 API Key。", "normal")
+        return
       }
-      self.setLlmSettingsStatus(`已读取本地密钥：${maskApiKey(source.apiKey)}`, "normal");
+      self.setLlmSettingsStatus(`已读取本地密钥：${maskApiKey(source.apiKey)}`, "normal")
     },
 
     readLlmSettingsForm() {
-      const self = this as unknown as LlmSettingsModuleThis;
-      const currentSettings = typeof self.getLlmSettings === "function" ? self.getLlmSettings() : LLM_SETTINGS;
-      const apiKeyInput = (self.dom.settingDeepseekApiKey as HTMLInputElement | null) || document.getElementById("setting-llmApiKey") as HTMLInputElement | null;
-      const modelInput = (self.dom.settingDeepseekModel as HTMLInputElement | null) || document.getElementById("setting-llmModel") as HTMLInputElement | null;
-      const endpointInput = document.getElementById("setting-llmEndpoint") as HTMLInputElement | null;
+      const self = this as unknown as LlmSettingsModuleThis
+      const currentSettings = typeof self.getLlmSettings === "function" ? self.getLlmSettings() : LLM_SETTINGS
+      const apiKeyInput =
+        (self.dom.settingDeepseekApiKey as HTMLInputElement | null) ||
+        (document.getElementById("setting-llmApiKey") as HTMLInputElement | null)
+      const modelInput =
+        (self.dom.settingDeepseekModel as HTMLInputElement | null) ||
+        (document.getElementById("setting-llmModel") as HTMLInputElement | null)
+      const endpointInput = document.getElementById("setting-llmEndpoint") as HTMLInputElement | null
       const independentModelCheckbox =
-        (self.dom.settingLlmIndependentModelEnabled as HTMLInputElement | null) || document.getElementById("setting-llmIndependentModelEnabled") as HTMLInputElement | null;
-      const independentReflectionCheckbox = document.getElementById("setting-llmIndependentReflectionEnabled") as HTMLInputElement | null;
-      const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null;
-      const autoSummarizeCheckbox = document.getElementById("setting-autoSummarizeEnabled") as HTMLInputElement | null;
-      const scopeRadio = document.querySelector('input[name="reflectionScope"]:checked') as HTMLInputElement | null;
+        (self.dom.settingLlmIndependentModelEnabled as HTMLInputElement | null) ||
+        (document.getElementById("setting-llmIndependentModelEnabled") as HTMLInputElement | null)
+      const independentReflectionCheckbox = document.getElementById(
+        "setting-llmIndependentReflectionEnabled"
+      ) as HTMLInputElement | null
+      const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null
+      const autoSummarizeCheckbox = document.getElementById("setting-autoSummarizeEnabled") as HTMLInputElement | null
+      const scopeRadio = document.querySelector('input[name="reflectionScope"]:checked') as HTMLInputElement | null
 
       return {
-        enabled: self.dom.settingLlmEnabled ? (self.dom.settingLlmEnabled as HTMLInputElement).checked : currentSettings.enabled,
+        enabled: self.dom.settingLlmEnabled
+          ? (self.dom.settingLlmEnabled as HTMLInputElement).checked
+          : currentSettings.enabled,
         multiGameMemoryEnabled: self.dom.settingLlmMultiGameMemoryEnabled
           ? (self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked
           : currentSettings.multiGameMemoryEnabled,
@@ -201,8 +225,8 @@ export function createLlmSettingsModule(deps: any) {
           ? (self.dom.settingLlmThinkingEnabled as HTMLInputElement).checked
           : currentSettings.thinkingEnabled || false,
         thinkingParams: (function () {
-          const el = document.getElementById("setting-thinkingParams") as HTMLInputElement | null;
-          return el ? el.value.trim() : currentSettings.thinkingParams || "";
+          const el = document.getElementById("setting-thinkingParams") as HTMLInputElement | null
+          return el ? el.value.trim() : currentSettings.thinkingParams || ""
         })(),
         apiKey: apiKeyInput ? apiKeyInput.value : currentSettings.apiKey,
         model: modelInput ? modelInput.value : currentSettings.model,
@@ -227,22 +251,22 @@ export function createLlmSettingsModule(deps: any) {
           ? autoSummarizeCheckbox.checked
           : currentSettings.autoSummarizeEnabled !== false,
         reflectionScope: scopeRadio ? scopeRadio.value : currentSettings.reflectionScope || "current"
-      };
+      }
     },
 
     setLlmSettingsStatus(text: string, state: string) {
-      const self = this as unknown as LlmSettingsModuleThis;
+      const self = this as unknown as LlmSettingsModuleThis
       if (!self.dom.settingsLlmStatusText) {
-        return;
+        return
       }
-      self.dom.settingsLlmStatusText.textContent = text;
-      self.dom.settingsLlmStatusText.classList.remove("is-success", "is-error", "is-pending");
+      self.dom.settingsLlmStatusText.textContent = text
+      self.dom.settingsLlmStatusText.classList.remove("is-success", "is-error", "is-pending")
       if (state === "success") {
-        self.dom.settingsLlmStatusText.classList.add("is-success");
+        self.dom.settingsLlmStatusText.classList.add("is-success")
       } else if (state === "error") {
-        self.dom.settingsLlmStatusText.classList.add("is-error");
+        self.dom.settingsLlmStatusText.classList.add("is-error")
       } else if (state === "pending") {
-        self.dom.settingsLlmStatusText.classList.add("is-pending");
+        self.dom.settingsLlmStatusText.classList.add("is-pending")
       }
     }
   }

@@ -121,28 +121,40 @@ export function renderLlmEntryDetails(entry: TelemetryEntry, formatBidRevealNumb
 
   if (entry.cacheHitTokens || entry.cacheMissTokens) {
     const cacheRate = entry.cacheHitRate || 0
-    parts.push(`<div class="ai-cache-info">缓存命中: ${entry.cacheHitTokens || 0} tokens | 未命中: ${entry.cacheMissTokens || 0} tokens | 命中率: ${cacheRate}%</div>`)
+    parts.push(
+      `<div class="ai-cache-info">缓存命中: ${entry.cacheHitTokens || 0} tokens | 未命中: ${entry.cacheMissTokens || 0} tokens | 命中率: ${cacheRate}%</div>`
+    )
   }
 
   if (entry.correctionAttempt && entry.correctionAttempt > 0) {
-    parts.push(`<div class="ai-error-box">纠错次数: ${entry.correctionAttempt}/2${entry.originalError ? ` | 原始错误: ${entry.originalError}` : ""}</div>`)
+    parts.push(
+      `<div class="ai-error-box">纠错次数: ${entry.correctionAttempt}/2${entry.originalError ? ` | 原始错误: ${entry.originalError}` : ""}</div>`
+    )
   }
 
-  if (entry.historyMessagesCount && entry.historyMessagesCount > 0 || entry.crossGameMemoryCount && entry.crossGameMemoryCount > 0) {
-    const gameInfo = entry.crossGameMemoryCount && entry.crossGameMemoryCount > 0
-      ? entry.inGameHistoryCount && entry.inGameHistoryCount > 0
-        ? `${entry.crossGameMemoryCount}局跨局记忆+${entry.inGameHistoryCount}条本局历史`
-        : `${entry.crossGameMemoryCount}局跨局记忆`
-      : `${entry.inGameHistoryCount}条本局历史`
+  if (
+    (entry.historyMessagesCount && entry.historyMessagesCount > 0) ||
+    (entry.crossGameMemoryCount && entry.crossGameMemoryCount > 0)
+  ) {
+    const gameInfo =
+      entry.crossGameMemoryCount && entry.crossGameMemoryCount > 0
+        ? entry.inGameHistoryCount && entry.inGameHistoryCount > 0
+          ? `${entry.crossGameMemoryCount}局跨局记忆+${entry.inGameHistoryCount}条本局历史`
+          : `${entry.crossGameMemoryCount}局跨局记忆`
+        : `${entry.inGameHistoryCount}条本局历史`
     parts.push(`<div class="ai-memory-inject-info">跨局记忆注入: ${gameInfo}</div>`)
   }
 
   if (entry.llmActionName) {
-    parts.push(`<div class="ai-decision-summary"><span class="label">大模型动作</span><span class="value">${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}</span></div>`)
+    parts.push(
+      `<div class="ai-decision-summary"><span class="label">大模型动作</span><span class="value">${entry.llmActionName}${entry.actionExecuted ? "（已执行）" : "（未执行）"}</span></div>`
+    )
   }
 
   if (entry.ruleActionName) {
-    parts.push(`<div class="ai-decision-summary"><span class="label">规则动作</span><span class="value">${entry.ruleActionName}</span></div>`)
+    parts.push(
+      `<div class="ai-decision-summary"><span class="label">规则动作</span><span class="value">${entry.ruleActionName}</span></div>`
+    )
   }
 
   if (entry.thought) {
@@ -150,7 +162,9 @@ export function renderLlmEntryDetails(entry: TelemetryEntry, formatBidRevealNumb
   }
 
   if (entry.reasoningContent) {
-    parts.push(`<div class="ai-thought-box"><div class="thought-label">思考过程</div><pre style="margin:0;white-space:pre-wrap;font-size:11px;">${escapeHtml(entry.reasoningContent)}</pre></div>`)
+    parts.push(
+      `<div class="ai-thought-box"><div class="thought-label">思考过程</div><pre style="margin:0;white-space:pre-wrap;font-size:11px;">${escapeHtml(entry.reasoningContent)}</pre></div>`
+    )
   }
 
   if (entry.error) {
@@ -158,12 +172,16 @@ export function renderLlmEntryDetails(entry: TelemetryEntry, formatBidRevealNumb
   }
 
   if (entry.fallbackRuleBid !== null && entry.fallbackRuleBid !== undefined) {
-    parts.push(`<div class="ai-decision-summary"><span class="label">回退规则出价参考</span><span class="value">${formatBidRevealNumber(entry.fallbackRuleBid)}</span></div>`)
+    parts.push(
+      `<div class="ai-decision-summary"><span class="label">回退规则出价参考</span><span class="value">${formatBidRevealNumber(entry.fallbackRuleBid)}</span></div>`
+    )
   }
 
   const promptBlocks: string[] = []
   if (entry.systemPrompt) {
-    promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">System Prompt</summary><pre>${escapeHtml(entry.systemPrompt)}</pre></details>`)
+    promptBlocks.push(
+      `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">System Prompt</summary><pre>${escapeHtml(entry.systemPrompt)}</pre></details>`
+    )
   }
   if (entry.crossGameMemoryText) {
     const sections = parseCrossGameMemoryText(entry.crossGameMemoryText)
@@ -183,28 +201,46 @@ export function renderLlmEntryDetails(entry: TelemetryEntry, formatBidRevealNumb
     if (!blockContent) {
       blockContent = `<pre>${escapeHtml(entry.crossGameMemoryText)}</pre>`
     }
-    promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">跨局记忆</summary><div class="ai-detail-content">${blockContent}</div></details>`)
+    promptBlocks.push(
+      `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">跨局记忆</summary><div class="ai-detail-content">${blockContent}</div></details>`
+    )
   }
-  promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">User Prompt</summary><pre>${escapeHtml(entry.userPrompt || "")}</pre></details>`)
-  promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Model Response</summary><pre>${escapeHtml(entry.modelResponse || "")}</pre></details>`)
+  promptBlocks.push(
+    `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">User Prompt</summary><pre>${escapeHtml(entry.userPrompt || "")}</pre></details>`
+  )
+  promptBlocks.push(
+    `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Model Response</summary><pre>${escapeHtml(entry.modelResponse || "")}</pre></details>`
+  )
   if (entry.toolResultSummary) {
-    promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Tool Result</summary><pre>${escapeHtml(entry.toolResultSummary)}</pre></details>`)
+    promptBlocks.push(
+      `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Tool Result</summary><pre>${escapeHtml(entry.toolResultSummary)}</pre></details>`
+    )
   }
   if (entry.errorCorrectionPrompt || entry.errorCorrectionResponse) {
-    promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Error Correction</summary><pre>Prompt:\n${escapeHtml(entry.errorCorrectionPrompt || "")}\n\nResponse:\n${escapeHtml(entry.errorCorrectionResponse || "")}</pre></details>`)
+    promptBlocks.push(
+      `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Error Correction</summary><pre>Prompt:\n${escapeHtml(entry.errorCorrectionPrompt || "")}\n\nResponse:\n${escapeHtml(entry.errorCorrectionResponse || "")}</pre></details>`
+    )
   }
   if (entry.followupPrompt || entry.followupResponse || entry.followupError) {
-    promptBlocks.push(`<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Follow-up</summary><pre>Prompt:\n${escapeHtml(entry.followupPrompt || "")}\n\nResponse:\n${escapeHtml(entry.followupResponse || entry.followupError || "")}${entry.followupActionRejected ? `\n\nAction Guard:\n${escapeHtml(entry.followupActionRejected)}` : ""}</pre></details>`)
+    promptBlocks.push(
+      `<details class="ai-prompt-block"><summary class="ai-prompt-block-header">Follow-up</summary><pre>Prompt:\n${escapeHtml(entry.followupPrompt || "")}\n\nResponse:\n${escapeHtml(entry.followupResponse || entry.followupError || "")}${entry.followupActionRejected ? `\n\nAction Guard:\n${escapeHtml(entry.followupActionRejected)}` : ""}</pre></details>`
+    )
   }
 
   if (promptBlocks.length > 0) {
-    parts.push(`<details class="ai-detail-section"><summary class="ai-detail-toggle">详细提示词与回复（${promptBlocks.length}项）</summary><div class="ai-detail-content">${promptBlocks.join("")}</div></details>`)
+    parts.push(
+      `<details class="ai-detail-section"><summary class="ai-detail-toggle">详细提示词与回复（${promptBlocks.length}项）</summary><div class="ai-detail-content">${promptBlocks.join("")}</div></details>`
+    )
   }
 
   return parts.join("")
 }
 
-export function renderRuleEntryDetails(entry: TelemetryEntry, ruleEntryById: Map<string, RuleDecisionEntry>, formatBidRevealNumber: (v: number) => string): string {
+export function renderRuleEntryDetails(
+  entry: TelemetryEntry,
+  ruleEntryById: Map<string, RuleDecisionEntry>,
+  formatBidRevealNumber: (v: number) => string
+): string {
   const ruleEntry = ruleEntryById.get(entry.playerId)
   if (!ruleEntry) {
     return '<div style="color:#8a7a68;font-size:12px;">（无规则AI决策数据）</div>'

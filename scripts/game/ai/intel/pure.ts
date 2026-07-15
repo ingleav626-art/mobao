@@ -112,11 +112,7 @@ export function calcUncertainty(params: {
   const clueRate = clamp((params.outlineCount * 0.65 + params.qualityCount) / total, 0, 1)
   const qualityRate = clamp(params.qualityCount / total, 0, 1)
   const edgeBias = Math.max(0, params.upperEdge - params.lowerEdge)
-  return clamp(
-    0.88 - clueRate * 0.48 - qualityRate * 0.2 + params.spreadRatio * 0.35 - edgeBias * 0.08,
-    0.05,
-    1
-  )
+  return clamp(0.88 - clueRate * 0.48 - qualityRate * 0.2 + params.spreadRatio * 0.35 - edgeBias * 0.08, 0.05, 1)
 }
 
 export function calcAvailableActionState(
@@ -129,12 +125,12 @@ export function calcAvailableActionState(
   availableSkillNames: string[]
   availableItemNames: string[]
 } {
-  const availableSkillIds = skillDefs.filter((entry) => Number(resource.skills[entry.id] || 0) > 0).map(
-    (entry) => entry.id
-  )
-  const availableItemIds = itemDefs.filter((entry) => Number(resource.items[entry.id] || 0) > 0).map(
-    (entry) => entry.id
-  )
+  const availableSkillIds = skillDefs
+    .filter((entry) => Number(resource.skills[entry.id] || 0) > 0)
+    .map((entry) => entry.id)
+  const availableItemIds = itemDefs
+    .filter((entry) => Number(resource.items[entry.id] || 0) > 0)
+    .map((entry) => entry.id)
 
   return {
     availableSkillIds,

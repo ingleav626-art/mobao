@@ -225,7 +225,7 @@ export const Live2dMixin: ThisType<WarehouseSceneThis> = {
           if (!state.running) return
           if (next.readyState >= 3) {
             log(`[快速路径] seek完成, 预热解码器`)
-            next.play().catch(() => { })
+            next.play().catch(() => {})
             if (hasRVFC) {
               next.requestVideoFrameCallback(() => {
                 next.pause()
@@ -253,7 +253,7 @@ export const Live2dMixin: ThisType<WarehouseSceneThis> = {
       }
 
       log(`[慢速路径] readyState=${next.readyState}, 需要解码首帧, 调用 play()`)
-      next.play().catch(() => { })
+      next.play().catch(() => {})
 
       if (hasRVFC) {
         next.requestVideoFrameCallback(() => {
@@ -295,7 +295,7 @@ export const Live2dMixin: ThisType<WarehouseSceneThis> = {
       next.style.opacity = "1"
       next.classList.add("active")
       const playT0 = Date.now()
-      next.play().catch(() => { })
+      next.play().catch(() => {})
       const playT1 = Date.now()
       if (playT1 - playT0 > 1) {
         log(`[性能] next.play() 阻塞了 ${playT1 - playT0}ms`)
@@ -419,7 +419,7 @@ export const Live2dMixin: ThisType<WarehouseSceneThis> = {
 
       setTimeout(() => {
         if (!state.running) return
-        videoB.play().catch(() => { })
+        videoB.play().catch(() => {})
         if (hasRVFC) {
           videoB.requestVideoFrameCallback(() => {
             videoB.pause()

@@ -13,16 +13,8 @@
  */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import type { Artifact } from "../../../../types/game"
-import type {
-  AiIntelSignal,
-  AiItemKnowledge,
-  HighValueTrack
-} from "../../../../types/ai"
-import {
-  toCellKey,
-  shuffle,
-  formatTrackIndex
-} from "../../core/utils"
+import type { AiIntelSignal, AiItemKnowledge, HighValueTrack } from "../../../../types/ai"
+import { toCellKey, shuffle, formatTrackIndex } from "../../core/utils"
 import { QUALITY_CONFIG, ARTIFACT_LIBRARY, toSizeTag } from "../../data/artifacts"
 import {
   pickRandomItemCell,

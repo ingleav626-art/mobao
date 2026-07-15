@@ -135,7 +135,7 @@ interface ResetContext {
 }
 
 interface BuildAIBidsContext {
-  aiPlayers: Array<{ id: string;[key: string]: unknown }>
+  aiPlayers: Array<{ id: string; [key: string]: unknown }>
   clueRate: number
   round: number
   maxRounds: number
@@ -206,7 +206,7 @@ interface PlanIntelActionArgs {
 }
 
 interface ApplyCrowdDiversityArgs {
-  aiPlayers: Array<{ id: string;[key: string]: unknown }>
+  aiPlayers: Array<{ id: string; [key: string]: unknown }>
   decisionMap: Record<string, DecisionResult>
   bidMap: Record<string, number>
   currentBid: number
@@ -510,9 +510,9 @@ export class AuctionAiEngine {
     //计算公式为：((1-纪律性)*0.18 + 失误率*0.72)*(1 + 不确定性*0.28)*(1 - 工具效果的不确定性降低部分*0.84)*(1 + 信息分布*0.22)
     const noiseBand = clamp(
       ((1 - persona.discipline) * 0.18 + persona.errorRate * 0.72) *
-      (1 + safeUncertainty * 0.28) *
-      (1 - normalizedTool.uncertaintyReduction * 0.84) *
-      (1 + safeSpread * 0.22),
+        (1 + safeUncertainty * 0.28) *
+        (1 - normalizedTool.uncertaintyReduction * 0.84) *
+        (1 + safeSpread * 0.22),
       0.025,
       0.26
     )
@@ -528,23 +528,23 @@ export class AuctionAiEngine {
     const targetPsychExpected = Math.max(
       step,
       state.anchorBid * (0.64 + persona.discipline * 0.22) +
-      marketRef * (0.2 + persona.followRate * 0.17 + normalizedTool.followBoost * 0.15) +
-      currentBid *
-      (0.02 +
-        safeClueRate * 0.07 +
-        safeQualityRate * 0.08 +
-        roundProgress * 0.05 +
-        normalizedTool.strategyScoreBoost * 0.025)
+        marketRef * (0.2 + persona.followRate * 0.17 + normalizedTool.followBoost * 0.15) +
+        currentBid *
+          (0.02 +
+            safeClueRate * 0.07 +
+            safeQualityRate * 0.08 +
+            roundProgress * 0.05 +
+            normalizedTool.strategyScoreBoost * 0.025)
     )
 
     // 适应率：AI调整心理预期出价的速度，基于当前的信心程度、市场参考价、锚点出价和工具效果等因素计算得到，数值越高表示AI对新信息的适应越快。
     //计算公式为：0.12+信心*0.24+预期弹性*0.18+工具效果的信心提升部分*0.25-信息分布*0.08
     const adaptRate = clamp(
       0.12 +
-      confidence * 0.24 +
-      persona.expectationElasticity * 0.18 +
-      normalizedTool.confidenceBoost * 0.25 -
-      safeSpread * 0.08,
+        confidence * 0.24 +
+        persona.expectationElasticity * 0.18 +
+        normalizedTool.confidenceBoost * 0.25 -
+        safeSpread * 0.08,
       0.1,
       0.72
     )
@@ -556,12 +556,12 @@ export class AuctionAiEngine {
     //计算公式为：0.04+(1-信心)*0.1+不确定性*0.1+信息分布*0.06-激进程度*0.03+纪律性*0.02-工具效果的不确定性降低部分*0.09
     const overheatThreshold = clamp(
       0.04 +
-      (1 - confidence) * 0.1 +
-      safeUncertainty * 0.1 +
-      safeSpread * 0.06 -
-      persona.aggression * 0.03 +
-      persona.discipline * 0.02 -
-      normalizedTool.uncertaintyReduction * 0.09,
+        (1 - confidence) * 0.1 +
+        safeUncertainty * 0.1 +
+        safeSpread * 0.06 -
+        persona.aggression * 0.03 +
+        persona.discipline * 0.02 -
+        normalizedTool.uncertaintyReduction * 0.09,
       0.04,
       0.26
     )
@@ -996,15 +996,26 @@ export class AuctionAiEngine {
    * @param {Object} [args.signalStats] - 信号统计数据
    * @returns {ToolEffect} 工具效果评估结果
    */
-  buildToolEffect(args: {
-    actionType?: string
-    actionId?: string
-    roundProgress?: number
-    intelSummary?: IntelSummaryInput
-    signalStats?: { aggregate?: IntelSummaryInput; qualitySignalRate?: number; outlineSignalRate?: number; signalCount?: number; spreadRatio?: number; upperEdge?: number; lowerEdge?: number;[key: string]: unknown } | null
-    planScore?: number
-    [key: string]: unknown
-  } = {}): ToolEffect {
+  buildToolEffect(
+    args: {
+      actionType?: string
+      actionId?: string
+      roundProgress?: number
+      intelSummary?: IntelSummaryInput
+      signalStats?: {
+        aggregate?: IntelSummaryInput
+        qualitySignalRate?: number
+        outlineSignalRate?: number
+        signalCount?: number
+        spreadRatio?: number
+        upperEdge?: number
+        lowerEdge?: number
+        [key: string]: unknown
+      } | null
+      planScore?: number
+      [key: string]: unknown
+    } = {}
+  ): ToolEffect {
     const {
       actionType = "none",
       actionId = "none",
@@ -1050,15 +1061,13 @@ export class AuctionAiEngine {
         0.24
       ),
       capBoost: clamp(
-        (Math.max(0, edgeSignal) * 0.22 + qualitySignalRate * 0.06 + qualityRate * 0.04 - spread * 0.05) *
-        stageFactor,
+        (Math.max(0, edgeSignal) * 0.22 + qualitySignalRate * 0.06 + qualityRate * 0.04 - spread * 0.05) * stageFactor,
         -0.08,
         0.18
       ),
       followBoost: clamp(outlineSignalRate * 0.07 + stability * 0.04 - roundProgress * 0.02, -0.05, 0.12),
       aggressionBoost: clamp(
-        (Math.max(0, edgeSignal) * 0.11 + (Number(planScore) || 0) * 0.03 - spread * 0.04) *
-        (1 - roundProgress * 0.35),
+        (Math.max(0, edgeSignal) * 0.11 + (Number(planScore) || 0) * 0.03 - spread * 0.04) * (1 - roundProgress * 0.35),
         -0.08,
         0.12
       ),

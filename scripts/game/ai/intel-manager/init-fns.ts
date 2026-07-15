@@ -40,7 +40,7 @@ export function initAiIntelSystems(deps: AiIntelManagerDeps): void {
       characterName: assignedChar.name,
       skillId: assignedChar.skillId,
       skillName: assignedChar.skillName,
-      passive: assignedChar.passive || null,
+      passive: assignedChar.passive || null
     }
 
     const skillDef = SKILL_DEFS.find((s) => s.id === assignedChar.skillId)
@@ -55,7 +55,7 @@ export function initAiIntelSystems(deps: AiIntelManagerDeps): void {
 
     state.aiResourceState[player.id] = {
       skills: skillEntry,
-      items: itemEntries,
+      items: itemEntries
     }
     state.aiFoldState[player.id] = false
   })

@@ -16,7 +16,7 @@ import {
   SELECTED_CHARACTER_STORAGE_KEY,
   CARRY_ITEMS_STORAGE_KEY,
   CARRY_AUTO_REPLENISH_STORAGE_KEY,
-  PLAYER_MONEY_STORAGE_KEY,
+  PLAYER_MONEY_STORAGE_KEY
 } from "../core/constants"
 
 /** Live2D 双视频循环状态（对应 live2d.ts 的 Live2dVideoState，因未导出在此重新定义） */
@@ -318,8 +318,9 @@ export class CharacterSelectManager {
               <p class="ability-value"><strong>${char.skillName || ""}</strong> - ${char.skillDesc || ""}</p>
             </div>
           </div>
-          ${char.passive
-          ? `
+          ${
+            char.passive
+              ? `
           <div class="ability-block preview-passive">
             <span class="ability-icon">✦</span>
             <div class="ability-content">
@@ -328,7 +329,7 @@ export class CharacterSelectManager {
             </div>
           </div>
           `
-          : `
+              : `
           <div class="ability-block preview-passive empty">
             <span class="ability-icon">✦</span>
             <div class="ability-content">
@@ -337,7 +338,7 @@ export class CharacterSelectManager {
             </div>
           </div>
           `
-        }
+          }
           <div class="ability-block preview-items">
             <span class="ability-icon">🎒</span>
             <div class="ability-content">
@@ -367,7 +368,7 @@ export class CharacterSelectManager {
     selectCharacter(characterId)
     try {
       window.localStorage.setItem(SELECTED_CHARACTER_STORAGE_KEY, JSON.stringify(characterId))
-    } catch (_e) { }
+    } catch (_e) {}
 
     document.querySelectorAll(".character-card").forEach((card) => {
       const isSelected = (card as HTMLElement).dataset.charId === characterId
@@ -414,9 +415,8 @@ export class CharacterSelectManager {
           })
           if (depleted.length > 0) {
             const names = depleted.map((i) => i.name).join("、")
-            this._showCarryConfirm(
-              `以下携带道具库存已耗尽：${names}\n\n进入游戏后将无法使用这些道具，是否继续？`,
-              () => this._doStartSoloGame()
+            this._showCarryConfirm(`以下携带道具库存已耗尽：${names}\n\n进入游戏后将无法使用这些道具，是否继续？`, () =>
+              this._doStartSoloGame()
             )
             return
           }
@@ -691,7 +691,7 @@ export class CharacterSelectManager {
           if (!state.running) return
           if (next.readyState >= 3) {
             log(`[快速路径] seek完成, 预热解码器`)
-            next.play().catch(() => { })
+            next.play().catch(() => {})
             if (hasRVFC) {
               next.requestVideoFrameCallback(() => {
                 next.pause()
@@ -719,7 +719,7 @@ export class CharacterSelectManager {
       }
 
       log(`[慢速路径] readyState=${next.readyState}, 需要解码首帧, 调用 play()`)
-      next.play().catch(() => { })
+      next.play().catch(() => {})
 
       if (hasRVFC) {
         next.requestVideoFrameCallback(() => {
@@ -761,7 +761,7 @@ export class CharacterSelectManager {
       next.style.opacity = "1"
       next.classList.add("active")
       const playT0 = Date.now()
-      next.play().catch(() => { })
+      next.play().catch(() => {})
       const playT1 = Date.now()
       if (playT1 - playT0 > 1) {
         log(`[性能] next.play() 阻塞了 ${playT1 - playT0}ms`)
@@ -885,7 +885,7 @@ export class CharacterSelectManager {
 
       setTimeout(() => {
         if (!state.running) return
-        videoB.play().catch(() => { })
+        videoB.play().catch(() => {})
         if (hasRVFC) {
           videoB.requestVideoFrameCallback(() => {
             videoB.pause()
@@ -1152,22 +1152,22 @@ export class CharacterSelectManager {
           <div class="carry-picker-body">
             <div class="carry-picker-grid">
               ${available
-          .map((item) => {
-            const isLocked = existingIds.has(item.id)
-            const isChecked = pickerSelected.has(item.id)
-            const isFull = !isChecked && totalSelected >= this.maxCarryItems
-            let cls = "carry-picker-item"
-            if (isChecked) cls += isLocked ? " locked" : " checked"
-            else if (isFull) cls += " full"
-            return `<div class="${cls}" data-item-id="${item.id}">
+                .map((item) => {
+                  const isLocked = existingIds.has(item.id)
+                  const isChecked = pickerSelected.has(item.id)
+                  const isFull = !isChecked && totalSelected >= this.maxCarryItems
+                  let cls = "carry-picker-item"
+                  if (isChecked) cls += isLocked ? " locked" : " checked"
+                  else if (isFull) cls += " full"
+                  return `<div class="${cls}" data-item-id="${item.id}">
                   <span class="carry-picker-item-icon">${item.icon}</span>
                   <div class="carry-picker-item-info">
                     <div class="carry-picker-item-name">${item.name}</div>
                     <div class="carry-picker-item-count">库存: ${item.count}</div>
                   </div>
                 </div>`
-          })
-          .join("")}
+                })
+                .join("")}
             </div>
           </div>
           <div class="carry-picker-foot">
@@ -1235,7 +1235,7 @@ export class CharacterSelectManager {
   _saveCarryItems() {
     try {
       window.localStorage.setItem(CARRY_ITEMS_STORAGE_KEY, JSON.stringify(this.carryItems))
-    } catch (_e) { }
+    } catch (_e) {}
   }
 
   _loadCarryItems() {
@@ -1250,7 +1250,9 @@ export class CharacterSelectManager {
         this.carryItems = []
         return
       }
-      this.carryItems = parsed.filter((i: { id?: string }) => i && typeof i.id === "string").slice(0, this.maxCarryItems)
+      this.carryItems = parsed
+        .filter((i: { id?: string }) => i && typeof i.id === "string")
+        .slice(0, this.maxCarryItems)
     } catch (_e) {
       this.carryItems = []
     }
@@ -1269,7 +1271,7 @@ export class CharacterSelectManager {
   _saveAutoReplenish() {
     try {
       window.localStorage.setItem(CARRY_AUTO_REPLENISH_STORAGE_KEY, this.autoReplenish ? "1" : "0")
-    } catch (_e) { }
+    } catch (_e) {}
   }
 
   _loadAutoReplenish() {
@@ -1307,7 +1309,7 @@ export class CharacterSelectManager {
       const raw = window.localStorage.getItem(PLAYER_MONEY_STORAGE_KEY)
       const current = Math.max(0, Math.round(Number(raw) || 0))
       window.localStorage.setItem(PLAYER_MONEY_STORAGE_KEY, String(current - totalCost))
-    } catch (_e) { }
+    } catch (_e) {}
 
     const inv: Record<string, number> = bridge.getFullInventory()
     items.forEach((item: { id: string }) => {
@@ -1316,7 +1318,7 @@ export class CharacterSelectManager {
     })
     try {
       window.localStorage.setItem(bridge.SHOP_STORAGE_KEY as string, JSON.stringify(inv))
-    } catch (_e) { }
+    } catch (_e) {}
 
     return {
       ok: true,

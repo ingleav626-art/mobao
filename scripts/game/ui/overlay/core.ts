@@ -12,13 +12,16 @@ import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import { MobaoAnimations } from "../../animations"
 import { MobaoShopPage } from "../../shop/index"
 import { renderAiThoughtLog } from "../../ai/decision"
+import type { RunLog } from "../../ai/decision"
 
 export const CoreOverlayMixin: ThisType<WarehouseSceneThis> = {
   hideSettleOverlay() {
     const overlayEl = this.dom.settleOverlay
     if (!overlayEl) return
     if (typeof MobaoAnimations !== "undefined") {
-      ;(MobaoAnimations as any).animateOverlayClose(overlayEl, null, function () {
+      ;(
+        MobaoAnimations as unknown as { animateOverlayClose: (el: HTMLElement, a: unknown, cb: () => void) => void }
+      ).animateOverlayClose(overlayEl, null, function () {
         overlayEl.classList.add("hidden")
         overlayEl.style.animation = ""
         overlayEl.style.opacity = ""
@@ -69,7 +72,7 @@ export const CoreOverlayMixin: ThisType<WarehouseSceneThis> = {
   },
 
   renderAiThoughtLog(): void {
-    const self = this as any
+    const self = this as unknown as { dom: { aiThoughtContent: HTMLElement | null }; runLogHistory: RunLog[] }
     renderAiThoughtLog(self.dom.aiThoughtContent, self.runLogHistory)
   },
 

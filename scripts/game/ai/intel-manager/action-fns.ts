@@ -19,7 +19,7 @@ import { getAiIntelSummary, getAiResourceSnapshot } from "./snapshot-fns"
 export function executeAiIntelAction(
   deps: AiIntelManagerDeps,
   playerId: string,
-  plan: IntelActionPlan,
+  plan: IntelActionPlan
 ): RevealResult & { signalStats?: { aggregate: AiSignalStats; latest: AiSignalStats } } {
   return _executeAiIntelActionImpl(deps, playerId, plan)
 }
@@ -27,8 +27,7 @@ export function executeAiIntelAction(
 /** 处理所有 AI 玩家的情报动作（批量） */
 export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<void> {
   const aiPlayers = deps.players.filter((player: Player) => !player.isHuman)
-  const roundProgress =
-    GAME_SETTINGS.maxRounds <= 1 ? 1 : (deps.getRound() - 1) / (GAME_SETTINGS.maxRounds - 1)
+  const roundProgress = GAME_SETTINGS.maxRounds <= 1 ? 1 : (deps.getRound() - 1) / (GAME_SETTINGS.maxRounds - 1)
 
   const state = deps.state
   state.aiRoundEffects = {}
@@ -41,7 +40,7 @@ export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<v
   const batchStartTime = Date.now()
   const batchId = `intel-${batchStartTime}-${Math.random().toString(16).slice(2, 6)}`
   console.log(
-    `[processAiIntelActions] ${batchId} START, aiPlayers: ${aiPlayers.length}, players: ${aiPlayers.map((p: Player) => p.id).join(",")}`,
+    `[processAiIntelActions] ${batchId} START, aiPlayers: ${aiPlayers.length}, players: ${aiPlayers.map((p: Player) => p.id).join(",")}`
   )
 
   return Promise.all(
@@ -54,12 +53,7 @@ export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<v
         deps.setPlayerBidReady(player.id, true)
         deps.updateHud()
 
-        if (
-          !deps.isLanMode() &&
-          !deps.isRoundResolving() &&
-          !deps.isSettled() &&
-          !deps.isRoundPaused()
-        ) {
+        if (!deps.isLanMode() && !deps.isRoundResolving() && !deps.isSettled() && !deps.isRoundPaused()) {
           if (deps.areAllPlayersBidReady()) {
             deps.resolveRoundBids("all-ready")
           }
@@ -72,20 +66,22 @@ export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<v
             if (readyAiPlayers.length === aiPlayers.length) {
               lanBridge.send({
                 type: "lan:ai-bids-ready",
-                aiPlayerIds: deps.getLanAiPlayers().map((ai) => ai.id),
+                aiPlayerIds: deps.getLanAiPlayers().map((ai) => ai.id)
               })
             }
           }
         }
       }
-    }),
+    })
   )
     .then(() => {
       const batchEndTime = Date.now()
       console.log(`[processAiIntelActions] ${batchId} END, total elapsed: ${batchEndTime - batchStartTime}ms`)
 
       if (state.lastAiIntelActions.length > 0) {
-        const text = state.lastAiIntelActions.map((entry: LastAiIntelAction) => formatAiIntelActionPublicLine(deps, entry)).join("；")
+        const text = state.lastAiIntelActions
+          .map((entry: LastAiIntelAction) => formatAiIntelActionPublicLine(deps, entry))
+          .join("；")
         deps.writeLog(`他人情报行动：${text}`)
       }
     })
@@ -102,11 +98,11 @@ export async function processSingleAiIntelAction(
   llmPlan?: LlmPlanResult | null,
   roundProgress?: number,
   batchId?: string,
-  batchStartTime?: number,
+  batchStartTime?: number
 ): Promise<void> {
   const startTime = Date.now()
   console.log(
-    `[processSingleAiIntelAction] ${player.id}-${startTime} START, delay from batch start: ${startTime - (batchStartTime || 0)}ms`,
+    `[processSingleAiIntelAction] ${player.id}-${startTime} START, delay from batch start: ${startTime - (batchStartTime || 0)}ms`
   )
   console.log(
     `[processSingleAiIntelAction] ${player.id} plan:`,
@@ -115,9 +111,9 @@ export async function processSingleAiIntelAction(
           actionType: plan.actionType,
           actionId: plan.actionId,
           decisionSource: plan.decisionSource,
-          lockedByLlm: plan.lockedByLlm,
+          lockedByLlm: plan.lockedByLlm
         }
-      : "null",
+      : "null"
   )
   console.log(
     `[processSingleAiIntelAction] ${player.id} llmPlan:`,
@@ -126,16 +122,16 @@ export async function processSingleAiIntelAction(
           failed: llmPlan.failed,
           hasBidDecision: llmPlan.hasBidDecision,
           bid: llmPlan.bid,
-          actionId: llmPlan.actionId,
+          actionId: llmPlan.actionId
         }
-      : "null",
+      : "null"
   )
 
   if (!deps.isLanMode() && deps.isRoundPaused()) await deps.waitUntilResumed()
   const intelSummary = getAiIntelSummary(deps, player.id)
   const resources = getAiResourceSnapshot(deps, player.id)
   const llmBidReady = Boolean(
-    llmPlan && !llmPlan.failed && llmPlan.hasBidDecision && deps.canUseLlmDecisionForPlayer(player.id),
+    llmPlan && !llmPlan.failed && llmPlan.hasBidDecision && deps.canUseLlmDecisionForPlayer(player.id)
   )
   console.log(`[processSingleAiIntelAction] ${player.id} llmBidReady: ${llmBidReady}`)
 
@@ -149,7 +145,7 @@ export async function processSingleAiIntelAction(
       round: deps.getRound(),
       maxRounds: GAME_SETTINGS.maxRounds,
       intelSummary,
-      resources,
+      resources
     })
   }
 
@@ -159,7 +155,7 @@ export async function processSingleAiIntelAction(
     ok: result.ok,
     actionType: activePlan.actionType,
     actionId: activePlan.actionId,
-    message: result.message,
+    message: result.message
   })
   const effectiveActionType = result.ok ? activePlan.actionType : "none"
   const effectiveActionId = result.ok ? activePlan.actionId : "none"
@@ -170,17 +166,12 @@ export async function processSingleAiIntelAction(
     roundProgress: roundProgress || 0,
     intelSummary: getAiIntelSummary(deps, player.id),
     signalStats: result.ok ? result.signalStats : null,
-    planScore: activePlan.score || 0,
+    planScore: activePlan.score || 0
   })
 
   deps.state.aiRoundEffects[player.id] = effect
 
-  if (
-    !result.ok &&
-    activePlan.actionType !== "none" &&
-    llmBidReady &&
-    deps.canUseLlmDecisionForPlayer(player.id)
-  ) {
+  if (!result.ok && activePlan.actionType !== "none" && llmBidReady && deps.canUseLlmDecisionForPlayer(player.id)) {
     const activeLlmPlan = llmPlan as LlmPlan
     const correctionHistory = deps.state.aiErrorCorrectionHistory[player.id] || []
     const errorDetail = result.message || "未知错误"
@@ -194,7 +185,7 @@ export async function processSingleAiIntelAction(
         aiThoughtLogs: [],
         actionLogs: [],
         roundLogsByRound: {},
-        roundPanelTexts: {},
+        roundPanelTexts: {}
       }
     }
     const errorLogEntry = {
@@ -203,7 +194,7 @@ export async function processSingleAiIntelAction(
       thought: `[工具报错] 错误: ${errorDetail}\n原始决策: skill=${activePlan.actionType === "skill" ? activePlan.actionId : "无"}, item=${activePlan.actionType === "item" ? activePlan.actionId : "无"}`,
       controlMode: "error-correction" as const,
       error: errorDetail,
-      at: Date.now(),
+      at: Date.now()
     }
     deps.state.currentRunLog?.aiThoughtLogs?.push(errorLogEntry)
 
@@ -212,7 +203,7 @@ export async function processSingleAiIntelAction(
       activeLlmPlan,
       errorDetail,
       correctionHistory,
-      deps.getAiConversationMessages(player.id),
+      deps.getAiConversationMessages(player.id)
     )
 
     if (!deps.state.aiErrorCorrectionHistory[player.id]) {
@@ -222,7 +213,7 @@ export async function processSingleAiIntelAction(
       error: errorDetail,
       aiResponse:
         correctionPlan && !correctionPlan.failed ? `出价${correctionPlan.bid}` : correctionPlan?.error || "失败",
-      at: Date.now(),
+      at: Date.now()
     })
 
     if (correctionPlan && !correctionPlan.failed && correctionPlan.hasBidDecision) {
@@ -233,7 +224,7 @@ export async function processSingleAiIntelAction(
         score: 1,
         candidates: [],
         decisionSource: "llm-correction",
-        lockedByLlm: true,
+        lockedByLlm: true
       })
 
       if (correctionResult.ok && llmPlan) {
@@ -254,7 +245,7 @@ export async function processSingleAiIntelAction(
           thought: `[纠错成功] 纠错次数: ${correctionPlan.correctionAttempt}/2\n新出价: ${correctionPlan.bid}\n思考: ${correctionPlan.thought || "无"}`,
           controlMode: "llm-corrected" as const,
           correctionAttempt: correctionPlan.correctionAttempt,
-          at: Date.now(),
+          at: Date.now()
         }
         deps.state.currentRunLog?.aiThoughtLogs?.push(correctionLogEntry)
 
@@ -263,7 +254,7 @@ export async function processSingleAiIntelAction(
           const correctionToolSummary = deps.buildAiToolResultSummary(
             correctionResult,
             correctionPlan.actionType,
-            correctionPlan.actionId,
+            correctionPlan.actionId
           )
           llmPlan.toolResultSummary = correctionToolSummary
           llmPlan.toolActionType = correctionPlan.actionType
@@ -272,7 +263,7 @@ export async function processSingleAiIntelAction(
           const actionDef = deps.getActionDefById(correctionPlan.actionId)
           deps.addPublicInfoEntry({
             source: `${player.name}-${actionDef.name}(纠错)`,
-            text: actionDef.description,
+            text: actionDef.description
           })
 
           if (deps.isLanMode() && deps.isLanHost()) {
@@ -285,15 +276,13 @@ export async function processSingleAiIntelAction(
                 actionId: correctionPlan.actionId,
                 actionType: correctionPlan.actionType,
                 itemName: actionDef.name,
-                itemDesc: actionDef.description,
+                itemDesc: actionDef.description
               })
             }
           }
 
           if (deps.canUseLlmDecisionForPlayer(player.id)) {
-            console.log(
-              `[processSingleAiIntelAction] ${player.id} calling correction followup LLM (tool executed)`,
-            )
+            console.log(`[processSingleAiIntelAction] ${player.id} calling correction followup LLM (tool executed)`)
             const followup = await deps.requestAiLlmFollowupBid(player, llmPlan, correctionToolSummary)
             console.log(
               `[processSingleAiIntelAction] ${player.id} correction followup result:`,
@@ -302,9 +291,9 @@ export async function processSingleAiIntelAction(
                     ok: followup.ok,
                     failed: followup.failed,
                     hasBidDecision: followup.hasBidDecision,
-                    bid: followup.bid,
+                    bid: followup.bid
                   }
-                : "null",
+                : "null"
             )
             if (followup && !followup.failed && followup.hasBidDecision) {
               llmPlan.bid = followup.bid
@@ -325,9 +314,7 @@ export async function processSingleAiIntelAction(
             }
           }
         } else {
-          console.log(
-            `[processSingleAiIntelAction] ${player.id} calling correction followup LLM (no tool action)`,
-          )
+          console.log(`[processSingleAiIntelAction] ${player.id} calling correction followup LLM (no tool action)`)
           const followup = await deps.requestAiLlmFollowupBid(player, llmPlan, "工具执行失败，直接给出价")
           if (followup && !followup.failed && followup.hasBidDecision) {
             llmPlan.bid = followup.bid
@@ -354,7 +341,7 @@ export async function processSingleAiIntelAction(
           thought: `[纠错后执行失败] ${correctionResult.message || "未知错误"}`,
           controlMode: "rule-fallback-after-correction" as const,
           error: correctionResult.message,
-          at: Date.now(),
+          at: Date.now()
         }
         deps.state.currentRunLog?.aiThoughtLogs?.push(failLogEntry)
         if (llmPlan) {
@@ -371,27 +358,25 @@ export async function processSingleAiIntelAction(
         thought: `[纠错跳过] ${correctionPlan ? correctionPlan.error || "已达最大纠错次数" : "纠错请求失败"}`,
         controlMode: "rule-fallback-correction-skipped" as const,
         error: correctionPlan ? correctionPlan.error : "纠错请求失败",
-        at: Date.now(),
+        at: Date.now()
       }
       deps.state.currentRunLog?.aiThoughtLogs?.push(skipLogEntry)
       if (llmPlan) {
         llmPlan.controlMode = "rule-fallback-correction-skipped"
         if (!llmPlan.error) {
-          llmPlan.error = correctionPlan
-            ? `纠错跳过: ${correctionPlan.error || "已达最大纠错次数"}`
-            : "纠错请求失败"
+          llmPlan.error = correctionPlan ? `纠错跳过: ${correctionPlan.error || "已达最大纠错次数"}` : "纠错请求失败"
         }
       }
     }
     console.log(
-      `[processSingleAiIntelAction] ${player.id}-${startTime} END (error correction path), elapsed: ${Date.now() - startTime}ms`,
+      `[processSingleAiIntelAction] ${player.id}-${startTime} END (error correction path), elapsed: ${Date.now() - startTime}ms`
     )
     return
   }
 
   if (!result.ok || activePlan.actionType === "none") {
     console.log(
-      `[processSingleAiIntelAction] ${player.id}-${startTime} END (no action), elapsed: ${Date.now() - startTime}ms`,
+      `[processSingleAiIntelAction] ${player.id}-${startTime} END (no action), elapsed: ${Date.now() - startTime}ms`
     )
     return
   }
@@ -407,13 +392,13 @@ export async function processSingleAiIntelAction(
     detail: toolSummary,
     score: activePlan.score || 0,
     effectTag: effect.tag || "",
-    signalStats: result.signalStats ? result.signalStats.aggregate : null,
+    signalStats: result.signalStats ? result.signalStats.aggregate : null
   })
 
   const actionDef = deps.getActionDefById(activePlan.actionId)
   deps.addPublicInfoEntry({
     source: `${player.name}-${actionDef.name}`,
-    text: actionDef.description,
+    text: actionDef.description
   })
 
   if (deps.isLanMode() && deps.isLanHost()) {
@@ -426,7 +411,7 @@ export async function processSingleAiIntelAction(
         actionId: activePlan.actionId,
         actionType: activePlan.actionType,
         itemName: actionDef.name,
-        itemDesc: actionDef.description,
+        itemDesc: actionDef.description
       })
     }
   }
@@ -439,15 +424,13 @@ export async function processSingleAiIntelAction(
     llmPlan.controlMode = "llm"
 
     if (deps.canUseLlmDecisionForPlayer(player.id)) {
-      console.log(
-        `[processSingleAiIntelAction] ${player.id} calling followup LLM, canUseLlmDecision=true`,
-      )
+      console.log(`[processSingleAiIntelAction] ${player.id} calling followup LLM, canUseLlmDecision=true`)
       const followup = await deps.requestAiLlmFollowupBid(player, llmPlan, toolSummary)
       console.log(
         `[processSingleAiIntelAction] ${player.id} followup result:`,
         followup
           ? { ok: followup.ok, failed: followup.failed, hasBidDecision: followup.hasBidDecision, bid: followup.bid }
-          : "null",
+          : "null"
       )
       if (followup && !followup.failed && followup.hasBidDecision) {
         llmPlan.bid = followup.bid
@@ -520,7 +503,7 @@ export function canUseIntelActions(deps: AiIntelManagerDeps): boolean {
 function _executeAiIntelActionImpl(
   deps: AiIntelManagerDeps,
   playerId: string,
-  plan: IntelActionPlan,
+  plan: IntelActionPlan
 ): RevealResult & { signalStats?: { aggregate: AiSignalStats; latest: AiSignalStats } } {
   const resourceState = deps.state.aiResourceState[playerId]
   if (!resourceState || !plan || plan.actionType === "none") {

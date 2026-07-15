@@ -54,7 +54,14 @@ export interface WarehouseSceneLike {
   writeLog(msg: string): void
   updateHud(): void
   updateActionAvailability(): void
-  updateSidePanels(skillState: Record<string, unknown>, itemState: Record<string, unknown>, clueCount: number, occupiedCells: number, capacity: number, bidState: string): void
+  updateSidePanels(
+    skillState: Record<string, unknown>,
+    itemState: Record<string, unknown>,
+    clueCount: number,
+    occupiedCells: number,
+    capacity: number,
+    bidState: string
+  ): void
   hidePreview(): void
   hideRevealScrollHints(): void
   hideSettleOverlay(): void

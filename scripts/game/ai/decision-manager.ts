@@ -12,8 +12,10 @@ import {
   buildAiDecisionPanelSnapshot,
   beginRunTracking,
   recordAiThoughtLogs,
-  writeLog,
+  writeLog
 } from "./decision"
+import { useAiPanelStore } from "../../vue/stores/aiPanelStore"
+import type { AiThoughtLogEntry, AiDecisionResult } from "../../vue/stores/aiPanelStore"
 
 /** AiDecisionManager 依赖接口 */
 export interface AiDecisionManagerDeps {
@@ -36,10 +38,7 @@ export interface AiDecisionManagerDeps {
   /** 渲染 AI 思考日志面板（beginRunTracking/writeLog/recordAiThoughtLogs 回调） */
   renderAiThoughtLog: () => void
   /** 渲染 LLM 决策面板（recordAiThoughtLogs 回调，可选） */
-  renderAiLogicPanelForLlm?: (telemetry: {
-    round: number
-    entries?: Array<Record<string, unknown>>
-  }) => void
+  renderAiLogicPanelForLlm?: (telemetry: { round: number; entries?: Array<Record<string, unknown>> }) => void
 }
 
 /**
@@ -70,7 +69,7 @@ export class AiDecisionManager {
     const newLog = beginRunTracking(
       this.deps.runLogHistory,
       () => this.deps.saveAiMemoryToStorage(),
-      () => this.deps.renderAiThoughtLog(),
+      () => this.deps.renderAiThoughtLog()
     )
     this.deps.setRunSerial(newLog.runNo)
     this.deps.setCurrentRunLog(newLog)
@@ -83,10 +82,9 @@ export class AiDecisionManager {
       this.deps.getCurrentRunLog(),
       this.deps.dom as { aiLogicContent: HTMLElement | null },
       typeof this.deps.renderAiLogicPanelForLlm === "function"
-        ? (t: { round: number; entries?: Array<Record<string, unknown>> }) =>
-            this.deps.renderAiLogicPanelForLlm!(t)
+        ? (t: { round: number; entries?: Array<Record<string, unknown>> }) => this.deps.renderAiLogicPanelForLlm!(t)
         : null,
-      () => this.deps.renderAiThoughtLog(),
+      () => this.deps.renderAiThoughtLog()
     )
   }
 
@@ -97,7 +95,21 @@ export class AiDecisionManager {
       this.deps.getRound(),
       this.deps.getCurrentRunLog(),
       this.deps.dom as { actionLog: HTMLElement | null },
-      () => this.deps.renderAiThoughtLog(),
+      () => this.deps.renderAiThoughtLog()
     )
+    // 同步到 Vue store
+    try {
+      const store = useAiPanelStore()
+      const currentRunLog = this.deps.getCurrentRunLog()
+      if (currentRunLog && Array.isArray(currentRunLog.aiThoughtLogs)) {
+        const logs: AiThoughtLogEntry[] = []
+        for (const entry of currentRunLog.aiThoughtLogs) {
+          logs.push(entry as AiThoughtLogEntry)
+        }
+        store.syncThoughtLogs(logs)
+      }
+    } catch {
+      // Vue store not available yet, skip sync
+    }
   }
 }

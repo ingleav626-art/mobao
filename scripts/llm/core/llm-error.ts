@@ -8,8 +8,8 @@
  * @exports normalizeActionToken, isNoneActionText - 动作令牌归一化（LLM 响应文本解析）
  */
 
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
-import type { Player } from '../../../types/game'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import type { Player } from "../../../types/game"
 
 /**
  * 安全解析 JSON
@@ -86,16 +86,14 @@ export function parseLlmError(raw: string | undefined, code: string): LlmErrorIn
   if (code === "TIMEOUT" || code === "NETWORK_ERROR") {
     return code === "TIMEOUT"
       ? {
-        brief: "请求超时",
-        detail: "AI响应超时，可能是模型推理耗时过长或网络延迟。可尝试增大超时时间或切换更快的模型。"
-      }
+          brief: "请求超时",
+          detail: "AI响应超时，可能是模型推理耗时过长或网络延迟。可尝试增大超时时间或切换更快的模型。"
+        }
       : { brief: "网络连接失败", detail: "无法连接到API服务器，请检查网络状态或API地址是否正确。" }
   }
   if (code === "MISSING_API_KEY" || /api[_-]?key.*(空|缺|missing|填写)/i.test(s))
     return { brief: "API密钥缺失", detail: "未填写API Key，请在设置中填入有效的密钥。" }
-  if (
-    /invalid.*key|incorrect.*api|api.*key.*invalid|authentication.*(fail|错误)|unauthorized|鉴权|认证失败/i.test(s)
-  )
+  if (/invalid.*key|incorrect.*api|api.*key.*invalid|authentication.*(fail|错误)|unauthorized|鉴权|认证失败/i.test(s))
     return { brief: "API密钥错误", detail: "API Key无效或已过期，请在设置中检查并更新密钥。" }
   if (/401|403/i.test(firstPart))
     return { brief: "API密钥错误", detail: "API Key无效或权限不足，请在设置中检查并更新密钥。" }
@@ -103,8 +101,7 @@ export function parseLlmError(raw: string | undefined, code: string): LlmErrorIn
     return { brief: "模型不存在", detail: "所选模型ID不存在或已下线，请在设置中更换模型。" }
   if (/rate.?limit|429|too many|限流|频率/i.test(s))
     return { brief: "请求过于频繁", detail: "API调用频率超限，请稍后再试或降低并发。" }
-  if (/500|502|503|server.*error/i.test(s))
-    return { brief: "服务器错误", detail: "API服务端返回错误，请稍后再试。" }
+  if (/500|502|503|server.*error/i.test(s)) return { brief: "服务器错误", detail: "API服务端返回错误，请稍后再试。" }
   if (/quota|balance|insufficient|余额|额度不足/i.test(s))
     return { brief: "额度不足", detail: "API账户余额或配额不足，请充值或更换账户。" }
   if (/json|parse|格式|syntax/i.test(s))
@@ -114,12 +111,9 @@ export function parseLlmError(raw: string | undefined, code: string): LlmErrorIn
       brief: "请求被拒绝",
       detail: `服务端返回错误${firstPart ? "：" + firstPart : ""}。请检查API地址、密钥和模型配置。`
     }
-  if (code === "EXCEPTION")
-    return { brief: "请求异常", detail: firstPart || "请求过程中发生异常，请检查网络和设置。" }
-  if (code === "PROXY_ERROR")
-    return { brief: "代理错误", detail: firstPart || "代理服务返回异常，请检查代理配置。" }
-  if (code === "MODEL_MISMATCH")
-    return { brief: "模型不一致", detail: firstPart || "服务端返回的模型与配置不一致。" }
+  if (code === "EXCEPTION") return { brief: "请求异常", detail: firstPart || "请求过程中发生异常，请检查网络和设置。" }
+  if (code === "PROXY_ERROR") return { brief: "代理错误", detail: firstPart || "代理服务返回异常，请检查代理配置。" }
+  if (code === "MODEL_MISMATCH") return { brief: "模型不一致", detail: firstPart || "服务端返回的模型与配置不一致。" }
   return { brief: "请求失败", detail: firstPart || "未知错误，请查看控制台日志了解详情。" }
 }
 
@@ -136,7 +130,13 @@ export function showAiErrorToast(playerName: string, errorSummary: string): void
   }, 3600)
 }
 
-export function setPlayerLlmError(scene: WarehouseSceneThis, playerId: string, errorMessage: string, code: string, level?: string): void {
+export function setPlayerLlmError(
+  scene: WarehouseSceneThis,
+  playerId: string,
+  errorMessage: string,
+  code: string,
+  level?: string
+): void {
   if (!scene._aiLlmErrors) scene._aiLlmErrors = {}
   const parsed = parseLlmError(errorMessage, code)
   scene._aiLlmErrors[playerId] = {

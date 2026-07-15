@@ -29,8 +29,10 @@ export const AiReflectionDialogMixin: ThisType<AiReflectionDialogThis> = {
     }
     el.classList.remove("hidden", "is-pending", "is-done", "is-timeout", "is-error")
     const detail = this.aiReflectionStateDetail || ""
-    const needsSummary = this.isAiMultiGameMemoryEnabled() &&
-      typeof this.shouldGenerateSummary === "function" && this.shouldGenerateSummary()
+    const needsSummary =
+      this.isAiMultiGameMemoryEnabled() &&
+      typeof this.shouldGenerateSummary === "function" &&
+      this.shouldGenerateSummary()
     const summaryLabel = needsSummary ? "并总结" : ""
     const progress = this.aiReflectionTotal > 1 ? ` ${this.aiReflectionCompleted}/${this.aiReflectionTotal}` : ""
     switch (this.aiReflectionState) {
@@ -58,8 +60,10 @@ export const AiReflectionDialogMixin: ThisType<AiReflectionDialogThis> = {
 
   showReflectionPendingDialog() {
     this.removeReflectionPendingDialog()
-    const needsSummary = this.isAiMultiGameMemoryEnabled() &&
-      typeof this.shouldGenerateSummary === "function" && this.shouldGenerateSummary()
+    const needsSummary =
+      this.isAiMultiGameMemoryEnabled() &&
+      typeof this.shouldGenerateSummary === "function" &&
+      this.shouldGenerateSummary()
     const actionLabel = needsSummary ? "反思并总结" : "反思"
     const overlay = document.createElement("div")
     overlay.id = "reflectionPendingDialog"
@@ -94,8 +98,10 @@ export const AiReflectionDialogMixin: ThisType<AiReflectionDialogThis> = {
 
   showReflectionPendingDialogForBack() {
     this.removeReflectionPendingDialog()
-    const needsSummary = this.isAiMultiGameMemoryEnabled() &&
-      typeof this.shouldGenerateSummary === "function" && this.shouldGenerateSummary()
+    const needsSummary =
+      this.isAiMultiGameMemoryEnabled() &&
+      typeof this.shouldGenerateSummary === "function" &&
+      this.shouldGenerateSummary()
     const actionLabel = needsSummary ? "反思并总结" : "反思"
     const overlay = document.createElement("div")
     overlay.id = "reflectionPendingDialog"

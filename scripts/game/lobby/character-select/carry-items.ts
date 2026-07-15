@@ -11,11 +11,12 @@
  */
 import type { WarehouseSceneThis } from "../../../../types/warehouse-scene-this"
 import { MobaoShopBridge } from "../../bridge/shop"
+import { calcReplenishCost, type ReplenishCostResult } from "./pure"
 import {
-  calcReplenishCost,
-  type ReplenishCostResult
-} from "./pure"
-import { CARRY_ITEMS_STORAGE_KEY, CARRY_AUTO_REPLENISH_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY } from "../../core/constants"
+  CARRY_ITEMS_STORAGE_KEY,
+  CARRY_AUTO_REPLENISH_STORAGE_KEY,
+  PLAYER_MONEY_STORAGE_KEY
+} from "../../core/constants"
 
 interface ReplenishResult {
   ok: boolean
@@ -114,22 +115,22 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
           <div class="carry-picker-body">
             <div class="carry-picker-grid">
               ${available
-          .map((item) => {
-            const isLocked = existingIds.has(item.id)
-            const isChecked = pickerSelected.has(item.id)
-            const isFull = !isChecked && totalSelected >= this._MAX_CARRY_ITEMS
-            let cls = "carry-picker-item"
-            if (isChecked) cls += isLocked ? " locked" : " checked"
-            else if (isFull) cls += " full"
-            return `<div class="${cls}" data-item-id="${item.id}">
+                .map((item) => {
+                  const isLocked = existingIds.has(item.id)
+                  const isChecked = pickerSelected.has(item.id)
+                  const isFull = !isChecked && totalSelected >= this._MAX_CARRY_ITEMS
+                  let cls = "carry-picker-item"
+                  if (isChecked) cls += isLocked ? " locked" : " checked"
+                  else if (isFull) cls += " full"
+                  return `<div class="${cls}" data-item-id="${item.id}">
                   <span class="carry-picker-item-icon">${item.icon}</span>
                   <div class="carry-picker-item-info">
                     <div class="carry-picker-item-name">${item.name}</div>
                     <div class="carry-picker-item-count">库存: ${item.count}</div>
                   </div>
                 </div>`
-          })
-          .join("")}
+                })
+                .join("")}
             </div>
           </div>
           <div class="carry-picker-foot">
@@ -197,7 +198,7 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
   _saveCarryItems() {
     try {
       window.localStorage.setItem(CARRY_ITEMS_STORAGE_KEY, JSON.stringify(this._carryItems))
-    } catch (_e) { }
+    } catch (_e) {}
   },
 
   _loadCarryItems() {
@@ -212,7 +213,9 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
         this._carryItems = []
         return
       }
-      this._carryItems = parsed.filter((i: { id?: string }) => i && typeof i.id === "string").slice(0, this._MAX_CARRY_ITEMS)
+      this._carryItems = parsed
+        .filter((i: { id?: string }) => i && typeof i.id === "string")
+        .slice(0, this._MAX_CARRY_ITEMS)
     } catch (_e) {
       this._carryItems = []
     }
@@ -231,7 +234,7 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
   _saveAutoReplenish() {
     try {
       window.localStorage.setItem(CARRY_AUTO_REPLENISH_STORAGE_KEY, this._autoReplenish ? "1" : "0")
-    } catch (_e) { }
+    } catch (_e) {}
   },
 
   _loadAutoReplenish() {
@@ -269,7 +272,7 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
       const raw = window.localStorage.getItem(PLAYER_MONEY_STORAGE_KEY)
       const current = Math.max(0, Math.round(Number(raw) || 0))
       window.localStorage.setItem(PLAYER_MONEY_STORAGE_KEY, String(current - totalCost))
-    } catch (_e) { }
+    } catch (_e) {}
 
     const inv: Record<string, number> = bridge.getFullInventory()
     items.forEach((item: { id: string }) => {
@@ -278,7 +281,7 @@ export const CarryItemsMixin: ThisType<WarehouseSceneThis> = {
     })
     try {
       window.localStorage.setItem(bridge.SHOP_STORAGE_KEY as string, JSON.stringify(inv))
-    } catch (_e) { }
+    } catch (_e) {}
 
     return {
       ok: true,

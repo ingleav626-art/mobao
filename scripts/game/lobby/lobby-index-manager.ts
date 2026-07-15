@@ -7,8 +7,24 @@
  *              Manager 可独立单测，过渡期 Mixin 保留为薄代理层。
  */
 import type { Player } from "../../../types/game"
-import { bindLobbyEvents, updateLobbyMoneyDisplay, applyMapProfile, initPlayersUI, updatePlayerAvatar, isAiLlmEnabledForPlayer, initPreviewFilterOptions, renderShopContent, syncItemManagerFromShop, updatePlayerCharNames } from "./lobby-index-manager/init-fns"
-import { showLobbyMain, showLobbySubPage, goToCharacterSelect, showCharacterSelectPageWithMap } from "./lobby-index-manager/navigation-fns"
+import {
+  bindLobbyEvents,
+  updateLobbyMoneyDisplay,
+  applyMapProfile,
+  initPlayersUI,
+  updatePlayerAvatar,
+  isAiLlmEnabledForPlayer,
+  initPreviewFilterOptions,
+  renderShopContent,
+  syncItemManagerFromShop,
+  updatePlayerCharNames
+} from "./lobby-index-manager/init-fns"
+import {
+  showLobbyMain,
+  showLobbySubPage,
+  goToCharacterSelect,
+  showCharacterSelectPageWithMap
+} from "./lobby-index-manager/navigation-fns"
 import { cleanupGameScene, enterLobby, enterLanRoom, exitLobby, startSoloGame } from "./lobby-index-manager/cleanup-fns"
 
 /** AI 角色分配信息 */
@@ -109,41 +125,79 @@ export class LobbyIndexManager {
     this.state = deps.state
   }
 
-  bindLobbyEvents() { return bindLobbyEvents(this.deps, this.state) }
+  bindLobbyEvents() {
+    return bindLobbyEvents(this.deps, this.state)
+  }
 
-  showLobbyMain(skipAnimation?: boolean) { return showLobbyMain(this.state, skipAnimation) }
+  showLobbyMain(skipAnimation?: boolean) {
+    return showLobbyMain(this.state, skipAnimation)
+  }
 
-  showLobbySubPage(page: string) { return showLobbySubPage(this.deps, this.state, page) }
+  showLobbySubPage(page: string) {
+    return showLobbySubPage(this.deps, this.state, page)
+  }
 
-  goToCharacterSelect() { return goToCharacterSelect(this.deps, this.state) }
+  goToCharacterSelect() {
+    return goToCharacterSelect(this.deps, this.state)
+  }
 
-  showCharacterSelectPageWithMap() { return showCharacterSelectPageWithMap(this.deps, this.state) }
+  showCharacterSelectPageWithMap() {
+    return showCharacterSelectPageWithMap(this.deps, this.state)
+  }
 
-  updateLobbyMoneyDisplay() { return updateLobbyMoneyDisplay() }
+  updateLobbyMoneyDisplay() {
+    return updateLobbyMoneyDisplay()
+  }
 
-  cleanupGameScene() { return cleanupGameScene(this.deps, this.state) }
+  cleanupGameScene() {
+    return cleanupGameScene(this.deps, this.state)
+  }
 
-  enterLobby() { return enterLobby(this.deps, this.state) }
+  enterLobby() {
+    return enterLobby(this.deps, this.state)
+  }
 
-  enterLanRoom() { return enterLanRoom(this.deps, this.state) }
+  enterLanRoom() {
+    return enterLanRoom(this.deps, this.state)
+  }
 
-  exitLobby() { return exitLobby(this.deps) }
+  exitLobby() {
+    return exitLobby(this.deps)
+  }
 
-  startSoloGame() { return startSoloGame(this.deps, this.state) }
+  startSoloGame() {
+    return startSoloGame(this.deps, this.state)
+  }
 
-  applyMapProfile() { return applyMapProfile(this.state) }
+  applyMapProfile() {
+    return applyMapProfile(this.state)
+  }
 
-  initPlayersUI() { return initPlayersUI(this.deps, this.state) }
+  initPlayersUI() {
+    return initPlayersUI(this.deps, this.state)
+  }
 
-  updatePlayerAvatar(playerId: string, avatarEl: HTMLElement) { return updatePlayerAvatar(this.state, playerId, avatarEl) }
+  updatePlayerAvatar(playerId: string, avatarEl: HTMLElement) {
+    return updatePlayerAvatar(this.state, playerId, avatarEl)
+  }
 
-  isAiLlmEnabledForPlayer(playerId: string): boolean { return isAiLlmEnabledForPlayer(this.state, playerId) }
+  isAiLlmEnabledForPlayer(playerId: string): boolean {
+    return isAiLlmEnabledForPlayer(this.state, playerId)
+  }
 
-  initPreviewFilterOptions() { return initPreviewFilterOptions(this.deps) }
+  initPreviewFilterOptions() {
+    return initPreviewFilterOptions(this.deps)
+  }
 
-  renderShopContent() { return renderShopContent(this.deps, this.state) }
+  renderShopContent() {
+    return renderShopContent(this.deps, this.state)
+  }
 
-  syncItemManagerFromShop() { return syncItemManagerFromShop(this.deps) }
+  syncItemManagerFromShop() {
+    return syncItemManagerFromShop(this.deps)
+  }
 
-  updatePlayerCharNames() { return updatePlayerCharNames(this.state) }
+  updatePlayerCharNames() {
+    return updatePlayerCharNames(this.state)
+  }
 }

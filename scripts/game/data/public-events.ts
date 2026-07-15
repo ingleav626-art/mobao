@@ -320,7 +320,12 @@ export function pickRandomPublicEvent(items: WarehouseItem[], gridCols: number, 
   return { ...topEvents[randomIndex] }
 }
 
-export function pickMultiplePublicEvents(items: WarehouseItem[], gridCols: number, gridRows: number, count: number): PublicEvent[] {
+export function pickMultiplePublicEvents(
+  items: WarehouseItem[],
+  gridCols: number,
+  gridRows: number,
+  count: number
+): PublicEvent[] {
   const events = generateEvents(items, gridCols, gridRows)
   if (events.length === 0) {
     return [{ id: "evt-default", text: "仓库已开启，请开始探索藏品。", category: "系统提示" }]
@@ -329,6 +334,10 @@ export function pickMultiplePublicEvents(items: WarehouseItem[], gridCols: numbe
   return events.slice(0, selectedCount).map((e) => ({ ...e }))
 }
 
-export function getWarehouseAnalysis(items: WarehouseItem[], _gridCols: number, _gridRows: number): WarehouseAnalysis | null {
+export function getWarehouseAnalysis(
+  items: WarehouseItem[],
+  _gridCols: number,
+  _gridRows: number
+): WarehouseAnalysis | null {
   return analyzeWarehouse(items)
 }

@@ -102,7 +102,7 @@ export function setupPreviewTouchScroll(deps: WarehouseManagerDeps): void {
         isDraggingToClose = pop.scrollTop <= 0
       }
     },
-    { passive: true } as EventListenerOptions,
+    { passive: true } as EventListenerOptions
   )
 
   pop.addEventListener(
@@ -115,7 +115,7 @@ export function setupPreviewTouchScroll(deps: WarehouseManagerDeps): void {
         return
       }
     },
-    { passive: true } as EventListenerOptions,
+    { passive: true } as EventListenerOptions
   )
 }
 
@@ -153,7 +153,7 @@ export function renderPreviewCandidates(deps: WarehouseManagerDeps, item: Artifa
   const candidates = deps.artifactManager.getCandidatesByRevealState({
     qualityKey,
     sizeTag,
-    category,
+    category
   })
 
   if (item.revealed.outline && item.revealed.qualityCell && candidates.length === 1) {
@@ -204,7 +204,7 @@ export function renderSettlementItemPreview(deps: WarehouseManagerDeps, item: Ar
     `<div class="detail-row"><span class="detail-label">基础价</span><span class="detail-value">${item.basePrice}</span></div>`,
     `<div class="detail-row"><span class="detail-label">揭示价值</span><span class="detail-value highlight">${item.trueValue}</span></div>`,
     "</div>",
-    "</article>",
+    "</article>"
   ].join("")
   repositionPreview(deps)
 }

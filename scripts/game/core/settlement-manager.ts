@@ -1,4 +1,4 @@
-import type { WarehouseSceneThis } from '../../../types/warehouse-scene-this'
+import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 /**
  * @file core/settlement-manager.js
@@ -48,10 +48,7 @@ export interface DividendTicketResult {
   mechanism: "dividend" | "ticket" | "none"
 }
 
-export function calculateDividendTicket(
-  totalValue: number,
-  winnerBid: number
-): DividendTicketResult {
+export function calculateDividendTicket(totalValue: number, winnerBid: number): DividendTicketResult {
   const winnerProfit = totalValue - winnerBid
   let dividendPerPlayer = 0
   let ticketPerPlayer = 0

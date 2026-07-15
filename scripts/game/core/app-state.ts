@@ -87,7 +87,7 @@ export function get(key?: string): unknown | AppStateData {
  */
 export function set(key: string, value: unknown): AppStateData {
   const current = load()
-    ; (current as unknown as Record<string, unknown>)[key] = value
+  ;(current as unknown as Record<string, unknown>)[key] = value
   save(current)
   return current
 }

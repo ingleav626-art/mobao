@@ -8,12 +8,7 @@
  *              Manager 可独立单测（构造函数注入 mock 依赖），过渡期 Mixin 保留为薄代理层。
  */
 import type { Player, SkillContext } from "../../../types/game"
-import {
-  getItemInfo,
-  getPlayerActionId,
-  consumeActionState,
-  wrapContextWithCharacterBonus,
-} from "./skill-item-manager"
+import { getItemInfo, getPlayerActionId, consumeActionState, wrapContextWithCharacterBonus } from "./skill-item-manager"
 import { SKILL_DEFS } from "../data/skills"
 import { ITEM_DEFS } from "../data/items"
 
@@ -141,7 +136,7 @@ export class SkillItemManager {
     const def = defs.find((d) => d.id === actionId)
     this.deps.addPrivateIntelEntry({
       source: def ? def.name : actionId,
-      text: def ? def.description : fallbackText,
+      text: def ? def.description : fallbackText
     })
     this.deps.writeLog(result.message)
     this.deps.updateHud()
@@ -154,7 +149,7 @@ export class SkillItemManager {
         playerName: this.deps.getPlayers().find((p) => p.id === playerActionId)?.name || "玩家",
         actionId,
         actionType: lanActionType,
-        itemName: def ? def.name : actionId,
+        itemName: def ? def.name : actionId
       })
     }
   }
@@ -168,7 +163,7 @@ export class SkillItemManager {
       actionLabel: "技能",
       lanActionType: "skill",
       fallbackText: "技能效果",
-      closeDrawer: false,
+      closeDrawer: false
     })
   }
 
@@ -184,7 +179,7 @@ export class SkillItemManager {
       closeDrawer: true,
       onAfterUse: (id) => {
         this.deps.consumeItem(id)
-      },
+      }
     })
   }
 

@@ -37,7 +37,12 @@
  * @requires core/settings - 游戏设置（资金管理）
  * @exports window.MobaoShopBridge - 商店系统 Bridge 单例
  */
-import { SHOP_INVENTORY_STORAGE_KEY, SHOP_REFRESH_DATE_STORAGE_KEY, SHOP_LIMITED_OFFER_STORAGE_KEY, PLAYER_MONEY_STORAGE_KEY } from "../core/constants"
+import {
+  SHOP_INVENTORY_STORAGE_KEY,
+  SHOP_REFRESH_DATE_STORAGE_KEY,
+  SHOP_LIMITED_OFFER_STORAGE_KEY,
+  PLAYER_MONEY_STORAGE_KEY
+} from "../core/constants"
 
 const SHOP_STORAGE_KEY = SHOP_INVENTORY_STORAGE_KEY
 const SHOP_REFRESH_DATE_KEY = SHOP_REFRESH_DATE_STORAGE_KEY
@@ -170,9 +175,7 @@ function saveInventory(inv: Record<string, number>): void {
 
 function getTodayDateStr(): string {
   const d = new Date()
-  return (
-    d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")
-  )
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")
 }
 
 function loadDailyPurchases(): Record<string, number> {
@@ -211,7 +214,12 @@ function getRemainingDaily(itemId: string): number {
  * @param {string} itemId - 道具ID
  * @returns {{ ok: boolean, message: string, newMoney?: number, newInventory?: Record<string, number> }}
  */
-function purchaseItem(itemId: string): { ok: boolean; message: string; newMoney?: number; newInventory?: Record<string, number> } {
+function purchaseItem(itemId: string): {
+  ok: boolean
+  message: string
+  newMoney?: number
+  newInventory?: Record<string, number>
+} {
   const shopItem = SHOP_ITEMS.find((s) => s.id === itemId)
   if (!shopItem) return { ok: false, message: "商品不存在" }
 
@@ -276,7 +284,13 @@ function getPlayerMoney(): number {
   return Math.max(0, Math.round(Number(raw) || 0))
 }
 
-function getDiscountBadge(discount: number): { type: string; label: string; color: string; minDiscount: number; maxDiscount: number } {
+function getDiscountBadge(discount: number): {
+  type: string
+  label: string
+  color: string
+  minDiscount: number
+  maxDiscount: number
+} {
   for (let i = 0; i < DISCOUNT_BADGES.length; i++) {
     const badge = DISCOUNT_BADGES[i]
     if (discount >= badge.minDiscount && discount <= badge.maxDiscount) {
@@ -350,7 +364,13 @@ function getLimitedOffers(): LimitedOffer[] {
   return newOffers
 }
 
-function purchaseLimitedOffer(offerIndex: number): { ok: boolean; message: string; newMoney?: number; newInventory?: Record<string, number>; offer?: LimitedOffer } {
+function purchaseLimitedOffer(offerIndex: number): {
+  ok: boolean
+  message: string
+  newMoney?: number
+  newInventory?: Record<string, number>
+  offer?: LimitedOffer
+} {
   const offers = getLimitedOffers()
   if (offerIndex < 0 || offerIndex >= offers.length) {
     return { ok: false, message: "特惠商品不存在" }
@@ -405,4 +425,3 @@ export const MobaoShopBridge = {
   SHOP_REFRESH_DATE_KEY,
   LIMITED_OFFER_KEY
 }
-

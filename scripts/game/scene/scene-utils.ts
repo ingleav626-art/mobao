@@ -26,17 +26,13 @@ import {
   buildCatalogSummaryInner as buildCatalogSummaryImpl,
   buildQualityPriceGuide as buildQualityPriceGuideImpl,
   getActionDefById as getActionDefByIdImpl,
-  buildOtherPlayersPublicInfo as buildOtherPlayersPublicInfoImpl,
+  buildOtherPlayersPublicInfo as buildOtherPlayersPublicInfoImpl
 } from "../ai/context-builder"
 
 /**
  * 滚轮滚动元素
  */
-export function scrollElementByWheel(
-  this: WarehouseSceneThis,
-  element: HTMLElement | null,
-  deltaY: number
-): boolean {
+export function scrollElementByWheel(this: WarehouseSceneThis, element: HTMLElement | null, deltaY: number): boolean {
   if (!element) {
     return false
   }
@@ -55,10 +51,7 @@ export function buildBidHistorySnapshot(this: WarehouseSceneThis): unknown {
   return buildBidHistorySnapshotImpl(this.round, this.players, this.playerRoundHistory)
 }
 
-export function buildPublicEventSnapshot(
-  this: WarehouseSceneThis,
-  options: Record<string, unknown> = {}
-): unknown {
+export function buildPublicEventSnapshot(this: WarehouseSceneThis, options: Record<string, unknown> = {}): unknown {
   return buildPublicEventSnapshotImpl(
     this.players,
     this.playerUsageHistory,
@@ -85,17 +78,11 @@ export function buildQualityPriceRangeTableCompact(this: WarehouseSceneThis): un
   return buildQualityPriceRangeTableCompactImpl()
 }
 
-export function buildCatalogSummary(
-  this: WarehouseSceneThis,
-  options: Record<string, unknown> = {}
-): unknown {
+export function buildCatalogSummary(this: WarehouseSceneThis, options: Record<string, unknown> = {}): unknown {
   return buildCatalogSummaryImpl(options)
 }
 
-export function buildQualityPriceGuide(
-  this: WarehouseSceneThis,
-  options: Record<string, unknown> = {}
-): unknown {
+export function buildQualityPriceGuide(this: WarehouseSceneThis, options: Record<string, unknown> = {}): unknown {
   return buildQualityPriceGuideImpl(options)
 }
 

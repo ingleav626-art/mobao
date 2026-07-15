@@ -52,9 +52,17 @@ type RuleDecisionEntry = {
 }
 
 type DecisionEntry = {
-  playerId: string; playerName: string; controlMode: string; finalBid: number; decisionSource: string
-  correctionAttempt: number; originalError?: string; historyMessagesCount: number; crossGameMemoryCount: number
-  inGameHistoryCount: number; ruleDecision?: { confidence?: number; archetype?: string;[key: string]: unknown }
+  playerId: string
+  playerName: string
+  controlMode: string
+  finalBid: number
+  decisionSource: string
+  correctionAttempt: number
+  originalError?: string
+  historyMessagesCount: number
+  crossGameMemoryCount: number
+  inGameHistoryCount: number
+  ruleDecision?: { confidence?: number; archetype?: string; [key: string]: unknown }
   [key: string]: unknown
 }
 
@@ -70,7 +78,7 @@ export function compactPanelTextForSnapshot(text: string): string {
   try {
     const parsed = JSON.parse(input)
     displayText = JSON.stringify(parsed, null, 2)
-  } catch (_e) { }
+  } catch (_e) {}
 
   return displayText
     .split("\n")
@@ -92,31 +100,35 @@ export function buildAiDecisionPanelSnapshot(
   telemetry: Record<string, unknown>,
   getLastDecisionLog: (() => Record<string, unknown> | null) | null
 ): string | null {
-  if (!telemetry || (telemetry as { mode?: string }).mode !== "llm" || !Array.isArray((telemetry as { entries?: unknown[] }).entries)) {
+  if (
+    !telemetry ||
+    (telemetry as { mode?: string }).mode !== "llm" ||
+    !Array.isArray((telemetry as { entries?: unknown[] }).entries)
+  ) {
     return null
   }
 
-  const lines: string[] = [];
-  const t = telemetry as { round: number; entries: DecisionEntry[] };
-  lines.push(`回合 ${t.round} | 决策模式：混合（大模型+规则AI）`);
-  lines.push("说明：大模型接管显示完整提示词与回复；规则AI显示信心拆解与估值。");
-  lines.push("");
-  lines.push("-");
+  const lines: string[] = []
+  const t = telemetry as { round: number; entries: DecisionEntry[] }
+  lines.push(`回合 ${t.round} | 决策模式：混合（大模型+规则AI）`)
+  lines.push("说明：大模型接管显示完整提示词与回复；规则AI显示信心拆解与估值。")
+  lines.push("")
+  lines.push("-")
 
-  const rulePayload = getLastDecisionLog ? getLastDecisionLog() : null;
-  const ruleEntries: unknown[] = rulePayload ? ((rulePayload as { entries?: unknown[] }).entries || []) : [];
+  const rulePayload = getLastDecisionLog ? getLastDecisionLog() : null
+  const ruleEntries: unknown[] = rulePayload ? (rulePayload as { entries?: unknown[] }).entries || [] : []
   const ruleEntryById = new Map<string, RuleDecisionEntry>(
     ruleEntries.map((entry: unknown) => [(entry as DecisionEntry).playerId, entry as RuleDecisionEntry])
-  );
+  )
 
-  (t.entries || []).forEach((entry: DecisionEntry) => {
-    const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected";
-    const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback");
-    lines.push(`${entry.playerName}（${entry.playerId}）| 接管状态: ${isLlm ? "大模型" : "规则AI"}`);
-    lines.push(`  最终出价: ${formatBidRevealNumber(entry.finalBid)} | 决策来源: ${entry.decisionSource}`);
+  ;(t.entries || []).forEach((entry: DecisionEntry) => {
+    const isLlm = entry.controlMode === "llm" || entry.controlMode === "llm-corrected"
+    const isFallback = entry.controlMode && entry.controlMode.startsWith("rule-fallback")
+    lines.push(`${entry.playerName}（${entry.playerId}）| 接管状态: ${isLlm ? "大模型" : "规则AI"}`)
+    lines.push(`  最终出价: ${formatBidRevealNumber(entry.finalBid)} | 决策来源: ${entry.decisionSource}`)
 
     if (entry.controlMode) {
-      const modeLabel = CONTROL_MODE_LABELS[entry.controlMode] || entry.controlMode;
+      const modeLabel = CONTROL_MODE_LABELS[entry.controlMode] || entry.controlMode
       if (isFallback) {
         lines.push(`  ⚠️ ${modeLabel}`)
       } else if (isLlm) {
@@ -155,35 +167,35 @@ export function buildAiDecisionPanelSnapshot(
         lines.push(`  回退规则出价参考: ${formatBidRevealNumber(Number(entry.fallbackRuleBid) || 0)}`)
       }
       if (entry.systemPrompt) {
-        lines.push("  [System Prompt]");
-        lines.push(compactPanelTextForSnapshot(String(entry.systemPrompt)));
+        lines.push("  [System Prompt]")
+        lines.push(compactPanelTextForSnapshot(String(entry.systemPrompt)))
       }
       if (entry.crossGameMemoryText) {
-        lines.push("  [Cross-game Memory]");
-        lines.push(compactPanelTextForSnapshot(String(entry.crossGameMemoryText)));
+        lines.push("  [Cross-game Memory]")
+        lines.push(compactPanelTextForSnapshot(String(entry.crossGameMemoryText)))
       }
-      lines.push("  [User Prompt]");
-      lines.push(compactPanelTextForSnapshot(String(entry.userPrompt)));
-      lines.push("  [Model Response]");
-      lines.push(compactPanelTextForSnapshot(String(entry.modelResponse)));
+      lines.push("  [User Prompt]")
+      lines.push(compactPanelTextForSnapshot(String(entry.userPrompt)))
+      lines.push("  [Model Response]")
+      lines.push(compactPanelTextForSnapshot(String(entry.modelResponse)))
       if (entry.toolResultSummary) {
-        lines.push("  [Tool Result]");
-        lines.push(compactPanelTextForSnapshot(String(entry.toolResultSummary)));
+        lines.push("  [Tool Result]")
+        lines.push(compactPanelTextForSnapshot(String(entry.toolResultSummary)))
       }
       if (entry.errorCorrectionPrompt || entry.errorCorrectionResponse) {
-        lines.push("  [Error Correction Prompt]");
-        lines.push(compactPanelTextForSnapshot(String(entry.errorCorrectionPrompt)));
-        lines.push("  [Error Correction Response]");
-        lines.push(compactPanelTextForSnapshot(String(entry.errorCorrectionResponse)));
+        lines.push("  [Error Correction Prompt]")
+        lines.push(compactPanelTextForSnapshot(String(entry.errorCorrectionPrompt)))
+        lines.push("  [Error Correction Response]")
+        lines.push(compactPanelTextForSnapshot(String(entry.errorCorrectionResponse)))
       }
       if (entry.followupPrompt || entry.followupResponse || entry.followupError) {
-        lines.push("  [Follow-up Prompt]");
-        lines.push(compactPanelTextForSnapshot(String(entry.followupPrompt)));
-        lines.push("  [Follow-up Response]");
-        lines.push(compactPanelTextForSnapshot(String(entry.followupResponse || entry.followupError)));
+        lines.push("  [Follow-up Prompt]")
+        lines.push(compactPanelTextForSnapshot(String(entry.followupPrompt)))
+        lines.push("  [Follow-up Response]")
+        lines.push(compactPanelTextForSnapshot(String(entry.followupResponse || entry.followupError)))
         if (entry.followupActionRejected) {
-          lines.push("  [Follow-up Action Guard]");
-          lines.push(compactPanelTextForSnapshot(String(entry.followupActionRejected)));
+          lines.push("  [Follow-up Action Guard]")
+          lines.push(compactPanelTextForSnapshot(String(entry.followupActionRejected)))
         }
       }
     } else {
@@ -192,9 +204,7 @@ export function buildAiDecisionPanelSnapshot(
         const parts = ruleEntry.confidenceParts || {}
         const overheat = Math.round((ruleEntry.overheatRatio || 0) * 100)
         const threshold = Math.round((ruleEntry.overheatThreshold || 0) * 100)
-        lines.push(
-          `  信心 ${Math.round((ruleEntry.confidence || 0) * 100)}% | 人格 ${ruleEntry.archetype || "规则型"}`
-        )
+        lines.push(`  信心 ${Math.round((ruleEntry.confidence || 0) * 100)}% | 人格 ${ruleEntry.archetype || "规则型"}`)
         lines.push(
           `  私有线索: 线索率 ${Math.round((ruleEntry.intelClueRate || 0) * 100)}% | 品质率 ${Math.round((ruleEntry.intelQualityRate || 0) * 100)}% | 不确定 ${(ruleEntry.intelUncertainty || 0).toFixed(2)} | 波动 ${(ruleEntry.intelSpreadRatio || 0).toFixed(2)}`
         )
@@ -206,9 +216,7 @@ export function buildAiDecisionPanelSnapshot(
           `  信心拆解: 基础 ${(parts.base || 0).toFixed(2)} + 线索 ${(parts.clue || 0).toFixed(2)} + 品质 ${(parts.quality || 0).toFixed(2)} + 回合 ${(parts.progress || 0).toFixed(2)} + 盘口 ${(parts.market || 0).toFixed(2)} + 工具 ${(parts.tool || 0).toFixed(2)} + 边缘奖励 ${(parts.edgeBonus || 0).toFixed(2)} - 波动惩罚 ${(parts.spreadPenalty || 0).toFixed(2)} - 不确定惩罚 ${(parts.uncertaintyPenalty || 0).toFixed(2)} + 情绪 ${(parts.mood || 0).toFixed(2)}`
         )
         lines.push(`  超预期: ${overheat}% | 回撤阈值 ${threshold}%`)
-        lines.push(
-          `  工具影响: ${ruleEntry.toolTag || "无"} | 决策加分 ${(ruleEntry.toolScoreBoost || 0).toFixed(2)}`
-        )
+        lines.push(`  工具影响: ${ruleEntry.toolTag || "无"} | 决策加分 ${(ruleEntry.toolScoreBoost || 0).toFixed(2)}`)
         lines.push(
           `  行为: ${ruleEntry.actionTag || "常规"}${ruleEntry.mistakeTag ? ` | 失误:${ruleEntry.mistakeTag}` : ""}${ruleEntry.diversifyTag ? ` | 去同质:${ruleEntry.diversifyTag}` : ""}`
         )
@@ -222,51 +230,46 @@ export function buildAiDecisionPanelSnapshot(
   return lines.join("\n")
 }
 
-export function renderAiThoughtLog(
-  aiThoughtContent: HTMLElement | null,
-  runLogHistory: RunLog[]
-): void {
+export function renderAiThoughtLog(aiThoughtContent: HTMLElement | null, runLogHistory: RunLog[]): void {
   if (!aiThoughtContent) {
     return
   }
 
-  const lines: string[] = [];
-  const runs = runLogHistory.slice().reverse();
+  const lines: string[] = []
+  const runs = runLogHistory.slice().reverse()
   runs.forEach((run) => {
-    lines.push(`第 ${run.runNo} 局`);
+    lines.push(`第 ${run.runNo} 局`)
 
     if (!run.aiThoughtLogs || run.aiThoughtLogs.length === 0) {
-      lines.push("  - 暂无AI思考记录");
+      lines.push("  - 暂无AI思考记录")
     } else {
-      (run.aiThoughtLogs as Array<{ round?: number; playerName?: string; thought?: string; reasoningContent?: string }>).forEach((entry) => {
-        lines.push(`  - R${entry.round} ${entry.playerName}: ${entry.thought}`);
+      ;(
+        run.aiThoughtLogs as Array<{ round?: number; playerName?: string; thought?: string; reasoningContent?: string }>
+      ).forEach((entry) => {
+        lines.push(`  - R${entry.round} ${entry.playerName}: ${entry.thought}`)
         if (entry.reasoningContent) {
-          lines.push(`    [推理过程]`);
-          lines.push(`    ${entry.reasoningContent.split("\n").join("\n    ")}`);
+          lines.push(`    [推理过程]`)
+          lines.push(`    ${entry.reasoningContent.split("\n").join("\n    ")}`)
         }
-      });
+      })
     }
 
-    const actionTail = (run.actionLogs || []).slice(-6);
+    const actionTail = (run.actionLogs || []).slice(-6)
     if (actionTail.length > 0) {
-      lines.push("  最近日志:");
+      lines.push("  最近日志:")
       actionTail.forEach((entry: string) => {
-        lines.push(`    ${entry}`);
-      });
+        lines.push(`    ${entry}`)
+      })
     }
-    lines.push("");
-  });
+    lines.push("")
+  })
 
-  aiThoughtContent.textContent = lines.length > 0 ? lines.join("\n") : "暂无AI思考记录。";
+  aiThoughtContent.textContent = lines.length > 0 ? lines.join("\n") : "暂无AI思考记录。"
 }
 
-export function beginRunTracking(
-  runLogHistory: RunLog[],
-  saveAiMemory: () => void,
-  render: () => void
-): RunLog {
-  const runNo = (runLogHistory.length > 0 ? runLogHistory[runLogHistory.length - 1].runNo : 0) + 1;
-  saveAiMemory();
+export function beginRunTracking(runLogHistory: RunLog[], saveAiMemory: () => void, render: () => void): RunLog {
+  const runNo = (runLogHistory.length > 0 ? runLogHistory[runLogHistory.length - 1].runNo : 0) + 1
+  saveAiMemory()
   const runLog: RunLog = {
     runNo,
     startedAt: Date.now(),
@@ -274,13 +277,13 @@ export function beginRunTracking(
     aiThoughtLogs: [],
     roundLogsByRound: {},
     roundPanelTexts: {}
-  };
-  runLogHistory.push(runLog);
-  if (runLogHistory.length > 12) {
-    runLogHistory.splice(0, runLogHistory.length - 12);
   }
-  render();
-  return runLog;
+  runLogHistory.push(runLog)
+  if (runLogHistory.length > 12) {
+    runLogHistory.splice(0, runLogHistory.length - 12)
+  }
+  render()
+  return runLog
 }
 
 export function recordAiThoughtLogs(
@@ -290,28 +293,28 @@ export function recordAiThoughtLogs(
   renderAiLogicPanelForLlm: ((telemetry: { round: number; entries?: Array<Record<string, unknown>> }) => void) | null,
   render: () => void
 ): void {
-  const t = telemetry as { mode?: string; entries?: DecisionEntry[] };
+  const t = telemetry as { mode?: string; entries?: DecisionEntry[] }
   if (!t || t.mode !== "llm" || !Array.isArray(t.entries) || !currentRunLog) {
     return
   }
 
   t.entries.forEach((entry: DecisionEntry) => {
-    const thought = String(entry && entry.thought ? entry.thought : "").trim();
-    const reasoningContent = String(entry && entry.reasoningContent ? entry.reasoningContent : "").trim();
-    const historyCount = entry && entry.historyMessagesCount ? entry.historyMessagesCount : 0;
-    const crossGameCount = entry && entry.crossGameMemoryCount ? entry.crossGameMemoryCount : 0;
-    const correctionAttempt = entry && entry.correctionAttempt ? entry.correctionAttempt : 0;
-    const originalError = entry && entry.originalError ? entry.originalError : "";
+    const thought = String(entry && entry.thought ? entry.thought : "").trim()
+    const reasoningContent = String(entry && entry.reasoningContent ? entry.reasoningContent : "").trim()
+    const historyCount = entry && entry.historyMessagesCount ? entry.historyMessagesCount : 0
+    const crossGameCount = entry && entry.crossGameMemoryCount ? entry.crossGameMemoryCount : 0
+    const correctionAttempt = entry && entry.correctionAttempt ? entry.correctionAttempt : 0
+    const originalError = entry && entry.originalError ? entry.originalError : ""
     if (!thought && !reasoningContent && !historyCount && !crossGameCount && !correctionAttempt && !originalError) {
       return
     }
 
-    const parts: string[] = [];
-    const reasoningParts: string[] = [];
+    const parts: string[] = []
+    const reasoningParts: string[] = []
     if (correctionAttempt > 0) {
-      parts.push(`[纠错第${correctionAttempt}次]`);
+      parts.push(`[纠错第${correctionAttempt}次]`)
       if (originalError) {
-        parts.push(`[原始错误] ${originalError}`);
+        parts.push(`[原始错误] ${originalError}`)
       }
     }
     if (historyCount > 0 || crossGameCount > 0) {
@@ -320,14 +323,14 @@ export function recordAiThoughtLogs(
           ? entry.inGameHistoryCount > 0
             ? `${crossGameCount}局跨局记忆+${entry.inGameHistoryCount}条本局历史`
             : `${crossGameCount}局跨局记忆`
-          : `${entry.inGameHistoryCount}条本局历史`;
-      parts.push(`[注入${gameInfo}]`);
+          : `${entry.inGameHistoryCount}条本局历史`
+      parts.push(`[注入${gameInfo}]`)
     }
     if (reasoningContent) {
-      reasoningParts.push(reasoningContent);
+      reasoningParts.push(reasoningContent)
     }
     if (thought) {
-      parts.push(`[决策摘要] ${thought}`);
+      parts.push(`[决策摘要] ${thought}`)
     }
 
     currentRunLog.aiThoughtLogs.push({
@@ -349,36 +352,34 @@ export function recordAiThoughtLogs(
       cacheMissTokens: entry.cacheMissTokens || 0,
       cacheHitRate: entry.cacheHitRate || 0,
       at: Date.now()
-    });
-  });
+    })
+  })
 
   if (currentRunLog.aiThoughtLogs.length > 80) {
-    currentRunLog.aiThoughtLogs = currentRunLog.aiThoughtLogs.slice(-80);
+    currentRunLog.aiThoughtLogs = currentRunLog.aiThoughtLogs.slice(-80)
   }
 
-  const roundNo = Math.max(1, Math.round(Number((telemetry as { round?: number }).round) || 1));
+  const roundNo = Math.max(1, Math.round(Number((telemetry as { round?: number }).round) || 1))
   console.log(
     `[recordAiThoughtLogs] roundNo=${roundNo}, telemetry.round=${(telemetry as { round?: number }).round}, entries=${(telemetry as { entries?: unknown[] }).entries?.length}`
-  );
+  )
   if (!currentRunLog.roundPanelTexts) {
-    currentRunLog.roundPanelTexts = {};
+    currentRunLog.roundPanelTexts = {}
   }
   if (renderAiLogicPanelForLlm && dom.aiLogicContent) {
-    const tempDiv = document.createElement("div");
-    const origContent = dom.aiLogicContent;
-    dom.aiLogicContent = tempDiv;
-    renderAiLogicPanelForLlm(telemetry as { round: number; entries?: Array<Record<string, unknown>> });
-    const htmlContent = tempDiv.innerHTML;
-    dom.aiLogicContent = origContent;
+    const tempDiv = document.createElement("div")
+    const origContent = dom.aiLogicContent
+    dom.aiLogicContent = tempDiv
+    renderAiLogicPanelForLlm(telemetry as { round: number; entries?: Array<Record<string, unknown>> })
+    const htmlContent = tempDiv.innerHTML
+    dom.aiLogicContent = origContent
     if (htmlContent) {
-      currentRunLog.roundPanelTexts[String(roundNo)] = htmlContent;
-      console.log(
-        `[recordAiThoughtLogs] saved roundPanelTexts[${roundNo}] as HTML, length=${htmlContent.length}`
-      );
+      currentRunLog.roundPanelTexts[String(roundNo)] = htmlContent
+      console.log(`[recordAiThoughtLogs] saved roundPanelTexts[${roundNo}] as HTML, length=${htmlContent.length}`)
     }
   }
 
-  render();
+  render()
 }
 
 export function writeLog(
@@ -388,27 +389,27 @@ export function writeLog(
   dom: { actionLog: HTMLElement | null },
   render: () => void
 ): void {
-  const line = `日志: ${text}`;
+  const line = `日志: ${text}`
   if (dom.actionLog) {
-    dom.actionLog.textContent = line;
+    dom.actionLog.textContent = line
   }
   if (currentRunLog) {
-    currentRunLog.actionLogs.push(line);
+    currentRunLog.actionLogs.push(line)
     if (currentRunLog.actionLogs.length > 120) {
-      currentRunLog.actionLogs = currentRunLog.actionLogs.slice(-120);
+      currentRunLog.actionLogs = currentRunLog.actionLogs.slice(-120)
     }
 
-    const roundNo = Math.max(1, Math.round(Number(round) || 1));
-    const roundKey = String(roundNo);
+    const roundNo = Math.max(1, Math.round(Number(round) || 1))
+    const roundKey = String(roundNo)
     if (!Array.isArray(currentRunLog.roundLogsByRound[roundKey])) {
-      currentRunLog.roundLogsByRound[roundKey] = [];
+      currentRunLog.roundLogsByRound[roundKey] = []
     }
-    currentRunLog.roundLogsByRound[roundKey].push(line);
+    currentRunLog.roundLogsByRound[roundKey].push(line)
     if (currentRunLog.roundLogsByRound[roundKey].length > 120) {
-      currentRunLog.roundLogsByRound[roundKey] = currentRunLog.roundLogsByRound[roundKey].slice(-120);
+      currentRunLog.roundLogsByRound[roundKey] = currentRunLog.roundLogsByRound[roundKey].slice(-120)
     }
   }
-  render();
+  render()
 }
 
 // ─── Mixin 薄代理（Phase 2：代理到 AiDecisionManager，向后兼容 Object.assign 混入）───

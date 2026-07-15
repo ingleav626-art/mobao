@@ -7,6 +7,9 @@ import type { UiOverlayManagerDeps } from "../overlay-manager"
 import { MobaoAnimations } from "../../animations"
 import { MobaoShopPage } from "../../shop/index"
 import { renderAiThoughtLog as renderAiThoughtLogFn } from "../../ai/decision"
+import { useAiPanelStore } from "../../../vue/stores/aiPanelStore"
+import type { AiThoughtLogEntry, AiDecisionResult } from "../../../vue/stores/aiPanelStore"
+import { useSettlementStore } from "../../../vue/stores/settlementStore"
 
 export function hideSettleOverlay(deps: UiOverlayManagerDeps): void {
   const overlayEl = deps.dom.settleOverlay
@@ -19,6 +22,13 @@ export function hideSettleOverlay(deps: UiOverlayManagerDeps): void {
     })
   } else {
     overlayEl.classList.add("hidden")
+  }
+  // 同步到 Vue settlementStore
+  try {
+    const store = useSettlementStore()
+    store.hideSettlement()
+  } catch {
+    // Vue store not available yet, skip sync
   }
 }
 
@@ -47,6 +57,23 @@ export function openAiLogicPanel(deps: UiOverlayManagerDeps): void {
   } else {
     deps.dom.aiLogicOverlay.classList.remove("hidden")
   }
+  // 同步到 Vue store
+  try {
+    const store = useAiPanelStore()
+    store.openPanel()
+    const runLogHistory = deps.getRunLogHistory()
+    const allLogs: AiThoughtLogEntry[] = []
+    for (const run of runLogHistory) {
+      if (Array.isArray(run.aiThoughtLogs)) {
+        for (const entry of run.aiThoughtLogs) {
+          allLogs.push(entry as AiThoughtLogEntry)
+        }
+      }
+    }
+    store.syncThoughtLogs(allLogs)
+  } catch {
+    // Vue store not available yet, skip sync
+  }
 }
 
 export function closeAiLogicPanel(deps: UiOverlayManagerDeps): void {
@@ -57,6 +84,13 @@ export function closeAiLogicPanel(deps: UiOverlayManagerDeps): void {
     MobaoAnimations.animateOverlayClose(deps.dom.aiLogicOverlay, deps.dom.aiLogicPanel)
   } else {
     deps.dom.aiLogicOverlay.classList.add("hidden")
+  }
+  // 同步到 Vue store
+  try {
+    const store = useAiPanelStore()
+    store.closePanel()
+  } catch {
+    // Vue store not available yet, skip sync
   }
 }
 

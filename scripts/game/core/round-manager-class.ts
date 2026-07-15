@@ -15,7 +15,7 @@ import {
   syncPauseButtonFn,
   resetRoundBidDisplayFn,
   resetRoundBidReadyStateFn,
-  type RoundManagerDeps,
+  type RoundManagerDeps
 } from "./round-manager-fns"
 
 export type { RoundManagerDeps } from "./round-manager-fns"

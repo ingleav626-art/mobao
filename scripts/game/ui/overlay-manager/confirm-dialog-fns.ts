@@ -17,10 +17,26 @@ export function showGameConfirm(
   state.gameConfirmCallback = onConfirm || null
   state.gameCancelCallback = onCancel || null
   deps.dom.gameConfirmOverlay?.classList.remove("hidden")
+  // 同步到 Vue uiStore
+  import("../../../vue/stores/uiStore")
+    .then(({ useUiStore }) => {
+      useUiStore().showConfirm(message, onConfirm, onCancel)
+    })
+    .catch(() => {
+      // Vue 未初始化时跳过
+    })
 }
 
 export function hideGameConfirm(deps: UiOverlayManagerDeps, state: UiOverlayManagerState): void {
   deps.dom.gameConfirmOverlay?.classList.add("hidden")
   state.gameConfirmCallback = null
   state.gameCancelCallback = null
+  // 同步到 Vue uiStore
+  import("../../../vue/stores/uiStore")
+    .then(({ useUiStore }) => {
+      useUiStore().hideConfirm()
+    })
+    .catch(() => {
+      // Vue 未初始化时跳过
+    })
 }
