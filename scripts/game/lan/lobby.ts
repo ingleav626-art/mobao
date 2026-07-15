@@ -30,6 +30,7 @@ import {
   LAN_NAME_STORAGE_KEY
 } from "../core/constants"
 import { DEFAULT_LAN_SERVER_URL, DEFAULT_LAN_HTTP_BASE } from "../../../lan/shared/protocol"
+import { createLogger } from "../core/logger"
 
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { CarryItem } from "../../../types/game"
@@ -38,8 +39,10 @@ import type { RoomCreateOptions } from "../../../types/lan"
 import { processRoomData, dedupFound, getCharAvatarHtml } from "./lobby/pure"
 import type { LanRoomInfo, LanServerInfo } from "./lobby/pure"
 
+const log = createLogger("LAN")
+
 export function initLanLobbyImpl(this: WarehouseSceneThis) {
-  console.log("[LAN] initLanLobby called, LanBridge=" + !!LanBridge)
+  log.info("initLanLobby called, LanBridge=" + !!LanBridge)
   if (!LanBridge) return
 
   this.lanBridge = new LanBridge() as WarehouseSceneThis["lanBridge"]
@@ -131,8 +134,8 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
   var lanCarryItems: CarryItem[] = []
   var lanSelectedMapId = "default"
 
-  console.log(
-    "[LAN] DOM elements: createBtn=" +
+  log.debug(
+    "DOM elements: createBtn=" +
       !!createBtn +
       ", joinBtn=" +
       !!joinBtn +
@@ -246,7 +249,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
     serverFailedRef: { failed: boolean },
     maxAttempts?: number
   ) => {
-    console.log("[LAN] connectWithRetry called, url=" + url)
+    log.debug("connectWithRetry called, url=" + url)
     maxAttempts = maxAttempts || 8
     var attempt = 1
     var doTry = function () {
@@ -255,12 +258,12 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
       bridge
         .connect(url, name)
         .then(function () {
-          console.log("[LAN] connect succeeded, creating room...")
+          log.info("connect succeeded, creating room...")
           setOnlineStatus("已连接", "connected")
           bridge.createRoom(roomOptions)
         })
         .catch(function (e) {
-          console.log("[LAN] connect attempt " + attempt + " failed: " + e.message)
+          log.warn("connect attempt " + attempt + " failed: " + e.message)
           if (serverFailedRef && serverFailedRef.failed) return
           attempt++
           if (attempt <= maxAttempts) {
@@ -276,17 +279,17 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
 
   const autoConnectAndCreate = (options: { serverIp?: string; roomCode?: string; password?: string }) => {
     const name = getPlayerName()
-    console.log("[LAN] autoConnectAndCreate called, isNative=" + isNative + ", name=" + name)
+    log.debug("autoConnectAndCreate called, isNative=" + isNative + ", name=" + name)
     if (isNative) {
       setOnlineStatus("启动本地服务器...", "")
       const started = LanBridge.startNativeServer()
-      console.log("[LAN] startNativeServer returned: " + started)
+      log.debug("startNativeServer returned: " + started)
       if (!started) {
         setOnlineStatus("启动服务器失败", "error")
         return
       }
       const nativeUrl = LanBridge.getLocalServerUrl() || LanBridge.getNativeServerUrl()
-      console.log("[LAN] nativeUrl: " + nativeUrl)
+      log.debug("nativeUrl: " + nativeUrl)
       if (!nativeUrl) {
         setOnlineStatus("获取服务器地址失败", "error")
         return
@@ -299,7 +302,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
       var serverStartedRef = { started: false }
       window.onNativeServerStarted = function (ip, port) {
         serverStartedRef.started = true
-        console.log("[LAN] onNativeServerStarted: " + ip + ":" + port)
+        log.debug("onNativeServerStarted: " + ip + ":" + port)
       }
       setTimeout(function () {
         if (!serverFailedRef.failed) {
@@ -1369,7 +1372,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
 
   if (createConfirmBtn) {
     createConfirmBtn.addEventListener("click", () => {
-      console.log("[LAN] createConfirmBtn clicked")
+      log.info("createConfirmBtn clicked")
       var options = {
         roomName: createRoomName ? createRoomName.value.trim() : undefined,
         visibility: selectedVisibility,

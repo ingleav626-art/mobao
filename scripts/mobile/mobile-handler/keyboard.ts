@@ -11,6 +11,8 @@
  */
 import type { MobileHandlerType } from "./types"
 import { calcSafeKeyboardHeight, isTextInputElement } from "./pure"
+import { createLogger } from "../../game/core/logger"
+const log = createLogger("Mobile")
 
 export const KeyboardPart: ThisType<MobileHandlerType> = {
   setupNativeKeyboardListener: function () {
@@ -37,8 +39,8 @@ export const KeyboardPart: ThisType<MobileHandlerType> = {
     if (safeHeight !== this.currentKeyboardHeight && Math.abs(safeHeight - this.currentKeyboardHeight) > 10) {
       this.currentKeyboardHeight = safeHeight
       this.updateInputPosition()
-      console.log(
-        "[MobileHandler] keyboard updated - raw:",
+      log.debug(
+        "keyboard updated - raw:",
         rawHeight,
         "-> safe:",
         safeHeight,

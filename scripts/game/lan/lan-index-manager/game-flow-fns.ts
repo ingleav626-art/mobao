@@ -12,7 +12,10 @@ import { getSelectedProfileId, getProfile } from "../../data/map-profiles"
 import { pickRandomPublicEvent } from "../../data/public-events"
 import { resetForNewGame } from "../../data/character-system"
 import { CHARACTERS } from "../../data/characters"
+import { createLogger } from "../../core/logger"
 import type { IntelSummary } from "../../../../types/ai"
+
+const log = createLogger("LAN")
 
 export function lanResolveRound(deps: LanIndexManagerDeps, state: LanIndexState, reason: string): void {
   if (state.roundResolving || state.settled) return
@@ -118,11 +121,11 @@ export function lanComputeAiBids(deps: LanIndexManagerDeps, state: LanIndexState
   aiPlayers.forEach((ai) => {
     const slotId = state.lanIdToSlotId[ai.id]
     if (!slotId) {
-      console.log("[lanComputeAiBids] " + ai.id + " no slotId mapping, skipping")
+      log.debug("[lanComputeAiBids] " + ai.id + " no slotId mapping, skipping")
       return
     }
     const plan = state.aiLlmRoundPlans[slotId]
-    console.log(
+    log.debug(
       "[lanComputeAiBids] " + ai.id + " slotId=" + slotId + " plan:",
       plan
         ? {
@@ -142,7 +145,7 @@ export function lanComputeAiBids(deps: LanIndexManagerDeps, state: LanIndexState
       return
     const wallet = state.lanHostWallets[ai.id] || DEFAULT_START_MONEY
     const normalizedBid = deps.normalizeAiBidValue(slotId, (plan as Record<string, unknown>).bid as number, wallet)
-    console.log(
+    log.debug(
       "[lanComputeAiBids] " +
         ai.id +
         " LLM bid override: " +

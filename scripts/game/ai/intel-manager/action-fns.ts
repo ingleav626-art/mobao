@@ -14,6 +14,8 @@ import { SKILL_DEFS } from "../../data/skills"
 import { ITEM_DEFS } from "../../data/items"
 import { buildAiPrivateRevealContext } from "./reveal-fns"
 import { getAiIntelSummary, getAiResourceSnapshot } from "./snapshot-fns"
+import { createLogger } from "../../core/logger"
+const log = createLogger("AI.Intel")
 
 /** 执行 AI 情报动作（技能或道具） */
 export function executeAiIntelAction(
@@ -39,8 +41,8 @@ export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<v
 
   const batchStartTime = Date.now()
   const batchId = `intel-${batchStartTime}-${Math.random().toString(16).slice(2, 6)}`
-  console.log(
-    `[processAiIntelActions] ${batchId} START, aiPlayers: ${aiPlayers.length}, players: ${aiPlayers.map((p: Player) => p.id).join(",")}`
+  log.debug(
+    `batch ${batchId} START, aiPlayers: ${aiPlayers.length}, players: ${aiPlayers.map((p: Player) => p.id).join(",")}`
   )
 
   return Promise.all(
@@ -48,7 +50,7 @@ export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<v
       try {
         await processSingleAiIntelAction(deps, player, undefined, undefined, roundProgress, batchId, batchStartTime)
       } catch (error) {
-        console.error(`[processSingleAiIntelAction] ${player.id} error:`, error)
+        log.error(`${player.id} error:`, error)
       } finally {
         deps.setPlayerBidReady(player.id, true)
         deps.updateHud()
@@ -76,7 +78,7 @@ export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<v
   )
     .then(() => {
       const batchEndTime = Date.now()
-      console.log(`[processAiIntelActions] ${batchId} END, total elapsed: ${batchEndTime - batchStartTime}ms`)
+      log.debug(`batch ${batchId} END, total elapsed: ${batchEndTime - batchStartTime}ms`)
 
       if (state.lastAiIntelActions.length > 0) {
         const text = state.lastAiIntelActions
@@ -86,7 +88,7 @@ export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<v
       }
     })
     .catch((error) => {
-      console.error(`[processAiIntelActions] ${batchId} error:`, error)
+      log.error(`batch ${batchId} error:`, error)
     })
 }
 
@@ -101,11 +103,11 @@ export async function processSingleAiIntelAction(
   batchStartTime?: number
 ): Promise<void> {
   const startTime = Date.now()
-  console.log(
-    `[processSingleAiIntelAction] ${player.id}-${startTime} START, delay from batch start: ${startTime - (batchStartTime || 0)}ms`
+  log.debug(
+    `${player.id}-${startTime} START, delay from batch start: ${startTime - (batchStartTime || 0)}ms`
   )
-  console.log(
-    `[processSingleAiIntelAction] ${player.id} plan:`,
+  log.debug(
+    `${player.id} plan:`,
     plan
       ? {
           actionType: plan.actionType,
@@ -115,8 +117,8 @@ export async function processSingleAiIntelAction(
         }
       : "null"
   )
-  console.log(
-    `[processSingleAiIntelAction] ${player.id} llmPlan:`,
+  log.debug(
+    `${player.id} llmPlan:`,
     llmPlan
       ? {
           failed: llmPlan.failed,
@@ -133,7 +135,7 @@ export async function processSingleAiIntelAction(
   const llmBidReady = Boolean(
     llmPlan && !llmPlan.failed && llmPlan.hasBidDecision && deps.canUseLlmDecisionForPlayer(player.id)
   )
-  console.log(`[processSingleAiIntelAction] ${player.id} llmBidReady: ${llmBidReady}`)
+  log.debug(`${player.id} llmBidReady: ${llmBidReady}`)
 
   if (llmBidReady) {
     deps.state.llmEverUsedThisRun = true
@@ -151,7 +153,7 @@ export async function processSingleAiIntelAction(
 
   const activePlan = plan as IntelActionPlan
   const result = _executeAiIntelActionImpl(deps, player.id, activePlan)
-  console.log(`[processSingleAiIntelAction] ${player.id} executeAiIntelAction result:`, {
+  log.debug(`${player.id} executeAiIntelAction result:`, {
     ok: result.ok,
     actionType: activePlan.actionType,
     actionId: activePlan.actionId,
@@ -282,10 +284,10 @@ export async function processSingleAiIntelAction(
           }
 
           if (deps.canUseLlmDecisionForPlayer(player.id)) {
-            console.log(`[processSingleAiIntelAction] ${player.id} calling correction followup LLM (tool executed)`)
+            log.debug(`${player.id} calling correction followup LLM (tool executed)`)
             const followup = await deps.requestAiLlmFollowupBid(player, llmPlan, correctionToolSummary)
-            console.log(
-              `[processSingleAiIntelAction] ${player.id} correction followup result:`,
+            log.debug(
+              `${player.id} correction followup result:`,
               followup
                 ? {
                     ok: followup.ok,
@@ -314,7 +316,7 @@ export async function processSingleAiIntelAction(
             }
           }
         } else {
-          console.log(`[processSingleAiIntelAction] ${player.id} calling correction followup LLM (no tool action)`)
+          log.debug(`${player.id} calling correction followup LLM (no tool action)`)
           const followup = await deps.requestAiLlmFollowupBid(player, llmPlan, "工具执行失败，直接给出价")
           if (followup && !followup.failed && followup.hasBidDecision) {
             llmPlan.bid = followup.bid
@@ -368,15 +370,15 @@ export async function processSingleAiIntelAction(
         }
       }
     }
-    console.log(
-      `[processSingleAiIntelAction] ${player.id}-${startTime} END (error correction path), elapsed: ${Date.now() - startTime}ms`
+    log.debug(
+      `${player.id}-${startTime} END (error correction path), elapsed: ${Date.now() - startTime}ms`
     )
     return
   }
 
   if (!result.ok || activePlan.actionType === "none") {
-    console.log(
-      `[processSingleAiIntelAction] ${player.id}-${startTime} END (no action), elapsed: ${Date.now() - startTime}ms`
+    log.debug(
+      `${player.id}-${startTime} END (no action), elapsed: ${Date.now() - startTime}ms`
     )
     return
   }
@@ -424,10 +426,10 @@ export async function processSingleAiIntelAction(
     llmPlan.controlMode = "llm"
 
     if (deps.canUseLlmDecisionForPlayer(player.id)) {
-      console.log(`[processSingleAiIntelAction] ${player.id} calling followup LLM, canUseLlmDecision=true`)
+      log.debug(`${player.id} calling followup LLM, canUseLlmDecision=true`)
       const followup = await deps.requestAiLlmFollowupBid(player, llmPlan, toolSummary)
-      console.log(
-        `[processSingleAiIntelAction] ${player.id} followup result:`,
+      log.debug(
+        `${player.id} followup result:`,
         followup
           ? { ok: followup.ok, failed: followup.failed, hasBidDecision: followup.hasBidDecision, bid: followup.bid }
           : "null"
@@ -464,7 +466,7 @@ export async function processSingleAiIntelAction(
     }
   }
 
-  console.log(`[processSingleAiIntelAction] ${player.id}-${startTime} END, elapsed: ${Date.now() - startTime}ms`)
+  log.debug(`${player.id}-${startTime} END, elapsed: ${Date.now() - startTime}ms`)
 }
 
 /** 格式化情报动作公开行文本 */

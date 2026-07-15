@@ -10,6 +10,8 @@ import { GAME_SETTINGS } from "../../core/settings"
 import { AudioUI } from "../../../audio/audio-ui"
 import { MobaoAnimations } from "../../animations"
 import { getLastRoundBidMap, shouldDirectTake } from "../index"
+import { createLogger } from "../../core/logger"
+const log = createLogger("Bidding")
 
 // ─── 工具 ───
 
@@ -41,7 +43,7 @@ export function waitUntilResumed(deps: BiddingManagerDeps, state: BiddingManager
  * 触发 AI 出价决策（异步，独立并发）
  */
 export async function kickoffAiRoundDecisions(deps: BiddingManagerDeps, state: BiddingManagerState): Promise<void> {
-  console.log("[kickoffAiRoundDecisions] >>> ENTERED")
+  log.debug(">>> ENTERED")
   const indicator = deps.dom.aiThinkingIndicator
   if (indicator && !indicator.dataset.aiThinking) {
     indicator.dataset.aiThinking = "1"
@@ -51,7 +53,7 @@ export async function kickoffAiRoundDecisions(deps: BiddingManagerDeps, state: B
     if (!deps.getIsLanMode() && deps.getRoundPaused()) await waitUntilResumed(deps, state)
     await deps.processAiDecisions()
   } catch (error: unknown) {
-    console.error("[kickoffAiRoundDecisions] ERROR:", error)
+    log.error("ERROR:", error)
     const errMsg = error instanceof Error ? error.message : String(error)
     if (errMsg === "PAUSE_CANCELLED") return
     deps.writeLog(`AI回合初始化异常：${errMsg}`)
@@ -136,8 +138,8 @@ export function buildRoundBids(
 
   aiPlayers.forEach((player) => {
     const plan = deps.getAiLlmRoundPlans()[player.id]
-    console.log(
-      `[buildRoundBids] ${player.id} aiLlmPlan:`,
+    log.debug(
+      `${player.id} aiLlmPlan:`,
       plan
         ? {
             failed: plan.failed,
@@ -153,8 +155,8 @@ export function buildRoundBids(
 
     const wallet = deps.getAiWallet(player.id)
     const normalizedBid = deps.normalizeAiBidValue(player.id, plan.bid!, wallet)
-    console.log(
-      `[buildRoundBids] ${player.id} LLM bid override: ${aiBidMap[player.id]} -> ${normalizedBid} (wallet=${wallet})`
+    log.debug(
+      `${player.id} LLM bid override: ${aiBidMap[player.id]} -> ${normalizedBid} (wallet=${wallet})`
     )
     aiBidMap[player.id] = normalizedBid
   })
@@ -187,8 +189,8 @@ export async function resolveRoundBids(
   reason: string = "manual",
   forceSettle: boolean = false
 ): Promise<void> {
-  console.log(
-    `[resolveRoundBids] reason=${reason}, forceSettle=${forceSettle}, settled=${deps.getSettled()}, roundResolving=${state.roundResolving}, round=${state.round}, isLanMode=${deps.getIsLanMode()}`
+  log.info(
+    `reason=${reason}, forceSettle=${forceSettle}, settled=${deps.getSettled()}, roundResolving=${state.roundResolving}, round=${state.round}, isLanMode=${deps.getIsLanMode()}`
   )
   if (deps.getSettled() || state.roundResolving) {
     return
@@ -222,8 +224,8 @@ export async function resolveRoundBids(
     deps.updateHud()
 
     const roundBids = buildRoundBids(deps, state)
-    console.log(
-      "[resolveRoundBids] final roundBids:",
+    log.debug(
+      "final roundBids:",
       roundBids.map((b) => ({ playerId: b.playerId, bid: b.bid }))
     )
     deps.captureAiDecisionTelemetry(roundBids)
@@ -274,9 +276,7 @@ export async function resolveRoundBids(
     state.roundResolving = false
     deps.writeLog(`回合结算异常：${message}`)
     deps.updateHud()
-    if (typeof console !== "undefined" && console.error) {
-      console.error("resolveRoundBids failed", error)
-    }
+    log.error("resolveRoundBids failed", error)
   }
 }
 

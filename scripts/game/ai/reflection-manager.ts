@@ -11,6 +11,8 @@ import type { RunLog } from "./decision"
 import { AudioManager } from "../../audio/audio-manager"
 import { MobaoGameHistory } from "./game-history"
 import { applyMemoryOperations, updateCrossGameMemory, type CrossGameMemory } from "./reflection"
+import { createLogger } from "../core/logger"
+const log = createLogger("AI.Reflection")
 
 // ─── 类型定义 ───
 
@@ -225,9 +227,9 @@ export class AiReflectionManager {
   /** 局结算后触发所有 AI 玩家的反思 */
   async triggerAiReflection(record: ReflectionRecord): Promise<void> {
     const status = this.deps.reflectionStatus
-    console.log("[triggerAiReflection] called, checking conditions...")
-    console.log(
-      "[triggerAiReflection] isAiReflectionEnabled:",
+    log.debug("called, checking conditions...")
+    log.debug(
+      "isAiReflectionEnabled:",
       this.isAiReflectionEnabled(),
       "canUseLlmDecision:",
       this.deps.canUseLlmDecision(),
@@ -235,7 +237,7 @@ export class AiReflectionManager {
       this.deps.llmEverUsedThisRun()
     )
     if (!this.isAiReflectionEnabled() || !this.deps.canUseLlmDecision() || !this.deps.llmEverUsedThisRun()) {
-      console.log("[triggerAiReflection] EARLY RETURN: conditions not met")
+      log.debug("EARLY RETURN: conditions not met")
       return
     }
     status.state = "pending"
@@ -251,7 +253,7 @@ export class AiReflectionManager {
     const aiPlayers = this.deps.players.filter((p: Player) => !p.isHuman && this.deps.canUseLlmDecisionForPlayer(p.id))
     status.total = aiPlayers.length
     this.deps.updateReflectionStatusUI()
-    console.log("[triggerAiReflection] aiPlayers count:", aiPlayers.length)
+    log.debug("aiPlayers count:", aiPlayers.length)
     if (aiPlayers.length === 0) {
       status.state = "done"
       this.deps.updateReflectionStatusUI()
@@ -262,7 +264,7 @@ export class AiReflectionManager {
     const reflectionPromises = aiPlayers.map(async (player: Player) => {
       const playerName = player.name
       const playerId = player.id
-      console.log("[triggerAiReflection] starting reflection for player:", playerId, playerName)
+      log.debug("starting reflection for player:", playerId, playerName)
       const isWinner = record.winnerId === player.id
       let dividendTicketText = "无分红/门票"
       if (record.dividendTicket) {
@@ -348,10 +350,10 @@ export class AiReflectionManager {
 
       try {
         const llmProvider = this.deps.getLlmProvider()
-        console.log("[triggerAiReflection] llmProvider:", llmProvider ? llmProvider.id : "null")
+        log.debug("llmProvider:", llmProvider ? llmProvider.id : "null")
         if (!llmProvider) {
           failedPlayers.push({ playerId: player.id, playerName: player.name, reason: "无LLM Provider" })
-          console.log("[triggerAiReflection] FAILED: no llmProvider for player:", player.id)
+          log.warn("FAILED: no llmProvider for player:", player.id)
           return { playerId: player.id, reflection: null, error: "无LLM Provider" }
         }
         let settings: ReflectionLlmSettings | null = this.deps.getLlmSettings()
@@ -371,11 +373,11 @@ export class AiReflectionManager {
         const reflectionPromptText = reflectionPrompt.join("\n")
         const independentReflectionEnabled =
           settings && settings.independentReflectionEnabled !== undefined ? settings.independentReflectionEnabled : true
-        console.log("[triggerAiReflection] independentReflectionEnabled:", independentReflectionEnabled)
+        log.debug("independentReflectionEnabled:", independentReflectionEnabled)
         if (independentReflectionEnabled && this.deps.getAiModelConfigForPlayer) {
           const aiModelConfig = this.deps.getAiModelConfigForPlayer(player.id)
-          console.log(
-            "[triggerAiReflection] aiModelConfig for player:",
+          log.debug(
+            "aiModelConfig for player:",
             player.id,
             aiModelConfig
               ? {
@@ -397,7 +399,7 @@ export class AiReflectionManager {
               thinkingEnabled:
                 aiModelConfig.thinkingEnabled !== undefined ? aiModelConfig.thinkingEnabled : settings?.thinkingEnabled
             }
-            console.log("[triggerAiReflection] merged settings for player:", player.id, {
+            log.debug("merged settings for player:", player.id, {
               apiKey: settings.apiKey ? "(已设置)" : "(空)",
               endpoint: settings.endpoint,
               model: settings.model,
@@ -416,7 +418,7 @@ export class AiReflectionManager {
         let messages: unknown[]
         if (playerCache && Array.isArray(playerCache) && playerCache.length > 0) {
           messages = [...playerCache, { role: "user", content: reflectionPromptText }]
-          console.log("[triggerAiReflection] using cached conversation, messages count:", messages.length)
+          log.debug("using cached conversation, messages count:", messages.length)
         } else {
           messages = [
             {
@@ -425,11 +427,11 @@ export class AiReflectionManager {
             },
             { role: "user", content: reflectionPromptText }
           ]
-          console.log("[triggerAiReflection] no cache, using simple prompt")
+          log.debug("no cache, using simple prompt")
         }
 
-        console.log(
-          "[triggerAiReflection] requesting chat for player:",
+        log.debug(
+          "requesting chat for player:",
           player.id,
           "thinkingEnabled:",
           thinkingEnabled,
@@ -446,8 +448,8 @@ export class AiReflectionManager {
           messages,
           settings
         })
-        console.log(
-          "[triggerAiReflection] result for player:",
+        log.debug(
+          "result for player:",
           player.id,
           "ok:",
           result.ok,
@@ -463,8 +465,8 @@ export class AiReflectionManager {
         if (result.ok && (result.content || result.reasoningContent)) {
           const rawContent = result.content || result.reasoningContent || ""
           const reflectionText = String(rawContent).trim()
-          console.log(
-            "[triggerAiReflection] SUCCESS for player:",
+          log.debug(
+            "SUCCESS for player:",
             player.id,
             "reflection length:",
             reflectionText.length
@@ -475,8 +477,8 @@ export class AiReflectionManager {
           const cacheMissTokens = usage && usage.prompt_cache_miss_tokens ? usage.prompt_cache_miss_tokens : 0
           const totalPromptTokens = cacheHitTokens + cacheMissTokens
           const cacheHitRate = totalPromptTokens > 0 ? Math.round((cacheHitTokens / totalPromptTokens) * 100) : 0
-          console.log(
-            `[triggerAiReflection] ${player.id} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`
+          log.debug(
+            `${player.id} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`
           )
 
           let parsedReflection: { lessons: unknown[]; strategies: unknown[]; summary?: string } = {
@@ -489,7 +491,7 @@ export class AiReflectionManager {
               parsedReflection = JSON.parse(jsonMatch[0])
             }
           } catch (e) {
-            console.warn("[triggerAiReflection] failed to parse reflection JSON:", e)
+            log.warn("failed to parse reflection JSON:", e)
           }
 
           if (this.deps.isAiMultiGameMemoryEnabled()) {
@@ -568,8 +570,8 @@ export class AiReflectionManager {
             reason: `超时(${timeoutMs}ms)`,
             thinkingEnabled: thinkingEnabled || undefined
           })
-          console.log(
-            "[triggerAiReflection] TIMEOUT for player:",
+          log.debug(
+            "TIMEOUT for player:",
             player.id,
             "timeoutMs:",
             timeoutMs,
@@ -587,8 +589,8 @@ export class AiReflectionManager {
             status: statusCode,
             thinkingEnabled: thinkingEnabled || undefined
           })
-          console.log(
-            "[triggerAiReflection] FAILED for player:",
+          log.debug(
+            "FAILED for player:",
             player.id,
             "code:",
             result.code,
@@ -606,7 +608,7 @@ export class AiReflectionManager {
       } catch (err) {
         const errMsg = err && (err as Error).message ? (err as Error).message : "异常"
         failedPlayers.push({ playerId: player.id, playerName: player.name, reason: errMsg, exception: true })
-        console.log("[triggerAiReflection] EXCEPTION for player:", player.id, "error:", errMsg)
+        log.error("EXCEPTION for player:", player.id, "error:", errMsg)
         status.completed++
         this.deps.updateReflectionStatusUI()
         return { playerId: player.id, reflection: null, error: errMsg }
@@ -636,14 +638,14 @@ export class AiReflectionManager {
         .map((p) => `${p.playerName}(${p.reason}${p.thinkingEnabled ? ",思考模式" : ""})`)
         .join("; ")
       status.detail = timeoutInfo
-      console.log("[triggerAiReflection] TIMEOUT players:", timeoutInfo)
+      log.warn("TIMEOUT players:", timeoutInfo)
     } else if (failedPlayers.length > 0) {
       status.state = "error"
       const failedInfo = failedPlayers
         .map((p) => `${p.playerName}(${p.reason}${p.code ? `,${p.code}` : ""}${p.thinkingEnabled ? ",思考模式" : ""})`)
         .join("; ")
       status.detail = failedInfo
-      console.log("[triggerAiReflection] FAILED players:", failedInfo)
+      log.warn("FAILED players:", failedInfo)
     } else {
       status.state = "done"
       status.detail = ""

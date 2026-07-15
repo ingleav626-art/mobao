@@ -9,6 +9,8 @@
  * @exports InputPart - 固定输入浮层子对象
  */
 import type { MobileHandlerType } from "./types"
+import { createLogger } from "../../game/core/logger"
+const log = createLogger("Mobile")
 
 export const InputPart: ThisType<MobileHandlerType> = {
   createFixedInputOverlay: function () {
@@ -80,8 +82,8 @@ export const InputPart: ThisType<MobileHandlerType> = {
       this.fixedInputContainer.style.right = "0"
 
       var inputTop = this.screenHeight - kbHeight - containerHeight
-      console.log(
-        "[MobileHandler] positioned - bottom:",
+      log.debug(
+        "positioned - bottom:",
         bottomValue,
         "| input visible at",
         inputTop.toFixed(0),
@@ -106,7 +108,7 @@ export const InputPart: ThisType<MobileHandlerType> = {
     this.screenHeight = window.innerHeight
     this.currentKeyboardHeight = 0
 
-    console.log("[MobileHandler] show input - value:", input.value.substring(0, 20), "screen:", this.screenHeight)
+    log.info("show input - value:", input.value.substring(0, 20), "screen:", this.screenHeight)
 
     if (!this.fixedInputElement) return
 
@@ -168,7 +170,7 @@ export const InputPart: ThisType<MobileHandlerType> = {
     var self = this
     this.isHidingFixedInput = true
 
-    console.log("[MobileHandler] hide input")
+    log.info("hide input")
 
     this.stopPolling()
     if (this.fixedInputElement) {

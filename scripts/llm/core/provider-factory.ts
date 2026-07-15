@@ -97,7 +97,25 @@ export interface OpenAICompatibleProvider extends BaseProvider {
   testConnection: (overrideSettings?: any) => Promise<ChatResult>
 }
 
+/** 默认 endpoint 归一化：验证 URL 协议，无效协议回退到默认值 */
+function defaultNormalizeEndpoint(raw: string, fallback: string): string {
+  const input = typeof raw === "string" ? raw.trim() : ""
+  if (!input) {
+    return fallback
+  }
+  if (input.startsWith("/")) {
+    return input.replace(/\/$/, "") || "/"
+  }
+  if (/^https?:\/\//i.test(input)) {
+    return input.replace(/\/$/, "")
+  }
+  // 无效协议（如缺少 :// 或格式错误），回退到默认
+  return fallback || input
+}
+
 export function createNormalizeSettings(config: NormalizeSettingsConfig) {
+  const doNormalizeEndpoint = config.normalizeEndpoint || defaultNormalizeEndpoint
+
   return function normalizeSettings(source: any, fallback?: any): any {
     const defaults: any = { ...config.defaultSettings(), ...normalizeObject(fallback) }
     const input = normalizeObject(source)
@@ -109,9 +127,7 @@ export function createNormalizeSettings(config: NormalizeSettingsConfig) {
         ? (input.apiKey as string).trim()
         : String(defaults.apiKey || "")
 
-    const endpoint = config.normalizeEndpoint
-      ? config.normalizeEndpoint(endpointRaw, String(defaults.endpoint))
-      : endpointRaw || String(defaults.endpoint)
+    const endpoint = doNormalizeEndpoint(endpointRaw, String(defaults.endpoint))
 
     return {
       provider: config.providerId,
@@ -306,7 +322,20 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
     console.log(`[requestChat] ${callId} START, provider: ${base.id}, model: ${options.settings?.model || "unknown"}`)
     const input = normalizeObject(options)
     const loadedSettings = base.loadSettings()
+    console.log(
+      "[API DEBUG] loadedSettings.endpoint:", JSON.stringify(loadedSettings?.endpoint),
+      "type:", typeof loadedSettings?.endpoint
+    )
+    const inputSettings = input.settings as Record<string, unknown> | undefined
+    console.log(
+      "[API DEBUG] input.settings?.endpoint:", JSON.stringify(inputSettings?.endpoint),
+      "type:", typeof inputSettings?.endpoint
+    )
     const mergedSettings = config.normalizeSettings(input.settings, loadedSettings)
+    console.log(
+      "[API DEBUG] mergedSettings.endpoint:", JSON.stringify(mergedSettings?.endpoint),
+      "type:", typeof mergedSettings?.endpoint
+    )
     console.log(
       `[requestChat] ${callId} settings merged, model: ${mergedSettings.model}, endpoint: ${mergedSettings.endpoint}, elapsed: ${Date.now() - callStartTime}ms`
     )
@@ -390,6 +419,15 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
 
       if (fetchEndpoint && !fetchEndpoint.includes("/chat/completions")) {
         fetchEndpoint = fetchEndpoint.replace(/\/+$/, "") + "/chat/completions"
+      }
+
+      // dev 环境自动通过 Vite 代理转发外部 API 请求，避免浏览器 CORS 拦截
+      // 生产环境（Android WebView）无 CORS 限制，直接请求
+      if (!useProxyEndpoint && !useNativeProxy && !isLocalEndpoint && fetchEndpoint.startsWith("http")) {
+        const isDev = typeof location !== "undefined" && location.hostname === "localhost"
+        if (isDev) {
+          fetchEndpoint = "/llm-cors-proxy/" + fetchEndpoint
+        }
       }
 
       let fetchBody = Object.assign({}, requestBody)

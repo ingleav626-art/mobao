@@ -11,6 +11,8 @@
  */
 import type { MobileHandlerType } from "./types"
 import { detectMobile, detectTouch } from "./pure"
+import { createLogger } from "../../game/core/logger"
+const log = createLogger("Mobile")
 
 export const CorePart: ThisType<MobileHandlerType> = {
   isMobile: false,
@@ -30,8 +32,8 @@ export const CorePart: ThisType<MobileHandlerType> = {
     this.isTouch = detectTouch("ontouchstart" in window, navigator.maxTouchPoints)
     this.screenHeight = window.innerHeight
 
-    console.log(
-      "[MobileHandler] init - isMobile:",
+    log.info(
+      "init - isMobile:",
       this.isMobile,
       "isTouch:",
       this.isTouch,

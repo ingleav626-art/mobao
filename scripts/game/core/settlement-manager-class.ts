@@ -15,6 +15,8 @@ import {
 import { savePlayerMoney } from "./player-money"
 import { recordGameFinished } from "./app-state"
 import { useSettlementStore } from "../../vue/stores/settlementStore"
+import { createLogger } from "./logger"
+const log = createLogger("Settlement")
 
 /** 结算玩家（含联机字段） */
 export interface SettlementPlayer {
@@ -244,9 +246,7 @@ export class SettlementManager {
       this.deps.writeLog(
         `揭示藏品时发生异常：${revealError && (revealError as Error).message ? (revealError as Error).message : "未知错误"}`
       )
-      if (typeof console !== "undefined" && console.error) {
-        console.error("revealAllArtifactsForSettlement failed", revealError)
-      }
+      log.error("revealAllArtifactsForSettlement failed", revealError)
     }
 
     // 桥接：同步结算数据到 Vue settlementStore

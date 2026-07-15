@@ -30,8 +30,11 @@
 import { DEFAULT_START_MONEY } from "../core/constants"
 import { setSelectedProfileId, getProfile } from "../data/map-profiles"
 import { patch as patchAppState } from "../core/app-state"
+import { createLogger } from "../core/logger"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { RoomMessage, LanPlayer } from "../../../types/lan"
+
+const log = createLogger("LAN")
 
 interface LanSlotConfigItem {
   type: string
@@ -123,7 +126,7 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
     })
 
     bridge.on("room:created", (msg: RoomMessage) => {
-      console.log("[LAN] room:created received", msg)
+      log.info("room:created received", msg)
       showPanel(roomPanel)
       if (roomCodeEl) roomCodeEl.textContent = msg.roomCode ?? null
       if (hostBadge) hostBadge.classList.remove("hidden")

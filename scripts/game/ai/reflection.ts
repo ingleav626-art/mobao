@@ -1,4 +1,6 @@
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import { createLogger } from "../core/logger"
+const log = createLogger("AI.Reflection")
 
 /**
  * @file reflection.ts
@@ -179,8 +181,8 @@ export function updateCrossGameMemory(
   applyMemoryOperations(memory.strategies, parsedReflection.strategies as Record<string, unknown>, 10)
   applyMemoryOperations(memory.lessons, parsedReflection.lessons as Record<string, unknown>, 10)
 
-  console.log(
-    `[updateCrossGameMemory] ${playerId} updated: games=${totalGames}, winRate=${Math.round(stats.winRate * 100)}%, avgProfit=${Math.round(stats.avgProfit)}, praises=${memory.praises.length}, strategies=${memory.strategies.length}, lessons=${memory.lessons.length}`
+  log.debug(
+    `${playerId} updated: games=${totalGames}, winRate=${Math.round(stats.winRate * 100)}%, avgProfit=${Math.round(stats.avgProfit)}, praises=${memory.praises.length}, strategies=${memory.strategies.length}, lessons=${memory.lessons.length}`
   )
 }
 

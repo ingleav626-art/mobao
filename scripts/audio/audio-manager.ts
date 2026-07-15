@@ -103,6 +103,9 @@ interface AudioManagerType {
   getCurrentBgm(): string | null
 }
 
+import { createLogger } from "../game/core/logger"
+const log = createLogger("Audio")
+
 declare global {
   interface Window {
     webkitAudioContext?: typeof AudioContext
@@ -164,11 +167,11 @@ const AudioManager: AudioManagerType = {
         this._audioContext = new Ctor()
       }
     } catch (_e) {
-      console.warn("[AudioManager] Web Audio API not supported")
+      log.warn("Web Audio API not supported")
     }
 
     this._initialized = true
-    console.log("[AudioManager] Initialized")
+    log.info("Initialized")
   },
 
   _loadSettings(): void {
@@ -193,7 +196,7 @@ const AudioManager: AudioManagerType = {
         }
       }
     } catch (e) {
-      console.warn("[AudioManager] Failed to load settings:", e)
+      log.warn("Failed to load settings:", e)
     }
   },
 
@@ -210,7 +213,7 @@ const AudioManager: AudioManagerType = {
         })
       )
     } catch (e) {
-      console.warn("[AudioManager] Failed to save settings:", e)
+      log.warn("Failed to save settings:", e)
     }
   },
 
@@ -241,9 +244,9 @@ const AudioManager: AudioManagerType = {
         })
         sound.audio = audio
         sound.loaded = true
-        console.log(`[AudioManager] Loaded: ${key}`)
+        log.debug(`Loaded: ${key}`)
       } catch (e: unknown) {
-        console.warn(`[AudioManager] Preload failed for ${key}:`, (e as Error).message)
+        log.warn(`Preload failed for ${key}:`, (e as Error).message)
       }
     }
   },
@@ -261,7 +264,7 @@ const AudioManager: AudioManagerType = {
 
     const found = this._findSfx(key)
     if (!found) {
-      console.warn(`[AudioManager] SFX not found: ${key}`)
+      log.warn(`SFX not found: ${key}`)
       return
     }
     const sound = found.entry
@@ -276,9 +279,9 @@ const AudioManager: AudioManagerType = {
       const audio = sound.audio.cloneNode() as HTMLAudioElement
       audio.volume = (options.volume ?? 1) * this._sfxVolume
       audio.playbackRate = options.playbackRate ?? 1
-      audio.play().catch((e: Error) => console.warn(`[AudioManager] Play failed: ${key}`, e.message))
+      audio.play().catch((e: Error) => log.warn(`Play failed: ${key}`, e.message))
     } catch (e) {
-      console.warn(`[AudioManager] SFX play error: ${key}`, e)
+      log.warn(`SFX play error: ${key}`, e)
     }
   },
 
@@ -289,7 +292,7 @@ const AudioManager: AudioManagerType = {
 
     const found = this._findSfx(key)
     if (!found) {
-      console.warn(`[AudioManager] Looping SFX not found: ${key}`)
+      log.warn(`Looping SFX not found: ${key}`)
       return
     }
     const sound = found.entry
@@ -304,10 +307,10 @@ const AudioManager: AudioManagerType = {
       const audio = sound.audio.cloneNode() as HTMLAudioElement
       audio.volume = (options.volume ?? 1) * this._sfxVolume
       audio.loop = options.loop ?? true
-      audio.play().catch((e: Error) => console.warn(`[AudioManager] Looping SFX play failed: ${key}`, e.message))
+      audio.play().catch((e: Error) => log.warn(`Looping SFX play failed: ${key}`, e.message))
       this._loopingSfx.set(key, audio)
     } catch (e) {
-      console.warn(`[AudioManager] Looping SFX play error: ${key}`, e)
+      log.warn(`Looping SFX play error: ${key}`, e)
     }
   },
 
@@ -335,7 +338,7 @@ const AudioManager: AudioManagerType = {
 
     const found = this._findSfx(key)
     if (!found) {
-      console.warn(`[AudioManager] Stopable SFX not found: ${key}`)
+      log.warn(`Stopable SFX not found: ${key}`)
       return
     }
     const sound = found.entry
@@ -349,14 +352,14 @@ const AudioManager: AudioManagerType = {
     try {
       const audio = sound.audio.cloneNode() as HTMLAudioElement
       audio.volume = (options.volume ?? 1) * this._sfxVolume
-      audio.play().catch((e: Error) => console.warn(`[AudioManager] Stopable SFX play failed: ${key}`, e.message))
+      audio.play().catch((e: Error) => log.warn(`Stopable SFX play failed: ${key}`, e.message))
       this._stopableSfx.set(key, audio)
 
       audio.onended = () => {
         this._stopableSfx.delete(key)
       }
     } catch (e) {
-      console.warn(`[AudioManager] Stopable SFX play error: ${key}`, e)
+      log.warn(`Stopable SFX play error: ${key}`, e)
     }
   },
 
@@ -374,7 +377,7 @@ const AudioManager: AudioManagerType = {
 
     const sound = this.sounds.bgm[key]
     if (!sound) {
-      console.warn(`[AudioManager] BGM not found: ${key}`)
+      log.warn(`BGM not found: ${key}`)
       return
     }
 
@@ -394,10 +397,10 @@ const AudioManager: AudioManagerType = {
       this._bgmAudio = sound.audio.cloneNode() as HTMLAudioElement
       this._bgmAudio.volume = (options.volume ?? 1) * this._bgmVolume
       this._bgmAudio.loop = options.loop ?? true
-      this._bgmAudio.play().catch((e: Error) => console.warn(`[AudioManager] BGM play failed: ${key}`, e.message))
+      this._bgmAudio.play().catch((e: Error) => log.warn(`BGM play failed: ${key}`, e.message))
       this._currentBgm = key
     } catch (e) {
-      console.warn(`[AudioManager] BGM play error: ${key}`, e)
+      log.warn(`BGM play error: ${key}`, e)
     }
   },
 

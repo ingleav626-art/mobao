@@ -9,10 +9,13 @@ import type { LanIndexManagerDeps, LanIndexState, LanBridgeLike } from "../lan-i
 import { DEFAULT_START_MONEY } from "../../core/constants"
 import { setSelectedProfileId, getProfile } from "../../data/map-profiles"
 import { patch as patchAppState } from "../../core/app-state"
+import { createLogger } from "../../core/logger"
 import type { LanPlayer } from "../../../../types/lan"
 import { lanOnRoundStart, lanOnAllBidsIn, lanOnRoundTimeout, lanOnRoundResult, startLanRun } from "./game-flow-fns"
 import { lanBuildFullSyncData, lanOnFullSync, lanRestoreWarehouseFromSync, onLanForeground } from "./sync-fns"
 import { lanOnSettleFinal, lanOnSettle, lanOnRestartGo } from "./settle-fns"
+
+const log = createLogger("LAN")
 
 interface LanSlotConfigItem {
   type: string
@@ -107,7 +110,7 @@ export function bindLanEvents(
 
   bridge.on("room:created", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
-    console.log("[LAN] room:created received", msg)
+    log.info("room:created received", msg)
     showPanel(roomPanel)
     if (roomCodeEl) roomCodeEl.textContent = (msg.roomCode as string) ?? null
     if (hostBadge) hostBadge.classList.remove("hidden")

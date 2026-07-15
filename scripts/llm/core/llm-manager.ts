@@ -90,7 +90,7 @@ function saveManagerSettings(settings: any): void {
 }
 
 /** 自定义 Provider 的 endpoint 归一化：验证 URL 协议，无效协议回退到默认值 */
-function normalizeCustomEndpoint(raw: string, fallback: string): string {
+export function normalizeCustomEndpoint(raw: string, fallback: string): string {
   const input = typeof raw === "string" ? raw.trim() : ""
   if (!input) {
     return fallback

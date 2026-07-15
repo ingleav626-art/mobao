@@ -128,10 +128,26 @@ export function getLlmSettings(this: WarehouseSceneThis): LlmSettings {
     const provider = LlmManager.getProvider()
     if (provider) {
       const providerSettings = provider.loadSettings()
+      console.log(
+        "[API DEBUG] getLlmSettings providerSettings.endpoint:", JSON.stringify(providerSettings?.endpoint),
+        "type:", typeof providerSettings?.endpoint
+      )
+      console.log(
+        "[API DEBUG] getLlmSettings safeGlobal:", JSON.stringify(safeGlobal)
+      )
+      console.log(
+        "[API DEBUG] getLlmSettings endpoint (after merge):", JSON.stringify(providerSettings?.endpoint || safeGlobal?.endpoint),
+        "from providerSettings:", JSON.stringify(providerSettings?.endpoint),
+        "from safeGlobal:", JSON.stringify(safeGlobal?.endpoint)
+      )
       return { ...providerSettings, ...safeGlobal } as LlmSettings
     }
   }
-  return { ...DeepSeekProvider.getSettings(), ...safeGlobal } as LlmSettings
+  const fallback = DeepSeekProvider.getSettings()
+  console.log(
+    "[API DEBUG] getLlmSettings fallback to DeepSeek, endpoint:", JSON.stringify(fallback?.endpoint)
+  )
+  return { ...fallback, ...safeGlobal } as LlmSettings
 }
 
 /** 获取 LLM Provider：优先返回已注册 Provider，回退到 DeepSeekProvider 兼容对象 */

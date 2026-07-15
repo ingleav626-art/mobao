@@ -11,10 +11,10 @@
  *   - writeLog: 写入操作日志并渲染到面板
  *   - renderAiThoughtLog: 将历史局日志渲染到DOM
  *
- * @exports RunLog - 局日志接口
- * @exports buildAiDecisionPanelSnapshot / compactPanelTextForSnapshot / beginRunTracking / recordAiThoughtLogs / renderAiThoughtLog / writeLog
  * @exports AiDecisionMixin - 向后兼容的 Mixin 薄包装
  */
+import { createLogger } from "../core/logger"
+const log = createLogger("AI.Decision")
 import { formatBidRevealNumber } from "../core/utils"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
@@ -360,8 +360,8 @@ export function recordAiThoughtLogs(
   }
 
   const roundNo = Math.max(1, Math.round(Number((telemetry as { round?: number }).round) || 1))
-  console.log(
-    `[recordAiThoughtLogs] roundNo=${roundNo}, telemetry.round=${(telemetry as { round?: number }).round}, entries=${(telemetry as { entries?: unknown[] }).entries?.length}`
+  log.debug(
+    `roundNo=${roundNo}, telemetry.round=${(telemetry as { round?: number }).round}, entries=${(telemetry as { entries?: unknown[] }).entries?.length}`
   )
   if (!currentRunLog.roundPanelTexts) {
     currentRunLog.roundPanelTexts = {}
@@ -375,7 +375,7 @@ export function recordAiThoughtLogs(
     dom.aiLogicContent = origContent
     if (htmlContent) {
       currentRunLog.roundPanelTexts[String(roundNo)] = htmlContent
-      console.log(`[recordAiThoughtLogs] saved roundPanelTexts[${roundNo}] as HTML, length=${htmlContent.length}`)
+      log.debug(`saved roundPanelTexts[${roundNo}] as HTML, length=${htmlContent.length}`)
     }
   }
 

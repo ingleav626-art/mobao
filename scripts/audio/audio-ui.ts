@@ -32,6 +32,8 @@
  */
 
 import { AudioManager } from "./audio-manager"
+import { createLogger } from "../game/core/logger"
+const log = createLogger("Audio")
 
 const AudioUI: Record<string, any> = {
   _initialized: false as boolean,
@@ -50,7 +52,7 @@ const AudioUI: Record<string, any> = {
     })
 
     this._initialized = true
-    console.log("[AudioUI] Initialized")
+    log.info("Initialized")
   },
 
   _handleClick(e: MouseEvent): void {

@@ -15,8 +15,11 @@ import { getSelectedProfileId, getProfile } from "../data/map-profiles"
 import { pickRandomPublicEvent } from "../data/public-events"
 import { resetForNewGame } from "../data/character-system"
 import { CHARACTERS } from "../data/characters"
+import { createLogger } from "../core/logger"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { IntelSummary } from "../../../types/ai"
+
+const log = createLogger("LAN")
 
 export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
   lanResolveRound(reason: string) {
@@ -121,11 +124,11 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
     aiPlayers.forEach((ai) => {
       const slotId = this.lanIdToSlotId[ai.id]
       if (!slotId) {
-        console.log(`[lanComputeAiBids] ${ai.id} no slotId mapping, skipping`)
+        log.debug(`[lanComputeAiBids] ${ai.id} no slotId mapping, skipping`)
         return
       }
       const plan = this.aiLlmRoundPlans[slotId]
-      console.log(
+      log.debug(
         `[lanComputeAiBids] ${ai.id} slotId=${slotId} plan:`,
         plan
           ? {
@@ -139,7 +142,7 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
       if (!plan || plan.failed || !plan.hasBidDecision || !this.canUseLlmDecisionForPlayer(slotId)) return
       const wallet = this.lanHostWallets[ai.id] || DEFAULT_START_MONEY
       const normalizedBid = this.normalizeAiBidValue(slotId, plan.bid, wallet)
-      console.log(
+      log.debug(
         `[lanComputeAiBids] ${ai.id} LLM bid override: ${ruleBids[ai.id]} -> ${normalizedBid} (wallet=${wallet})`
       )
       ruleBids[ai.id] = normalizedBid

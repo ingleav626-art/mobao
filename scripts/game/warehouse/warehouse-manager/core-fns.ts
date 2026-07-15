@@ -19,6 +19,9 @@ import { toCellKey } from "../../core/utils"
 import { ARTIFACT_LIBRARY } from "../../data/artifacts"
 import { findFirstEmptySlot, isInBoundsCell, hasAnyInfo, getItemKnownText } from "../index"
 import { positionPreview, renderSettlementItemPreview, renderPreviewCandidates } from "./preview-fns"
+import { createLogger } from "../../core/logger"
+
+const log = createLogger("Warehouse")
 
 const ARTIFACT_IMAGE_BASE_PATH = "assets/images/artifacts/thumbs/"
 
@@ -37,18 +40,18 @@ export function preloadArtifactImages(deps: WarehouseManagerDeps): void {
   })
 
   if (toLoad.length === 0) {
-    console.log("[藏品图片] 所有图片已缓存，无需加载")
+    log.info("所有图片已缓存，无需加载")
     return
   }
 
-  console.log(`[藏品图片] 开始加载 ${toLoad.length} 张图片:`, toLoad)
+  log.info(`开始加载 ${toLoad.length} 张图片`, toLoad)
 
   deps.getLoad().on("progress", (value: number) => {
-    console.log(`[藏品图片] 加载进度: ${Math.round(value * 100)}%`)
+    log.debug(`加载进度: ${Math.round(value * 100)}%`)
   })
 
   deps.getLoad().on("complete", () => {
-    console.log("[藏品图片] 全部加载完成")
+    log.info("全部加载完成")
     ARTIFACT_LIBRARY.forEach((artifact: { key: string }) => {
       const textureKey = `artifact-${artifact.key}`
       const texture = deps.getTextures().get(textureKey)
@@ -59,11 +62,11 @@ export function preloadArtifactImages(deps: WarehouseManagerDeps): void {
   })
 
   deps.getLoad().on("load", (file: { key: string }) => {
-    console.log(`[藏品图片] 已加载: ${file.key}`)
+    log.debug(`已加载: ${file.key}`)
   })
 
   deps.getLoad().on("loaderror", (file: { key: string; src?: string }) => {
-    console.warn(`[藏品图片] 加载失败: ${file.key}`, file.src)
+    log.warn(`加载失败: ${file.key}`, file.src)
   })
 
   deps.getLoad().start()

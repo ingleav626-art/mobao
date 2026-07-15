@@ -17,6 +17,8 @@ import { SKILL_DEFS } from "../../data/skills"
 import { ITEM_DEFS } from "../../data/items"
 import { GAME_SETTINGS } from "../../core/settings"
 import { formatIntelActionPublicLine } from "./pure"
+import { createLogger } from "../../core/logger"
+const log = createLogger("AI.Intel")
 
 export const ActionMixin: ThisType<WarehouseSceneThis> = {
   executeAiIntelAction(
@@ -89,8 +91,8 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
 
     const batchStartTime = Date.now()
     const batchId = `intel-${batchStartTime}-${Math.random().toString(16).slice(2, 6)}`
-    console.log(
-      `[processAiIntelActions] ${batchId} START, aiPlayers: ${aiPlayers.length}, players: ${aiPlayers.map((p) => p.id).join(",")}`
+    log.debug(
+      `batch ${batchId} START, aiPlayers: ${aiPlayers.length}, players: ${aiPlayers.map((p) => p.id).join(",")}`
     )
 
     return Promise.all(
@@ -98,7 +100,7 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
         try {
           await this.processSingleAiIntelAction(player, undefined, undefined, roundProgress, batchId, batchStartTime)
         } catch (error) {
-          console.error(`[processSingleAiIntelAction] ${player.id} error:`, error)
+          log.error(`${player.id} error:`, error)
         } finally {
           this.setPlayerBidReady(player.id, true)
           this.updateHud()
@@ -123,7 +125,7 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
     )
       .then(() => {
         const batchEndTime = Date.now()
-        console.log(`[processAiIntelActions] ${batchId} END, total elapsed: ${batchEndTime - batchStartTime}ms`)
+        log.debug(`batch ${batchId} END, total elapsed: ${batchEndTime - batchStartTime}ms`)
 
         if (this.lastAiIntelActions.length > 0) {
           const text = this.lastAiIntelActions.map((entry) => this.formatAiIntelActionPublicLine(entry)).join("；")
@@ -131,7 +133,7 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
         }
       })
       .catch((error) => {
-        console.error(`[processAiIntelActions] ${batchId} error:`, error)
+        log.error(`batch ${batchId} error:`, error)
       })
   },
 
@@ -144,11 +146,11 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
     batchStartTime?: number
   ) {
     const startTime = Date.now()
-    console.log(
-      `[processSingleAiIntelAction] ${player.id}-${startTime} START, delay from batch start: ${startTime - (batchStartTime || 0)}ms`
+    log.debug(
+      `${player.id}-${startTime} START, delay from batch start: ${startTime - (batchStartTime || 0)}ms`
     )
-    console.log(
-      `[processSingleAiIntelAction] ${player.id} plan:`,
+    log.debug(
+      `${player.id} plan:`,
       plan
         ? {
             actionType: plan.actionType,
@@ -158,8 +160,8 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
           }
         : "null"
     )
-    console.log(
-      `[processSingleAiIntelAction] ${player.id} llmPlan:`,
+    log.debug(
+      `${player.id} llmPlan:`,
       llmPlan
         ? {
             failed: llmPlan.failed,
@@ -176,7 +178,7 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
     const llmBidReady = Boolean(
       llmPlan && !llmPlan.failed && llmPlan.hasBidDecision && this.canUseLlmDecisionForPlayer(player.id)
     )
-    console.log(`[processSingleAiIntelAction] ${player.id} llmBidReady: ${llmBidReady}`)
+    log.debug(`${player.id} llmBidReady: ${llmBidReady}`)
 
     if (llmBidReady) {
       this.llmEverUsedThisRun = true
@@ -194,7 +196,7 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
 
     const activePlan = plan as IntelActionPlan
     const result = this.executeAiIntelAction(player.id, activePlan)
-    console.log(`[processSingleAiIntelAction] ${player.id} executeAiIntelAction result:`, {
+    log.debug(`${player.id} executeAiIntelAction result:`, {
       ok: result.ok,
       actionType: activePlan.actionType,
       actionId: activePlan.actionId,
@@ -322,10 +324,10 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
             }
 
             if (this.canUseLlmDecisionForPlayer(player.id)) {
-              console.log(`[processSingleAiIntelAction] ${player.id} calling correction followup LLM (tool executed)`)
+              log.debug(`${player.id} calling correction followup LLM (tool executed)`)
               const followup = await this.requestAiLlmFollowupBid(player, llmPlan, correctionToolSummary)
-              console.log(
-                `[processSingleAiIntelAction] ${player.id} correction followup result:`,
+              log.debug(
+                `${player.id} correction followup result:`,
                 followup
                   ? {
                       ok: followup.ok,
@@ -354,7 +356,7 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
               }
             }
           } else {
-            console.log(`[processSingleAiIntelAction] ${player.id} calling correction followup LLM (no tool action)`)
+            log.debug(`${player.id} calling correction followup LLM (no tool action)`)
             const followup = await this.requestAiLlmFollowupBid(player, llmPlan, "工具执行失败，直接给出价")
             if (followup && !followup.failed && followup.hasBidDecision) {
               llmPlan.bid = followup.bid
@@ -408,15 +410,15 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
           }
         }
       }
-      console.log(
-        `[processSingleAiIntelAction] ${player.id}-${startTime} END (error correction path), elapsed: ${Date.now() - startTime}ms`
+      log.debug(
+        `${player.id}-${startTime} END (error correction path), elapsed: ${Date.now() - startTime}ms`
       )
       return
     }
 
     if (!result.ok || activePlan.actionType === "none") {
-      console.log(
-        `[processSingleAiIntelAction] ${player.id}-${startTime} END (no action), elapsed: ${Date.now() - startTime}ms`
+      log.debug(
+        `${player.id}-${startTime} END (no action), elapsed: ${Date.now() - startTime}ms`
       )
       return
     }
@@ -461,10 +463,10 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
       llmPlan.controlMode = "llm"
 
       if (this.canUseLlmDecisionForPlayer(player.id)) {
-        console.log(`[processSingleAiIntelAction] ${player.id} calling followup LLM, canUseLlmDecision=true`)
+        log.debug(`${player.id} calling followup LLM, canUseLlmDecision=true`)
         const followup = await this.requestAiLlmFollowupBid(player, llmPlan, toolSummary)
-        console.log(
-          `[processSingleAiIntelAction] ${player.id} followup result:`,
+        log.debug(
+          `${player.id} followup result:`,
           followup
             ? { ok: followup.ok, failed: followup.failed, hasBidDecision: followup.hasBidDecision, bid: followup.bid }
             : "null"
@@ -501,7 +503,7 @@ export const ActionMixin: ThisType<WarehouseSceneThis> = {
       }
     }
 
-    console.log(`[processSingleAiIntelAction] ${player.id}-${startTime} END, elapsed: ${Date.now() - startTime}ms`)
+    log.debug(`${player.id}-${startTime} END, elapsed: ${Date.now() - startTime}ms`)
   },
 
   formatAiIntelActionPublicLine(entry: {

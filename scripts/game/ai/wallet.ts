@@ -22,6 +22,8 @@ import type { Player } from "../../../types/game"
 import { GAME_SETTINGS } from "../core/settings"
 import { clamp, roundToStep } from "../core/utils"
 import { AI_WALLET_STORAGE_KEY } from "../core/constants"
+import { createLogger } from "../core/logger"
+const log = createLogger("AI.Wallet")
 
 export const AI_WALLET_INITIAL = 1000000
 
@@ -47,7 +49,7 @@ export function loadAiWalletsFromStorage(): Record<string, number> {
       }
     }
   } catch (e) {
-    console.warn("[loadAiWalletsFromStorage] failed:", e)
+    log.warn("loadAiWalletsFromStorage failed:", e)
   }
   return {}
 }
@@ -56,7 +58,7 @@ export function saveAiWalletsToStorage(aiWallets: Record<string, number>): void 
   try {
     localStorage.setItem(AI_WALLET_STORAGE_KEY, JSON.stringify(aiWallets || {}))
   } catch (e) {
-    console.warn("[saveAiWalletsToStorage] failed:", e)
+    log.warn("saveAiWalletsToStorage failed:", e)
   }
 }
 
@@ -67,7 +69,7 @@ export function resetAiWallets(players: Player[], aiWallets: Record<string, numb
     aiWallets[p.id] = AI_WALLET_INITIAL
   }
   saveAiWalletsToStorage(aiWallets)
-  console.log("[resetAiWallets] AI wallets reset to", AI_WALLET_INITIAL)
+  log.info("AI wallets reset to", AI_WALLET_INITIAL)
 }
 
 export function initAiWallets(players: Player[], aiWallets: Record<string, number>): void {
@@ -81,7 +83,7 @@ export function initAiWallets(players: Player[], aiWallets: Record<string, numbe
       aiWallets[p.id] = AI_WALLET_INITIAL
     }
   }
-  console.log("[initAiWallets] AI wallets loaded:", aiWallets)
+  log.info("AI wallets loaded:", aiWallets)
 }
 
 export function getAiWallet(ctx: AiWalletContext, playerId: string): number {
