@@ -9,6 +9,9 @@ import { AudioManager } from "../../../audio/audio-manager"
 import { MobaoAnimations } from "../../animations"
 import { initPlayersUI, updateLobbyMoneyDisplay, applyMapProfile } from "./init-fns"
 import { showLobbyMain } from "./navigation-fns"
+import { createLogger } from "../../core/logger"
+
+const log = createLogger("LAN")
 
 export function cleanupGameScene(deps: LobbyIndexManagerDeps, state: LobbyIndexState) {
   deps.stopRoundTimer()
@@ -56,6 +59,7 @@ export function enterLobby(deps: LobbyIndexManagerDeps, state: LobbyIndexState) 
     deps.game.loop.sleep()
   }
   state.isLanMode = false
+  log.info("enterLobby: isLanMode reset to false")
   state.lanIsHost = false
   state.lanPlayers = []
   state.lanAiPlayers = []
@@ -94,7 +98,25 @@ export function enterLobby(deps: LobbyIndexManagerDeps, state: LobbyIndexState) 
 }
 
 export function enterLanRoom(deps: LobbyIndexManagerDeps, state: LobbyIndexState) {
+  log.debug("[fn-file] enterLanRoom CALLED, isLanMode={0}, lanIsHost={1}", state.isLanMode, state.lanIsHost)
   cleanupGameScene(deps, state)
+  state.players = [
+    { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
+    { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
+    { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
+    { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
+  ]
+  log.debug("enterLanRoom: players reset, count=" + state.players.length)
+  log.info("enterLanRoom: isLanMode=" + state.isLanMode + " | lanIsHost=" + state.lanIsHost)
+  state.lanPlayers = []
+  state.lanAiPlayers = []
+  state.lanHostWallets = {}
+  state.lanHostBids = {}
+  state.lanAiLlmEnabled = false
+  state.lanIdToSlotId = {}
+  state.slotIdToLanId = {}
+  state.lanMySlotId = null
+  state.aiLlmPlayerEnabled = {}
   const lobbyPage = document.getElementById("lobbyPage")
   const gameArea = document.getElementById("gameArea")
   if (lobbyPage) lobbyPage.classList.remove("hidden")
@@ -118,6 +140,7 @@ export function enterLanRoom(deps: LobbyIndexManagerDeps, state: LobbyIndexState
     AudioManager.playBgm("lobby")
   }
   if (state.isLanMode && state.lanIsHost && deps.lanBridge) {
+    log.debug("[fn-file] enterLanRoom sending room:return to notify clients")
     const sent = deps.lanBridge.send({ type: "room:return" })
     if (!sent) {
       deps.writeLog("连接已断开，无法通知客机返回房间")

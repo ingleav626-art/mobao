@@ -6,8 +6,12 @@ import type { LobbyIndexManagerDeps, LobbyIndexState } from "../lobby-index-mana
 import { getProfile, getSelectedProfileId } from "../../data/map-profiles"
 import { updateLobbyMoneyDisplay } from "./init-fns"
 import { startSoloGame } from "./cleanup-fns"
+import { createLogger } from "../../core/logger"
+
+const log = createLogger("LAN")
 
 export function showLobbyMain(state: LobbyIndexState, skipAnimation?: boolean) {
+  log.debug("[fn-file] showLobbyMain CALLED, skipAnimation={0}", skipAnimation)
   const main = document.getElementById("lobbyMain")
   const soloSetup = document.getElementById("lobbySoloSetup")
   const onlinePlaceholder = document.getElementById("lobbyOnlinePlaceholder")
@@ -30,7 +34,23 @@ export function showLobbyMain(state: LobbyIndexState, skipAnimation?: boolean) {
     }
   }
   state.isLanMode = false
+  log.info("showLobbyMain: isLanMode reset to false")
   state.lanIsHost = false
+  state.lanPlayers = []
+  state.lanAiPlayers = []
+  state.lanHostWallets = {}
+  state.lanHostBids = {}
+  state.lanAiLlmEnabled = false
+  state.lanIdToSlotId = {}
+  state.slotIdToLanId = {}
+  state.lanMySlotId = null
+  state.aiLlmPlayerEnabled = {}
+  state.players = [
+    { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
+    { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
+    { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
+    { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
+  ]
 }
 
 export function showLobbySubPage(deps: LobbyIndexManagerDeps, state: LobbyIndexState, page: string) {

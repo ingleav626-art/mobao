@@ -2,16 +2,11 @@
  * @file warehouse/index.ts
  * @module game/warehouse
  * @description 仓库核心系统。管理仓库网格的绘制、藏品生成与放置、揭示机制、
- *              候选预览等完整仓库逻辑。由三个 Mixin 组成，混入 Phaser Scene。
- *
- * 三个 Mixin（实现已拆分到独立文件）：
- *   - WarehouseCoreMixin    → ./core.ts
- *   - WarehouseRevealMixin  → ./reveal.ts
- *   - WarehousePreviewMixin → ./preview.ts
+ *              候选预览等完整仓库逻辑。方法已迁移到 WarehouseScene 类。
  *
  * 共享类型 WarehouseSceneLike → ./types.ts
  *
- * 本文件保留可独立测试的纯函数，并 re-export 三个 Mixin 供外部使用。
+ * 本文件保留可独立测试的纯函数。
  */
 import { shuffle } from "../core/utils"
 
@@ -133,7 +128,4 @@ export function pickRevealTargets<
 
 // ─── Mixin re-export（向后兼容）───
 
-export { WarehouseCoreMixin } from "./core"
-export { WarehouseRevealMixin } from "./reveal"
-export { WarehousePreviewMixin } from "./preview"
 export type { WarehouseSceneLike } from "./types"

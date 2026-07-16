@@ -22,8 +22,8 @@ export function estimatePriceByQuality(basePrice: number, qualityKey: string): n
   return Math.round(basePrice * ratio)
 }
 
-export function signalToRevealState(signal: Record<string, any>): Record<string, any> {
-  const state: Record<string, any> = {}
+export function signalToRevealState(signal: Record<string, unknown>): Record<string, unknown> {
+  const state: Record<string, unknown> = {}
   if (signal.qualityKey) {
     state.qualityKey = signal.qualityKey
   }
@@ -36,7 +36,7 @@ export function signalToRevealState(signal: Record<string, any>): Record<string,
   return state
 }
 
-export function summarizeCandidatePrices(candidates: any[] = []): Record<string, any> {
+export function summarizeCandidatePrices(candidates: Record<string, unknown>[] = []): Record<string, unknown> {
   const prices = candidates
     .map((item) => Number(item.expectedPrice ?? item.basePrice) || 0)
     .filter((value) => value > 0)
@@ -81,15 +81,15 @@ export function summarizeCandidatePrices(candidates: any[] = []): Record<string,
   }
 }
 
-export function summarizeStatsCollection(statsList: any[] = []): Record<string, any> {
-  const list = statsList.filter((stats) => stats && Number.isFinite(stats.count) && stats.count > 0)
+export function summarizeStatsCollection(statsList: Record<string, unknown>[] = []): Record<string, unknown> {
+  const list = statsList.filter((stats) => stats && Number.isFinite(stats.count) && (stats.count as number) > 0)
   if (list.length === 0) {
     return emptyPriceStats()
   }
 
-  const totalWeight = list.reduce((acc, stats) => acc + stats.count, 0)
+  const totalWeight = list.reduce((acc, stats) => acc + (stats.count as number), 0)
   const weighted = (field: string) =>
-    list.reduce((acc, stats) => acc + (stats as Record<string, number>)[field] * stats.count, 0) / totalWeight
+    list.reduce((acc, stats) => acc + (stats as Record<string, number>)[field] * (stats.count as number), 0) / totalWeight
 
   return {
     count: Math.round(weighted("count")),
@@ -171,7 +171,7 @@ export function canPlaceRect(
   return true
 }
 
-export function weightedPick(pool: Array<{ weight: number; [key: string]: any }>): Record<string, any> {
+export function weightedPick(pool: Array<{ weight: number; [key: string]: unknown }>): Record<string, unknown> {
   const total = pool.reduce((sum, item) => sum + item.weight, 0)
   let cursor = Math.random() * total
 

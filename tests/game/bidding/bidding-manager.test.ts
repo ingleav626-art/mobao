@@ -63,6 +63,7 @@ function createMockDeps(overrides: Partial<BiddingManagerDeps> = {}): BiddingMan
     showGameConfirm: vi.fn(),
     updateHud: vi.fn(),
     writeLog: vi.fn(),
+    setPlayerBidSubmitted: vi.fn(),
     stopRoundTimer: vi.fn(),
     captureAiDecisionTelemetry: vi.fn(),
     recordAiThoughtLogs: vi.fn(),

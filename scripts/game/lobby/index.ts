@@ -31,6 +31,7 @@ const _LobbyCoreMixin: ThisType<WarehouseSceneThis> = {
     return this.lobbyIndexManager.bindLobbyEvents()
   },
   showLobbyMain(skipAnimation?: boolean) {
+    console.log("[mixin] showLobbyMain CALLED, skipAnimation=" + skipAnimation)
     return this.lobbyIndexManager.showLobbyMain(skipAnimation)
   },
   showLobbySubPage(page: string) {
@@ -52,6 +53,7 @@ const _LobbyCoreMixin: ThisType<WarehouseSceneThis> = {
     return this.lobbyIndexManager.enterLobby()
   },
   enterLanRoom() {
+    console.log("[mixin] enterLanRoom CALLED")
     return this.lobbyIndexManager.enterLanRoom()
   },
   exitLobby() {

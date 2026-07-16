@@ -7,6 +7,7 @@
  *              Manager 可独立单测，过渡期 Mixin 保留为薄代理层。
  */
 import type { Player } from "../../../types/game"
+import { createLogger } from "../core/logger"
 import {
   bindLobbyEvents,
   updateLobbyMoneyDisplay,
@@ -26,6 +27,8 @@ import {
   showCharacterSelectPageWithMap
 } from "./lobby-index-manager/navigation-fns"
 import { cleanupGameScene, enterLobby, enterLanRoom, exitLobby, startSoloGame } from "./lobby-index-manager/cleanup-fns"
+
+const log = createLogger("LAN")
 
 /** AI 角色分配信息 */
 export interface AiCharacterAssignment {
@@ -130,6 +133,7 @@ export class LobbyIndexManager {
   }
 
   showLobbyMain(skipAnimation?: boolean) {
+    log.debug("[manager] showLobbyMain CALLED, skipAnimation={0}", skipAnimation)
     return showLobbyMain(this.state, skipAnimation)
   }
 
@@ -158,6 +162,7 @@ export class LobbyIndexManager {
   }
 
   enterLanRoom() {
+    log.debug("[manager] enterLanRoom CALLED")
     return enterLanRoom(this.deps, this.state)
   }
 

@@ -193,7 +193,7 @@ export const AiReflectionMixin: ThisType<WarehouseSceneThis> = {
     return this.aiReflectionManager.isAiReflectionEnabled()
   },
 
-  async triggerAiReflection(record: Record<string, any>): Promise<void> {
+  async triggerAiReflection(record: Record<string, unknown>): Promise<void> {
     return this.aiReflectionManager.triggerAiReflection(record)
   },
 

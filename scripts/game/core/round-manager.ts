@@ -7,7 +7,7 @@ import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
  *              所有方法委托给 this.roundManager（RoundManager 实例）。
  */
 
-export const RoundManagerMixin: Record<string, Function> = {
+export const RoundManagerMixin: Record<string, (...args: unknown[]) => unknown> = {
   startRound(this: WarehouseSceneThis) {
     return this.roundManager.startRound()
   },

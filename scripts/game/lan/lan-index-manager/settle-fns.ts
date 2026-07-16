@@ -10,6 +10,9 @@ import { savePlayerMoney } from "../../core/player-money"
 import { patch as patchAppState } from "../../core/app-state"
 import { startLanRun } from "./game-flow-fns"
 import type { LanPlayer } from "../../../../types/lan"
+import { createLogger } from "../../core/logger"
+
+const log = createLogger("Settlement")
 
 export function lanOnSettleFinal(
   deps: LanIndexManagerDeps,
@@ -36,15 +39,23 @@ export function lanOnSettle(
   state: LanIndexState,
   msg: { winnerId: string; winnerBid: number; mode: string }
 ): void {
+  log.info(
+    "lanOnSettle: 收到结算同步, winnerId=" + msg.winnerId +
+    ", winnerBid=" + msg.winnerBid + ", mode=" + msg.mode
+  )
   const slotId = state.lanIdToSlotId[msg.winnerId]
   let winner = state.players.find((p) => p.id === slotId)
   if (!winner) {
     winner = state.players.find((p) => (p as unknown as Record<string, unknown>).lanId === msg.winnerId)
   }
   if (winner) {
+    log.info(
+      "lanOnSettle: 找到胜者 id=" + winner.id + ", name=" + winner.name +
+      ", 调用 finishAuction"
+    )
     deps.finishAuction({ playerId: winner.id, bid: msg.winnerBid }, msg.mode)
   } else {
-    deps.writeLog("结算：找不到胜者 " + msg.winnerId + "，尝试直接结算")
+    log.warn("lanOnSettle: 找不到胜者 " + msg.winnerId + "，尝试直接结算")
     deps.finishAuction({ playerId: state.players[0]?.id ?? "", bid: msg.winnerBid }, msg.mode)
   }
 }

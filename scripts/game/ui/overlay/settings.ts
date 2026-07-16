@@ -147,7 +147,7 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
     return `setting-${field}`
   },
 
-  fillSettingsForm(values: Record<string, any>) {
+  fillSettingsForm(values: Record<string, unknown>) {
     SETTINGS_FIELDS.forEach((field: string) => {
       const input = document.getElementById(this.settingsInputId(field))
       if (!input) {
@@ -207,7 +207,7 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
     }
   },
 
-  readSettingsForm(): Record<string, any> {
+  readSettingsForm(): Record<string, unknown> {
     const draft: Record<string, number> = {}
     SETTINGS_FIELDS.forEach((field: string) => {
       const input = document.getElementById(this.settingsInputId(field))
@@ -215,7 +215,7 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
         ? Number((input as HTMLInputElement).value)
         : (GAME_SETTINGS as unknown as Record<string, number>)[field]
     })
-    return normalizeGameSettings(draft, GAME_SETTINGS)
+    return normalizeGameSettings(draft, GAME_SETTINGS) as unknown as Record<string, unknown>
   },
 
   setSettingsStatus(text: string, saved: boolean) {

@@ -8,7 +8,7 @@ import { MobaoAnimations } from "../../animations"
 import { MobaoShopPage } from "../../shop/index"
 import { renderAiThoughtLog as renderAiThoughtLogFn } from "../../ai/decision"
 import { useAiPanelStore } from "../../../vue/stores/aiPanelStore"
-import type { AiThoughtLogEntry, AiDecisionResult } from "../../../vue/stores/aiPanelStore"
+import type { AiThoughtLogEntry, AiDecisionResult as _AiDecisionResult } from "../../../vue/stores/aiPanelStore"
 import { useSettlementStore } from "../../../vue/stores/settlementStore"
 
 export function hideSettleOverlay(deps: UiOverlayManagerDeps): void {

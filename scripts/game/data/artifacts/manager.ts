@@ -23,7 +23,7 @@ export class ArtifactManager {
     this.counter = 1
   }
 
-  createRandomArtifact(): Record<string, any> {
+  createRandomArtifact(): Record<string, unknown> {
     const category = weightedPick(CATEGORY_WEIGHTS).key
     const defs = ARTIFACT_LIBRARY.filter((item) => item.category === category)
     const def = defs[Math.floor(Math.random() * defs.length)]
@@ -46,7 +46,7 @@ export class ArtifactManager {
     occupancy: number[][]
     categoryWeights?: Record<string, number>
     qualityWeights?: Record<string, number>
-  }): Record<string, any> | null {
+  }): Record<string, unknown> | null {
     const categoryWeightMap = categoryWeights
       ? { ...categoryWeights }
       : CATEGORY_WEIGHTS.reduce((acc: Record<string, number>, item) => {
@@ -54,7 +54,7 @@ export class ArtifactManager {
           return acc
         }, {})
 
-    let fitDefs: any[] = ARTIFACT_LIBRARY.filter((def) =>
+    let fitDefs: Record<string, unknown>[] = ARTIFACT_LIBRARY.filter((def) =>
       canPlaceRect(col, row, def.w, def.h, gridCols, gridRows, occupancy)
     )
 
@@ -62,19 +62,19 @@ export class ArtifactManager {
       const totalQ = (Object.values(qualityWeights) as number[]).reduce((s, v) => s + v, 0) || 1
       fitDefs = fitDefs.map((def) => ({
         ...def,
-        _qw: qualityWeights[def.qualityKey] || 1
+        _qw: qualityWeights[def.qualityKey as string] || 1
       }))
       fitDefs = fitDefs.filter(() => Math.random() < 1)
-      const expanded: any[] = []
+      const expanded: Record<string, unknown>[] = []
       fitDefs.forEach((def) => {
-        const cw = (categoryWeightMap as Record<string, number>)[def.category] || 1
-        const qw = def._qw / totalQ
+        const cw = (categoryWeightMap as Record<string, number>)[def.category as string] || 1
+        const qw = (def._qw as number) / totalQ
         expanded.push({ ...def, weight: cw * qw })
       })
       if (expanded.length === 0) {
         return null
       }
-      const picked = weightedPick(expanded)
+      const picked = weightedPick(expanded as Array<{ weight: number; [key: string]: unknown }>)
       return this.buildArtifactFromDef(picked)
     }
 
@@ -84,15 +84,15 @@ export class ArtifactManager {
 
     const weightedDefs = fitDefs.map((def) => ({
       ...def,
-      weight: (categoryWeightMap as Record<string, number>)[def.category] || 1
+      weight: (categoryWeightMap as Record<string, number>)[def.category as string] || 1
     }))
 
     const picked = weightedPick(weightedDefs)
     return this.buildArtifactFromDef(picked)
   }
 
-  buildArtifactFromDef(def: Record<string, any>): Record<string, any> {
-    const quality = QUALITY_CONFIG[def.qualityKey]
+  buildArtifactFromDef(def: Record<string, unknown>): Record<string, unknown> {
+    const quality = QUALITY_CONFIG[def.qualityKey as string]
 
     return {
       id: `artifact-${this.counter++}`,
@@ -110,7 +110,7 @@ export class ArtifactManager {
     }
   }
 
-  getCandidatesByRevealState(state: Record<string, any>): Array<Record<string, any>> {
+  getCandidatesByRevealState(state: Record<string, unknown>): Array<Record<string, unknown>> {
     const { qualityKey = null, sizeTag = null, category = null } = state
     return ARTIFACT_LIBRARY.filter((artifact) => {
       if (category && artifact.category !== category) {
@@ -132,18 +132,18 @@ export class ArtifactManager {
     }).map((artifact) => ({
       ...artifact,
       revealedQualityKey: qualityKey,
-      revealedQualityLabel: qualityKey ? QUALITY_CONFIG[qualityKey].label : "未知",
+      revealedQualityLabel: qualityKey ? QUALITY_CONFIG[qualityKey as string].label : "未知",
       expectedPrice: artifact.basePrice,
       previewSizeTag: toSizeTag(artifact.w, artifact.h)
     }))
   }
 
-  getCandidateStatsByRevealState(state: Record<string, any>): Record<string, any> {
+  getCandidateStatsByRevealState(state: Record<string, unknown>): Record<string, unknown> {
     const candidates = this.getCandidatesByRevealState(state)
     return summarizeCandidatePrices(candidates)
   }
 
-  getSignalPriceStats(signals: any[] = []): Record<string, any> {
+  getSignalPriceStats(signals: Record<string, unknown>[] = []): Record<string, unknown> {
     const list = Array.isArray(signals) ? signals.filter(Boolean) : []
     const detail = list.map((signal) => {
       const revealState = signalToRevealState(signal)
@@ -155,8 +155,8 @@ export class ArtifactManager {
       }
     })
 
-    const qualityCount = detail.filter((entry) => entry.type === "quality").length
-    const outlineCount = detail.filter((entry) => entry.type === "outline").length
+    const qualityCount = detail.filter((entry) => (entry as Record<string, unknown>).type === "quality").length
+    const outlineCount = detail.filter((entry) => (entry as Record<string, unknown>).type === "outline").length
 
     return {
       signalCount: detail.length,

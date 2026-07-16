@@ -121,11 +121,13 @@ export function bindLanEvents(
     renderLanCarryItems()
     updateModeMapCardState(true)
     if (bridge && bridge.connected) {
+      var carryIds = c.lanCarryItems.map(function (it: { id: string }) {
+        return it.id
+      })
+      log.info("room:created sending lan:carry-items ids={0}", JSON.stringify(carryIds))
       bridge.send({
         type: "lan:carry-items",
-        carryItems: lanCarryItems.map(function (it: { id: string }) {
-          return it.id
-        })
+        carryItems: carryIds
       })
     }
     var statusText = "房间 " + msg.roomCode + " 等待玩家加入"
@@ -178,11 +180,13 @@ export function bindLanEvents(
       }
     }
     if (bridge && bridge.connected) {
+      var joinCarryIds = c.lanCarryItems.map(function (it: { id: string }) {
+        return it.id
+      })
+      log.info("room:joined sending lan:carry-items ids={0}", JSON.stringify(joinCarryIds))
       bridge.send({
         type: "lan:carry-items",
-        carryItems: lanCarryItems.map(function (it: { id: string }) {
-          return it.id
-        })
+        carryItems: joinCarryIds
       })
     }
     setOnlineStatus("房间 " + msg.roomCode + " 等待主机开始", "connected")
@@ -239,6 +243,7 @@ export function bindLanEvents(
 
   bridge.on("lan:carry-items-update", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
+    log.debug("lan:carry-items-update playerId={0} carryItems={1}", msg.playerId, JSON.stringify(msg.carryItems))
     var slotIdx = lanSlotConfig.findIndex((s: LanSlotConfigItem) => s.id === msg.playerId)
     if (slotIdx >= 0) {
       lanSlotConfig[slotIdx].carryItems = (msg.carryItems as string[]) || []
@@ -276,6 +281,7 @@ export function bindLanEvents(
 
   bridge.on("lan:room:return", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
+    log.debug("[fn-file] lan:room:return RECEIVED, players={0}, aiSlots={1}", (msg.players as unknown[] || []).length, (msg.aiSlots as unknown[] || []).length)
     deps.writeLog(
       "主机已返回房间 | players=" +
         ((msg.players as unknown[]) || []).length +
@@ -362,6 +368,16 @@ export function bindLanEvents(
     const msg = raw as Record<string, unknown>
     state.isLanMode = true
     state.lanPlayers = (msg.players as LanPlayer[]) || []
+
+    log.info(
+      "game:init players={0} carryItems={1}",
+      (state.lanPlayers || []).length,
+      JSON.stringify(
+        (state.lanPlayers || []).map(function (p: LanPlayer) {
+          return { id: p.id, carryItems: p.carryItems }
+        })
+      )
+    )
     state.lanIsHost = (msg.hostId as string) === bridge.playerId
 
     state.lanLastServerUrl = bridge.ws ? bridge.ws.url : null

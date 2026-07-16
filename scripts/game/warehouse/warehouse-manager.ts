@@ -7,6 +7,7 @@
  */
 import type { Artifact } from "../../../types/game"
 import { GRID_COLS, GRID_ROWS } from "../core/constants"
+import { createLogger } from "../core/logger"
 import {
   findFirstEmptySlot,
   isInBoundsCell,
@@ -59,6 +60,8 @@ import {
 } from "./warehouse-manager/preview-fns"
 import type { WarehouseManagerDeps, WarehouseManagerState } from "./warehouse-manager/types"
 export type { WarehouseManagerDeps, WarehouseManagerState }
+
+const log = createLogger("Warehouse")
 
 /**
  * 仓库管理器（薄协调器）。合并原 WarehouseCoreMixin + WarehouseRevealMixin + WarehousePreviewMixin 的逻辑。
@@ -202,6 +205,7 @@ export class WarehouseManager {
   // ─── WarehousePreviewMixin 逻辑 ───
 
   positionPreview(canvasX: number, canvasY: number): void {
+    log.debug("[manager] positionPreview CALLED, canvasX={0}, canvasY={1}", canvasX, canvasY)
     positionPreview(this.deps, canvasX, canvasY)
   }
   applyPreviewPosition(): void {
@@ -211,6 +215,7 @@ export class WarehouseManager {
     repositionPreview(this.deps)
   }
   hidePreview(): void {
+    log.debug("[manager] hidePreview CALLED")
     hidePreview(this.deps)
   }
   setupPreviewTouchScroll(): void {

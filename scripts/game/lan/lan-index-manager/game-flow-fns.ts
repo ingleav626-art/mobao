@@ -8,7 +8,7 @@
 import type { LanIndexManagerDeps, LanIndexState } from "../lan-index-manager"
 import { DEFAULT_START_MONEY, GRID_ROWS, GRID_COLS } from "../../core/constants"
 import { GAME_SETTINGS } from "../../core/settings"
-import { getSelectedProfileId, getProfile } from "../../data/map-profiles"
+import { getSelectedProfileId as _getSelectedProfileId, getProfile as _getProfile } from "../../data/map-profiles"
 import { pickRandomPublicEvent } from "../../data/public-events"
 import { resetForNewGame } from "../../data/character-system"
 import { CHARACTERS } from "../../data/characters"
@@ -281,6 +281,27 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
     carryItems: p.carryItems || []
   })) as unknown as typeof state.players
 
+  log.debug(
+    "startLanRun carryItems mapping: {0}",
+    JSON.stringify(
+      (state.lanPlayers || []).map(function (p) {
+        return { id: p.id, carryItems: p.carryItems }
+      })
+    )
+  )
+
+  log.info(
+    "startLanRun: players=" +
+      JSON.stringify(
+        state.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          isHuman: (p as unknown as Record<string, unknown>).isHuman,
+          isAI: (p as unknown as Record<string, unknown>).isAI
+        }))
+      )
+  )
+
   state.lanIdToSlotId = {}
   state.slotIdToLanId = {}
   state.players.forEach((p) => {
@@ -292,7 +313,16 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
   })
 
   const myPlayerId = deps.getLanBridge()?.playerId
+  log.info(
+    "startLanRun slot mapping: myPlayerId=" +
+      myPlayerId +
+      " | lanIdToSlotId=" +
+      JSON.stringify(state.lanIdToSlotId) +
+      " | players.lanId list=" +
+      JSON.stringify(state.players.map((p) => (p as unknown as Record<string, unknown>).lanId))
+  )
   state.lanMySlotId = (myPlayerId ? state.lanIdToSlotId[myPlayerId] : undefined) || "p2"
+  log.info("startLanRun: lanMySlotId resolved to " + state.lanMySlotId)
 
   deps.initPlayersUI()
 

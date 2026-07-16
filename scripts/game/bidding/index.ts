@@ -1,4 +1,6 @@
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
+import { createLogger } from "../core/logger"
+const log = createLogger("Bidding")
 
 /**
  * @file bidding/index.ts
@@ -34,6 +36,7 @@ export function shouldDirectTake(
 
 export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   setPlayerBidReady(playerId: string, ready: boolean): void {
+    log.debug("[mixin] setPlayerBidReady CALLED, playerId={0}, ready={1}", playerId, ready)
     return this.biddingManager.setPlayerBidReady(playerId, ready)
   },
 
@@ -50,6 +53,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   },
 
   openBidKeypad(): void {
+    log.debug("[mixin] openBidKeypad CALLED")
     return this.biddingManager.openBidKeypad()
   },
 
@@ -90,6 +94,7 @@ export const BiddingMixin: ThisType<WarehouseSceneThis> = {
   },
 
   playerBid(): void {
+    log.debug("[mixin] playerBid CALLED")
     return this.biddingManager.playerBid()
   },
 

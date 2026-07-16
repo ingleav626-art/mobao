@@ -315,6 +315,7 @@ export function renderItem(deps: WarehouseManagerDeps, item: Artifact): void {
 
 /** 藏品点击处理（结算查看 / 候选预览） */
 export function onArtifactClicked(deps: WarehouseManagerDeps, item: Artifact, pointer: { x: number; y: number }): void {
+  log.debug("[fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2}", item.id, pointer.x, pointer.y)
   if (
     !deps.dom.bidKeypad?.classList.contains("hidden") ||
     (deps.dom.itemDrawer && !deps.dom.itemDrawer?.classList.contains("hidden"))

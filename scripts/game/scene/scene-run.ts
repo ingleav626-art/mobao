@@ -13,11 +13,15 @@ import { GRID_COLS as _GRID_COLS, GRID_ROWS as _GRID_ROWS } from "../core/consta
 import { GAME_SETTINGS as _GAME_SETTINGS } from "../core/settings"
 import { getActiveCharacter, resetForNewGame } from "../data/character-system"
 import { pickRandomPublicEvent } from "../data/public-events"
+import { createLogger } from "../core/logger"
+
+const log = createLogger("LAN")
 
 /**
  * 开始新的一局游戏
  */
 export function startNewRun(this: WarehouseSceneThis): void {
+  log.debug("[fn-file] startNewRun CALLED")
   this.beginRunTracking()
   this.battleRecordReplayActive = false
   this.battleRecordReplayRecordId = null
@@ -25,6 +29,25 @@ export function startNewRun(this: WarehouseSceneThis): void {
   this.stopRoundTimer()
   this.exitSettlementPage()
   this.guardWarehouseCapacity()
+  // 重置联机状态，防止联机配置串扰到单机
+  this.isLanMode = false
+  log.info("startNewRun: isLanMode reset to false")
+  this.lanIsHost = false
+  this.lanPlayers = []
+  this.lanAiPlayers = []
+  this.lanIdToSlotId = {}
+  this.slotIdToLanId = {}
+  this.lanHostWallets = {}
+  this.lanHostBids = {}
+  this.lanAiLlmEnabled = false
+  this.lanMySlotId = "p2"
+  this.players = [
+    { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
+    { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
+    { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
+    { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
+  ]
+  log.debug("startNewRun: players reset, count=" + this.players.length)
 
   if (getActiveCharacter()) {
     resetForNewGame()

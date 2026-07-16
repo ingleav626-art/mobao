@@ -4,6 +4,9 @@
  * @description 出价键盘与玩家出价提交函数。被 BiddingManager 委托调用。
  */
 import type { BiddingManagerDeps, BiddingManagerState } from "../bidding-manager"
+import { createLogger } from "../../core/logger"
+
+const log = createLogger("Bidding")
 
 /**
  * 设置玩家出价准备状态并更新对应的 DOM 卡片样式
@@ -32,7 +35,17 @@ export function areAllPlayersBidReady(deps: BiddingManagerDeps, state: BiddingMa
  * 打开出价数字键盘
  */
 export function openBidKeypad(deps: BiddingManagerDeps, state: BiddingManagerState): void {
-  if (deps.getSettled() || state.roundResolving || state.playerBidSubmitted) {
+  log.debug("[fn-file] openBidKeypad CALLED")
+  if (deps.getSettled() || state.roundResolving) {
+    return
+  }
+  if (deps.getIsLanMode()) {
+    const myId = deps.getLanMySlotId()
+    if (myId && state.roundBidReadyState[myId]) {
+      deps.writeLog("你已提交本轮出价，不可再次提交。")
+      return
+    }
+  } else if (state.playerBidSubmitted) {
     return
   }
 
@@ -137,6 +150,7 @@ export function handleBidKeyInput(deps: BiddingManagerDeps, state: BiddingManage
  * 玩家提交出价
  */
 export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState): void {
+  log.debug("[fn-file] playerBid CALLED, isLan={0}", deps.getIsLanMode())
   deps.closeItemDrawer()
 
   if (deps.getSettled()) {
@@ -154,7 +168,13 @@ export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState):
     return
   }
 
-  if (state.playerBidSubmitted) {
+  if (deps.getIsLanMode()) {
+    const myId = deps.getLanMySlotId()
+    if (myId && state.roundBidReadyState[myId]) {
+      deps.writeLog("你已提交本轮出价，不可再次提交。")
+      return
+    }
+  } else if (state.playerBidSubmitted) {
     deps.writeLog("你已提交本轮出价，不可再次提交。")
     return
   }
@@ -172,8 +192,10 @@ export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState):
 
   state.playerRoundBid = Math.round(inputValue)
   state.playerBidSubmitted = true
+  deps.setPlayerBidSubmitted(true)
 
   const myId = deps.getIsLanMode() ? deps.getLanMySlotId() : "p2"
+  log.debug(`playerBid: myId=${myId}, isLan=${deps.getIsLanMode()}, roundBidReadyState=${JSON.stringify(state.roundBidReadyState)}`)
   if (myId) setPlayerBidReady(deps, state, myId, true)
   closeBidKeypad(deps)
   deps.writeLog(`玩家已提交本轮密封出价：${state.playerRoundBid}。提交后不可再用道具/技能。`)

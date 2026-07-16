@@ -683,7 +683,7 @@ export function initLanLobbyImpl(this: WarehouseSceneThis) {
     })
   }
 
-  const lanSlotConfig: Array<Record<string, any>> = [
+  const lanSlotConfig: Array<Record<string, unknown>> = [
     { type: "empty" },
     { type: "empty" },
     { type: "empty" },

@@ -351,12 +351,12 @@ function loadProviderSettings(providerId: string): void {
   if (provider) {
     const settings = provider.loadSettings()
     console.log("[loadProviderSettings] settings:", settings)
-    if (els.apiKeyInput) (els.apiKeyInput as HTMLInputElement).value = settings.apiKey || ""
-    if (els.endpointInput) (els.endpointInput as HTMLInputElement).value = settings.endpoint || ""
-    if (els.modelInput) (els.modelInput as HTMLInputElement).value = settings.model || ""
-    if (els.maxTokensInput) (els.maxTokensInput as HTMLInputElement).value = settings.maxTokens || 2048
-    if (els.timeoutMsInput) (els.timeoutMsInput as HTMLInputElement).value = settings.timeoutMs || 40000
-    if (els.thinkingParamsInput) (els.thinkingParamsInput as HTMLInputElement).value = settings.thinkingParams || ""
+    if (els.apiKeyInput) (els.apiKeyInput as HTMLInputElement).value = String(settings.apiKey || "")
+    if (els.endpointInput) (els.endpointInput as HTMLInputElement).value = String(settings.endpoint || "")
+    if (els.modelInput) (els.modelInput as HTMLInputElement).value = String(settings.model || "")
+    if (els.maxTokensInput) (els.maxTokensInput as HTMLInputElement).value = String(settings.maxTokens || 2048)
+    if (els.timeoutMsInput) (els.timeoutMsInput as HTMLInputElement).value = String(settings.timeoutMs || 40000)
+    if (els.thinkingParamsInput) (els.thinkingParamsInput as HTMLInputElement).value = String(settings.thinkingParams || "")
     if (els.enabledCheckbox) (els.enabledCheckbox as HTMLInputElement).checked = globalSettings.enabled
     if (els.multiGameMemoryCheckbox)
       (els.multiGameMemoryCheckbox as HTMLInputElement).checked = globalSettings.multiGameMemoryEnabled

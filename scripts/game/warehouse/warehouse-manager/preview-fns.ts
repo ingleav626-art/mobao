@@ -9,14 +9,28 @@ import { MARGIN, CELL_SIZE } from "../../core/constants"
 import { clamp, rgbHex } from "../../core/utils"
 import { QUALITY_CONFIG, toSizeTag } from "../../data/artifacts"
 import { getItemKnownText } from "../index"
+import { createLogger } from "../../core/logger"
+
+const log = createLogger("Warehouse")
 
 /** 定位预览弹窗到指定画布坐标 */
 export function positionPreview(deps: WarehouseManagerDeps, canvasX: number, canvasY: number): void {
+  log.debug("[fn-file] positionPreview CALLED, canvasX={0}, canvasY={1}", canvasX, canvasY)
   deps.state.previewAnchor = { x: canvasX, y: canvasY }
   const pop = deps.dom.previewPopover!
   pop.classList.remove("hidden")
   deps.state.previewOpenTick = Date.now()
 
+  // 直接禁用 Phaser 画布的指针事件，阻止点击穿透到 Phaser 游戏对象
+  // 注意：不能靠父元素 pointer-events:none 来阻止，因为子元素 pointer-events:auto 会覆盖（CSS 规范）
+  const canvas = deps.dom.gameRoot?.querySelector("canvas")
+  if (canvas) {
+    canvas.style.pointerEvents = "none"
+  }
+  // 确保预览弹窗自身能正常接收点击
+  pop.style.pointerEvents = "auto"
+
+  log.debug("positionPreview shown at ({0}, {1})", canvasX, canvasY)
   applyPreviewPosition(deps)
 }
 
@@ -78,13 +92,22 @@ export function repositionPreview(deps: WarehouseManagerDeps): void {
 
 /** 隐藏预览弹窗 */
 export function hidePreview(deps: WarehouseManagerDeps): void {
+  log.debug("[fn-file] hidePreview CALLED")
   if (deps.dom.previewFilterRow) {
     deps.dom.previewFilterRow!.style.display = "flex"
   }
-  deps.dom.previewPopover!.classList.add("hidden")
+  const pop = deps.dom.previewPopover!
+  pop.classList.add("hidden")
+  pop.style.pointerEvents = ""
+  // 恢复 Phaser 画布的指针事件
+  const canvas = deps.dom.gameRoot?.querySelector("canvas")
+  if (canvas) {
+    canvas.style.pointerEvents = ""
+  }
   deps.dom.previewList!.innerHTML = ""
   deps.dom.previewHint!.textContent = ""
   deps.getInput().setDefaultCursor("default")
+  log.debug("hidePreview")
 }
 
 /** 设置预览弹窗触摸滚动关闭 */

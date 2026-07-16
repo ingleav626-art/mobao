@@ -277,6 +277,7 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
     })
 
     bridge.on("lan:room:return", (msg: RoomMessage) => {
+      console.log("[mixin] lan:room:return RECEIVED, players=" + (msg.players || []).length + ", aiSlots=" + (msg.aiSlots || []).length)
       this.writeLog(
         `主机已返回房间 | players=${(msg.players || []).length} | aiSlots=${(msg.aiSlots || []).length} | map=${msg.mapProfileId || "default"}`
       )

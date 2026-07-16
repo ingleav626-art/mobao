@@ -2,188 +2,130 @@
 
 ## Project
 
-"摸宝仓库" (warehouse-mobao) v1.7.0 - a Phaser 3 auction/bidding game. Phaser 3.90 + TypeScript 6 + Vite 8. Pure frontend (except LAN server). Chinese codebase. ~1026 tests (Vitest).
+"摸宝仓库" (warehouse-mobao) v1.7.0 - Phaser 3 竞拍/暗仓游戏。Phaser 3.90 + TypeScript + Vite + Vue 3 + Pinia。纯前端（除 LAN 服务器）。中文代码库。~1867 测试（Vitest）。
 
-## 文档导航 (read these first)
+## 文档导航
 
 | 文档 | 用途 |
 |------|------|
-| `FILE_GUIDE.md` | **每个源文件的一句话职责说明**，按目录组织，最详细且最新（2026-07-12）。定位文件先看这里。 |
-| `README.md` | 游戏玩法、系统设计、运行方式、路线图（面向用户，部分行数/计数已过时，以代码为准） |
-| `docs/README.md` | docs/ 索引：reference（技术参考）/ issues（痛点）/ plans（计划）/ archive（归档） |
-| `docs/reference/*.md` | 模块分析、功能-文件映射、AI 系统、数据层等稳定技术参考 |
+| `FILE_GUIDE.md` | **每个源文件的一句话职责**，按目录组织。定位文件先看这里。 |
+| `docs/plans/short-term-roadmap.md` | 短期计划书（重构收尾 -> APK -> 修复 -> 新功能） |
+| `README.md` | 游戏玩法、系统设计、运行方式（面向用户） |
 
 ## Commands
 
 ```bash
-npm run dev          # Vite dev server on port 5173 (LAN-accessible)
+npm run dev          # Vite dev server (port 5173, LAN-accessible)
 npm run build        # Vite build -> dist/
-npm run test         # Vitest run（全量测试）
-npm run test:watch   # Vitest watch 模式
+npm run test         # Vitest 全量测试
 npm run lint         # eslint scripts/
 npm run format       # prettier --check scripts/
-npm run format:fix   # prettier --write scripts/
 npm run server       # LAN WebSocket server (lan/server/)
-npx tsc --noEmit     # TypeScript type check (run after code changes)
+npx tsc --noEmit     # TypeScript type check
+cd android && ./gradlew.bat assembleDebug  # Android APK 构建
 ```
-
-测试框架：Vitest（jsdom 环境，v8 coverage）。测试文件在 `tests/` 目录，按源码架构一一对应，覆盖纯函数输入->输出等价性、边界条件、状态变更。
 
 ## Architecture
 
-### Module system (ES Modules)
+### Manager 架构（替代 Mixin）
 
-`index.html` has only 3 script tags:
+项目已从 19 Mixin + Object.assign 迁移到 **22 Manager 类 + 依赖注入**：
 
-1. `<script src="./lib/phaser.min.js">` - synchronous Phaser load (line 19)
-2. `<script type="module" src="./lan/client/lan-bridge.ts">` - module load (line 861)
-3. `<script type="module" src="./scripts/game/main.ts">` - module load (line 862)
+- 每个 Manager 是薄协调器（48-374 行），方法一行委托到按域拆分的函数文件
+- Manager 构造函数接收 `Deps` 接口（显式依赖，可独立单测）
+- `WarehouseScene` 构造函数创建所有 Manager 实例并注入依赖
+- 48 个旧 Mixin 代理文件仍存在（薄转发层），待清理
 
-All other modules use ES Module `import`/`export`. `main.ts` (36 imports) is the application entry point - now a thin assembly file (272 lines), see **场景拆分** below.
+**新功能写成 Manager + 函数文件**，不要用 Mixin 或直接给类加方法。
 
-### 场景拆分 (main.ts 2748 -> 198 行)
+### Bridge 层
 
-历史上 `main.ts` 是 2748 行的 God Object（含 `WarehouseScene` 类定义 + 所有方法 + Mixin 组装）。已拆分为 `scripts/game/scene/` 目录（16 个文件，~3000 行）：
+LLM / 战绩 / 结算三个重子系统是工厂函数（`createXxxBridge(deps)`），返回 `{ methods, ... }`，`.methods` 直接 `Object.assign` 到原型。
 
-| 文件 | 职责 |
-|------|------|
-| `scene/warehouse-scene.ts` | `WarehouseScene` 类定义：属性声明、构造函数、Mixin 方法类型声明（**类型用途，实际方法在 scene/ 各文件**） |
-| `scene/scene-init.ts` | `create` / `initAudio` / `cacheDom` / `initAnimations` / `bindDomEvents` |
-| `scene/scene-run.ts` | `startNewRun`（新局初始化、仓库生成、AI 初始化） |
-| `scene/scene-hud.ts` | `updateHud` / `updateActionAvailability` |
-| `scene/scene-utils.ts` | 快照构建、坐标转换、排名标记、运行令牌、LLM 设置获取 |
-| `scene/scene-ai-panel.ts` | AI 逻辑面板渲染（`renderAiLogicPanel`）+ LLM 设置方法（`getLlmSettings`/`getLlmProvider`） |
-| `scene/scene-character.ts` | 角色场景方法（`applyCharacterToPlayer`/`bindCharacterSkillButton`/`refreshSkillButtonLabel`），从 MainOnlyMethods 迁入 |
-| `scene/scene-battle-record.ts` | 仅保留 `buildWarehouseSnapshotForSync` 别名（战绩方法由 `BATTLE_RECORD_BRIDGE.methods` 直接挂原型） |
-| `scene/scene-settlement.ts` | 空占位（结算方法由 `SETTLEMENT_BRIDGE.methods` 直接挂原型） |
-| `scene/events-*.ts`（7 个） | 从 `bindDomEvents` 拆出的事件绑定：overlay/settings/ai-memory/ai-panel/battle-record/item-drawer/settlement |
+### 依赖注入
 
-`main.ts` 原 `MainOnlyMethods` 的 5 个孤儿方法已迁出：3 个角色方法入 `scene/scene-character.ts`、2 个 LLM 方法入 `scene/scene-ai-panel.ts`，全仓 `this: any` 清零。三个 bridge 的 `.methods`（LLM/战绩/结算）现直接 `Object.assign` 到原型，不再经 scene 代理转发。main.ts 现仅剩桥接层初始化 + Mixin/bridge 合并 + Phaser 启动（198 行）。
+`scripts/game/core/deps.ts` 提供 `Deps` 容器。`scripts/game/core/logger.ts` 提供结构化日志（`createLogger("Category")`，4 级别，localStorage 可配置）。
 
-### Mixin assembly
+### CSS 按域拆分
 
-`WarehouseScene` (class in `scene/warehouse-scene.ts`) is the single Phaser scene. 19 mixins + scene/ 方法 + 三个 bridge 的 `.methods`（LLM_BRIDGE / BATTLE_RECORD_BRIDGE / SETTLEMENT_BRIDGE）are merged onto its prototype via `Object.assign` in `main.ts`:
+`styles/game/styles.css` 是薄入口（58 行），`@import` 8 个域文件（`_hud` / `_settings` / `_overlays` / `_ai-panel` / `_battle-record` / `_collection` / `_settlement` / `_player`）。
 
-- **warehouse/**: WarehouseCoreMixin, WarehouseRevealMixin, WarehousePreviewMixin
-- **ai/**: AiWalletMixin, AiIntelMixin, AiMemoryMixin, AiReflectionMixin, AiDecisionMixin
-- **bidding/**: BiddingMixin
-- **ui/**: OverlayMixin, PanelsMixin, HistoryMixin
-- **lobby/**: LobbyIndexMixin, CarouselMixin, CharacterSelectMixin
-- **lan/**: LanIndexMixin (internally merges 6 sub-mixins: events, sync, reconnect, settle, game-flow, live2d)
-- **core/**: RoundManagerMixin, SkillItemManagerMixin, SettlementManagerMixin
+### Vite 开发代理
 
-**不要直接给类加方法** - 新功能写成 Mixin 文件或 scene/ 模块，再在 `main.ts` 的 `Object.assign` 里并入。
-
-### 子模块拆分模式 (God Object 拆解)
-
-大型 Mixin/模块按"**薄入口 + 子模块目录 + re-export 纯函数**"模式拆分。入口文件用 `Object.assign` 合并子 Mixin，并 re-export 子模块的纯函数保持向后兼容。新增大文件应遵循此模式：
-
-| 原文件 | 拆分后 | 入口行数 |
-|--------|--------|---------|
-| `ai/intel.ts` (1673 行) | `ai/intel/`：`pure` / `init` / `snapshot` / `reveal` / `panel` / `action` | 39 行 |
-| `llm/core/llm-decision.ts` (1750 行) | `llm/core/decision/`：`types` / `pure` / `request` / `correction` / `panel` | 45 行 |
-| `llm/core/llm-manager.ts` (1267 行) | `llm/core/`：`manager-utils.ts` + `provider-factory.ts`（llm-manager.ts 保留注册表 + LlmManager） | 519 行 |
-| `lobby/character-select.ts` | `lobby/character-select/`：`pure` / `live2d` / `carry-items`（核心 Mixin 仍在 character-select.ts） | 459 行 |
-| `warehouse/index.ts` | `warehouse/`：`core.ts` / `reveal.ts` / `preview.ts` / `types.ts`（index.ts 薄入口 re-export） | - |
-| `ui/overlay.ts` (957 行) | `ui/overlay/`：`pure` / `info-popup` / `detail-popup` / `settings` / `lan-dialog` / `collection` / `ai-model-config` / `core` | 32 行 |
-
-### Phase 2 Mixin 解耦（独立纯函数）
-
-16/19 Mixin 已完成纯函数提取，Mixin 薄包装层委托调用独立导出函数。已解耦的模块：
-
-| 模块 | 提取的独立函数 |
-|------|--------------|
-| ai/wallet.ts | getAiWallet, getAiMinimumBid, normalizeAiBidValue, resetAiWallets |
-| ai/intel.ts | pickRandomItemCell, calcHighValuePriceThreshold, checkHighValueArtifact, determineRevealLevel, truncateCandidateList, formatIntelActionPublicLine, buildNeighborStateLabel, getNeighborOffsets, calcUncertainty, calcAvailableActionState |
-| ai/reflection.ts | applyMemoryOperations, updateCrossGameMemory |
-| ai/memory.ts | getAiMemoryStorageKey, getQualityCounts, getTotalOccupiedCells, ensureCrossGameMemory |
-| ai/decision.ts | compactPanelTextForSnapshot, buildAiDecisionPanelSnapshot |
-| ui/panels.ts | addPrivateIntelEntry, addPublicInfoEntry, renderPrivateIntelPanel, renderPublicInfoPanel, updateSidePanels |
-| ui/history.ts | resetPlayerHistoryState, clearCurrentRoundUsage, recordPlayerUsage, renderItemUsageCell, recordRoundHistory, refreshPlayerHistoryUI |
-| ui/overlay.ts | getCollectionCategories, filterCollectionItems |
-| lobby/carousel.ts | getMapProfiles, getSelectedMapIndex, getAdjacentIndexes |
-| lobby/character-select/pure.ts | calcReplenishCost |
-| lobby/index.ts | isAiLlmEnabledForPlayer, getSlotLayout, sortCollectionItems |
-| bidding/index.ts | getLastRoundBidMap, shouldDirectTake |
-| warehouse/index.ts | findFirstEmptySlot, isInBoundsCell, hasAnyInfo, getItemKnownText, pickBottomCellFromTargets, pickRevealTargets |
-| core/skill-item-manager.ts | getItemInfo, getPlayerActionId, consumeActionState, wrapContextWithCharacterBonus |
-| core/settlement-manager.ts | calculateDividendTicket, getSelfProfitInfo, buildDividendTicketLog |
-| core/settings.ts | normalizeGameSettings, roundToStep, loadPlayerMoney, savePlayerMoney, clampBid |
-
-未解耦（DOM 重或已是空壳）：RoundManagerMixin, WarehousePreviewMixin, LanIndexMixin
-
-### Dependency injection
-
-`scripts/game/core/deps.ts` provides a `Deps` container（`initDeps({ LLM_BRIDGE, BATTLE_RECORD_BRIDGE, SETTLEMENT_BRIDGE })`，在 main.ts 初始化）。Prefer `import { Deps }` over `window.Xxx` for new code.
-
-### Global variables
-
-`eslint.config.js` (lines 14-51) registers ~36 globals (Phaser, WebSocket, NativeBridge, etc.). Some remain for backward compat despite ES Module migration. New code should use ES Module import/export, not attach to `window`.
+`vite.config.js` 内置 LLM CORS 代理插件：dev 环境自动把外部 API URL 改写为 `/llm-cors-proxy/https://...`，通过 Vite 中间件转发，避免浏览器 CORS 拦截。生产环境（Android WebView）走直连。
 
 ## Key files
 
 | File | Role |
 |------|------|
-| `scripts/game/main.ts` | **装配入口**（198 行）：桥接层初始化、Mixin + bridge.methods 合并、Phaser 启动。类定义在 `scene/warehouse-scene.ts` |
-| `scripts/game/scene/*.ts` | `WarehouseScene` 类定义 + 方法实现 + 事件绑定（15 文件，见上"场景拆分"） |
-| `scripts/game/core/constants.ts` | All game constants (grid, storage keys, quality) |
-| `scripts/game/core/settings.ts` | Settings load/save |
-| `scripts/game/core/deps.ts` | Dependency injection container |
-| `scripts/game/core/utils.ts` | Shared utility functions |
-| `scripts/game/core/round-manager.ts` | Round lifecycle management |
-| `scripts/game/core/settlement-manager.ts` | Settlement logic (dividends, tickets, wallets) |
-| `scripts/game/core/skill-item-manager.ts` | Skill/item usage management |
-| `scripts/game/data/artifacts.ts` | Artifact library (80+ items) + ArtifactManager |
-| `scripts/game/data/characters.ts` | Character data definitions |
-| `scripts/game/data/character-system.ts` | Character runtime state + passive effects |
-| `scripts/game/data/skills.ts` | Skill definitions + SkillManager |
-| `scripts/game/data/items.ts` | Item definitions + ItemManager |
-| `scripts/game/ai/*.ts` + `ai/intel/` | AI 系统（bidding, intel/, memory, reflection, wallet, decision, context-builder, summarizer, game-history） |
-| `scripts/llm/core/*.ts` + `decision/` | LLM 系统（manager + manager-utils + provider-factory, decision/, prompt, error, settings, ui-bridge） |
-| `scripts/llm/providers/*.ts` | LLM providers (DeepSeek, OpenAI, Qwen, GLM, Kimi) |
-| `scripts/game/bridge/*.ts` | Bridge layer (settlement, battle-record, shop) |
-| `scripts/game/warehouse/*.ts` | Warehouse grid rendering, artifact placement, reveal mechanics |
-| `scripts/game/bidding/index.ts` | Bidding flow control, bid keypad, round resolution |
-| `scripts/game/ui/*.ts` | UI overlays, side panels, history, item drawer |
-| `scripts/game/lobby/*.ts` + `character-select/` | Lobby navigation, carousel, character select |
-| `scripts/game/lan/*.ts` | LAN multiplayer (events, sync, reconnect, settle, game-flow, live2d) |
-| `scripts/audio/*.ts` | Audio manager + UI sound effects |
-| `scripts/mobile/mobile-handler.ts` | Mobile/Android adaptation |
-| `lan/client/lan-bridge.ts` | WebSocket client bridge |
-| `lan/server/server.js` | LAN WebSocket server (separate npm install in lan/server/) |
-| `proxy-server.js` | CORS proxy for LLM API calls (port 3000) |
-| `types/*.d.ts` | TypeScript type definitions |
+| `scripts/game/main.ts` | 装配入口（198 行）：桥接层初始化 + Manager/Mixin/bridge 合并 + Phaser 启动 |
+| `scripts/game/scene/warehouse-scene.ts` | WarehouseScene 类定义 + 构造函数（Manager 实例化） |
+| `scripts/game/scene/scene-*.ts` | 场景方法（init/run/hud/utils/ai-panel/character）+ 事件绑定（events-*.ts） |
+| `scripts/game/core/logger.ts` | 结构化日志工具（createLogger） |
+| `scripts/game/core/constants.ts` | 游戏常量（网格、存储键、品质） |
+| `scripts/game/core/deps.ts` | 依赖注入容器 |
+| `scripts/game/core/settings.ts` | 游戏设置 + 玩家资金管理 |
+| `scripts/game/data/*.ts` | 藏品/角色/技能/道具/地图数据 + Manager |
+| `scripts/game/ai/*.ts` | AI 系统（bidding/intel/memory/reflection/wallet/decision） |
+| `scripts/llm/core/*.ts` | LLM 系统（manager/provider-factory/decision/error/settings） |
+| `scripts/llm/providers/*.ts` | LLM Provider（DeepSeek/OpenAI/Qwen/GLM/Kimi） |
+| `scripts/game/bridge/*.ts` | Bridge 层（settlement/battle-record/shop） |
+| `scripts/game/warehouse/*.ts` | 仓库网格 + 藏品揭示 + 预览 |
+| `scripts/game/bidding/*.ts` | 出价流程 + 键盘 + 回合结算 |
+| `scripts/game/ui/*.ts` | UI 覆盖层 + 侧边面板 + 历史 |
+| `scripts/game/lan/*.ts` | LAN 联机（events/sync/reconnect/settle/game-flow/live2d） |
+| `scripts/audio/*.ts` | 音频管理 |
+| `scripts/mobile/*.ts` | 移动端适配 |
+| `types/*.d.ts` | TypeScript 类型定义 |
 
 ## Conventions
 
-- **No comments** unless asked. The existing JSDoc in `main.ts`/`scene/` is documentation, not a style to follow.
-- **Prettier**: no semicolons, double quotes, 120 print width, no trailing commas, LF line endings.
-- **No unused vars**: ESLint `no-unused-vars` is `warn`. Keep it clean.
-- **File naming**: kebab-case for files, PascalCase for classes.
-- **Chinese** in all user-facing strings, comments, and documentation.
-- **大文件拆分模式**: 新增大模块按"薄入口 + 子目录 + re-export 纯函数"拆分（见上"子模块拆分模式"）。纯函数放 `pure.ts`，可独立测试。
+- **禁止 any**：用具体类型或 `unknown` + 类型守卫。`unknown` 仅当类型真正无法确定时使用。
+- **Prettier**：无分号、双引号、120 print width、无尾逗号、LF。
+- **文件命名**：kebab-case 文件，PascalCase 类。
+- **中文**：所有用户可见字符串、注释、文档。
+- **文件长度**：新文件不超过 300 行。超过按"薄入口 + 函数文件"拆分。
+- **日志**：用 `createLogger("Category")`，不用 `console.log`。级别 debug/info/warn/error。
+- **新 Manager**：构造函数接收 deps 接口，方法委托函数文件，加集成测试。
+- **CSS**：用全局 class（已加载），不写 scoped 样式。新样式加到对应域文件。
+- **无注释**除非要求。现有 JSDoc 是文档不是风格。
 
-## 子代理规则（delegation via Agent tool）
+## 子代理规则
 
-派发子代理时，**必须在指令里明确以下约束**（曾因子代理擅自 `git stash` 把并行流的未提交改动扫走，耗时恢复）：
+派发子代理时**必须在指令里明确以下约束**：
 
-- **何时派子代理**：仅当有 **2 个及以上独立任务且文件域不冲突**时才派子代理并行；单任务直接自己做，不为单任务派子代理（避免不必要的间接开销与上下文传递成本）。**规划与 review 由主代理完成，子代理负责执行**。
-- **子代理模型**：派发子代理时**必须指定 `model: "haiku"`**（快速、省额度的执行模型）。主代理（规划/review）用会话模型。
-- **禁止 any**：新增代码**不允许使用 `any`**（包括 `as any`、`: any`、`<any>`）。类型无法确定时用 `unknown` + 类型守卫，或定义具体接口。**`unknown` 仅当类型真正无法确定时使用**——能确定具体类型的必须用具体类型，不能用 `unknown` 替代 `any`（否则清了白清）。lint `no-explicit-any` 为 warn 级，但新代码必须消除 any。现有 any 逐步偿还。
-- **只做三类操作**：① 读文件；② 编辑**指派范围内**的文件；③ 跑验证命令（`npx tsc --noEmit` / `npm run test` / `npm run lint` / `npm run build` / `prettier --check`）。
-- **禁止破坏性 git 操作**：`git stash`、`git reset`（尤其 `--hard`）、`git checkout -- <file>`（丢弃工作区改动）、`git clean`、`git stash drop`、`git restore <file>`（丢弃改动）、`git restore --staged <非自己文件>`。这些会静默丢失工作区未提交改动，包括其他并行流的成果。需要"干净基线验证"时**绝不**用 stash/reset，改用按文件单独 `npx tsc` 或跑指定测试文件。
-- **禁止 commit/push**，除非用户明确要求。
-- **不越界编辑**：只改任务指派的文件。本项目常有多条并行重构流（见 `analysis/task-list.md`），其他文件可能正被改--不要碰。
-- **验证被阻塞时报告，不要"清理"工作区**：若 tsc/test 报错来自**非本任务文件**（如并行流中途状态），在报告里说明"这些错误来自其他流程，非我改动"，**不要**试图 stash/reset 来隔离验证。只确认自己文件 0 错误即可。
-- **多并行子代理预防冲突**：派发多个并行子代理时，确保文件域不重叠；项目级 tsc 会看到其他流程的瞬时错误，不据此回退自己的正确改动。
+- **何时派**：2+ 独立任务且文件域不冲突时并行；单任务自己做。**规划与 review 由主代理完成，子代理执行**。
+- **模型**：`model: "haiku"`。
+- **禁止 any**：能用具体类型就用，仅真正无法确定时用 `unknown` + 类型守卫。
+- **只做三类操作**：读文件 / 编辑指派范围文件 / 跑验证命令。
+- **禁止破坏性 git**：`stash`/`reset --hard`/`checkout --`/`clean`/`stash drop`/`restore`。需干净基线用按文件 tsc。
+- **禁止 commit/push**，除非明确要求。
+- **不越界编辑**：只改指派文件。
+- **验证被阻塞时报告**，不 stash/reset 隔离。
+
+## 重构教训（一开始遵守就不会重构）
+
+| 教训 | 后果 | 规则 |
+|------|------|------|
+| 巨行星文件 | 2748 行 main.ts 无法维护 | 文件不超过 300 行 |
+| Mixin 隐式 this 耦合 | 无法独立测试 | 用 Manager + DI，不用 Mixin |
+| 无类型 | 运行时错误频发 | 禁止 any，strict 模式 |
+| 无集成测试 | 构造顺序 bug 漏到运行时 | 架构改动加集成测试 |
+| console.log 满天飞 | 无法排查 | 从一开始用 createLogger() |
+| 子代理擅自 git stash | 丢失并行流改动 | 子代理禁止破坏性 git |
+| Vue 用独立容器 | CSS 定位全乱 | Vue 原地挂载，不用独立容器 |
+| Phaser API 静态引用 | 构造时 undefined | Phaser API 用 getter |
+| deps 值捕获 null | 联机房主返回消息发不出 | deps 里引用 `this.xxx` 必须用 getter（构造时可能为 null） |
+| createXxx 没配 setXxx | bridge 创建后 scene.lanBridge 仍 null，playerId 全 undefined | Manager 用 createLanBridge 创建实例后必须 setLanBridge 存储，否则 getXxx 返回 null |
+| UI 重新设计而非抄 | 样式不一致 | 迁移 = 抄 HTML + 复用 CSS |
+| endpoint 无校验 | URL 被当相对路径 | 所有 Provider 走 normalizeEndpoint |
 
 ## Gotchas
 
-- **禁止未经同意删除文件**: Never delete any file (including `rm`, `Remove-Item`, `git clean`) unless the user explicitly asks. Even if a file looks orphaned, unused, or AI-created - ask first.
-- **TypeScript strict mode**: `tsconfig.json` has `strict: true`, `noImplicitAny: true`, `strictNullChecks: true`. However, `checkJs: false` means `.js` files are not checked.
-- **ESLint**: flat config 已配 @typescript-eslint，`npm run lint` 可 lint `.ts`（0 error，~305 warning，主要是 `no-explicit-any` warn 级）。新增代码避免 `any` 与未用变量；`_` 前缀的参数/变量/catch 已配置忽略。
-- **LAN server is separate**: `lan/server/` has its own `package.json`. Run `npm install` there before `npm run server`.
-- **Android build**: Requires JDK 17 + Gradle + Android SDK at `D:\web\tool\`. See README for exact commands.
-- **localStorage keys**: All prefixed with `mobao_`. Changing a key breaks backward compat for existing users.
-- **Scene 架构**: 单一 Phaser 场景（`WarehouseScene`），19 个 Mixin + scene/ 方法通过 Object.assign 合并到原型。类定义在 `scene/warehouse-scene.ts`，方法实现分散在 `scene/` 各文件（非 main.ts）。
-- **FILE_GUIDE.md 是文件定位首选**: 查找某文件职责时先查 `FILE_GUIDE.md`（2026-07-12 最新），再查 `docs/reference/`。
+- **禁止未经同意删除文件**：即使文件看起来无用，先问。
+- **TypeScript strict**：`strict: true`，`noImplicitAny: true`，`strictNullChecks: true`。`.js` 不检查。
+- **LAN server 独立**：`lan/server/` 有自己的 `package.json`。
+- **Android 构建**：需 JDK 17 + Gradle + Android SDK at `D:\web\tool\`。`copyWebAssets` 从 `dist/` 复制。
+- **localStorage 键**：全部 `mobao_` 前缀。改键破坏向后兼容。
+- **日志控制**：`localStorage.setItem("mobao_log_level", "warn")` 只看警告；`"mobao_log_categories", "AI,LLM"` 按分类过滤。
+- **FILE_GUIDE.md** 是文件定位首选。

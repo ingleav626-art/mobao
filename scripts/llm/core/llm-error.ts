@@ -25,7 +25,7 @@ export function safeParseJson(text: string): unknown {
   }
 }
 
-export function tryExtractDecisionJson(rawText: string): Record<string, any> | null {
+export function tryExtractDecisionJson(rawText: string): Record<string, unknown> | null {
   const text = String(rawText || "").trim()
   if (!text) {
     return null
@@ -33,14 +33,14 @@ export function tryExtractDecisionJson(rawText: string): Record<string, any> | n
 
   const direct = safeParseJson(text)
   if (direct && typeof direct === "object") {
-    return direct
+    return direct as Record<string, unknown>
   }
 
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)
   if (fenced && fenced[1]) {
     const parsed = safeParseJson(fenced[1].trim())
     if (parsed && typeof parsed === "object") {
-      return parsed
+      return parsed as Record<string, unknown>
     }
   }
 
@@ -50,7 +50,7 @@ export function tryExtractDecisionJson(rawText: string): Record<string, any> | n
     const slice = text.slice(firstBrace, lastBrace + 1)
     const parsed = safeParseJson(slice)
     if (parsed && typeof parsed === "object") {
-      return parsed
+      return parsed as Record<string, unknown>
     }
   }
 

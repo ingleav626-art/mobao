@@ -13,6 +13,10 @@ import { QUALITY_CONFIG } from "../../data/artifacts"
 import { pickRandomPublicEvent } from "../../data/public-events"
 import type { QualityLevel, ArtifactView, Artifact } from "../../../../types/game"
 
+import { createLogger } from "../../core/logger"
+
+const log = createLogger("Settlement")
+
 export function lanBuildFullSyncData(
   deps: LanIndexManagerDeps,
   state: LanIndexState,
@@ -185,10 +189,15 @@ export function lanRestoreWarehouseFromSync(
   if (state.itemLayer) {
     state.itemLayer.destroy(true)
   }
-  state.itemLayer = null
+  state.itemLayer = deps.addContainer() as unknown as LanIndexState["itemLayer"]
   state.items = []
   state.warehouseTrueValue = 0
   state.revealedCells = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(false))
+
+  log.info(
+    "lanRestoreWarehouseFromSync: 恢复仓库，藏品数=" + warehouseData.length +
+    ", items=" + warehouseData.map((s) => (s.key as string) || "?").join(",")
+  )
 
   warehouseData.forEach((saved, idx) => {
     const qualityKey =
@@ -220,9 +229,15 @@ export function lanRestoreWarehouseFromSync(
       view: {} as ArtifactView
     }
 
-    item as Artifact
+    deps.renderItem(item as Artifact)
     state.items.push(item as Artifact)
     state.warehouseTrueValue += item.trueValue
+
+    log.debug(
+      "lanRestoreWarehouseFromSync: 已渲染藏品 id=" + item.id +
+      ", key=" + item.key + ", name=" + item.name +
+      ", qualityKey=" + item.qualityKey
+    )
   })
 
   deps.rebuildWarehouseCellIndex()

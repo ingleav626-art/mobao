@@ -7,7 +7,7 @@
  * @exports LlmManager - LLM 管理器对象（对象字面量单例）
  */
 import type { CustomProvider } from "../../../types/llm"
-import type { BaseProvider, OpenAICompatibleProvider, ChatRequestOptions, ChatResult } from "./provider-factory"
+import type { OpenAICompatibleProvider, ChatRequestOptions, ChatResult } from "./provider-factory"
 import {
   LLM_MANAGER_STORAGE_KEY,
   CUSTOM_PROVIDERS_STORAGE_KEY,
@@ -53,14 +53,14 @@ export interface ProviderDescriptor {
   id: string
   name: string
   description: string
-  defaultSettings: () => any
-  normalizeSettings: (s: any, fallback?: any) => any
-  loadSettings: () => any
-  saveSettings: (settings: any) => void
+  defaultSettings: () => Record<string, unknown>
+  normalizeSettings: (s: Record<string, unknown>, fallback?: Record<string, unknown>) => Record<string, unknown>
+  loadSettings: () => Record<string, unknown>
+  saveSettings: (settings: Record<string, unknown>) => void
   requestChat: (options: ChatRequestOptions) => Promise<ChatResult>
-  testConnection?: (overrideSettings?: any) => Promise<ChatResult>
-  getSettings?: () => any
-  applySettings?: (s: any) => any
+  testConnection?: (overrideSettings?: Record<string, unknown>) => Promise<ChatResult>
+  getSettings?: () => Record<string, unknown>
+  applySettings?: (s: Record<string, unknown>) => Record<string, unknown>
   getLogs?: () => Array<Record<string, unknown>>
   clearLogs?: () => void
   isThinkingModel?: (model: string) => boolean
@@ -70,20 +70,20 @@ export interface ProviderDescriptor {
 const providers: Map<string, ProviderDescriptor> = new Map()
 let activeProviderId: string | null = null
 
-function loadManagerSettings(): any {
+function loadManagerSettings(): Record<string, unknown> {
   try {
     const raw = window.localStorage.getItem(LLM_MANAGER_STORAGE_KEY)
     if (!raw) {
       return { activeProviderId: null }
     }
     const parsed = parseJsonSafely(raw)
-    return parsed && typeof parsed === "object" ? parsed : { activeProviderId: null }
+    return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : { activeProviderId: null }
   } catch (_error) {
     return { activeProviderId: null }
   }
 }
 
-function saveManagerSettings(settings: any): void {
+function saveManagerSettings(settings: Record<string, unknown>): void {
   try {
     window.localStorage.setItem(LLM_MANAGER_STORAGE_KEY, JSON.stringify(settings))
   } catch (_error) {}
@@ -164,7 +164,7 @@ function registerProvider(provider: ProviderDescriptor): void {
       },
     applySettings:
       provider.applySettings ||
-      function (s: any) {
+      function (s: Record<string, unknown>) {
         return s
       },
     getLogs:
@@ -187,8 +187,8 @@ function registerProvider(provider: ProviderDescriptor): void {
 
   if (activeProviderId === null) {
     const managerSettings = loadManagerSettings()
-    if (managerSettings.activeProviderId && providers.has(managerSettings.activeProviderId)) {
-      activeProviderId = managerSettings.activeProviderId
+    if (managerSettings.activeProviderId && providers.has(managerSettings.activeProviderId as string)) {
+      activeProviderId = managerSettings.activeProviderId as string
     } else if (providers.size === 1) {
       activeProviderId = provider.id
     }
@@ -465,8 +465,8 @@ export const LlmManager = {
     const managerSettings = loadManagerSettings()
     console.log("[LlmManager.init] managerSettings:", managerSettings)
     console.log("[LlmManager.init] available providers:", Array.from(providers.keys()))
-    if (managerSettings.activeProviderId && providers.has(managerSettings.activeProviderId)) {
-      activeProviderId = managerSettings.activeProviderId
+    if (managerSettings.activeProviderId && providers.has(managerSettings.activeProviderId as string)) {
+      activeProviderId = managerSettings.activeProviderId as string
       console.log("[LlmManager.init] set activeProviderId from storage:", activeProviderId)
     } else if (providers.size > 0) {
       activeProviderId = (providers.keys().next().value as string | undefined) || null

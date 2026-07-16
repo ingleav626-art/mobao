@@ -40,6 +40,7 @@ export function initLanLobby(
   if (!LanBridge) return
 
   const bridge = deps.createLanBridge()
+  deps.setLanBridge(bridge)
   state.isLanMode = false
   state.lanHostWallets = {}
   state.lanHostBids = {}
@@ -1019,11 +1020,13 @@ export function initLanLobby(
         MobaoShopPage.init({
           onPurchase: () => {
             if (bridge && bridge.connected) {
+              var shopCarryIds = lanCarryItems.map(function (it) {
+                return it.id
+              })
+              log.info("roomShop onPurchase sending carry-items ids={0}", JSON.stringify(shopCarryIds))
               bridge.send({
                 type: "lan:carry-items",
-                carryItems: lanCarryItems.map(function (it) {
-                  return it.id
-                })
+                carryItems: shopCarryIds
               })
             }
           }
@@ -1048,11 +1051,13 @@ export function initLanLobby(
         lanCarryItems.splice(idx, 1)
         renderLanCarryItems()
         if (bridge && bridge.connected) {
+          var afterRemove = lanCarryItems.map(function (it) {
+            return it.id
+          })
+          log.info("removeCarryItem sending ids={0}", JSON.stringify(afterRemove))
           bridge.send({
             type: "lan:carry-items",
-            carryItems: lanCarryItems.map(function (it) {
-              return it.id
-            })
+            carryItems: afterRemove
           })
         }
       })
@@ -1169,11 +1174,13 @@ export function initLanLobby(
           closeLanCarryItemPicker()
           renderLanCarryItems()
           if (bridge && bridge.connected) {
+            var pickedIds = lanCarryItems.map(function (it: { id: string }) {
+              return it.id
+            })
+            log.info("carryPicker confirm sending ids={0}", JSON.stringify(pickedIds))
             bridge.send({
               type: "lan:carry-items",
-              carryItems: lanCarryItems.map(function (it: { id: string }) {
-                return it.id
-              })
+              carryItems: pickedIds
             })
           }
         })
@@ -1246,17 +1253,26 @@ export function initLanLobby(
     const aiSlots = resetAi ? [] : lanSlotConfig.filter((s) => s.type === "ai")
     let idx = 0
     if (hostPlayer) {
+      const existing = lanSlotConfig.find((s) => s.id === hostPlayer.id)
       lanSlotConfig[idx] = {
         type: "host",
         id: hostPlayer.id,
         name: hostPlayer.name,
-        characterId: hostPlayer.characterId || null
+        characterId: hostPlayer.characterId || null,
+        carryItems: (existing?.carryItems as string[]) || undefined
       }
       idx++
     }
     clientPlayers.forEach((p) => {
       if (idx < 4) {
-        lanSlotConfig[idx] = { type: "client", id: p.id, name: p.name, characterId: p.characterId || null }
+        const existing = lanSlotConfig.find((s) => s.id === p.id)
+        lanSlotConfig[idx] = {
+          type: "client",
+          id: p.id,
+          name: p.name,
+          characterId: p.characterId || null,
+          carryItems: (existing?.carryItems as string[]) || undefined
+        }
         idx++
       }
     })
@@ -1454,15 +1470,37 @@ export function initLanLobby(
 
       deps.writeLog("开始游戏 | human=" + humanCount + " | ai=" + aiCount + " | total=" + totalCount + "/" + 4)
 
+      if (totalCount < 2) {
+        showLanAlert("人数不足", "联机模式至少需要 2 名玩家（含AI），当前仅 " + totalCount + " 人")
+        return
+      }
+
       const aiLlmEnabled = aiSlots.some((s) => s.llm as boolean)
       const fixedAiIds = ["p1", "p3", "p4"]
-      const aiPlayers = aiSlots.map((s, i) => ({
-        id: fixedAiIds[i] || "ai_" + i,
-        name: (s.name as string) || "AI-" + (i + 1),
-        isAI: true,
-        isHost: false,
-        llm: !!(s.llm as boolean)
-      }))
+      const aiPlayers = aiSlots.map((s, i) => {
+        const aiId = fixedAiIds[i]
+        if (!aiId) {
+          log.warn("startBtn: no fixedAiId for AI slot " + i + ", generating fallback")
+        }
+        return {
+          id: aiId || "ai_" + i,
+          name: (s.name as string) || "AI-" + (i + 1),
+          isAI: true,
+          isHost: false,
+          llm: !!(s.llm as boolean)
+        }
+      })
+
+      log.info(
+        "startBtn: starting game | human=" +
+          humanCount +
+          " | ai=" +
+          aiCount +
+          " | total=" +
+          totalCount +
+          " | aiPlayers=" +
+          JSON.stringify(aiPlayers.map((p) => ({ id: p.id, name: p.name })))
+      )
 
       deps.writeLog("发送game:start | aiPlayers=" + JSON.stringify(aiPlayers.map((p) => p.name)))
       bridge.startGame({ aiCount, aiLlmEnabled, aiPlayers })

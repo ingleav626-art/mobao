@@ -5,7 +5,7 @@
  */
 import type { UiOverlayManagerDeps } from "../overlay-manager"
 import type { UiOverlayManagerState } from "../overlay-manager"
-import type { CrossGameMemory, CrossGameStats } from "../../../../types/ai"
+import type { CrossGameMemory as _CrossGameMemory, CrossGameStats } from "../../../../types/ai"
 
 export function openAiMemoryPanel(deps: UiOverlayManagerDeps, state: UiOverlayManagerState): void {
   if (!deps.dom.aiMemoryOverlay) return

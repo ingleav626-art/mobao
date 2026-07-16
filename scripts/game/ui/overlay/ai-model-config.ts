@@ -51,17 +51,17 @@ export const AiModelConfigMixin: ThisType<WarehouseSceneThis> = {
     const aiModelConfigs = this.loadAiModelConfigs()
     const providers = LlmManager ? LlmManager.listProviders() : []
     const activeProviderId = LlmManager ? LlmManager.getActiveProviderId() : "deepseek"
-    const currentSettings: Record<string, any> = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : {}
+    const currentSettings: Record<string, unknown> = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : {}
     const currentModel = currentSettings.model || "未配置"
     const currentEndpoint = currentSettings.endpoint || "未配置"
-    const hasCurrentApiKey = !!(currentSettings.apiKey && currentSettings.apiKey.trim())
+    const hasCurrentApiKey = !!(currentSettings.apiKey && String(currentSettings.apiKey).trim())
     const activeProvider = providers.find((p: { id: string }) => p.id === activeProviderId)
     const activeProviderName = activeProvider ? activeProvider.name : activeProviderId
     let html = `
         <div style="margin-bottom:12px;padding:8px;background:#fff9f0;border:1px solid #d6ba8d;border-radius:6px;">
           <div style="font-weight:bold;color:#402f1c;margin-bottom:4px;">当前默认配置：${activeProviderName}</div>
           <div style="font-size:11px;color:#6a5a4a;">模型: ${currentModel}</div>
-          <div style="font-size:11px;color:#6a5a4a;">Endpoint: ${currentEndpoint.slice(0, 50)}${currentEndpoint.length > 50 ? "..." : ""}</div>
+          <div style="font-size:11px;color:#6a5a4a;">Endpoint: ${String(currentEndpoint).slice(0, 50)}${String(currentEndpoint).length > 50 ? "..." : ""}</div>
           <div style="font-size:11px;color:${hasCurrentApiKey ? "#2a7a2a" : "#a04040"};">API Key: ${hasCurrentApiKey ? "已配置" : "未配置"}</div>
         </div>
       `
@@ -105,7 +105,7 @@ export const AiModelConfigMixin: ThisType<WarehouseSceneThis> = {
     this.writeLog("AI模型配置已保存。")
   },
 
-  getAiModelConfig(aiIndex: number): Record<string, any> | null {
+  getAiModelConfig(aiIndex: number): Record<string, unknown> | null {
     const aiId = `ai${aiIndex + 1}`
     const aiModelConfigs = this.loadAiModelConfigs()
     const providerId = aiModelConfigs[aiId]

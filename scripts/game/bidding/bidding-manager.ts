@@ -7,6 +7,7 @@
  */
 import type { Player, Artifact } from "../../../types/game"
 import type { IntelSummary } from "../../../types/ai"
+import { createLogger } from "../core/logger"
 
 import {
   resolveRoundBids,
@@ -27,6 +28,8 @@ import {
   handleBidKeyInput,
   playerBid
 } from "./bidding-manager/keypad-fns"
+
+const log = createLogger("Bidding")
 
 /** AI 出价引擎最小接口（仅约束 buildAIBids 方法） */
 export interface BiddingAiEngine {
@@ -79,6 +82,7 @@ export interface BiddingManagerDeps {
   showGameConfirm: (msg: string, onOk: () => void, onCancel?: () => void) => void
   updateHud: () => void
   writeLog: (msg: string) => void
+  setPlayerBidSubmitted: (v: boolean) => void
   stopRoundTimer: () => void
   captureAiDecisionTelemetry: (bids: unknown[]) => void
   recordAiThoughtLogs: (telemetry: unknown) => void
@@ -129,6 +133,7 @@ export class BiddingManager {
   // ==================== 出价键盘方法 ====================
 
   setPlayerBidReady(playerId: string, ready: boolean): void {
+    log.debug("[manager] setPlayerBidReady CALLED, playerId={0}, ready={1}", playerId, ready)
     setPlayerBidReady(this.deps, this.state, playerId, ready)
   }
 
@@ -137,6 +142,7 @@ export class BiddingManager {
   }
 
   openBidKeypad(): void {
+    log.debug("[manager] openBidKeypad CALLED")
     openBidKeypad(this.deps, this.state)
   }
 
@@ -157,6 +163,7 @@ export class BiddingManager {
   }
 
   playerBid(): void {
+    log.debug("[manager] playerBid CALLED")
     playerBid(this.deps, this.state)
   }
 

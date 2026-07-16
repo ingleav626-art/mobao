@@ -155,6 +155,8 @@ export interface LanIndexManagerDeps {
   getLanBridge: () => LanBridgeLike | null
   /** 创建新 LanBridge 实例 */
   createLanBridge: () => LanBridgeLike
+  /** 存储 LAN 桥接实例到场景（供 getLanBridge 读取，修复 playerId=undefined） */
+  setLanBridge: (bridge: LanBridgeLike) => void
 
   // ─── 场景方法回调 ───
   writeLog: (text: string) => void
@@ -213,6 +215,12 @@ export interface LanIndexManagerDeps {
   getLastRoundBidMap: () => Record<string, number>
   buildAiIntelSnapshot: () => Record<string, IntelSummary>
   hasAnyInfo: (item: Artifact) => boolean
+
+  // ─── 仓库渲染回调 ───
+  /** 渲染单个藏品到仓库网格（创建 Phaser 游戏对象） */
+  renderItem: (item: Artifact) => void
+  /** 创建 Phaser 容器（用于 itemLayer 等） */
+  addContainer: () => { destroy: (destroyChildren: boolean) => void }
 
   // AI Engine
   aiEngine: {

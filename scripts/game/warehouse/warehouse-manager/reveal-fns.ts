@@ -5,9 +5,9 @@
  */
 import type { Artifact } from "../../../../types/game"
 import type { WarehouseManagerDeps } from "./types"
-import { GRID_COLS, GRID_ROWS, CELL_SIZE, MARGIN, CANVAS_NATIVE_HEIGHT } from "../../core/constants"
+import { GRID_COLS as _GRID_COLS, GRID_ROWS as _GRID_ROWS, CELL_SIZE, MARGIN, CANVAS_NATIVE_HEIGHT } from "../../core/constants"
 import { shuffle, qualityPulseDuration } from "../../core/utils"
-import { pickBottomCellFromTargets, pickRevealTargets, type RevealMode } from "../index"
+import { pickBottomCellFromTargets, pickRevealTargets, type RevealMode as _RevealMode } from "../index"
 import { drawGridLines } from "./core-fns"
 
 /** 批量揭示轮廓 */

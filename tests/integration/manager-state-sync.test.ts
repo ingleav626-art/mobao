@@ -448,7 +448,7 @@ describe("Manager 状态同步集成测试（对象生命周期）", () => {
         aiWallets: { ai1: 100, ai2: 200, stale: 999 } as Record<string, number>,
       }
       const players: Player[] = [humanPlayer, ...aiPlayers]
-      const manager = new AiWalletManager(players, scene.aiWallets, () => makeWalletCtx(scene))
+      const manager = new AiWalletManager(() => players, () => scene.aiWallets, () => makeWalletCtx(scene))
 
       const originalRef = scene.aiWallets
       manager.resetAiWallets()
@@ -465,7 +465,7 @@ describe("Manager 状态同步集成测试（对象生命周期）", () => {
         aiWallets: { ai1: 100, ai2: 200, stale: 999 } as Record<string, number>,
       }
       const players: Player[] = [humanPlayer, ...aiPlayers]
-      const manager = new AiWalletManager(players, scene.aiWallets, () => makeWalletCtx(scene))
+      const manager = new AiWalletManager(() => players, () => scene.aiWallets, () => makeWalletCtx(scene))
 
       const originalRef = scene.aiWallets
       manager.initAiWallets()
@@ -482,7 +482,7 @@ describe("Manager 状态同步集成测试（对象生命周期）", () => {
       }
       const players: Player[] = [humanPlayer, ...aiPlayers]
       localStorage.setItem("mobao_ai_wallets_v1", JSON.stringify({ ai1: 777000, ai2: 888000 }))
-      const manager = new AiWalletManager(players, scene.aiWallets, () => makeWalletCtx(scene))
+      const manager = new AiWalletManager(() => players, () => scene.aiWallets, () => makeWalletCtx(scene))
 
       const originalRef = scene.aiWallets
       manager.initAiWallets()

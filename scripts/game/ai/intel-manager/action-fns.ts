@@ -28,6 +28,7 @@ export function executeAiIntelAction(
 
 /** 处理所有 AI 玩家的情报动作（批量） */
 export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<void> {
+  log.debug("[fn-file] processAiIntelActions CALLED, isLanMode={0}", deps.isLanMode())
   const aiPlayers = deps.players.filter((player: Player) => !player.isHuman)
   const roundProgress = GAME_SETTINGS.maxRounds <= 1 ? 1 : (deps.getRound() - 1) / (GAME_SETTINGS.maxRounds - 1)
 
@@ -44,6 +45,14 @@ export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<v
   log.debug(
     `batch ${batchId} START, aiPlayers: ${aiPlayers.length}, players: ${aiPlayers.map((p: Player) => p.id).join(",")}`
   )
+
+  // In LAN mode, AI decisions are handled centrally by the host
+  if (deps.isLanMode()) {
+    log.debug(`processAiIntelActions: LAN mode, skipping local AI processing (aiPlayers=${aiPlayers.length})`)
+    return
+  }
+
+  log.info(`processAiIntelActions: processing ${aiPlayers.length} AI players: ${aiPlayers.map((p) => p.id).join(",")}`)
 
   return Promise.all(
     aiPlayers.map(async (player: Player) => {

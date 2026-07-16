@@ -71,6 +71,7 @@ export interface WarehouseMixinMethods {
   syncItemManagerFromShop(): void
   guardWarehouseCapacity(): void
   drawUnknownWarehouse(): void
+  renderItem(item: Artifact): void
   spawnRandomItems(): void
   setupWarehouseAuction(): void
   rebuildWarehouseCellIndex(): void
@@ -113,6 +114,7 @@ export interface WarehouseMixinMethods {
   handleBidKeyInput(key: string): void
   openBidKeypad(): void
   closeBidKeypad(): void
+  renderItem(item: Artifact): void
   renderItemDrawer(): void
   toggleItemDrawer(): void
   closeItemDrawer(): void
@@ -176,7 +178,7 @@ export interface WarehouseMixinMethods {
 
 // Phaser.Scene 类型桥接：extends 子句不支持 as，用中间类绕过
 // 必须用 any：Phaser 的类型系统不支持 class extends (Phaser.Scene as any)
-const _PhaserScene: any = (Phaser as any).Scene
+const _PhaserScene: typeof Phaser.Scene = (Phaser as any).Scene
 
 class WarehouseScene extends _PhaserScene {
   gridLayer: Phaser.GameObjects.Graphics | null
@@ -350,6 +352,44 @@ class WarehouseScene extends _PhaserScene {
   showLobbySubPage!: (page: string) => void
   updatePlayerAvatar!: (playerId: string, avatarEl: HTMLElement) => void
   startSoloGame!: () => void
+
+  // ===== Mixin 方法声明（运行时由 Object.assign 混入，! 断言避免 TS 报错）=====
+  addPublicInfoEntry!: (...args: any[]) => any
+  clearCurrentRoundUsage!: (...args: any[]) => any
+  kickoffAiRoundDecisions!: (...args: any[]) => any
+  showLanPauseOverlay!: (...args: any[]) => any
+  hideLanPauseOverlay!: (...args: any[]) => any
+  setPlayerBidReady!: (...args: any[]) => any
+  captureAiDecisionTelemetry!: (...args: any[]) => any
+  recordAiThoughtLogs!: (...args: any[]) => any
+  renderAiLogicPanel!: (...args: any[]) => any
+  recordRoundHistory!: (...args: any[]) => any
+  markRoundRanking!: (...args: any[]) => any
+  finishAuction!: (...args: any[]) => any
+  processAiDecisions!: (...args: any[]) => any
+  buildAiIntelSnapshot!: (...args: any[]) => any
+  getAiWallet!: (...args: any[]) => any
+  normalizeAiBidValue!: (...args: any[]) => any
+  cancelSettlementReveal!: (...args: any[]) => any
+  buildWarehouseSnapshotForSync!: (...args: any[]) => any
+  applyCharacterToPlayer!: (...args: any[]) => any
+  makeRunToken!: (...args: any[]) => any
+  revealRoundBidsSequential!: (...args: any[]) => any
+  waitUntilResumed!: (...args: any[]) => any
+  syncPauseButton!: (...args: any[]) => any
+  exitLanRoom!: (...args: any[]) => any
+  exitLobby!: (...args: any[]) => any
+  renderPublicInfoPanel!: (...args: any[]) => any
+  isAiLlmEnabledForPlayer!: (...args: any[]) => any
+  getLastRoundBidMap!: (...args: any[]) => any
+  initAudio!: (...args: any[]) => any
+  cacheDom!: (...args: any[]) => any
+  bindDomEvents!: (...args: any[]) => any
+  initAnimations!: (...args: any[]) => any
+  // ===== Mixin 状态属性声明 =====
+  lanPlayers!: any
+  _pauseSnapshotTimeLeft!: any
+  lanHostBids!: any
 
   constructor() {
     super("warehouse")
@@ -575,7 +615,11 @@ class WarehouseScene extends _PhaserScene {
     this.keypadValue = "0"
 
     // Phase 2: Manager 实例化（依赖注入）
-    this.walletManager = new AiWalletManager(this.players, this.aiWallets, () => ({
+    const scene = this
+    this.walletManager = new AiWalletManager(
+      () => this.players,
+      () => this.aiWallets,
+      () => ({
       currentBid: this.currentBid,
       aiMaxBid: this.aiMaxBid,
       aiWallets: this.aiWallets,
@@ -584,7 +628,9 @@ class WarehouseScene extends _PhaserScene {
       lanHostWallets: this.lanHostWallets
     }))
     this.historyManager = new HistoryManager({
-      players: this.players,
+      get players() {
+        return scene.players
+      },
       data: {
         playerRoundHistory: this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>,
         playerUsageHistory: this.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>,
@@ -650,8 +696,12 @@ class WarehouseScene extends _PhaserScene {
       }
     })
     this.panelsManager = new PanelsManager({
-      privateIntelEntries: this.privateIntelEntries,
-      publicInfoEntries: this.publicInfoEntries as unknown as IntelEntry[],
+      get privateIntelEntries() {
+        return scene.privateIntelEntries
+      },
+      get publicInfoEntries() {
+        return scene.publicInfoEntries as unknown as IntelEntry[]
+      },
       dom: this.dom,
       getRound: () => this.round,
       getLanBridge: () => this.lanBridge as PanelsLanBridge,
@@ -661,7 +711,6 @@ class WarehouseScene extends _PhaserScene {
     this.carouselManager = new CarouselManager()
 
     // Phase 2: 新增 4 个 Manager 实例化（依赖注入）
-    const scene = this
 
     // AiMemoryManager 依赖的 data 对象（getter/setter 同步场景属性，避免 reassign 后脱节）
     const aiMemoryData: AiMemoryData = {
@@ -1322,8 +1371,10 @@ class WarehouseScene extends _PhaserScene {
     this.lobbyIndexManager = new LobbyIndexManager({
       state: lobbyIndexState,
       dom: this.dom,
-      lanBridge: this.lanBridge as unknown as LobbyLanBridgeLike | null,
-      game: (scene as unknown as WarehouseSceneThis).game as unknown as PhaserGameLike | null,
+      get lanBridge() { return scene.lanBridge as unknown as LobbyLanBridgeLike | null },
+      get game() {
+        return (scene as unknown as WarehouseSceneThis).game as unknown as PhaserGameLike | null
+      },
       getTweens: () => (this as unknown as WarehouseSceneThis).tweens as unknown as { killAll(): void },
       getTime: () => (this as unknown as WarehouseSceneThis).time as unknown as { removeAllEvents(): void },
       itemManager: this.itemManager as unknown as { items: Array<{ id: string; count?: number }> },
@@ -1385,8 +1436,12 @@ class WarehouseScene extends _PhaserScene {
       set playerRoundBid(v) {
         scene.playerRoundBid = v
       },
-      privateIntelEntries: scene.privateIntelEntries,
-      publicInfoEntries: scene.publicInfoEntries,
+      get privateIntelEntries() {
+        return scene.privateIntelEntries
+      },
+      get publicInfoEntries() {
+        return scene.publicInfoEntries
+      },
       get aiLlmRoundPlans() {
         return scene.aiLlmRoundPlans as unknown as Record<string, unknown>
       },
@@ -1417,7 +1472,9 @@ class WarehouseScene extends _PhaserScene {
       set roundBidReadyState(v) {
         scene.roundBidReadyState = v as unknown as Record<string, unknown>
       },
-      players: scene.players as Array<{ id: string }>,
+      get players() {
+        return scene.players as Array<{ id: string }>
+      },
       dom: scene.dom as { bidInput: HTMLInputElement | null; pauseRoundBtn: HTMLElement | null },
       getRound: () => scene.round,
       getIsLanMode: () => scene.isLanMode,
@@ -1426,7 +1483,7 @@ class WarehouseScene extends _PhaserScene {
       getLanBridge: () => scene.lanBridge as { togglePause: (paused: boolean, timeLeft: number) => void } | null,
       getTimerSpan: () => scene._timerSpan,
       clearCurrentRoundUsage: () => scene.clearCurrentRoundUsage(),
-      resetAiRoundResources: () => (scene as unknown as Record<string, Function>).resetAiRoundResources(),
+      resetAiRoundResources: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).resetAiRoundResources(),
       closeBidKeypad: () => scene.closeBidKeypad(),
       kickoffAiRoundDecisions: () => scene.kickoffAiRoundDecisions(),
       updateHud: () => scene.updateHud(),
@@ -1439,7 +1496,9 @@ class WarehouseScene extends _PhaserScene {
 
     this.biddingManager = new BiddingManager({
       dom: scene.dom as Record<string, HTMLElement | null>,
-      players: scene.players,
+      get players() {
+        return scene.players
+      },
       get input() {
         return scene.input as unknown as { enabled: boolean } | null
       },
@@ -1470,7 +1529,7 @@ class WarehouseScene extends _PhaserScene {
         } | null,
       resolveRoundBids: async (reason?: string, forceSettle?: boolean) => {
         // 场景的 resolveRoundBids 声明为 void，实际是 BiddingMixin 代理（async Promise<void>）
-        await (scene as unknown as Record<string, Function>).resolveRoundBids(reason, forceSettle)
+        await (scene as unknown as Record<string, (...args: unknown[]) => unknown>).resolveRoundBids(reason, forceSettle)
       },
       closeItemDrawer: () => scene.closeItemDrawer(),
       hideInfoPopup: () => scene.hideInfoPopup(),
@@ -1478,6 +1537,9 @@ class WarehouseScene extends _PhaserScene {
         scene.showGameConfirm(msg, onOk, onCancel),
       updateHud: () => scene.updateHud(),
       writeLog: (msg: string) => scene.writeLog(msg),
+      setPlayerBidSubmitted: (v: boolean) => {
+        scene.playerBidSubmitted = v
+      },
       stopRoundTimer: () => scene.stopRoundTimer(),
       captureAiDecisionTelemetry: (bids: unknown[]) => scene.captureAiDecisionTelemetry(bids),
       recordAiThoughtLogs: (telemetry: unknown) => scene.recordAiThoughtLogs(telemetry),
@@ -1849,9 +1911,12 @@ class WarehouseScene extends _PhaserScene {
         const LB = LanBridge as unknown as new () => LanBridgeLike
         return new LB()
       },
+      setLanBridge: (bridge) => {
+        scene.lanBridge = bridge as unknown as typeof scene.lanBridge
+      },
       writeLog: (text: string) => scene.writeLog(text),
       setOnlineStatus: (text: string, cls: string) =>
-        (scene as unknown as Record<string, Function>).setOnlineStatus(text, cls),
+        (scene as unknown as Record<string, (...args: unknown[]) => unknown>).setOnlineStatus(text, cls),
       showGameConfirm: (msg: string, onConfirm: () => void) => scene.showGameConfirm(msg, onConfirm),
       stopRoundTimer: () => scene.stopRoundTimer(),
       startRound: () => scene.startRound(),
@@ -1888,18 +1953,18 @@ class WarehouseScene extends _PhaserScene {
       waitUntilResumed: () => scene.waitUntilResumed() as Promise<void>,
       setPlayerBidReady: (playerId: string, ready: boolean) => scene.setPlayerBidReady(playerId, ready),
       syncPauseButton: () => scene.syncPauseButton(),
-      showLanPauseOverlay: () => (scene as unknown as Record<string, Function>).showLanPauseOverlay(),
-      hideLanPauseOverlay: () => (scene as unknown as Record<string, Function>).hideLanPauseOverlay(),
+      showLanPauseOverlay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).showLanPauseOverlay(),
+      hideLanPauseOverlay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).hideLanPauseOverlay(),
       enterLanRoom: () => scene.enterLanRoom(),
       exitLanRoom: () => scene.exitLanRoom(),
       exitLobby: () => scene.exitLobby(),
       showLanRestartVoteDialog: (hostName: string) =>
-        (scene as unknown as Record<string, Function>).showLanRestartVoteDialog(hostName),
-      removeLanRestartDialog: () => (scene as unknown as Record<string, Function>).removeLanRestartDialog(),
+        (scene as unknown as Record<string, (...args: unknown[]) => unknown>).showLanRestartVoteDialog(hostName),
+      removeLanRestartDialog: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).removeLanRestartDialog(),
       showLanRestartDeclinedDialog: (decliner: string) =>
-        (scene as unknown as Record<string, Function>).showLanRestartDeclinedDialog(decliner),
+        (scene as unknown as Record<string, (...args: unknown[]) => unknown>).showLanRestartDeclinedDialog(decliner),
       refreshRevealScrollHints: () => scene.refreshRevealScrollHints(),
-      refreshPlayerHistoryUI: () => (scene as unknown as Record<string, Function>).refreshPlayerHistoryUI(),
+      refreshPlayerHistoryUI: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).refreshPlayerHistoryUI(),
       renderPublicInfoPanel: () => scene.renderPublicInfoPanel(),
       addPublicInfoEntry: (entry: { source: string; text: string }) => scene.addPublicInfoEntry(entry),
       recordPlayerUsage: (playerId: string, actionId: string) => scene.recordPlayerUsage(playerId, actionId),
@@ -1907,10 +1972,12 @@ class WarehouseScene extends _PhaserScene {
       canUseLlmDecisionForPlayer: (playerId: string) => scene.canUseLlmDecisionForPlayer(playerId),
       normalizeAiBidValue: (playerId: string, bid: number, wallet: number) =>
         scene.normalizeAiBidValue(playerId, bid, wallet),
-      updateLobbyMoneyDisplay: () => (scene as unknown as Record<string, Function>).updateLobbyMoneyDisplay(),
+      updateLobbyMoneyDisplay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).updateLobbyMoneyDisplay(),
       getLastRoundBidMap: () => scene.getLastRoundBidMap(),
       buildAiIntelSnapshot: () => scene.buildAiIntelSnapshot(),
       hasAnyInfo: (item: Artifact) => scene.hasAnyInfo(item),
+      renderItem: (item: Artifact) => scene.renderItem(item),
+      addContainer: () => scene.add.container(0, 0),
       aiEngine: scene.aiEngine as unknown as {
         buildAIBids: (args: Record<string, unknown>) => Record<string, number>
         resetForNewRun: (args: Record<string, unknown>) => void
@@ -1939,19 +2006,208 @@ class WarehouseScene extends _PhaserScene {
 
   // Mixin 方法声明（运行时由 Object.assign 提供）
   syncItemManagerFromShop!: WarehouseMixinMethods["syncItemManagerFromShop"]
-  guardWarehouseCapacity!: WarehouseMixinMethods["guardWarehouseCapacity"]
-  drawUnknownWarehouse!: WarehouseMixinMethods["drawUnknownWarehouse"]
-  spawnRandomItems!: WarehouseMixinMethods["spawnRandomItems"]
-  setupWarehouseAuction!: WarehouseMixinMethods["setupWarehouseAuction"]
-  rebuildWarehouseCellIndex!: WarehouseMixinMethods["rebuildWarehouseCellIndex"]
-  hidePreview!: WarehouseMixinMethods["hidePreview"]
-  hideRevealScrollHints!: WarehouseMixinMethods["hideRevealScrollHints"]
   hideSettleOverlay!: WarehouseMixinMethods["hideSettleOverlay"]
-  refreshRevealScrollHints!: WarehouseMixinMethods["refreshRevealScrollHints"]
-  hasAnyInfo!: WarehouseMixinMethods["hasAnyInfo"]
-  renderPreviewCandidates!: WarehouseMixinMethods["renderPreviewCandidates"]
-  setupPreviewTouchScroll!: WarehouseMixinMethods["setupPreviewTouchScroll"]
-  isPointOnSettlementLockedItem!: WarehouseMixinMethods["isPointOnSettlementLockedItem"]
+
+  // ===== Warehouse 方法（原 Mixin 代理，现为类方法）=====
+
+  // 预览方法 (preview.ts)
+  positionPreview(canvasX: number, canvasY: number): void {
+    return this.warehouseManager.positionPreview(canvasX, canvasY)
+  }
+
+  applyPreviewPosition(): void {
+    return this.warehouseManager.applyPreviewPosition()
+  }
+
+  repositionPreview(): void {
+    return this.warehouseManager.repositionPreview()
+  }
+
+  hidePreview(): void {
+    return this.warehouseManager.hidePreview()
+  }
+
+  setupPreviewTouchScroll(): void {
+    return this.warehouseManager.setupPreviewTouchScroll()
+  }
+
+  isPointOnSettlementLockedItem(x: number, y: number): boolean {
+    return this.warehouseManager.isPointOnSettlementLockedItem(x, y)
+  }
+
+  renderPreviewCandidates(item: Artifact): void {
+    return this.warehouseManager.renderPreviewCandidates(item)
+  }
+
+  renderSettlementItemPreview(item: Artifact): void {
+    return this.warehouseManager.renderSettlementItemPreview(item)
+  }
+
+  // 核心方法 (core.ts)
+  preloadArtifactImages(): void {
+    return this.warehouseManager.preloadArtifactImages()
+  }
+
+  drawUnknownWarehouse(): void {
+    return this.warehouseManager.drawUnknownWarehouse()
+  }
+
+  drawGridLines(): void {
+    return this.warehouseManager.drawGridLines()
+  }
+
+  guardWarehouseCapacity(): void {
+    return this.warehouseManager.guardWarehouseCapacity()
+  }
+
+  spawnRandomItems(): void {
+    return this.warehouseManager.spawnRandomItems()
+  }
+
+  setupWarehouseAuction(): void {
+    return this.warehouseManager.setupWarehouseAuction()
+  }
+
+  findFirstEmptySlot(occupancy: boolean[][]): { col: number; row: number } | null {
+    return this.warehouseManager.findFirstEmptySlot(occupancy)
+  }
+
+  placeItem(item: Artifact, slot: { col: number; row: number }, occupancy: boolean[][]): void {
+    return this.warehouseManager.placeItem(item, slot, occupancy)
+  }
+
+  rebuildWarehouseCellIndex(): void {
+    return this.warehouseManager.rebuildWarehouseCellIndex()
+  }
+
+  isInBoundsCell(x: number, y: number): boolean {
+    return this.warehouseManager.isInBoundsCell(x, y)
+  }
+
+  isWarehouseCellOccupied(x: number, y: number): boolean {
+    return this.warehouseManager.isWarehouseCellOccupied(x, y)
+  }
+
+  renderItem(item: Artifact): void {
+    return this.warehouseManager.renderItem(item)
+  }
+
+  onArtifactClicked(item: Artifact, pointer: { x: number; y: number }): void {
+    return this.warehouseManager.onArtifactClicked(item, pointer)
+  }
+
+  hasAnyInfo(item: Artifact): boolean {
+    return this.warehouseManager.hasAnyInfo(item)
+  }
+
+  getItemKnownText(item: Artifact): string {
+    return this.warehouseManager.getItemKnownText(item)
+  }
+
+  // 揭示方法 (reveal.ts)
+  revealOutlineBatch(
+    count: number,
+    category: string | null,
+    allowCategoryFallback: boolean,
+    sortStrategy: string | null
+  ): { ok: boolean; revealed: number; message?: string; bottomCell?: { x: number; y: number; col: number; row: number } | null } {
+    return this.warehouseManager.revealOutlineBatch(count, category, allowCategoryFallback, sortStrategy)
+  }
+
+  revealQualityBatch(
+    count: number,
+    category: string | null,
+    allowCategoryFallback: boolean,
+    sortStrategy: string | null
+  ): { ok: boolean; revealed: number; message?: string } {
+    return this.warehouseManager.revealQualityBatch(count, category, allowCategoryFallback, sortStrategy)
+  }
+
+  revealArtifactFully(item: Artifact, options: Record<string, unknown> = {}): { ok: boolean; item?: Artifact; message: string } {
+    return this.warehouseManager.revealArtifactFully(item, options)
+  }
+
+  revealArtifactFullyBatch({
+    count,
+    sortStrategy,
+    category,
+    allowCategoryFallback
+  }: {
+    count: number
+    sortStrategy: string | null
+    category: string | null
+    allowCategoryFallback: boolean
+  }): { ok: boolean; revealed: number; message?: string; items?: Artifact[]; bottomCell?: { x: number; y: number; col: number; row: number } | null } {
+    return this.warehouseManager.revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback })
+  }
+
+  playFullRevealEffect(item: Artifact): void {
+    return this.warehouseManager.playFullRevealEffect(item)
+  }
+
+  pickBottomCellFromTargets(targets: Artifact[]): { x: number; y: number; col: number; row: number } | null {
+    return this.warehouseManager.pickBottomCellFromTargets(targets)
+  }
+
+  hideRevealScrollHints(): void {
+    return this.warehouseManager.hideRevealScrollHints()
+  }
+
+  showRevealScrollHintsForTargets(targets: Artifact[], message: string): void {
+    return this.warehouseManager.showRevealScrollHintsForTargets(targets, message)
+  }
+
+  refreshRevealScrollHints(): void {
+    return this.warehouseManager.refreshRevealScrollHints()
+  }
+
+  pickRevealTargets({
+    mode,
+    count,
+    category,
+    allowCategoryFallback,
+    sortStrategy
+  }: {
+    mode: string
+    count: number
+    category: string | null
+    allowCategoryFallback: boolean
+    sortStrategy: string | null
+  }): Artifact[] {
+    return this.warehouseManager.pickRevealTargets({ mode, count, category, allowCategoryFallback, sortStrategy })
+  }
+
+  revealOutline(item: Artifact, options: Record<string, unknown> = {}): void {
+    return this.warehouseManager.revealOutline(item, options)
+  }
+
+  revealQualityCell(item: Artifact, options: Record<string, unknown> = {}): void {
+    return this.warehouseManager.revealQualityCell(item, options)
+  }
+
+  playOutlineRevealEffect(item: Artifact): void {
+    return this.warehouseManager.playOutlineRevealEffect(item)
+  }
+
+  playQualityRevealEffect(item: Artifact): void {
+    return this.warehouseManager.playQualityRevealEffect(item)
+  }
+
+  clearQualityVisual(item: Artifact, keepImage: boolean = false): void {
+    return this.warehouseManager.clearQualityVisual(item, keepImage)
+  }
+
+  renderQualityVisual(item: Artifact, options: Record<string, unknown> = {}): void {
+    return this.warehouseManager.renderQualityVisual(item, options)
+  }
+
+  syncQualityMarkersForOutlinedItem(item: Artifact, options: Record<string, unknown> = {}): void {
+    return this.warehouseManager.syncQualityMarkersForOutlinedItem(item, options)
+  }
+
+  revealCell(col: number, row: number): void {
+    return this.warehouseManager.revealCell(col, row)
+  }
   initAiWallets!: WarehouseMixinMethods["initAiWallets"]
   initAiIntelSystems!: WarehouseMixinMethods["initAiIntelSystems"]
   resetAiWallets!: WarehouseMixinMethods["resetAiWallets"]

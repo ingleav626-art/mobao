@@ -22,19 +22,19 @@ import {
  * AI 钱包管理器。
  *
  * 依赖注入：
- *   - players: 玩家列表（引用，用于 reset/init 识别 AI 玩家）
- *   - aiWallets: AI 钱包余额映射（可变引用，reset/init/save 直接修改）
+ *   - getPlayers: 获取玩家列表（getter，避免场景重建玩家数组后持有旧引用）
+ *   - getAiWallets: 获取 AI 钱包余额映射（getter，避免重赋值后持有旧引用）
  *   - ctxProvider: 构建 AiWalletContext 的函数（读取 currentBid/aiMaxBid/isLanMode 等动态属性）
  */
 export class AiWalletManager {
   /**
-   * @param players 玩家列表（引用，用于识别 AI 玩家）
-   * @param aiWallets AI 钱包余额映射（可变引用，reset/init/save 直接修改此对象）
+   * @param getPlayers 获取玩家列表的 getter（用于识别 AI 玩家）
+   * @param getAiWallets 获取 AI 钱包余额映射的 getter（reset/init/save 直接修改此对象）
    * @param ctxProvider 构建 AiWalletContext 的闭包，读取场景上的动态属性（currentBid 等）
    */
   constructor(
-    private readonly players: Player[],
-    private readonly aiWallets: Record<string, number>,
+    private readonly getPlayers: () => Player[],
+    private readonly getAiWallets: () => Record<string, number>,
     private readonly ctxProvider: () => AiWalletContext
   ) {}
 
@@ -45,17 +45,17 @@ export class AiWalletManager {
 
   /** 保存当前 aiWallets 到 localStorage */
   saveAiWalletsToStorage(): void {
-    saveAiWalletsToStorage(this.aiWallets)
+    saveAiWalletsToStorage(this.getAiWallets())
   }
 
   /** 重置所有 AI 钱包为初始值（AI_WALLET_INITIAL） */
   resetAiWallets(): void {
-    resetAiWallets(this.players, this.aiWallets)
+    resetAiWallets(this.getPlayers(), this.getAiWallets())
   }
 
   /** 从存储加载或使用默认值初始化 AI 钱包 */
   initAiWallets(): void {
-    initAiWallets(this.players, this.aiWallets)
+    initAiWallets(this.getPlayers(), this.getAiWallets())
   }
 
   /** 查询 AI 玩家余额（支持联机回退到主机数据） */

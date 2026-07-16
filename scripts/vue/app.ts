@@ -1,6 +1,6 @@
-import { createApp, h } from "vue"
-import { createPinia } from "pinia"
-import App from "./App.vue"
+import { createApp as _createApp, h as _h } from "vue"
+import { createPinia as _createPinia } from "pinia"
+import _App from "./App.vue"
 
 // Vue UI 暂时禁用--DOM 层级问题导致 UI 乱飞
 // #vue-app 容器的 position/z-index 改变了原 CSS 的定位上下文

@@ -20,16 +20,16 @@ export const DetailPopupMixin: ThisType<WarehouseSceneThis> = {
   showItemDetailPopup(itemId: string, itemName: string | null, x: number, y: number) {
     const itemDefs = ITEM_DEFS || []
     const skillDefs = SKILL_DEFS || []
-    const itemDef = itemDefs.find((item: { id: string }) => item.id === itemId) as any
+    const itemDef = itemDefs.find((item: { id: string }) => item.id === itemId) as Record<string, unknown> | undefined
     const skillDef = skillDefs.find((skill: { id: string }) => skill.id === itemId)
 
     if (itemDef) {
-      const title = itemName || itemDef.name || "道具详情"
+      const title = itemName || String(itemDef.name || "") || "道具详情"
       const htmlContent = [
-        `<p><strong>名称：</strong>${itemDef.name || itemId}</p>`,
-        `<p><strong>效果：</strong>${itemDef.description || "未知效果"}</p>`,
-        itemDef.initialCount !== undefined ? `<p><strong>初始数量：</strong>${itemDef.initialCount}</p>` : "",
-        itemDef.maxPerRound !== undefined ? `<p><strong>每轮上限：</strong>${itemDef.maxPerRound}</p>` : ""
+        `<p><strong>名称：</strong>${String(itemDef.name || itemId)}</p>`,
+        `<p><strong>效果：</strong>${String(itemDef.description || "未知效果")}</p>`,
+        itemDef.initialCount !== undefined ? `<p><strong>初始数量：</strong>${String(itemDef.initialCount)}</p>` : "",
+        itemDef.maxPerRound !== undefined ? `<p><strong>每轮上限：</strong>${String(itemDef.maxPerRound)}</p>` : ""
       ]
         .filter(Boolean)
         .join("")

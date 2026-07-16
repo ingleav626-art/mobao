@@ -69,21 +69,22 @@ android {
     }
 }
 
+task cleanWebAssets(type: Delete) {
+    delete 'src/main/assets/index.html'
+    delete 'src/main/assets/assets/'
+    delete 'src/main/assets/lib/'
+    delete 'src/main/assets/lan/'
+    delete 'src/main/assets/scripts/'
+    delete 'src/main/assets/styles/'
+    delete 'src/main/assets/settings.html'
+}
+
 task copyWebAssets(type: Copy) {
-    from('../../') {
+    dependsOn cleanWebAssets
+    from('../../dist/') {
         include 'index.html'
-        include 'settings.html'
-        include 'scripts/**'
-        include 'styles/**'
         include 'lib/**'
-        include 'lan/client/**'
-        exclude 'scripts/game/main.js'
-    }
-    from('../../') {
         include 'assets/**'
-    }
-    from('../../') {
-        include 'scripts/game/main.js'
     }
     into 'src/main/assets'
 }

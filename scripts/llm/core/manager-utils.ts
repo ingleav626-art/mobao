@@ -60,11 +60,11 @@ export function normalizeUsage(usage: UsageInput | null | undefined): Normalized
   return result
 }
 
-export function broadcastToTokenMonitor(result: any, options: any): void {
+export function broadcastToTokenMonitor(result: Record<string, unknown>, options: Record<string, unknown>): void {
   const callSource = options?._playerId ? `player:${options._playerId}` : "unknown"
   console.log(`[TokenMonitor] broadcast called from ${callSource}, ok:${result.ok}, elapsed:${result.elapsedMs}ms`)
   try {
-    const normalizedUsage = normalizeUsage(result.usage)
+    const normalizedUsage = normalizeUsage(result.usage as UsageInput | null | undefined)
     const payload = {
       type: "llm-request",
       payload: {
@@ -112,7 +112,7 @@ export function normalizeObject(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 
-export function parseJsonSafely(text: string): any {
+export function parseJsonSafely(text: string): unknown {
   if (typeof text !== "string" || text.length === 0) {
     return null
   }
@@ -158,13 +158,15 @@ export function isProxyEndpoint(endpoint: unknown): boolean {
   }
 }
 
-export function extractErrorMessage(payload: any, fallbackStatus: number): string {
-  if (payload && typeof payload === "object") {
-    if (payload.error && typeof payload.error.message === "string") {
-      return payload.error.message
+export function extractErrorMessage(payload: unknown, fallbackStatus: number): string {
+  const obj = payload as Record<string, unknown> | null
+  if (obj && typeof obj === "object") {
+    const err = obj.error as Record<string, unknown> | undefined
+    if (err && typeof err.message === "string") {
+      return err.message
     }
-    if (typeof payload.message === "string") {
-      return payload.message
+    if (typeof obj.message === "string") {
+      return obj.message
     }
   }
   return `请求失败（HTTP ${fallbackStatus}）`

@@ -151,7 +151,7 @@ const AudioUI: Record<string, any> = {
     AudioManager.playSfx(skillName)
   },
 
-  play(soundName: string, options: Record<string, any> = {}): void {
+  play(soundName: string, options: Record<string, unknown> = {}): void {
     AudioManager.playSfx(soundName, options)
   },
 

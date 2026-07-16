@@ -3,6 +3,71 @@
 > 生成时间：2026-07-12
 > 用途：每个源文件的一句话职责说明，作为项目总体参考
 
+## scripts/game/core/（Manager 架构 + 工具）
+
+| 文件 | 职责 |
+|------|------|
+| logger.ts | 结构化日志工具（createLogger，4 级别 + 分类 + localStorage 可配置） |
+| constants.ts | 游戏全局常量（网格、存储键、品质） |
+| settings.ts | 游戏设置 + 玩家资金管理 |
+| deps.ts | 依赖注入容器（LLM/战绩/结算 bridge） |
+| utils.ts | 全局工具函数库 |
+| round-manager-class.ts | RoundManager 薄协调器（委托 round-manager-fns） |
+| round-manager-fns.ts | 回合管理纯函数（startRound/timer/pause） |
+| settlement-manager-class.ts | SettlementManager 薄协调器 |
+| settlement-manager-fns.ts | 结算纯函数（prepareFinishAuction/Lan/Single） |
+| skill-item-manager-class.ts | SkillItemManager 薄协调器 |
+| def-manager-helpers.ts | Item/Skill Manager 共享 helper |
+
+## scripts/game/ai/（含 Manager）
+
+| 文件 | 职责 |
+|------|------|
+| bidding.ts | AuctionAiEngine 类（出价引擎核心） |
+| bidding/bidding-manager.ts | BiddingManager 薄协调器 |
+| bidding/bidding-manager/flow-fns.ts | 出价流程函数（resolveRoundBids/buildRoundBids） |
+| bidding/bidding-manager/keypad-fns.ts | 出价键盘函数（openBidKeypad/playerBid） |
+| intel-manager.ts | AiIntelManager 薄协调器 |
+| intel-manager/*-fns.ts | 情报函数（init/snapshot/reveal/panel/action） |
+| memory-manager.ts | AiMemoryManager 薄协调器 |
+| reflection-manager.ts | AiReflectionManager 薄协调器 |
+| decision-manager.ts | AiDecisionManager 薄协调器 |
+| wallet-manager.ts | AiWalletManager 薄协调器 |
+| bidding/pure.ts | 出价纯函数（calcBaseEstimate/calcHardCap 等 8 个） |
+
+## scripts/game/ui/（含 Manager）
+
+| 文件 | 职责 |
+|------|------|
+| overlay-manager.ts | UiOverlayManager 薄协调器 |
+| overlay-manager/*-fns.ts | UI 函数（settings/confirm-dialog/info-popup/detail-popup/core/ai-*） |
+| panels-manager.ts | PanelsManager 薄协调器 |
+| history-manager.ts | HistoryManager 薄协调器 |
+
+## scripts/game/warehouse/
+
+| 文件 | 职责 |
+|------|------|
+| warehouse-manager.ts | WarehouseManager 薄协调器（合并 Core+Reveal+Preview） |
+| warehouse-manager/core-fns.ts | 仓库核心函数（网格/藏品生成） |
+| warehouse-manager/reveal-fns.ts | 揭示函数（动画/品质特效） |
+| warehouse-manager/preview-fns.ts | 预览函数（弹窗定位） |
+
+## scripts/game/lan/（含 Manager）
+
+| 文件 | 职责 |
+|------|------|
+| lan-index-manager.ts | LanIndexManager 薄协调器 |
+| lan-index-manager/*-fns.ts | 联机函数（lobby/game-flow/sync/settle/reconnect/live2d/events） |
+
+## scripts/game/lobby/（含 Manager）
+
+| 文件 | 职责 |
+|------|------|
+| lobby-index-manager.ts | LobbyIndexManager 薄协调器 |
+| lobby-index-manager/*-fns.ts | 大厅函数（navigation/init/cleanup） |
+| carousel-manager.ts | CarouselManager 薄协调器 |
+
 ## scripts/audio/
 
 | 文件 | 职责 |

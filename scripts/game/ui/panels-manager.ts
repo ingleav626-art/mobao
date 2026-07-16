@@ -106,5 +106,28 @@ export class PanelsManager {
       () => this.renderPrivateIntelPanel(),
       () => this.renderPublicInfoPanel()
     )
+    // 确保侧边栏容器的显式高度，使 .player-side 的 height: 100% 能正确计算
+    this.ensureSidePanelHeight()
+  }
+
+  /**
+   * 确保侧边面板容器的显式高度。
+   * 当 player-side 的 height: 100% 因父容器缺少显式高度而无法正确计算时，
+   * 通过 inline style 强制设定，使 side-panel-scroll 展开区域匹配视觉大小。
+   */
+  private ensureSidePanelHeight(): void {
+    const tableWrap = document.querySelector(".table-wrap") as HTMLElement | null
+    if (!tableWrap) return
+    // 为 .table-wrap 提供显式高度，使内部 grid 子项 height: 100% 生效
+    tableWrap.style.height = "100%"
+
+    const leftSide = document.getElementById("leftPlayerSide")
+    const rightSide = document.getElementById("rightPlayerSide")
+    if (leftSide) {
+      leftSide.style.height = "100%"
+    }
+    if (rightSide) {
+      rightSide.style.height = "100%"
+    }
   }
 }

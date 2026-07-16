@@ -15,7 +15,7 @@ import {
   writeLog
 } from "./decision"
 import { useAiPanelStore } from "../../vue/stores/aiPanelStore"
-import type { AiThoughtLogEntry, AiDecisionResult } from "../../vue/stores/aiPanelStore"
+import type { AiThoughtLogEntry, AiDecisionResult as _AiDecisionResult } from "../../vue/stores/aiPanelStore"
 
 /** AiDecisionManager 依赖接口 */
 export interface AiDecisionManagerDeps {

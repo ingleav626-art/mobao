@@ -260,6 +260,12 @@ export class SettlementManager {
         0,
         dividendTicketInfo.mechanism
       )
+      log.info(
+        "prepareFinishAuction: Vue settlementStore 已同步, winner=" +
+        winnerPlayer.name + ", bid=" + winnerBid +
+        ", totalValue=" + totalValue + ", profit=" + winnerProfit +
+        ", mechanism=" + dividendTicketInfo.mechanism
+      )
     } catch (_bridgeErr) {
       // Vue store 未就绪时静默失败
     }
@@ -418,6 +424,11 @@ export class SettlementManager {
       if (ctx.humanNonWinner || profitInfo.profit !== 0) {
         settlementStore.setPlayerProfit(profitInfo.profit, profitInfo.label)
       }
+      log.info(
+        "updateSettlementFinalUI: profit=" + ctx.winnerProfit +
+        ", playerProfit=" + profitInfo.profit +
+        ", label=" + profitInfo.label
+      )
     } catch (_bridgeErr) {
       // Vue store 未就绪时静默失败
     }

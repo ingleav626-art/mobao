@@ -35,18 +35,18 @@ export interface ProviderIdentity {
 export interface BaseProviderConfig extends ProviderIdentity {
   storageKey: string
   apiKeyStorageKey: string
-  defaultSettings: () => any
-  normalizeSettings: (source: any, fallback?: any) => any
+  defaultSettings: () => Record<string, unknown>
+  normalizeSettings: (source: Record<string, unknown>, fallback?: Record<string, unknown>) => Record<string, unknown>
   isThinkingModel?: (model: string) => boolean
   supportsFeature?: (feature: string) => boolean
 }
 
 /** Provider 对象（createBaseProvider 返回值） */
 export interface BaseProvider extends ProviderIdentity {
-  defaultSettings: () => any
-  normalizeSettings: (source: any, fallback?: any) => any
-  loadSettings: () => any
-  saveSettings: (settings: any) => any
+  defaultSettings: () => Record<string, unknown>
+  normalizeSettings: (source: Record<string, unknown>, fallback?: Record<string, unknown>) => Record<string, unknown>
+  loadSettings: () => Record<string, unknown>
+  saveSettings: (settings: Record<string, unknown>) => Record<string, unknown>
   log: (level: string, event: string, detail: unknown) => void
   getLogs: () => Array<Record<string, unknown>>
   clearLogs: () => void
@@ -58,12 +58,12 @@ export interface BaseProvider extends ProviderIdentity {
 
 /** OpenAI 兼容 Provider 配置（createOpenAICompatibleProvider 参数） */
 export interface OpenAICompatibleProviderConfig extends BaseProviderConfig {
-  buildRequestBody?: (settings: any, context: { isThinking: boolean; temperature: number }) => any
+  buildRequestBody?: (settings: Record<string, unknown>, context: { isThinking: boolean; temperature: number }) => Record<string, unknown>
 }
 
 /** Chat 请求选项 */
 export interface ChatRequestOptions {
-  settings?: any
+  settings?: Record<string, unknown>
   messages?: Array<{ role: string; content: string }>
   temperature?: number
   maxTokens?: number
@@ -85,16 +85,16 @@ export interface ChatResult {
   error?: string
   code?: string
   stage?: string
-  usage?: any
-  meta?: any
-  raw?: any
+  usage?: Record<string, unknown>
+  meta?: Record<string, unknown>
+  raw?: unknown
   message?: string
 }
 
 /** OpenAI 兼容 Provider（createOpenAICompatibleProvider 返回值） */
 export interface OpenAICompatibleProvider extends BaseProvider {
   requestChat: (options: ChatRequestOptions) => Promise<ChatResult>
-  testConnection: (overrideSettings?: any) => Promise<ChatResult>
+  testConnection: (overrideSettings?: Record<string, unknown>) => Promise<ChatResult>
 }
 
 /** 默认 endpoint 归一化：验证 URL 协议，无效协议回退到默认值 */
@@ -116,8 +116,8 @@ function defaultNormalizeEndpoint(raw: string, fallback: string): string {
 export function createNormalizeSettings(config: NormalizeSettingsConfig) {
   const doNormalizeEndpoint = config.normalizeEndpoint || defaultNormalizeEndpoint
 
-  return function normalizeSettings(source: any, fallback?: any): any {
-    const defaults: any = { ...config.defaultSettings(), ...normalizeObject(fallback) }
+  return function normalizeSettings(source: Record<string, unknown>, fallback?: Record<string, unknown>): Record<string, unknown> {
+    const defaults: Record<string, unknown> = { ...config.defaultSettings(), ...normalizeObject(fallback) }
     const input = normalizeObject(source)
 
     const endpointRaw = typeof input.endpoint === "string" ? input.endpoint.trim() : String(defaults.endpoint)
@@ -149,9 +149,9 @@ export function createNormalizeSettings(config: NormalizeSettingsConfig) {
       endpoint,
       model: modelRaw.length > 0 ? modelRaw : defaults.model,
       apiKey: apiKeyRaw,
-      timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs)), 3000, 120000),
-      temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature), 0, config.temperatureMax),
-      maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens)))
+      timeoutMs: clamp(Math.round(toFiniteNumber(input.timeoutMs, defaults.timeoutMs as number)), 3000, 120000),
+      temperature: clamp(toFiniteNumber(input.temperature, defaults.temperature as number), 0, config.temperatureMax),
+      maxTokens: Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, defaults.maxTokens as number)))
     }
   }
 }
@@ -205,7 +205,7 @@ export function createBaseProvider(config: BaseProviderConfig): BaseProvider {
     } catch (_error) {}
   }
 
-  function loadSettings(): any {
+  function loadSettings(): Record<string, unknown> {
     const defaults = config.defaultSettings()
     try {
       const raw = window.localStorage.getItem(storageKey)
@@ -221,7 +221,7 @@ export function createBaseProvider(config: BaseProviderConfig): BaseProvider {
         console.log("[loadSettings] no raw data, returning defaults")
         return { ...defaults, apiKey: storedApiKey }
       }
-      const parsed = parseJsonSafely(raw)
+      const parsed = parseJsonSafely(raw) as Record<string, unknown>
       console.log("[loadSettings] parsed:", parsed)
       if (storedApiKey) {
         defaults.apiKey = storedApiKey
@@ -261,7 +261,7 @@ export function createBaseProvider(config: BaseProviderConfig): BaseProvider {
     }
   }
 
-  function saveSettings(settings: any): any {
+  function saveSettings(settings: Record<string, unknown>): Record<string, unknown> {
     console.log("[saveSettings] input settings:", settings)
     const normalized = config.normalizeSettings(settings, config.defaultSettings())
     console.log(
@@ -280,7 +280,7 @@ export function createBaseProvider(config: BaseProviderConfig): BaseProvider {
       normalized.independentReflectionEnabled = Boolean(settings.independentReflectionEnabled)
       console.log("[saveSettings] force set independentReflectionEnabled to:", normalized.independentReflectionEnabled)
     }
-    saveProviderApiKey(normalized.apiKey)
+    saveProviderApiKey(normalized.apiKey as string)
     const safeForLocalStorage = { ...normalized, apiKey: "" }
     window.localStorage.setItem(storageKey, JSON.stringify(safeForLocalStorage))
     console.log("[saveSettings] saved to localStorage, apiKeyStorageKey:", apiKeyStorageKey)
@@ -331,7 +331,7 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
       "[API DEBUG] input.settings?.endpoint:", JSON.stringify(inputSettings?.endpoint),
       "type:", typeof inputSettings?.endpoint
     )
-    const mergedSettings = config.normalizeSettings(input.settings, loadedSettings)
+    const mergedSettings = config.normalizeSettings(inputSettings || {}, loadedSettings)
     console.log(
       "[API DEBUG] mergedSettings.endpoint:", JSON.stringify(mergedSettings?.endpoint),
       "type:", typeof mergedSettings?.endpoint
@@ -343,7 +343,7 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
     const isNativeEnv = !!(window.NativeBridge && window.NativeBridge.getServerUrl)
     const useNativeProxy = isNativeEnv && window.NativeBridge?.llmProxyAsync
     const isLocalEndpoint = /^(https?:\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?\//i.test(
-      mergedSettings.endpoint || ""
+      (mergedSettings.endpoint as string) || ""
     )
 
     if (!mergedSettings.apiKey && !(useProxyEndpoint && !useNativeProxy) && !isLocalEndpoint) {
@@ -362,9 +362,9 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
         ? input.messages
         : [{ role: "user", content: "请回复：连接成功" }]
 
-    const timeoutMs = clamp(Math.round(toFiniteNumber(input.timeoutMs, mergedSettings.timeoutMs)), 3000, 120000)
-    const temperature = clamp(toFiniteNumber(input.temperature, mergedSettings.temperature), 0, 2)
-    const maxTokens = Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens)))
+    const timeoutMs = clamp(Math.round(toFiniteNumber(input.timeoutMs, mergedSettings.timeoutMs as number)), 3000, 120000)
+    const temperature = clamp(toFiniteNumber(input.temperature, mergedSettings.temperature as number), 0, 2)
+    const maxTokens = Math.max(1000, Math.round(toFiniteNumber(input.maxTokens, mergedSettings.maxTokens as number)))
 
     const isThinking = input.isThinking === true
     const requestBody: Record<string, unknown> = {
@@ -382,7 +382,7 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
 
     if (isThinking && mergedSettings.thinkingParams) {
       try {
-        const customParams = JSON.parse(mergedSettings.thinkingParams)
+        const customParams = JSON.parse(mergedSettings.thinkingParams as string)
         if (customParams && typeof customParams === "object") {
           Object.assign(requestBody, customParams)
         }
@@ -415,7 +415,7 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
     }, timeoutMs)
 
     try {
-      let fetchEndpoint = mergedSettings.endpoint
+      let fetchEndpoint = mergedSettings.endpoint as string
 
       if (fetchEndpoint && !fetchEndpoint.includes("/chat/completions")) {
         fetchEndpoint = fetchEndpoint.replace(/\/+$/, "") + "/chat/completions"
@@ -494,20 +494,20 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
           })
         ])
 
-        const proxyJson = parseJsonSafely(proxyResultJson)
+        const proxyJson = parseJsonSafely(proxyResultJson) as Record<string, unknown>
         if (proxyJson && proxyJson.error) {
           return {
             ok: false,
             requestId,
-            status: proxyJson.status || 502,
+            status: (proxyJson.status as number) || 502,
             elapsedMs: Date.now() - startedAt,
-            error: proxyJson.error,
+            error: proxyJson.error as string,
             code: "PROXY_ERROR",
             stage: "request"
           }
         }
-        const proxyStatus = (proxyJson && proxyJson.status) || 200
-        rawText = (proxyJson && proxyJson.body) || "{}"
+        const proxyStatus = (proxyJson && (proxyJson.status as number)) || 200
+        rawText = (proxyJson && (proxyJson.body as string)) || "{}"
         response = { ok: proxyStatus >= 200 && proxyStatus < 300, status: proxyStatus }
         console.log(
           `[requestChat] ${callId} native proxy response, status: ${proxyStatus}, ok: ${response.ok}, bodyLength: ${rawText.length}`
@@ -540,7 +540,7 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
       }
 
       const elapsedMs = Date.now() - startedAt
-      const payload = parseJsonSafely(rawText)
+      const payload = parseJsonSafely(rawText) as Record<string, unknown>
 
       base.log("info", "response.raw", {
         requestId,
@@ -548,7 +548,7 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
         elapsedMs,
         rawPreview: compactText(rawText, 500),
         hasChoices: payload && Array.isArray(payload.choices),
-        choicesLength: payload && payload.choices ? payload.choices.length : 0
+        choicesLength: payload && payload.choices ? (payload.choices as unknown[]).length : 0
       })
 
       if (!response.ok) {
@@ -580,10 +580,8 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
         }
       }
 
-      const message =
-        payload && payload.choices && payload.choices[0] && payload.choices[0].message
-          ? payload.choices[0].message
-          : null
+      const choices = payload && payload.choices ? (payload.choices as Array<Record<string, unknown>>) : null
+      const message = choices && choices[0] ? choices[0] : null
 
       const content = message && typeof message.content === "string" ? message.content : ""
 
@@ -607,23 +605,23 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
         requestId,
         status: response.status,
         elapsedMs,
-        usage: payload && payload.usage ? payload.usage : null,
+        usage: payload && payload.usage ? (payload.usage as Record<string, unknown>) : null,
         contentPreview: compactText(content, 100)
       })
 
       console.log(`[requestChat] ${callId} SUCCESS, elapsed: ${Date.now() - callStartTime}ms, http: ${elapsedMs}ms`)
-      const successResult = {
+      const successResult: ChatResult = {
         ok: true,
         requestId,
         status: response.status,
         elapsedMs,
         content,
         reasoningContent,
-        model: (payload && payload.model) || "",
-        usage: payload && payload.usage ? payload.usage : null,
+        model: (payload && (payload.model as string)) || "",
+        usage: payload && payload.usage ? (payload.usage as Record<string, unknown>) : undefined,
         raw: payload
       }
-      broadcastToTokenMonitor(successResult, input)
+      broadcastToTokenMonitor(successResult as unknown as Record<string, unknown>, input)
       return successResult
     } catch (error) {
       const elapsedMs = Date.now() - startedAt
@@ -676,7 +674,7 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
   }
 
   async function testConnection(overrideSettings?: Record<string, unknown>): Promise<ChatResult> {
-    const settings = config.normalizeSettings(overrideSettings, base.loadSettings())
+    const settings = config.normalizeSettings(overrideSettings || {}, base.loadSettings())
     const result = await requestChat({
       settings,
       temperature: 0,

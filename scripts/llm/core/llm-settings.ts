@@ -9,12 +9,14 @@
 
 interface LlmSettingsModuleThis {
   dom: Record<string, HTMLInputElement | HTMLElement | null>
-  getLlmSettings(): Record<string, any>
+  getLlmSettings(): Record<string, unknown>
   setLlmSettingsStatus(text: string, state: string): void
 }
 
-export function createLlmSettingsModule(deps: any) {
-  const { AI_LLM_SWITCH_STORAGE_KEY, LLM_SETTINGS, maskApiKey } = deps
+export function createLlmSettingsModule(deps: Record<string, unknown>) {
+  const AI_LLM_SWITCH_STORAGE_KEY = deps.AI_LLM_SWITCH_STORAGE_KEY as string
+  const LLM_SETTINGS = deps.LLM_SETTINGS as Record<string, unknown>
+  const maskApiKey = deps.maskApiKey as (key: string) => string
 
   function loadAiLlmPlayerSwitches(players: Array<{ id: string; isHuman?: boolean }>): Record<string, boolean> {
     const defaults: Record<string, boolean> = {}
@@ -67,7 +69,7 @@ export function createLlmSettingsModule(deps: any) {
   }
 
   const methods = {
-    fillLlmSettingsForm(values?: any) {
+    fillLlmSettingsForm(values?: Record<string, unknown>) {
       const self = this as unknown as LlmSettingsModuleThis
       const source = values || (typeof self.getLlmSettings === "function" ? self.getLlmSettings() : LLM_SETTINGS)
       if (self.dom.settingLlmEnabled) {
@@ -86,7 +88,7 @@ export function createLlmSettingsModule(deps: any) {
       }
       const thinkingParamsInput = document.getElementById("setting-thinkingParams") as HTMLInputElement | null
       if (thinkingParamsInput) {
-        thinkingParamsInput.value = source.thinkingParams || ""
+        thinkingParamsInput.value = String(source.thinkingParams || "")
       }
       const thinkingModeParams = document.getElementById("thinkingModeParams")
       if (thinkingModeParams && self.dom.settingLlmThinkingEnabled) {
@@ -168,17 +170,17 @@ export function createLlmSettingsModule(deps: any) {
         (self.dom.settingDeepseekApiKey as HTMLInputElement | null) ||
         (document.getElementById("setting-llmApiKey") as HTMLInputElement | null)
       if (apiKeyInput) {
-        apiKeyInput.value = source.apiKey || ""
+        apiKeyInput.value = String(source.apiKey || "")
       }
       const modelInput =
         (self.dom.settingDeepseekModel as HTMLInputElement | null) ||
         (document.getElementById("setting-llmModel") as HTMLInputElement | null)
       if (modelInput) {
-        modelInput.value = source.model || ""
+        modelInput.value = String(source.model || "")
       }
       const endpointInput = document.getElementById("setting-llmEndpoint") as HTMLInputElement | null
       if (endpointInput) {
-        endpointInput.value = source.endpoint || ""
+        endpointInput.value = String(source.endpoint || "")
       }
       if (self.dom.settingMaxTokens) {
         ;(self.dom.settingMaxTokens as HTMLInputElement).value = String(Number(source.maxTokens) || 2048)
@@ -188,7 +190,7 @@ export function createLlmSettingsModule(deps: any) {
         self.setLlmSettingsStatus("尚未填写 API Key。", "normal")
         return
       }
-      self.setLlmSettingsStatus(`已读取本地密钥：${maskApiKey(source.apiKey)}`, "normal")
+      self.setLlmSettingsStatus(`已读取本地密钥：${maskApiKey(String(source.apiKey))}`, "normal")
     },
 
     readLlmSettingsForm() {
