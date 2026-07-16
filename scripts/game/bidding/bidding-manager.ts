@@ -83,6 +83,7 @@ export interface BiddingManagerDeps {
   updateHud: () => void
   writeLog: (msg: string) => void
   setPlayerBidSubmitted: (v: boolean) => void
+  setPlayerRoundBid: (v: number) => void
   stopRoundTimer: () => void
   captureAiDecisionTelemetry: (bids: unknown[]) => void
   recordAiThoughtLogs: (telemetry: unknown) => void

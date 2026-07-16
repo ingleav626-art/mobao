@@ -467,6 +467,12 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
 
       if (activePlayers.length === 0 && disabledPlayers.length === 0) {
         console.log("[processAiDecisions] NO ai players, returning early")
+        // 确保指示器隐藏（无 AI 玩家时不应显示 AI 思考提示）
+        const indicator = this.dom && this.dom.aiThinkingIndicator
+        if (indicator) {
+          indicator.classList.add("hidden")
+          delete indicator.dataset.aiThinking
+        }
         return
       }
 

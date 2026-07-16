@@ -18,6 +18,8 @@ import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { escapeHtml, formatCompactNumber } from "../core/utils"
 import { GAME_SETTINGS } from "../core/settings"
 import { CARRY_ITEMS_STORAGE_KEY } from "../core/constants"
+import { createLogger } from "../core/logger"
+const log = createLogger("UI")
 
 // ─── 类型定义 ───
 
@@ -44,6 +46,21 @@ export function resetPlayerHistoryState(
   data: HistoryData,
   refreshUI: () => void
 ): void {
+  // 清理不在当前玩家列表中的残留条目（防止 solo 切换联机时数据残留）
+  const activeIds = new Set(players.map((p) => p.id))
+  for (const key of Object.keys(data.playerRoundHistory)) {
+    if (!activeIds.has(key)) delete data.playerRoundHistory[key]
+  }
+  for (const key of Object.keys(data.playerUsageHistory)) {
+    if (!activeIds.has(key)) delete data.playerUsageHistory[key]
+  }
+  for (const key of Object.keys(data.currentRoundUsage)) {
+    if (!activeIds.has(key)) delete data.currentRoundUsage[key]
+  }
+  for (const key of Object.keys(data.playerHistoryPanels)) {
+    if (!activeIds.has(key)) delete data.playerHistoryPanels[key]
+  }
+
   for (const player of players) {
     data.playerRoundHistory[player.id] = []
     data.playerUsageHistory[player.id] = []
@@ -53,8 +70,23 @@ export function resetPlayerHistoryState(
 }
 
 export function clearCurrentRoundUsage(players: Array<{ id: string }>, data: HistoryData): void {
+  log.debug(
+    "clearCurrentRoundUsage: players count=" +
+      players.length +
+      ", playerIds=" +
+      JSON.stringify(players.map((p) => p.id)) +
+      ", before keys=" +
+      JSON.stringify(Object.keys(data.currentRoundUsage))
+  )
   for (const player of players) {
     data.currentRoundUsage[player.id] = []
+  }
+  // 清理不在当前玩家列表中的残留条目（防止 solo 切换联机时数据残留）
+  const activeIds = new Set(players.map((p) => p.id))
+  for (const key of Object.keys(data.currentRoundUsage)) {
+    if (!activeIds.has(key)) {
+      delete data.currentRoundUsage[key]
+    }
   }
 }
 
@@ -94,6 +126,14 @@ export function refreshPlayerHistoryUI(
   data: HistoryData,
   renderItemUsageCell: (actions: string[]) => string
 ): void {
+  log.debug(
+    "refreshPlayerHistoryUI: players count=" +
+      players.length +
+      ", playerIds=" +
+      JSON.stringify(players.map((p) => p.id)) +
+      ", currentRoundUsage keys=" +
+      JSON.stringify(Object.keys(data.currentRoundUsage))
+  )
   for (const player of players) {
     const panel = data.playerHistoryPanels[player.id]
     if (!panel) continue

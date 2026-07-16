@@ -65,6 +65,7 @@ function makeDeps(overrides: Partial<BiddingManagerDeps> = {}): BiddingManagerDe
     updateHud: vi.fn(),
     writeLog: vi.fn(),
     setPlayerBidSubmitted: vi.fn(),
+    setPlayerRoundBid: vi.fn(),
     stopRoundTimer: vi.fn(),
     captureAiDecisionTelemetry: vi.fn(),
     recordAiThoughtLogs: vi.fn(),

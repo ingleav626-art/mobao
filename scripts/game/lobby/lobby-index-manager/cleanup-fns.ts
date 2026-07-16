@@ -58,17 +58,8 @@ export function enterLobby(deps: LobbyIndexManagerDeps, state: LobbyIndexState) 
   if (deps.game && deps.game.loop) {
     deps.game.loop.sleep()
   }
-  state.isLanMode = false
-  log.info("enterLobby: isLanMode reset to false")
-  state.lanIsHost = false
-  state.lanPlayers = []
-  state.lanAiPlayers = []
-  state.lanHostWallets = {}
-  state.lanHostBids = {}
-  state.lanAiLlmEnabled = false
-  state.lanIdToSlotId = {}
-  state.slotIdToLanId = {}
-  state.lanMySlotId = null
+  deps.getState().resetLanState()
+  log.info("enterLobby: LAN state reset via resetLanState")
   state.aiLlmPlayerEnabled = {}
   state.players = [
     { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
@@ -80,7 +71,7 @@ export function enterLobby(deps: LobbyIndexManagerDeps, state: LobbyIndexState) 
     state.aiLlmPlayerEnabled = Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches(state.players)
   }
   initPlayersUI(deps, state)
-  showLobbyMain(state, true)
+  showLobbyMain(deps, state, true)
   updateLobbyMoneyDisplay()
   patchAppState({ appMode: "lobby", gameSource: null })
   const connectPanel = document.getElementById("lobbyOnlineConnect")
@@ -108,14 +99,8 @@ export function enterLanRoom(deps: LobbyIndexManagerDeps, state: LobbyIndexState
   ]
   log.debug("enterLanRoom: players reset, count=" + state.players.length)
   log.info("enterLanRoom: isLanMode=" + state.isLanMode + " | lanIsHost=" + state.lanIsHost)
-  state.lanPlayers = []
-  state.lanAiPlayers = []
-  state.lanHostWallets = {}
-  state.lanHostBids = {}
-  state.lanAiLlmEnabled = false
-  state.lanIdToSlotId = {}
-  state.slotIdToLanId = {}
-  state.lanMySlotId = null
+  deps.getState().resetLanGameState()
+  log.info("enterLanRoom: LAN game state reset via resetLanGameState (preserved bridge/players/roomCode)")
   state.aiLlmPlayerEnabled = {}
   const lobbyPage = document.getElementById("lobbyPage")
   const gameArea = document.getElementById("gameArea")

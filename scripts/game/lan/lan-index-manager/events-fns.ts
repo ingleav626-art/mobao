@@ -333,13 +333,32 @@ export function bindLanEvents(
     const msg = raw as Record<string, unknown>
     deps.writeLog("重连成功！")
     if (msg.roomState === "playing" && deps.getLanBridge()) {
+      log.info(
+        `requestFullSync: TRIGGERED from room:reconnected, reason=reconnect, ` +
+        `roomState=${msg.roomState}, isLanMode=${state.isLanMode}, round=${state.round}, ` +
+        `lanMySlotId=${state.lanMySlotId}, players count=${state.players.length}, ` +
+        `playerBidSubmitted=${state.playerBidSubmitted}, settled=${state.settled}`
+      )
       deps.getLanBridge()?.requestFullSync()
     }
   })
 
   bridge.on("room:reconnect-failed", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
-    deps.writeLog("重连失败: " + msg.reason)
+    const reason = (msg.reason as string) || "未知原因"
+    deps.writeLog("重连失败: " + reason)
+    // 房间不存在时停止重连循环
+    if (reason.indexOf("Room not found") >= 0) {
+      log.warn("reconnect stopped: room not found (room disbanded, from reconnect-failed event)")
+      state.lanReconnecting = false
+      state.lanReconnectAttempts = 0
+      state.lanLastServerUrl = null
+      state.lanLastRoomCode = null
+      state.lanLastPlayerId = null
+      if (deps.getLanBridge()) {
+        deps.getLanBridge()?.disconnect()
+      }
+    }
   })
 
   bridge.on("full-sync-request", (raw: unknown) => {
@@ -355,6 +374,11 @@ export function bindLanEvents(
 
   bridge.on("full-sync", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
+    log.info(
+      `full-sync received: isLanMode=${state.isLanMode}, lanMySlotId=${state.lanMySlotId}, ` +
+      `round=${state.round}, playerBidSubmitted=${state.playerBidSubmitted}, ` +
+      `settled=${state.settled}`
+    )
     lanOnFullSync(deps, state, msg)
   })
 
@@ -366,6 +390,11 @@ export function bindLanEvents(
 
   bridge.on("game:init", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
+    log.info(
+      `game:init received: isLanMode set to true, ` +
+      `lanPlayers count=${(msg.players as unknown[])?.length || 0}, ` +
+      `hostId=${msg.hostId}, bridge.playerId=${bridge.playerId}`
+    )
     state.isLanMode = true
     state.lanPlayers = (msg.players as LanPlayer[]) || []
 
@@ -416,10 +445,20 @@ export function bindLanEvents(
     patchAppState({ appMode: "game", gameSource: "lan" })
     deps.exitLobby()
     startLanRun(deps, state)
+    log.info(
+      `game:init done: isLanMode=${state.isLanMode}, lanMySlotId=${state.lanMySlotId}, ` +
+      `lanIsHost=${state.lanIsHost}, lanPlayers count=${state.lanPlayers.length}, ` +
+      `players count=${state.players.length}, round=${state.round}`
+    )
   })
 
   bridge.on("round:start", (raw: unknown) => {
     const msg = raw as Record<string, unknown>
+    log.info(
+      `round:start received: round=${(msg as Record<string, unknown>).round}, ` +
+      `isLanMode=${state.isLanMode}, lanMySlotId=${state.lanMySlotId}, ` +
+      `lanIsHost=${state.lanIsHost}, players count=${state.players.length}`
+    )
     if (!state.lanIsHost) {
       lanOnRoundStart(
         deps,
@@ -438,12 +477,17 @@ export function bindLanEvents(
     }
   })
 
-  bridge.on("round:bid-ack", () => {
+  bridge.on("round:bid-ack", (raw: unknown) => {
+    log.info(
+      `round:bid-ack received: lanMySlotId=${state.lanMySlotId}, ` +
+      `playerBidSubmitted=${state.playerBidSubmitted}`
+    )
     state.playerBidSubmitted = true
     if (state.lanMySlotId) {
       deps.setPlayerBidReady(state.lanMySlotId, true)
     }
     deps.writeLog("联机出价已确认")
+    log.info(`round:bid-ack: playerBidSubmitted=true, lanMySlotId=${state.lanMySlotId}`)
   })
 
   bridge.on("bid:received", (raw: unknown) => {
@@ -451,6 +495,11 @@ export function bindLanEvents(
     if (!msg.playerId) return
     if (state.lanIsHost) {
       state.lanHostBids[msg.playerId as string] = msg.bid as number
+      log.info(
+        `bid:received: fromPlayerId=${msg.playerId as string}, amount=${msg.bid as number}, ` +
+        `lanHostBids keys=${JSON.stringify(Object.keys(state.lanHostBids))}, ` +
+        `lanHostBids values=${JSON.stringify(state.lanHostBids)}`
+      )
     }
     const slotId = state.lanIdToSlotId ? state.lanIdToSlotId[msg.playerId as string] : null
     if (slotId) {
@@ -460,6 +509,11 @@ export function bindLanEvents(
   })
 
   bridge.on("all-bids-in", () => {
+    log.info(
+      `all-bids-in received: isLanMode=${state.isLanMode}, lanMySlotId=${state.lanMySlotId}, ` +
+      `lanIsHost=${state.lanIsHost}, round=${state.round}, ` +
+      `playerBidSubmitted=${state.playerBidSubmitted}`
+    )
     if (!state.lanIsHost) return
     lanOnAllBidsIn(deps, state).catch((e: Error) =>
       deps.writeLog("AI行动异常：" + (e && e.message ? e.message : String(e)))

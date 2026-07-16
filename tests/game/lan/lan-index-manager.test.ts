@@ -588,6 +588,7 @@ describe("LanIndexManager", () => {
   describe("lanAttemptReconnect", () => {
     it("缺少重连信息时跳过", () => {
       const { deps, state } = makeDeps()
+      state.isLanMode = true
       state.lanLastServerUrl = null
       const manager = new LanIndexManager(deps)
       manager.lanAttemptReconnect()

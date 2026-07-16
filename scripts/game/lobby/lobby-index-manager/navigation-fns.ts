@@ -10,7 +10,7 @@ import { createLogger } from "../../core/logger"
 
 const log = createLogger("LAN")
 
-export function showLobbyMain(state: LobbyIndexState, skipAnimation?: boolean) {
+export function showLobbyMain(deps: LobbyIndexManagerDeps, state: LobbyIndexState, skipAnimation?: boolean) {
   log.debug("[fn-file] showLobbyMain CALLED, skipAnimation={0}", skipAnimation)
   const main = document.getElementById("lobbyMain")
   const soloSetup = document.getElementById("lobbySoloSetup")
@@ -33,17 +33,8 @@ export function showLobbyMain(state: LobbyIndexState, skipAnimation?: boolean) {
       )
     }
   }
-  state.isLanMode = false
-  log.info("showLobbyMain: isLanMode reset to false")
-  state.lanIsHost = false
-  state.lanPlayers = []
-  state.lanAiPlayers = []
-  state.lanHostWallets = {}
-  state.lanHostBids = {}
-  state.lanAiLlmEnabled = false
-  state.lanIdToSlotId = {}
-  state.slotIdToLanId = {}
-  state.lanMySlotId = null
+  deps.getState().resetLanState()
+  log.info("showLobbyMain: LAN state reset via resetLanState")
   state.aiLlmPlayerEnabled = {}
   state.players = [
     { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },

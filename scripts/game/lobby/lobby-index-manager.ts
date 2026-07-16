@@ -7,6 +7,7 @@
  *              Manager 可独立单测，过渡期 Mixin 保留为薄代理层。
  */
 import type { Player } from "../../../types/game"
+import type { GameState } from "../core/state/index"
 import { createLogger } from "../core/logger"
 import {
   bindLobbyEvents,
@@ -112,6 +113,8 @@ export interface LobbyIndexManagerDeps {
   stopLive2dLoop: () => void
   writeLog: (msg: string) => void
   refreshPlayerHistoryUI: () => void
+  /** 获取游戏状态（只读快照） */
+  getState: () => GameState
 }
 
 /**
@@ -134,7 +137,7 @@ export class LobbyIndexManager {
 
   showLobbyMain(skipAnimation?: boolean) {
     log.debug("[manager] showLobbyMain CALLED, skipAnimation={0}", skipAnimation)
-    return showLobbyMain(this.state, skipAnimation)
+    return showLobbyMain(this.deps, this.state, skipAnimation)
   }
 
   showLobbySubPage(page: string) {

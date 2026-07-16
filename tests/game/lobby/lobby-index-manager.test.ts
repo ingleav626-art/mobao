@@ -70,6 +70,7 @@ function makeDeps(overrides: Partial<LobbyIndexManagerDeps> = {}): LobbyIndexMan
   const state = overrides.state || makeState()
   const tweensMock = { killAll: vi.fn() }
   const timeMock = { removeAllEvents: vi.fn() }
+  const stateRef = state
   return {
     state,
     dom: {},
@@ -93,6 +94,24 @@ function makeDeps(overrides: Partial<LobbyIndexManagerDeps> = {}): LobbyIndexMan
     stopLive2dLoop: vi.fn(),
     writeLog: vi.fn(),
     refreshPlayerHistoryUI: vi.fn(),
+    getState: () => ({
+      resetLanState: () => {
+        stateRef.isLanMode = false
+        stateRef.lanIsHost = false
+        stateRef.lanPlayers = []
+        stateRef.lanAiPlayers = []
+        stateRef.lanHostWallets = {}
+        stateRef.lanHostBids = {}
+        stateRef.lanAiLlmEnabled = false
+        stateRef.lanIdToSlotId = {}
+        stateRef.slotIdToLanId = {}
+        stateRef.lanMySlotId = null
+      },
+      resetLanGameState: () => {
+        stateRef.lanHostWallets = {}
+        stateRef.lanHostBids = {}
+      }
+    }),
     ...overrides,
     state,
   }

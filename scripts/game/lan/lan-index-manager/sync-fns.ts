@@ -15,7 +15,7 @@ import type { QualityLevel, ArtifactView, Artifact } from "../../../../types/gam
 
 import { createLogger } from "../../core/logger"
 
-const log = createLogger("Settlement")
+const log = createLogger("LAN")
 
 export function lanBuildFullSyncData(
   deps: LanIndexManagerDeps,
@@ -60,8 +60,6 @@ export function lanBuildFullSyncData(
     roundTimeLeft: state.roundTimeLeft,
     isPaused: state.roundPaused,
     settled: state.settled,
-    playerBidSubmitted: state.playerBidSubmitted,
-    playerRoundBid: state.playerRoundBid,
     wallets: wallets,
     bids: bids,
     playerCharacters: playerCharacters,
@@ -106,12 +104,8 @@ export function lanOnFullSync(deps: LanIndexManagerDeps, state: LanIndexState, m
   if (msg.settled != null) {
     state.settled = msg.settled as boolean
   }
-  if (msg.playerBidSubmitted != null) {
-    state.playerBidSubmitted = msg.playerBidSubmitted as boolean
-  }
-  if (msg.playerRoundBid != null) {
-    state.playerRoundBid = msg.playerRoundBid as number
-  }
+
+  log.info("lanOnFullSync: skipped per-player state sync (playerBidSubmitted/playerRoundBid)")
 
   if (msg.wallets) {
     var walletsMap = msg.wallets as Record<string, number>
@@ -257,6 +251,14 @@ export function lanRestoreWarehouseFromSync(
 }
 
 export function lanAttemptReconnect(deps: LanIndexManagerDeps, state: LanIndexState): void {
+  // 非联机模式时立即停止重连（防止 startNewRun 后重连后台干扰单机）
+  if (!state.isLanMode) {
+    state.lanReconnecting = false
+    state.lanReconnectAttempts = 0
+    log.warn("reconnect stopped: not in LAN mode (solo game started)")
+    return
+  }
+
   if (!state.lanLastServerUrl || !state.lanLastRoomCode || !state.lanLastPlayerId) {
     deps.writeLog("重连信息缺失，请手动重新连接")
     state.lanReconnecting = false
@@ -269,26 +271,64 @@ export function lanAttemptReconnect(deps: LanIndexManagerDeps, state: LanIndexSt
   }
   state.lanReconnectAttempts++
   var delay = Math.min(1000 * Math.pow(2, state.lanReconnectAttempts - 1), 8000)
+  log.info(
+    `reconnect attempt ${state.lanReconnectAttempts}/${state.lanMaxReconnectAttempts} ` +
+    `(delay=${delay}ms, room=${state.lanLastRoomCode})`
+  )
   deps.writeLog("重连尝试 " + state.lanReconnectAttempts + "/" + state.lanMaxReconnectAttempts + " (" + delay + "ms后)")
   const lastServerUrl = state.lanLastServerUrl
   const lastRoomCode = state.lanLastRoomCode
   const lastPlayerId = state.lanLastPlayerId
   setTimeout(() => {
-    if (!state.lanReconnecting) return
+    // 再次检查：setTimeout 期间可能已切换到单机模式
+    if (!state.lanReconnecting || !state.isLanMode) {
+      if (!state.isLanMode) {
+        state.lanReconnecting = false
+        state.lanReconnectAttempts = 0
+        log.warn("reconnect stopped: not in LAN mode (solo game started, timer callback)")
+      }
+      return
+    }
     const bridge = deps.getLanBridge()
     if (!bridge) return
     bridge
       .reconnect(lastServerUrl, lastRoomCode, lastPlayerId)
       .then(() => {
+        // 再次检查：reconnect 异步期间可能已切换到单机模式
+        if (!state.isLanMode || !state.lanReconnecting) {
+          log.warn("reconnect success ignored: not in LAN mode anymore")
+          return
+        }
         state.lanReconnecting = false
         state.lanReconnectAttempts = 0
         deps.writeLog("重连成功！")
         if (!state.lanIsHost && bridge) {
+          log.info(
+            `requestFullSync: TRIGGERED from lanAttemptReconnect, reason=reconnect-success, ` +
+            `isLanMode=${state.isLanMode}, round=${state.round}, lanMySlotId=${state.lanMySlotId}, ` +
+            `players count=${state.players.length}, playerBidSubmitted=${state.playerBidSubmitted}, ` +
+            `settled=${state.settled}`
+          )
           bridge.requestFullSync()
         }
       })
       .catch((e: Error) => {
-        deps.writeLog("重连失败: " + (e.message || "未知错误"))
+        const errMsg = e.message || "未知错误"
+        // 房间不存在（已解散/主机下线）时立即停止重连
+        if (errMsg.indexOf("Room not found") >= 0) {
+          log.warn("reconnect stopped: room not found (room disbanded)")
+          state.lanReconnecting = false
+          state.lanReconnectAttempts = 0
+          state.lanLastServerUrl = null
+          state.lanLastRoomCode = null
+          state.lanLastPlayerId = null
+          deps.writeLog("重连失败：房间已解散，停止重连")
+          if (deps.getLanBridge()) {
+            deps.getLanBridge()?.disconnect()
+          }
+          return
+        }
+        deps.writeLog("重连失败: " + errMsg)
         lanAttemptReconnect(deps, state)
       })
   }, delay)
@@ -336,6 +376,12 @@ export function onLanForeground(deps: LanIndexManagerDeps, state: LanIndexState)
   if (state.settled || state.settlementRevealRunning) return
   if (bridge.connected) {
     if (!state.lanIsHost) {
+      log.info(
+        `requestFullSync: TRIGGERED from onLanForeground, reason=foreground-resume, ` +
+        `isLanMode=${state.isLanMode}, round=${state.round}, lanMySlotId=${state.lanMySlotId}, ` +
+        `players count=${state.players.length}, playerBidSubmitted=${state.playerBidSubmitted}, ` +
+        `settled=${state.settled}, roundResolving=${state.roundResolving}`
+      )
       bridge.requestFullSync()
     }
     return

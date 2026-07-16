@@ -72,6 +72,7 @@ import type { LobbyIndexManager } from "../scripts/game/lobby/lobby-index-manage
 import type { RoundManager } from "../scripts/game/core/round-manager-class"
 import type { BiddingManager } from "../scripts/game/bidding/bidding-manager"
 import type { LanIndexManager } from "../scripts/game/lan/lan-index-manager"
+import type { GameState } from "../scripts/game/core/state/index"
 
 export interface WarehouseSceneThis {
   // Phaser Scene
@@ -84,6 +85,9 @@ export interface WarehouseSceneThis {
   scene: Phaser.Scene["scene"]
   scale: Phaser.Scale.ScaleManager
   game: Phaser.Game
+
+  /** 状态管理（GameState 实例，包含所有 slice） */
+  state: GameState
 
   // 核心属性（来自 WarehouseCoreMixin）
   gridLayer: Phaser.GameObjects.Graphics | null

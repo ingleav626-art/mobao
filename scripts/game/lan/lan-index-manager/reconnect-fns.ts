@@ -15,6 +15,9 @@ import {
 } from "../../core/constants"
 import { DEFAULT_LAN_SERVER_URL } from "../../../../lan/shared/protocol"
 import type { LanPlayer } from "../../../../types/lan"
+import { createLogger } from "../../core/logger"
+
+const log = createLogger("LAN")
 
 interface ReconnectResponse {
   roomCode: string
@@ -59,6 +62,12 @@ export function tryAutoReconnect(
         deps.exitLanRoom()
         patchAppState({ appMode: "game", gameSource: "lan" })
         deps.setOnlineStatus("已重连到游戏", "connected")
+        log.info(
+          `requestFullSync: TRIGGERED from tryAutoReconnect, reason=reconnect-playing, ` +
+          `isLanMode=${state.isLanMode}, round=${state.round}, lanMySlotId=${state.lanMySlotId}, ` +
+          `players count=${state.players.length}, playerBidSubmitted=${state.playerBidSubmitted}, ` +
+          `settled=${state.settled}`
+        )
         bridge.requestFullSync()
       }
     })

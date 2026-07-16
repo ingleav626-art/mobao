@@ -10,7 +10,7 @@
 
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { GRID_COLS as _GRID_COLS, GRID_ROWS as _GRID_ROWS } from "../core/constants"
-import { GAME_SETTINGS as _GAME_SETTINGS } from "../core/settings"
+import { GAME_SETTINGS as _GAME_SETTINGS, loadGameSettings } from "../core/settings"
 import { getActiveCharacter, resetForNewGame } from "../data/character-system"
 import { pickRandomPublicEvent } from "../data/public-events"
 import { createLogger } from "../core/logger"
@@ -30,16 +30,14 @@ export function startNewRun(this: WarehouseSceneThis): void {
   this.exitSettlementPage()
   this.guardWarehouseCapacity()
   // 重置联机状态，防止联机配置串扰到单机
-  this.isLanMode = false
-  log.info("startNewRun: isLanMode reset to false")
-  this.lanIsHost = false
-  this.lanPlayers = []
-  this.lanAiPlayers = []
-  this.lanIdToSlotId = {}
-  this.slotIdToLanId = {}
-  this.lanHostWallets = {}
-  this.lanHostBids = {}
-  this.lanAiLlmEnabled = false
+  this.state.resetLanState()
+  // 停止后台重连循环，防止干扰单机显示
+  this.lanReconnecting = false
+  this.lanReconnectAttempts = 0
+  this._mapQualityWeights = null
+  this._mapCategoryWeights = null
+  Object.assign(_GAME_SETTINGS, loadGameSettings())
+  log.info("startNewRun: LAN state reset to defaults, GAME_SETTINGS reloaded from localStorage")
   this.lanMySlotId = "p2"
   this.players = [
     { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
@@ -47,6 +45,7 @@ export function startNewRun(this: WarehouseSceneThis): void {
     { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
     { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
   ]
+  this.initPlayersUI()
   log.debug("startNewRun: players reset, count=" + this.players.length)
 
   if (getActiveCharacter()) {

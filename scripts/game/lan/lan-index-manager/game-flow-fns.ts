@@ -28,6 +28,13 @@ export function lanResolveRound(deps: LanIndexManagerDeps, state: LanIndexState,
     return { playerId: lanId, bid: Math.min(Math.max(0, bid), wallet) }
   })
 
+  log.info(
+    `lanResolveRound: reason=${reason}, round=${state.round}, ` +
+    `lanHostBids keys=${JSON.stringify(Object.keys(state.lanHostBids))}, ` +
+    `lanHostBids=${JSON.stringify(state.lanHostBids)}`
+  )
+  log.info(`lanResolveRound: allBids=${JSON.stringify(allBids)}`)
+
   const bridge = deps.getLanBridge()
   bridge?.broadcastRoundResult(state.round, allBids, reason)
 
@@ -47,6 +54,13 @@ export function lanResolveRound(deps: LanIndexManagerDeps, state: LanIndexState,
   state.bidLeader = state.lanIdToSlotId[first.playerId] || first.playerId
   state.secondHighestBid = second.bid
 
+  log.info(
+    `lanResolveRound: sorted=${JSON.stringify(sorted)}, ` +
+    `first={playerId: ${first.playerId}, bid: ${first.bid}}, ` +
+    `second={playerId: ${second.playerId || "none"}, bid: ${second.bid}}, ` +
+    `winner=${state.bidLeader}, currentBid=${state.currentBid}, secondHighestBid=${state.secondHighestBid}`
+  )
+
   deps.revealRoundBidsSequential(slotBids).then(() => {
     deps.recordRoundHistory(slotBids)
   })
@@ -60,6 +74,10 @@ export function lanResolveRound(deps: LanIndexManagerDeps, state: LanIndexState,
     const mode = state.round === GAME_SETTINGS.maxRounds ? "final" : "direct"
     const winnerSlotId = state.lanIdToSlotId[first.playerId] || first.playerId
     const winner = { playerId: winnerSlotId, bid: first.bid }
+    log.info(
+      `lanResolveRound: auction ends, mode=${mode}, ` +
+      `winnerLanId=${first.playerId}, winnerSlotId=${winnerSlotId}, bid=${first.bid}`
+    )
     bridge?.broadcastSettle({
       winnerId: first.playerId,
       winnerName:
@@ -159,6 +177,11 @@ export function lanComputeAiBids(deps: LanIndexManagerDeps, state: LanIndexState
     ruleBids[ai.id] = normalizedBid
   })
 
+  log.info(
+    `lanComputeAiBids: result=${JSON.stringify(
+      Object.entries(ruleBids).map(([k, v]) => ({ playerId: k, bid: v }))
+    )}`
+  )
   return ruleBids
 }
 
@@ -167,6 +190,11 @@ export function lanOnRoundStart(
   state: LanIndexState,
   msg: { round: number; currentBid?: number; ts?: number; roundSeconds?: number }
 ): void {
+  log.info(
+    `lanOnRoundStart: round=${msg.round}, isLanMode=${state.isLanMode}, ` +
+    `lanMySlotId=${state.lanMySlotId}, players count=${state.players.length}, ` +
+    `playerBidSubmitted=${state.playerBidSubmitted}`
+  )
   state.round = msg.round
   state.currentBid = msg.currentBid || 0
   state.playerBidSubmitted = false
@@ -225,7 +253,6 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
   state.warehouseTrueValue = 0
   state.settled = false
   state.moneySettledRunToken = deps.makeRunToken()
-  deps.resetPlayerHistoryState()
 
   state.privateIntelEntries = []
   state.publicInfoEntries = []
@@ -297,9 +324,16 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
           id: p.id,
           name: p.name,
           isHuman: (p as unknown as Record<string, unknown>).isHuman,
-          isAI: (p as unknown as Record<string, unknown>).isAI
+          isAI: (p as unknown as Record<string, unknown>).isAI,
+          isSelf: (p as unknown as Record<string, unknown>).isSelf
         }))
       )
+  )
+
+  // 在 players 设置后重新初始化历史数据，确保数据按联机实际玩家数（而非 solo 默认 4 玩家）初始化
+  deps.resetPlayerHistoryState()
+  log.info(
+    "startLanRun: resetPlayerHistoryState after players set, count=" + state.players.length
   )
 
   state.lanIdToSlotId = {}
@@ -372,6 +406,13 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
   deps.startRound()
   deps.updateHud()
   deps.writeLog("联机游戏已开始！" + (state.lanIsHost ? "（你是主机）" : ""))
+  log.info(
+    `startLanRun done: isLanMode=${state.isLanMode}, lanMySlotId=${state.lanMySlotId}, ` +
+    `players count=${state.players.length}, lanPlayers count=${state.lanPlayers.length}, ` +
+    `round=${state.round}, playerBidSubmitted=${state.playerBidSubmitted}, ` +
+    `lanIdToSlotId=${JSON.stringify(state.lanIdToSlotId)}, ` +
+    `lanIsHost=${state.lanIsHost}`
+  )
 }
 
 export async function lanOnAllBidsIn(deps: LanIndexManagerDeps, state: LanIndexState): Promise<void> {
@@ -379,19 +420,34 @@ export async function lanOnAllBidsIn(deps: LanIndexManagerDeps, state: LanIndexS
     await state.aiRoundDecisionPromise
   }
   if (state.roundPaused) await deps.waitUntilResumed()
+  log.info(
+    `lanOnAllBidsIn: before aiBids, lanHostBids=${JSON.stringify(state.lanHostBids)}, ` +
+    `playerRoundBid=${state.playerRoundBid}, myPid=${deps.getLanBridge()?.playerId}`
+  )
   const aiBids = lanComputeAiBids(deps, state)
   for (const aid in aiBids) {
     state.lanHostBids[aid] = aiBids[aid]
   }
   const myPid = deps.getLanBridge()?.playerId
   if (myPid != null && state.lanHostBids[myPid] === undefined) {
+    log.info(
+      `lanOnAllBidsIn: host bid not in lanHostBids, adding playerRoundBid=${state.playerRoundBid} for ${myPid}`
+    )
     state.lanHostBids[myPid] = state.playerRoundBid
   }
+  log.info(
+    `lanOnAllBidsIn: final lanHostBids=${JSON.stringify(state.lanHostBids)}, ` +
+    `keys=${JSON.stringify(Object.keys(state.lanHostBids))}`
+  )
   lanResolveRound(deps, state, "all-in")
 }
 
 export async function lanOnRoundTimeout(deps: LanIndexManagerDeps, state: LanIndexState): Promise<void> {
   const myPid = deps.getLanBridge()?.playerId
+  log.info(
+    `lanOnRoundTimeout: lanHostBids before=${JSON.stringify(state.lanHostBids)}, ` +
+    `playerRoundBid=${state.playerRoundBid}, myPid=${myPid}`
+  )
   if (myPid != null && state.lanHostBids[myPid] === undefined) {
     state.lanHostBids[myPid] = state.playerRoundBid || 0
   }
@@ -403,6 +459,10 @@ export async function lanOnRoundTimeout(deps: LanIndexManagerDeps, state: LanInd
   for (const aid in aiBids) {
     state.lanHostBids[aid] = aiBids[aid]
   }
+  log.info(
+    `lanOnRoundTimeout: lanHostBids after=${JSON.stringify(state.lanHostBids)}, ` +
+    `keys=${JSON.stringify(Object.keys(state.lanHostBids))}`
+  )
   lanResolveRound(deps, state, "timeout")
 }
 

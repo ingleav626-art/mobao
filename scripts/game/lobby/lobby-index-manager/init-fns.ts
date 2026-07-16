@@ -16,6 +16,8 @@ import { CARRY_ITEMS_STORAGE_KEY } from "../../core/constants"
 import { loadPlayerMoney } from "../../core/player-money"
 import { isAiLlmEnabledForPlayer as checkAiLlmPlayerEnabled, getSlotLayout } from "../index"
 import { showLobbyMain, showLobbySubPage, goToCharacterSelect } from "./navigation-fns"
+import { createLogger } from "../../core/logger"
+const log = createLogger("UI")
 
 export function bindLobbyEvents(deps: LobbyIndexManagerDeps, state: LobbyIndexState) {
   const soloBtn = document.getElementById("lobbySoloBtn")
@@ -50,7 +52,7 @@ export function bindLobbyEvents(deps: LobbyIndexManagerDeps, state: LobbyIndexSt
     lobbyShopBtn.addEventListener("click", () => deps.openShopOverlay())
   }
   if (lobbySoloBackBtn) {
-    lobbySoloBackBtn.addEventListener("click", () => showLobbyMain(state))
+    lobbySoloBackBtn.addEventListener("click", () => showLobbyMain(deps, state))
   }
   if (lobbySoloShopBtn) {
     lobbySoloShopBtn.addEventListener("click", () => deps.openShopOverlay())
@@ -65,10 +67,10 @@ export function bindLobbyEvents(deps: LobbyIndexManagerDeps, state: LobbyIndexSt
             deps.lanBridge.leaveRoom()
             deps.lanBridge.disconnect()
           }
-          showLobbyMain(state)
+          showLobbyMain(deps, state)
         })
       } else {
-        showLobbyMain(state)
+        showLobbyMain(deps, state)
       }
     })
   }
@@ -125,6 +127,20 @@ export function applyMapProfile(state: LobbyIndexState) {
 }
 
 export function initPlayersUI(deps: LobbyIndexManagerDeps, state: LobbyIndexState) {
+  log.info(
+    "initPlayersUI: players count=" +
+      state.players.length +
+      ", players=" +
+      JSON.stringify(
+        state.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          isHuman: (p as Player).isHuman,
+          isAI: (p as Player).isAI,
+          isSelf: (p as Player).isSelf
+        }))
+      )
+  )
   const activeIds = new Set(state.players.map((p: Player) => p.id))
   ;["p1", "p2", "p3", "p4"].forEach((slotId) => {
     const cardEl = document.getElementById(`playerCard-${slotId}`)

@@ -23,6 +23,7 @@ import type { Player, Artifact, GameSettings, ItemDef, SkillContext } from "../.
 import type { AiPrivateIntel, CrossGameMemory, ConversationMessage, ConversationBucketEntry } from "../../../types/ai"
 import type { LlmPlan, LlmPlanResult, LlmTelemetry, LlmSettings } from "../../../types/llm"
 import type { LanPlayer } from "../../../types/lan"
+import { GameState } from "../core/state"
 import { GAME_SETTINGS as _GAME_SETTINGS } from "../core/settings"
 import { loadPlayerMoney } from "../core/player-money"
 import { ArtifactManager } from "../data/artifacts"
@@ -181,66 +182,122 @@ export interface WarehouseMixinMethods {
 const _PhaserScene: typeof Phaser.Scene = (Phaser as any).Scene
 
 class WarehouseScene extends _PhaserScene {
+  private state: GameState
   gridLayer: Phaser.GameObjects.Graphics | null
   revealCellLayer: Phaser.GameObjects.Graphics | null
   itemLayer: Phaser.GameObjects.Container | null
-  items: Artifact[]
-  revealedCells: unknown[]
+  get items(): Artifact[] { return this.state.warehouse.items }
+  set items(v: Artifact[]) { this.state.warehouse.items = v }
+  get revealedCells(): unknown[] { return this.state.warehouse.revealedCells }
+  set revealedCells(v: unknown[]) { this.state.warehouse.revealedCells = v }
   artifactManager: ArtifactManager
   skillManager: SkillManager
   itemManager: ItemManager
   aiEngine: AuctionAiEngine
-  deepSeekTesting: boolean
-  round: number
-  actionsLeft: number
-  roundTimeLeft: number
-  playerMoney: number
-  selectedItem: Artifact | null
-  currentBid: number
-  bidLeader: string
-  secondHighestBid: number
-  aiMaxBid: number
-  aiWallets: Record<string, number>
-  warehouseTrueValue: number
-  warehouseCellIndex: Record<string, Artifact | null>
-  settled: boolean
-  isLanMode: boolean
-  lanBridge: unknown
-  lanIsHost: boolean
-  lanMySlotId: string
-  lanIdToSlotId: Record<string, string>
-  slotIdToLanId: Record<string, string>
-  lanHostWallets: Record<string, number>
-  lanReconnecting: boolean
-  lanLastServerUrl: string | null
-  lanLastRoomCode: string | null
-  lanLastPlayerId: string | null
-  lanReconnectAttempts: number
-  lanMaxReconnectAttempts: number
-  previewOpenTick: number
-  roundTimerId: ReturnType<typeof setInterval> | null
-  roundPaused: boolean
-  roundResolving: boolean
-  playerBidSubmitted: boolean
-  playerRoundBid: number
-  isSettlementRevealMode: boolean
-  settlementRevealRunning: boolean
-  settlementRevealSkipRequested: boolean
-  settlementSession: { runToken: number | string; phase: string } | null
-  settlementRunToken: number | string
+  get deepSeekTesting(): boolean { return this.state.warehouse.deepSeekTesting }
+  set deepSeekTesting(v: boolean) { this.state.warehouse.deepSeekTesting = v }
+  get round(): number { return this.state.game.round }
+  set round(v: number) { this.state.game.round = v }
+  get actionsLeft(): number { return this.state.game.actionsLeft }
+  set actionsLeft(v: number) { this.state.game.actionsLeft = v }
+  get roundTimeLeft(): number { return this.state.game.roundTimeLeft }
+  set roundTimeLeft(v: number) { this.state.game.roundTimeLeft = v }
+  get playerMoney(): number { return this.state.game.playerMoney }
+  set playerMoney(v: number) { this.state.game.playerMoney = v }
+  get selectedItem(): Artifact | null { return this.state.game.selectedItem }
+  set selectedItem(v: Artifact | null) { this.state.game.selectedItem = v }
+  get currentBid(): number { return this.state.game.currentBid }
+  set currentBid(v: number) { this.state.game.currentBid = v }
+  get bidLeader(): string { return this.state.game.bidLeader }
+  set bidLeader(v: string) { this.state.game.bidLeader = v }
+  get secondHighestBid(): number { return this.state.game.secondHighestBid }
+  set secondHighestBid(v: number) { this.state.game.secondHighestBid = v }
+  get aiMaxBid(): number { return this.state.game.aiMaxBid }
+  set aiMaxBid(v: number) { this.state.game.aiMaxBid = v }
+  get aiWallets(): Record<string, number> { return this.state.game.aiWallets }
+  set aiWallets(v: Record<string, number>) { this.state.game.aiWallets = v }
+  get warehouseTrueValue(): number { return this.state.game.warehouseTrueValue }
+  set warehouseTrueValue(v: number) { this.state.game.warehouseTrueValue = v }
+  get warehouseCellIndex(): Record<string, Artifact | null> { return this.state.game.warehouseCellIndex }
+  set warehouseCellIndex(v: Record<string, Artifact | null>) { this.state.game.warehouseCellIndex = v }
+  get settled(): boolean { return this.state.game.settled }
+  set settled(v: boolean) { this.state.game.settled = v }
+  get isLanMode(): boolean { return this.state.lan.isLanMode }
+  set isLanMode(v: boolean) { this.state.lan.isLanMode = v }
+  get lanBridge(): unknown { return this.state.lan.lanBridge }
+  set lanBridge(v: unknown) { this.state.lan.lanBridge = v }
+  get lanIsHost(): boolean { return this.state.lan.lanIsHost }
+  set lanIsHost(v: boolean) { this.state.lan.lanIsHost = v }
+  get lanMySlotId(): string | null { return this.state.lan.lanMySlotId }
+  set lanMySlotId(v: string | null) { this.state.lan.lanMySlotId = v }
+  get lanIdToSlotId(): Record<string, string> { return this.state.lan.lanIdToSlotId }
+  set lanIdToSlotId(v: Record<string, string>) { this.state.lan.lanIdToSlotId = v }
+  get slotIdToLanId(): Record<string, string> { return this.state.lan.slotIdToLanId }
+  set slotIdToLanId(v: Record<string, string>) { this.state.lan.slotIdToLanId = v }
+  get lanHostWallets(): Record<string, number> { return this.state.lan.lanHostWallets }
+  set lanHostWallets(v: Record<string, number>) { this.state.lan.lanHostWallets = v }
+  get lanReconnecting(): boolean { return this.state.lan.lanReconnecting }
+  set lanReconnecting(v: boolean) { this.state.lan.lanReconnecting = v }
+  get lanLastServerUrl(): string | null { return this.state.lan.lanLastServerUrl }
+  set lanLastServerUrl(v: string | null) { this.state.lan.lanLastServerUrl = v }
+  get lanLastRoomCode(): string | null { return this.state.lan.lanLastRoomCode }
+  set lanLastRoomCode(v: string | null) { this.state.lan.lanLastRoomCode = v }
+  get lanLastPlayerId(): string | null { return this.state.lan.lanLastPlayerId }
+  set lanLastPlayerId(v: string | null) { this.state.lan.lanLastPlayerId = v }
+  get lanReconnectAttempts(): number { return this.state.lan.lanReconnectAttempts }
+  set lanReconnectAttempts(v: number) { this.state.lan.lanReconnectAttempts = v }
+  get lanMaxReconnectAttempts(): number { return this.state.lan.lanMaxReconnectAttempts }
+  set lanMaxReconnectAttempts(v: number) { this.state.lan.lanMaxReconnectAttempts = v }
+  get lanPlayers(): LanPlayer[] { return this.state.lan.lanPlayers }
+  set lanPlayers(v: LanPlayer[]) { this.state.lan.lanPlayers = v }
+  get lanHostBids(): Record<string, number> { return this.state.lan.lanHostBids }
+  set lanHostBids(v: Record<string, number>) { this.state.lan.lanHostBids = v }
+  get previewOpenTick(): number { return this.state.game.previewOpenTick }
+  set previewOpenTick(v: number) { this.state.game.previewOpenTick = v }
+  get roundTimerId(): ReturnType<typeof setInterval> | null { return this.state.game.roundTimerId }
+  set roundTimerId(v: ReturnType<typeof setInterval> | null) { this.state.game.roundTimerId = v }
+  get roundPaused(): boolean { return this.state.game.roundPaused }
+  set roundPaused(v: boolean) { this.state.game.roundPaused = v }
+  get roundResolving(): boolean { return this.state.game.roundResolving }
+  set roundResolving(v: boolean) { this.state.game.roundResolving = v }
+  get playerBidSubmitted(): boolean { return this.state.game.playerBidSubmitted }
+  set playerBidSubmitted(v: boolean) { this.state.game.playerBidSubmitted = v }
+  get playerRoundBid(): number { return this.state.game.playerRoundBid }
+  set playerRoundBid(v: number) { this.state.game.playerRoundBid = v }
+  get isSettlementRevealMode(): boolean { return this.state.game.isSettlementRevealMode }
+  set isSettlementRevealMode(v: boolean) { this.state.game.isSettlementRevealMode = v }
+  get settlementRevealRunning(): boolean { return this.state.game.settlementRevealRunning }
+  set settlementRevealRunning(v: boolean) { this.state.game.settlementRevealRunning = v }
+  get settlementRevealSkipRequested(): boolean { return this.state.game.settlementRevealSkipRequested }
+  set settlementRevealSkipRequested(v: boolean) { this.state.game.settlementRevealSkipRequested = v }
+  get settlementSession(): { runToken: number | string; phase: string } | null { return this.state.game.settlementSession }
+  set settlementSession(v: { runToken: number | string; phase: string } | null) { this.state.game.settlementSession = v }
+  get settlementRunToken(): number | string { return this.state.game.settlementRunToken }
+  set settlementRunToken(v: number | string) { this.state.game.settlementRunToken = v }
   activeSettlementSpinner: Phaser.GameObjects.Arc | null
-  moneySettledRunToken: string | null
-  _edgeFlashActive: boolean
-  _lastDisplayedMoney: number | null
-  players: Player[]
-  playerRoundHistory: Record<string, unknown>
-  playerUsageHistory: Record<string, unknown>
-  currentRoundUsage: Record<string, unknown>
-  playerHistoryPanels: Record<string, unknown>
-  aiPrivateIntel: Record<string, AiPrivateIntel>
-  aiResourceState: Record<string, unknown>
-  aiRoundEffects: Record<string, unknown>
-  lastAiIntelActions: Array<{
+  get moneySettledRunToken(): string | null { return this.state.game.moneySettledRunToken }
+  set moneySettledRunToken(v: string | null) { this.state.game.moneySettledRunToken = v }
+  get _edgeFlashActive(): boolean { return this.state.game._edgeFlashActive }
+  set _edgeFlashActive(v: boolean) { this.state.game._edgeFlashActive = v }
+  get _lastDisplayedMoney(): number | null { return this.state.game._lastDisplayedMoney }
+  set _lastDisplayedMoney(v: number | null) { this.state.game._lastDisplayedMoney = v }
+  get players(): Player[] { return this.state.game.players }
+  set players(v: Player[]) { this.state.game.players = v }
+  get playerRoundHistory(): Record<string, unknown> { return this.state.game.playerRoundHistory }
+  set playerRoundHistory(v: Record<string, unknown>) { this.state.game.playerRoundHistory = v }
+  get playerUsageHistory(): Record<string, unknown> { return this.state.game.playerUsageHistory }
+  set playerUsageHistory(v: Record<string, unknown>) { this.state.game.playerUsageHistory = v }
+  get currentRoundUsage(): Record<string, unknown> { return this.state.game.currentRoundUsage }
+  set currentRoundUsage(v: Record<string, unknown>) { this.state.game.currentRoundUsage = v }
+  get playerHistoryPanels(): Record<string, unknown> { return this.state.game.playerHistoryPanels }
+  set playerHistoryPanels(v: Record<string, unknown>) { this.state.game.playerHistoryPanels = v }
+  get aiPrivateIntel(): Record<string, AiPrivateIntel> { return this.state.ai.aiPrivateIntel }
+  set aiPrivateIntel(v: Record<string, AiPrivateIntel>) { this.state.ai.aiPrivateIntel = v }
+  get aiResourceState(): Record<string, unknown> { return this.state.ai.aiResourceState }
+  set aiResourceState(v: Record<string, unknown>) { this.state.ai.aiResourceState = v }
+  get aiRoundEffects(): Record<string, unknown> { return this.state.ai.aiRoundEffects }
+  set aiRoundEffects(v: Record<string, unknown>) { this.state.ai.aiRoundEffects = v }
+  get lastAiIntelActions(): Array<{
     playerId: string
     playerName: string
     actionType: string
@@ -250,55 +307,114 @@ class WarehouseScene extends _PhaserScene {
     score: number
     effectTag: string
     signalStats: unknown
-  }>
-  aiLlmRoundPlans: Record<string, LlmPlan | null>
-  aiLlmPlayerEnabled: Record<string, boolean>
-  aiFoldState: Record<string, unknown>
-  lastAiDecisionTelemetry: { mode: string; round: number; entries: LlmTelemetry[] } | null
-  llmEverUsedThisRun: boolean
-  aiReflectionState: string
-  aiReflectionTotal: number
-  aiReflectionCompleted: number
-  aiReflectionStateDetail: string
-  _reflectionBeforeUnload: ((e: BeforeUnloadEvent) => void) | null
-  aiConversationByPlayer: Record<string, ConversationMessage[]>
-  aiCrossGameMemory: Record<string, CrossGameMemory[]>
-  aiCrossGameMessagesByPlayer: Record<string, Array<Array<Record<string, string>>>>
-  aiReflectionPending: Record<string, unknown>
-  aiConversationCache: Record<string, unknown>
-  runSerial: number
-  runLogHistory: unknown[]
-  currentRunLog: {
+  }> { return this.state.ai.lastAiIntelActions }
+  set lastAiIntelActions(v: Array<{
+    playerId: string
+    playerName: string
+    actionType: string
+    actionId: string
+    revealed: unknown
+    detail: string
+    score: number
+    effectTag: string
+    signalStats: unknown
+  }>) { this.state.ai.lastAiIntelActions = v }
+  get aiLlmRoundPlans(): Record<string, LlmPlan | null> { return this.state.ai.aiLlmRoundPlans }
+  set aiLlmRoundPlans(v: Record<string, LlmPlan | null>) { this.state.ai.aiLlmRoundPlans = v }
+  get aiLlmPlayerEnabled(): Record<string, boolean> { return this.state.ai.aiLlmPlayerEnabled }
+  set aiLlmPlayerEnabled(v: Record<string, boolean>) { this.state.ai.aiLlmPlayerEnabled = v }
+  get aiFoldState(): Record<string, unknown> { return this.state.ai.aiFoldState }
+  set aiFoldState(v: Record<string, unknown>) { this.state.ai.aiFoldState = v }
+  get lastAiDecisionTelemetry(): { mode: string; round: number; entries: LlmTelemetry[] } | null { return this.state.ai.lastAiDecisionTelemetry }
+  set lastAiDecisionTelemetry(v: { mode: string; round: number; entries: LlmTelemetry[] } | null) { this.state.ai.lastAiDecisionTelemetry = v }
+  get llmEverUsedThisRun(): boolean { return this.state.ai.llmEverUsedThisRun }
+  set llmEverUsedThisRun(v: boolean) { this.state.ai.llmEverUsedThisRun = v }
+  get aiReflectionState(): string { return this.state.ai.aiReflectionState }
+  set aiReflectionState(v: string) { this.state.ai.aiReflectionState = v }
+  get aiReflectionTotal(): number { return this.state.ai.aiReflectionTotal }
+  set aiReflectionTotal(v: number) { this.state.ai.aiReflectionTotal = v }
+  get aiReflectionCompleted(): number { return this.state.ai.aiReflectionCompleted }
+  set aiReflectionCompleted(v: number) { this.state.ai.aiReflectionCompleted = v }
+  get aiReflectionStateDetail(): string { return this.state.ai.aiReflectionStateDetail }
+  set aiReflectionStateDetail(v: string) { this.state.ai.aiReflectionStateDetail = v }
+  get _reflectionBeforeUnload(): ((e: BeforeUnloadEvent) => void) | null { return this.state.ai._reflectionBeforeUnload }
+  set _reflectionBeforeUnload(v: ((e: BeforeUnloadEvent) => void) | null) { this.state.ai._reflectionBeforeUnload = v }
+  get aiConversationByPlayer(): Record<string, ConversationMessage[]> { return this.state.ai.aiConversationByPlayer }
+  set aiConversationByPlayer(v: Record<string, ConversationMessage[]>) { this.state.ai.aiConversationByPlayer = v }
+  get aiCrossGameMemory(): Record<string, CrossGameMemory[]> { return this.state.ai.aiCrossGameMemory }
+  set aiCrossGameMemory(v: Record<string, CrossGameMemory[]>) { this.state.ai.aiCrossGameMemory = v }
+  get aiCrossGameMessagesByPlayer(): Record<string, Array<Array<Record<string, string>>>> { return this.state.ai.aiCrossGameMessagesByPlayer }
+  set aiCrossGameMessagesByPlayer(v: Record<string, Array<Array<Record<string, string>>>>) { this.state.ai.aiCrossGameMessagesByPlayer = v }
+  get aiReflectionPending(): Record<string, unknown> { return this.state.ai.aiReflectionPending }
+  set aiReflectionPending(v: Record<string, unknown>) { this.state.ai.aiReflectionPending = v }
+  get aiConversationCache(): Record<string, unknown> { return this.state.ai.aiConversationCache }
+  set aiConversationCache(v: Record<string, unknown>) { this.state.ai.aiConversationCache = v }
+  get runSerial(): number { return this.state.game.runSerial }
+  set runSerial(v: number) { this.state.game.runSerial = v }
+  get runLogHistory(): unknown[] { return this.state.game.runLogHistory }
+  set runLogHistory(v: unknown[]) { this.state.game.runLogHistory = v }
+  get currentRunLog(): {
     runNo: number
     startedAt: number
     aiThoughtLogs: unknown[]
     actionLogs: string[]
     roundLogsByRound: Record<string, string[]>
     roundPanelTexts: Record<string, string>
-  } | null
-  highValuePriceThreshold: number | null
-  battleRecords: unknown[]
-  battleRecordReplayActive: boolean
-  battleRecordReplayRecordId: string | null
-  battleRecordLogView: { recordId: string; page: number } | null
-  roundBidReadyState: Record<string, unknown>
-  aiRoundDecisionPromise: Promise<unknown> | null
-  pendingNextRunAiSummaryByPlayer: Record<string, string>
-  pendingSettlementSummary: string
-  privateIntelEntries: Array<{ source: string; text: string; round: number }>
-  publicInfoEntries: Array<{ source: string; text: string }>
-  currentPublicEvent: { id: string; text: string; category: string; priority?: number } | null
-  dom: Record<string, HTMLElement | null>
-  _hudRoundText: HTMLElement | null
-  _hudTimerText: HTMLElement | null
-  _hudMoneyText: HTMLElement | null
-  _timerSpan: HTMLElement | null
-  keypadValue: string
-  _activeSkillId: string | null
-  _gameConfirmCallback: (() => void) | null
-  _gameCancelCallback: (() => void) | null
-  lanAiPlayers: (LanPlayer & { llm?: boolean })[]
-  lanAiLlmEnabled: boolean
+  } | null { return this.state.game.currentRunLog }
+  set currentRunLog(v: {
+    runNo: number
+    startedAt: number
+    aiThoughtLogs: unknown[]
+    actionLogs: string[]
+    roundLogsByRound: Record<string, string[]>
+    roundPanelTexts: Record<string, string>
+  } | null) { this.state.game.currentRunLog = v }
+  get highValuePriceThreshold(): number | null { return this.state.record.highValuePriceThreshold }
+  set highValuePriceThreshold(v: number | null) { this.state.record.highValuePriceThreshold = v }
+  get battleRecords(): unknown[] { return this.state.record.battleRecords }
+  set battleRecords(v: unknown[]) { this.state.record.battleRecords = v }
+  get battleRecordReplayActive(): boolean { return this.state.record.battleRecordReplayActive }
+  set battleRecordReplayActive(v: boolean) { this.state.record.battleRecordReplayActive = v }
+  get battleRecordReplayRecordId(): string | null { return this.state.record.battleRecordReplayRecordId }
+  set battleRecordReplayRecordId(v: string | null) { this.state.record.battleRecordReplayRecordId = v }
+  get battleRecordLogView(): { recordId: string; page: number } | null { return this.state.record.battleRecordLogView }
+  set battleRecordLogView(v: { recordId: string; page: number } | null) { this.state.record.battleRecordLogView = v }
+  get roundBidReadyState(): Record<string, unknown> { return this.state.game.roundBidReadyState }
+  set roundBidReadyState(v: Record<string, unknown>) { this.state.game.roundBidReadyState = v }
+  get aiRoundDecisionPromise(): Promise<unknown> | null { return this.state.game.aiRoundDecisionPromise }
+  set aiRoundDecisionPromise(v: Promise<unknown> | null) { this.state.game.aiRoundDecisionPromise = v }
+  get pendingNextRunAiSummaryByPlayer(): Record<string, string> { return this.state.record.pendingNextRunAiSummaryByPlayer }
+  set pendingNextRunAiSummaryByPlayer(v: Record<string, string>) { this.state.record.pendingNextRunAiSummaryByPlayer = v }
+  get pendingSettlementSummary(): string { return this.state.record.pendingSettlementSummary }
+  set pendingSettlementSummary(v: string) { this.state.record.pendingSettlementSummary = v }
+  get privateIntelEntries(): Array<{ source: string; text: string; round: number }> { return this.state.record.privateIntelEntries }
+  set privateIntelEntries(v: Array<{ source: string; text: string; round: number }>) { this.state.record.privateIntelEntries = v }
+  get publicInfoEntries(): Array<{ source: string; text: string }> { return this.state.record.publicInfoEntries }
+  set publicInfoEntries(v: Array<{ source: string; text: string }>) { this.state.record.publicInfoEntries = v }
+  get currentPublicEvent(): { id: string; text: string; category: string; priority?: number } | null { return this.state.game.currentPublicEvent }
+  set currentPublicEvent(v: { id: string; text: string; category: string; priority?: number } | null) { this.state.game.currentPublicEvent = v }
+  get dom(): Record<string, HTMLElement | null> { return this.state.ui.dom }
+  set dom(v: Record<string, HTMLElement | null>) { this.state.ui.dom = v }
+  get _hudRoundText(): HTMLElement | null { return this.state.ui._hudRoundText }
+  set _hudRoundText(v: HTMLElement | null) { this.state.ui._hudRoundText = v }
+  get _hudTimerText(): HTMLElement | null { return this.state.ui._hudTimerText }
+  set _hudTimerText(v: HTMLElement | null) { this.state.ui._hudTimerText = v }
+  get _hudMoneyText(): HTMLElement | null { return this.state.ui._hudMoneyText }
+  set _hudMoneyText(v: HTMLElement | null) { this.state.ui._hudMoneyText = v }
+  get _timerSpan(): HTMLElement | null { return this.state.ui._timerSpan }
+  set _timerSpan(v: HTMLElement | null) { this.state.ui._timerSpan = v }
+  get keypadValue(): string { return this.state.game.keypadValue }
+  set keypadValue(v: string) { this.state.game.keypadValue = v }
+  get _activeSkillId(): string | null { return this.state.game._activeSkillId }
+  set _activeSkillId(v: string | null) { this.state.game._activeSkillId = v }
+  get _gameConfirmCallback(): (() => void) | null { return this.state.game._gameConfirmCallback }
+  set _gameConfirmCallback(v: (() => void) | null) { this.state.game._gameConfirmCallback = v }
+  get _gameCancelCallback(): (() => void) | null { return this.state.game._gameCancelCallback }
+  set _gameCancelCallback(v: (() => void) | null) { this.state.game._gameCancelCallback = v }
+  get lanAiPlayers(): (LanPlayer & { llm?: boolean })[] { return this.state.lan.lanAiPlayers }
+  set lanAiPlayers(v: (LanPlayer & { llm?: boolean })[]) { this.state.lan.lanAiPlayers = v }
+  get lanAiLlmEnabled(): boolean { return this.state.lan.lanAiLlmEnabled }
+  set lanAiLlmEnabled(v: boolean) { this.state.lan.lanAiLlmEnabled = v }
   static instance: WarehouseScene & WarehouseMixinMethods
   // Phase 2: Manager 实例（依赖注入）
   walletManager!: AiWalletManager
@@ -387,120 +503,30 @@ class WarehouseScene extends _PhaserScene {
   bindDomEvents!: (...args: any[]) => any
   initAnimations!: (...args: any[]) => any
   // ===== Mixin 状态属性声明 =====
-  lanPlayers!: any
-  _pauseSnapshotTimeLeft!: any
-  lanHostBids!: any
+  get _pauseSnapshotTimeLeft(): number | null { return this.state.game._pauseSnapshotTimeLeft }
+  set _pauseSnapshotTimeLeft(v: number | null) { this.state.game._pauseSnapshotTimeLeft = v }
 
   constructor() {
     super("warehouse")
+    this.state = new GameState()
+    this.lanMySlotId = "p2"
     this.gridLayer = null
     this.revealCellLayer = null
     this.itemLayer = null
-    this.items = []
-    this.revealedCells = []
 
     this.artifactManager = new ArtifactManager()
     this.skillManager = new SkillManager()
     this.itemManager = new ItemManager()
     this.aiEngine = new AuctionAiEngine()
-    this.deepSeekTesting = false
 
-    this.round = 1
+    // game 非默认初始值（覆盖 slice 默认值，读自 settings/storage）
     this.actionsLeft = _GAME_SETTINGS.actionsPerRound
     this.roundTimeLeft = _GAME_SETTINGS.roundSeconds
-
     this.playerMoney = loadPlayerMoney()
-    this.selectedItem = null
-    this.currentBid = 0
-    this.bidLeader = "none"
-    this.secondHighestBid = 0
-    this.aiMaxBid = 0
-    this.aiWallets = {}
-    this.warehouseTrueValue = 0
-    this.warehouseCellIndex = {}
-    this.settled = false
-    this.isLanMode = false
-    this.lanBridge = null
-    this.lanIsHost = false
-    this.lanMySlotId = "p2"
-    this.lanIdToSlotId = {}
-    this.slotIdToLanId = {}
-    this.lanHostWallets = {}
-    this.lanReconnecting = false
-    this.lanLastServerUrl = null
-    this.lanLastRoomCode = null
-    this.lanLastPlayerId = null
-    this.lanReconnectAttempts = 0
-    this.lanMaxReconnectAttempts = 5
-
-    this._activeSkillId = null
-    this._gameConfirmCallback = null
-    this._gameCancelCallback = null
-    this.lanAiPlayers = []
-    this.lanAiLlmEnabled = false
-
-    this.previewOpenTick = 0
-    this.roundTimerId = null
-    this.roundPaused = false
-    this.roundResolving = false
-    this.playerBidSubmitted = false
-    this.playerRoundBid = 0
-    this.isSettlementRevealMode = false
-    this.settlementRevealRunning = false
-    this.settlementRevealSkipRequested = false
-    this.settlementSession = null
-    this.settlementRunToken = 0
     this.activeSettlementSpinner = null
-    this.moneySettledRunToken = null
-    this._edgeFlashActive = false
-    this._lastDisplayedMoney = null
 
-    this.players = [
-      { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
-      { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
-      { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
-      { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
-    ]
-
-    this.playerRoundHistory = {}
-    this.playerUsageHistory = {}
-    this.currentRoundUsage = {}
-    this.playerHistoryPanels = {}
-    this.aiPrivateIntel = {}
-    this.aiResourceState = {}
-    this.aiRoundEffects = {}
-    this.lastAiIntelActions = []
-    this.aiLlmRoundPlans = {}
     this.aiLlmPlayerEnabled = Deps.LLM_BRIDGE ? Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players) : {}
-    this.aiFoldState = {}
-    this.lastAiDecisionTelemetry = null
-    this.llmEverUsedThisRun = false
-    this.aiReflectionState = "idle"
-    this.aiReflectionTotal = 0
-    this.aiReflectionCompleted = 0
-    this.aiReflectionStateDetail = ""
-    this._reflectionBeforeUnload = null
-    this.aiConversationByPlayer = {}
-    this.aiCrossGameMemory = {}
-    this.aiCrossGameMessagesByPlayer = {}
-    this.aiReflectionPending = {}
-    this.aiConversationCache = {}
-    this.runSerial = 0
-    this.runLogHistory = []
-    this.currentRunLog = null
-    this.highValuePriceThreshold = null
     this.battleRecords = Deps.BATTLE_RECORD_BRIDGE ? Deps.BATTLE_RECORD_BRIDGE.loadBattleRecords() : []
-    this.battleRecordReplayActive = false
-    this.battleRecordReplayRecordId = null
-    this.battleRecordLogView = null
-    this.roundBidReadyState = {}
-    this.aiRoundDecisionPromise = null
-    this.pendingNextRunAiSummaryByPlayer = {}
-    this.pendingSettlementSummary = ""
-    this.privateIntelEntries = []
-    this.publicInfoEntries = []
-    this.currentPublicEvent = null
-
     this.dom = {
       hudRound: null,
       hudTimer: null,
@@ -606,13 +632,6 @@ class WarehouseScene extends _PhaserScene {
       personalPanelScroll: null,
       publicInfoScroll: null
     }
-
-    this._hudRoundText = null
-    this._hudTimerText = null
-    this._hudMoneyText = null
-    this._timerSpan = null
-
-    this.keypadValue = "0"
 
     // Phase 2: Manager 实例化（依赖注入）
     const scene = this
@@ -1371,6 +1390,7 @@ class WarehouseScene extends _PhaserScene {
     this.lobbyIndexManager = new LobbyIndexManager({
       state: lobbyIndexState,
       dom: this.dom,
+      getState: () => this.state,
       get lanBridge() { return scene.lanBridge as unknown as LobbyLanBridgeLike | null },
       get game() {
         return (scene as unknown as WarehouseSceneThis).game as unknown as PhaserGameLike | null
@@ -1539,6 +1559,9 @@ class WarehouseScene extends _PhaserScene {
       writeLog: (msg: string) => scene.writeLog(msg),
       setPlayerBidSubmitted: (v: boolean) => {
         scene.playerBidSubmitted = v
+      },
+      setPlayerRoundBid: (v: number) => {
+        scene.playerRoundBid = v
       },
       stopRoundTimer: () => scene.stopRoundTimer(),
       captureAiDecisionTelemetry: (bids: unknown[]) => scene.captureAiDecisionTelemetry(bids),

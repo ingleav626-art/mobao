@@ -102,6 +102,7 @@ beforeAll(async () => {
     "applyCharacterToPlayer",
     "makeRunToken",
     "isAiMultiGameMemoryEnabled",
+    "initPlayersUI",
   ]
   for (const fn of startNewRunMockMethods) {
     WarehouseScene.prototype[fn] = vi.fn()
@@ -372,6 +373,8 @@ describe("startNewRun 状态重置链条", () => {
     scene.slotIdToLanId = { lan1: "p1" }
     scene.lanHostWallets = { lan1: 50000 }
     scene.lanHostBids = { lan1: 3000 }
+    scene.lanReconnecting = true
+    scene.lanReconnectAttempts = 3
 
     // 执行新局重置
     scene.startNewRun()
@@ -384,7 +387,10 @@ describe("startNewRun 状态重置链条", () => {
     expect(scene.slotIdToLanId).toEqual({})
     expect(scene.lanHostWallets).toEqual({})
     expect(scene.lanHostBids).toEqual({})
+    // lanAiLlmEnabled 和重连状态应被重置
     expect(scene.lanAiLlmEnabled).toBe(false)
+    expect(scene.lanReconnecting).toBe(false)
+    expect(scene.lanReconnectAttempts).toBe(0)
 
     // players 应重置为 4 个默认玩家
     expect(scene.players).toHaveLength(4)

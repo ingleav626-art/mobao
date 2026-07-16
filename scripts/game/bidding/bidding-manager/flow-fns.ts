@@ -44,6 +44,15 @@ export function waitUntilResumed(deps: BiddingManagerDeps, state: BiddingManager
  */
 export async function kickoffAiRoundDecisions(deps: BiddingManagerDeps, state: BiddingManagerState): Promise<void> {
   log.debug(">>> ENTERED")
+  const aiPlayers = deps.players.filter((p) => !p.isHuman)
+  log.info(`kickoffAiRoundDecisions: aiPlayers count=${aiPlayers.length}, total players=${deps.players.length}, isLan=${deps.getIsLanMode()}`)
+
+  // 联机模式无 AI 玩家时，不显示 AI 思考提示
+  if (aiPlayers.length === 0) {
+    log.info("kickoffAiRoundDecisions: no AI players, skipping AI thinking indicator")
+    return
+  }
+
   const indicator = deps.dom.aiThinkingIndicator
   if (indicator && !indicator.dataset.aiThinking) {
     indicator.dataset.aiThinking = "1"
@@ -161,21 +170,37 @@ export function buildRoundBids(
     aiBidMap[player.id] = normalizedBid
   })
 
-  return deps.players.map((player) => {
+  log.info(`buildRoundBids: players count=${deps.players.length}, round=${state.round}`)
+
+  const roundBids = deps.players.map((player) => {
     if (player.isSelf) {
+      log.info(
+        `buildRoundBids: player ${player.id} (isSelf=true) -> bid=${state.playerRoundBid} (source=playerRoundBid)`
+      )
       return { playerId: player.id, bid: state.playerRoundBid }
     }
 
     if (player.isHuman) {
       const lanHostBids = deps.getLanHostBids()
       const existingBid = player.lanId !== undefined ? lanHostBids[player.lanId] : undefined
+      log.info(
+        `buildRoundBids: player ${player.id} (isHuman=true, lanId=${player.lanId}) -> ` +
+        `bid=${existingBid !== undefined ? existingBid : 0} (source=lanHostBids, ` +
+        `lanHostBids=${JSON.stringify(lanHostBids)})`
+      )
       return { playerId: player.id, bid: existingBid !== undefined ? existingBid : 0 }
     }
 
     const wallet = deps.getAiWallet(player.id)
     const aiBid = deps.normalizeAiBidValue(player.id, aiBidMap[player.id] ?? 0, wallet)
+    log.info(
+      `buildRoundBids: player ${player.id} (isAI=true) -> bid=${aiBid} (source=aiBidMap, raw=${aiBidMap[player.id] ?? 0}, wallet=${wallet})`
+    )
     return { playerId: player.id, bid: aiBid }
   })
+
+  log.info(`buildRoundBids: roundBids=${JSON.stringify(roundBids)}`)
+  return roundBids
 }
 
 // ─── 回合结算 ───
@@ -190,7 +215,7 @@ export async function resolveRoundBids(
   forceSettle: boolean = false
 ): Promise<void> {
   log.info(
-    `reason=${reason}, forceSettle=${forceSettle}, settled=${deps.getSettled()}, roundResolving=${state.roundResolving}, round=${state.round}, isLanMode=${deps.getIsLanMode()}`
+    `resolveRoundBids: reason=${reason}, forceSettle=${forceSettle}, settled=${deps.getSettled()}, roundResolving=${state.roundResolving}, round=${state.round}, isLan=${deps.getIsLanMode()}`
   )
   if (deps.getSettled() || state.roundResolving) {
     return
@@ -240,9 +265,21 @@ export async function resolveRoundBids(
     const second = sorted[1] || { bid: 0 }
     deps.markRoundRanking(sorted)
 
+    log.info(
+      `resolveRoundBids: sorted=${JSON.stringify(sorted)}, ` +
+      `first={playerId: ${first.playerId}, bid: ${first.bid}}, ` +
+      `second={playerId: ${second.playerId || "none"}, bid: ${second.bid}}`
+    )
+
     state.currentBid = first.bid
     state.bidLeader = first.playerId
     state.secondHighestBid = second.bid
+
+    log.info(
+      `resolveRoundBids: winner=${first.playerId}, currentBid=${state.currentBid}, ` +
+      `bidLeader=${state.bidLeader}, secondHighestBid=${state.secondHighestBid}, ` +
+      `directTakeRatio=${GAME_SETTINGS.directTakeRatio}`
+    )
 
     const directTakeFlag = shouldDirectTake(
       state.round,
@@ -254,6 +291,7 @@ export async function resolveRoundBids(
 
     if (state.round === GAME_SETTINGS.maxRounds || directTakeFlag || forceSettle) {
       const mode = forceSettle ? "manual" : state.round === GAME_SETTINGS.maxRounds ? "final" : "direct"
+      log.info(`resolveRoundBids: auction ends, mode=${mode}, winner=${first.playerId}, bid=${first.bid}`)
       await deps.finishAuction(first, mode)
       return
     }

@@ -35,19 +35,37 @@ export function areAllPlayersBidReady(deps: BiddingManagerDeps, state: BiddingMa
  * 打开出价数字键盘
  */
 export function openBidKeypad(deps: BiddingManagerDeps, state: BiddingManagerState): void {
-  log.debug("[fn-file] openBidKeypad CALLED")
+  log.info(
+    `openBidKeypad: ENTRY, isLan=${deps.getIsLanMode()}, lanMySlotId=${deps.getLanMySlotId()}, ` +
+    `roundBidReadyState=${JSON.stringify(state.roundBidReadyState)}, ` +
+    `playerBidSubmitted=${state.playerBidSubmitted}, settled=${deps.getSettled()}, ` +
+    `roundResolving=${state.roundResolving}, round=${state.round}`
+  )
   if (deps.getSettled() || state.roundResolving) {
+    log.info(
+      `openBidKeypad: BLOCKED by ${deps.getSettled() ? "settled" : "roundResolving"}, ` +
+      `settled=${deps.getSettled()}, roundResolving=${state.roundResolving}`
+    )
     return
   }
   if (deps.getIsLanMode()) {
     const myId = deps.getLanMySlotId()
     if (myId && state.roundBidReadyState[myId]) {
+      log.info(
+        `openBidKeypad: BLOCKED by roundBidReadyState[myId], myId=${myId}, ` +
+        `roundBidReadyState[${myId}]=${state.roundBidReadyState[myId]}`
+      )
       deps.writeLog("你已提交本轮出价，不可再次提交。")
       return
     }
   } else if (state.playerBidSubmitted) {
+    log.info(
+      `openBidKeypad: BLOCKED by playerBidSubmitted, value=${state.playerBidSubmitted}`
+    )
     return
   }
+
+  log.info("openBidKeypad: opened keypad")
 
   deps.closeItemDrawer()
   deps.hideInfoPopup()
@@ -150,7 +168,12 @@ export function handleBidKeyInput(deps: BiddingManagerDeps, state: BiddingManage
  * 玩家提交出价
  */
 export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState): void {
-  log.debug("[fn-file] playerBid CALLED, isLan={0}", deps.getIsLanMode())
+  log.info(
+    `playerBid: ENTRY, isLan=${deps.getIsLanMode()}, mySlotId=${deps.getLanMySlotId()}, ` +
+    `amount=${Number((deps.dom.bidInput as HTMLInputElement | null)?.value || 0)}, ` +
+    `playerBidSubmitted=${state.playerBidSubmitted}, settled=${deps.getSettled()}, ` +
+    `roundResolving=${state.roundResolving}, roundBidReadyState=${JSON.stringify(state.roundBidReadyState)}`
+  )
   deps.closeItemDrawer()
 
   if (deps.getSettled()) {
@@ -191,22 +214,28 @@ export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState):
   }
 
   state.playerRoundBid = Math.round(inputValue)
+  deps.setPlayerRoundBid(state.playerRoundBid)
   state.playerBidSubmitted = true
   deps.setPlayerBidSubmitted(true)
 
   const myId = deps.getIsLanMode() ? deps.getLanMySlotId() : "p2"
-  log.debug(`playerBid: myId=${myId}, isLan=${deps.getIsLanMode()}, roundBidReadyState=${JSON.stringify(state.roundBidReadyState)}`)
+  log.info(
+    `playerBid: stored playerRoundBid=${state.playerRoundBid}, playerBidSubmitted=true, ` +
+    `roundBidReadyState=${JSON.stringify(state.roundBidReadyState)}, myId=${myId}`
+  )
   if (myId) setPlayerBidReady(deps, state, myId, true)
   closeBidKeypad(deps)
   deps.writeLog(`玩家已提交本轮密封出价：${state.playerRoundBid}。提交后不可再用道具/技能。`)
   deps.updateHud()
 
   if (deps.getIsLanMode() && deps.getLanBridge()) {
+    log.info(`playerBid: calling lanBridge.submitBid(${state.playerRoundBid})`)
     deps.getLanBridge()!.submitBid(state.playerRoundBid)
     return
   }
 
   if (!state.roundResolving && areAllPlayersBidReady(deps, state)) {
+    log.info("playerBid: all players ready, calling resolveRoundBids(all-ready)")
     deps.resolveRoundBids("all-ready")
   }
 }
