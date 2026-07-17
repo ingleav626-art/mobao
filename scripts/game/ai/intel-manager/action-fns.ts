@@ -29,7 +29,7 @@ export function executeAiIntelAction(
 /** 处理所有 AI 玩家的情报动作（批量） */
 export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<void> {
   log.debug("[fn-file] processAiIntelActions CALLED, isLanMode={0}", deps.isLanMode())
-  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman || (player.id === "p2" && deps.isP2AutoPlaying?.()))
+  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman || (player.isHuman && deps.isP2AutoPlaying?.()))
   const roundProgress = GAME_SETTINGS.maxRounds <= 1 ? 1 : (deps.getRound() - 1) / (GAME_SETTINGS.maxRounds - 1)
 
   const state = deps.state
@@ -413,7 +413,7 @@ export async function processSingleAiIntelAction(
   })
 
   // 托管 p2 用道具时写入私人情报
-  if (player.id === "p2" && deps.isP2AutoPlaying?.() && deps.addPrivateIntelEntry) {
+  if (player.isHuman && deps.isP2AutoPlaying?.() && deps.addPrivateIntelEntry) {
     deps.addPrivateIntelEntry({
       source: actionDef.name,
       text: actionDef.description
@@ -534,6 +534,9 @@ function _executeAiIntelActionImpl(
     return { ok: false, revealed: 0, message: "本回合已使用过技能或道具。" }
   }
 
+  const _player = deps.players.find((p) => p.id === playerId)
+  const isAutoplayHuman = _player?.isHuman && deps.isP2AutoPlaying?.()
+
   if (plan.actionType === "skill") {
     const remain = Number(resourceState.skills[plan.actionId] || 0)
     if (remain <= 0) {
@@ -545,8 +548,7 @@ function _executeAiIntelActionImpl(
       return { ok: false, revealed: 0, message: "AI技能不存在。" }
     }
 
-    const isAutoplayP2 = playerId === "p2" && deps.isP2AutoPlaying?.()
-    const ctx = isAutoplayP2 ? _makeVisualRevealContext(deps) : buildAiPrivateRevealContext(deps, deps.state, playerId)
+    const ctx = isAutoplayHuman ? _makeVisualRevealContext(deps) : buildAiPrivateRevealContext(deps, deps.state, playerId)
     const result = skill.execute(ctx)
     if (!result.ok) {
       return result
@@ -567,15 +569,14 @@ function _executeAiIntelActionImpl(
       return { ok: false, revealed: 0, message: "AI道具不存在。" }
     }
 
-    const isAutoplayP2 = playerId === "p2" && deps.isP2AutoPlaying?.()
-    const ctx = isAutoplayP2 ? _makeVisualRevealContext(deps) : buildAiPrivateRevealContext(deps, deps.state, playerId)
+    const ctx = isAutoplayHuman ? _makeVisualRevealContext(deps) : buildAiPrivateRevealContext(deps, deps.state, playerId)
     const result = item.execute(ctx)
     if (!result.ok) {
       return result
     }
 
     resourceState.items[plan.actionId] = remain - 1
-    if (isAutoplayP2 && deps.consumeP2ShopItem) {
+    if (isAutoplayHuman && deps.consumeP2ShopItem) {
       deps.consumeP2ShopItem(plan.actionId)
     }
     return result

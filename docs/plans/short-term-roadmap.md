@@ -146,6 +146,12 @@ cd android && ./gradlew.bat assembleDebug   # Gradle 打包
 
 | 类别 | 文件 | 说明 |
 |------|------|------|
+| AI 旧子模块 | `scripts/game/ai/summarizer.ts` | 无人调用，已由 reflection-manager 内联 summary 字段替代 |
+| AI 竞拍旧子模块 | `scripts/game/ai/bidding/intel-action.ts`、`pure.ts`、`types.ts` | Phase 2 残留，由 `ai/intel-manager/` 替代 |
+| AI 情报旧 Mixin | `scripts/game/ai/intel/action.ts`、`init.ts`、`panel.ts`、`reveal.ts`、`snapshot.ts` | Phase 2 残留，由 `ai/intel-manager/` 替代 |
+| LAN 旧 Mixin | `scripts/game/lan/events.ts`、`game-flow.ts`、`live2d.ts`、`lobby.ts`、`reconnect.ts`、`settle.ts`、`sync.ts` | Phase 2 残留，由 `lan/lan-index-manager/` 替代 |
+| Overlay 旧 Mixin | `scripts/game/ui/overlay/ai-memory-panel.ts`、`ai-model-config.ts`、`ai-reflection-dialog.ts`、`confirm-dialog.ts`、`core.ts`、`detail-popup.ts`、`info-popup.ts`、`lan-dialog.ts`、`settings.ts` | Phase 2 残留，由 `overlay-manager/` 替代 |
+| 角色选择旧子模块 | `scripts/game/lobby/character-select/live2d.ts` | Phase 2 残留，逻辑已内联到 character-select-manager |
 | Vue 代码 | `scripts/vue/**`（12 .vue + 10 store + app.ts）| 搁置，决定删除还是保留 |
 | 过时文档 | `docs/issues/*.md` | 架构/code-quality 已过时，保留 roadmap |
 | 过时计划 | `docs/plans/*.md`（除本文件）| 大部分已完成或废弃 |

@@ -50,7 +50,8 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
     },
 
     canUseLlmDecisionForPlayer(playerId: string): boolean {
-      if (playerId === "p2" && this.autoplayManager?.isActive()) return this.canUseLlmDecision()
+      const isHumanPlayer = this.players.some((p) => p.id === playerId && p.isHuman)
+      if (isHumanPlayer && this.autoplayManager?.isActive()) return this.canUseLlmDecision()
       return this.canUseLlmDecision() && this.isAiLlmEnabledForPlayer(playerId)
     },
 

@@ -29,7 +29,7 @@ export function initAiIntelSystems(deps: AiIntelManagerDeps): void {
   const aiPlayers = deps.players.filter((player: Player) => !player.isHuman)
   const initPlayers = [...aiPlayers]
   // 始终为 p2 初始化情报池（为托管做准备），但不在这里分配 AI 角色
-  const p2 = deps.players.find((player: Player) => player.id === "p2")
+  const p2 = deps.players.find((player: Player) => player.isHuman)
   if (p2 && !initPlayers.includes(p2)) {
     initPlayers.push(p2)
   }
@@ -62,7 +62,7 @@ export function initAiIntelSystems(deps: AiIntelManagerDeps): void {
 
     // 托管 p2 道具从商店库存同步，不走随机分配
     let itemEntries: Record<string, number>
-    if (player.id === "p2" && deps.isP2AutoPlaying?.() && deps.getP2ShopInventory) {
+    if (player.isHuman && deps.isP2AutoPlaying?.() && deps.getP2ShopInventory) {
       itemEntries = deps.getP2ShopInventory()
     } else {
       const shuffledItems = shuffle([...allItems])
@@ -119,7 +119,7 @@ export function refreshAllPlayerAvatars(deps: AiIntelManagerDeps): void {
 /** 重置 AI 回合资源（技能次数恢复、效果清空） */
 export function resetAiRoundResources(deps: AiIntelManagerDeps): void {
   const state = deps.state
-  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman)
+  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman || (player.isHuman && deps.isP2AutoPlaying?.()))
   aiPlayers.forEach((player: Player) => {
     let resourceState = state.aiResourceState[player.id]
     if (!resourceState) {

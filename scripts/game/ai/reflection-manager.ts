@@ -174,7 +174,7 @@ export interface AiReflectionManagerDeps {
  * proceedToNewRun / proceedToBack 为流程编排方法，按设计保留在反思管理器中。
  */
 export class AiReflectionManager {
-  constructor(private readonly deps: AiReflectionManagerDeps) {}
+  constructor(private readonly deps: AiReflectionManagerDeps) { }
 
   /** 检查反思功能是否启用 */
   isAiReflectionEnabled(): boolean {
@@ -260,7 +260,7 @@ export class AiReflectionManager {
     window.addEventListener("beforeunload", _beforeUnloadHandler)
     const originalCrossGameMemory = this.deps.getAiCrossGameMemory()
     const aiPlayers = this.deps.players.filter((p: Player) =>
-      (!p.isHuman || (p.id === "p2" && this.deps.isP2AutoPlaying?.())) && this.deps.canUseLlmDecisionForPlayer(p.id)
+      (!p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.())) && this.deps.canUseLlmDecisionForPlayer(p.id)
     )
     this.deps.setAiReflectionTotal(aiPlayers.length)
     this.deps.updateReflectionStatusUI()
@@ -332,7 +332,7 @@ export class AiReflectionManager {
         '  "praises": { "add": ["新内容"], "delete": [索引号], "modify": [[索引号, "新内容"]] },',
         '  "strategies": { "add": [...], "delete": [...], "modify": [...] },',
         '  "lessons": { "add": [...], "delete": [...], "modify": [...] },',
-        needsSummary ? '  "summary": "将最近几局的关键经验压缩为一段50字以内的摘要"' : "",
+        needsSummary ? '  "summary": "将最近几局的关键经验压缩为一段500字以内的摘要"' : "",
         "}",
         "",
         "要求：",
@@ -392,11 +392,11 @@ export class AiReflectionManager {
             player.id,
             aiModelConfig
               ? {
-                  apiKey: aiModelConfig.apiKey ? "(已设置)" : "(空)",
-                  endpoint: aiModelConfig.endpoint,
-                  model: aiModelConfig.model,
-                  thinkingEnabled: aiModelConfig.thinkingEnabled
-                }
+                apiKey: aiModelConfig.apiKey ? "(已设置)" : "(空)",
+                endpoint: aiModelConfig.endpoint,
+                model: aiModelConfig.model,
+                thinkingEnabled: aiModelConfig.thinkingEnabled
+              }
               : null
           )
           if (aiModelConfig) {
@@ -637,7 +637,7 @@ export class AiReflectionManager {
     const aiCrossGameMessagesByPlayer = this.deps.getAiCrossGameMessagesByPlayer()
     if (pendingSummary && aiCrossGameMessagesByPlayer) {
       this.deps.players
-        .filter((p: Player) => !p.isHuman || (p.id === "p2" && this.deps.isP2AutoPlaying?.()))
+        .filter((p: Player) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
         .forEach((p: Player) => {
           const messages = aiCrossGameMessagesByPlayer[p.id]
           if (Array.isArray(messages) && messages.length > 0) {

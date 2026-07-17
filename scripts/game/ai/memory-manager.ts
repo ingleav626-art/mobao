@@ -103,7 +103,7 @@ export class AiMemoryManager {
     if (!settings || !settings.autoSummarizeEnabled || !settings.multiGameMemoryEnabled) return false
     const contextLength = (settings.contextLength as number) || 5
     if (!MobaoGameHistory) return false
-    const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.id === "p2" && this.deps.isP2AutoPlaying?.()))
+    const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
     if (aiPlayers.length === 0) return false
     const count = MobaoGameHistory.getCount(aiPlayers[0].id, this.deps.getIsLanMode())
     return count > 0 && count >= contextLength
@@ -191,7 +191,7 @@ export class AiMemoryManager {
     } else if (typeof stored.pendingSummary === "string" && stored.pendingSummary) {
       const summary = stored.pendingSummary
       this.deps.players
-        .filter((p) => !p.isHuman)
+        .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
         .forEach((p) => {
           data.pendingNextRunAiSummaryByPlayer[p.id] = summary
         })
@@ -419,7 +419,7 @@ export class AiMemoryManager {
         data.pendingNextRunAiSummaryByPlayer = parsed.pendingSummaryByPlayer
       } else if (typeof parsed.pendingSummary === "string" && parsed.pendingSummary) {
     this.deps.players
-      .filter((p) => !p.isHuman || (p.id === "p2" && this.deps.isP2AutoPlaying?.()))
+      .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
       .forEach((p) => {
             data.pendingNextRunAiSummaryByPlayer[p.id] = parsed.pendingSummary
           })
@@ -474,7 +474,7 @@ export class AiMemoryManager {
       .join(" ")
 
     this.deps.players
-      .filter((p) => !p.isHuman)
+      .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
       .forEach((p) => {
         data.pendingNextRunAiSummaryByPlayer[p.id] = summaryText
         const isWinner = p.id === winnerId
@@ -502,7 +502,7 @@ export class AiMemoryManager {
       const settings = this.deps.getLlmSettings()
       const maxRecords = (settings && (settings.contextLength as number)) || 5
       this.deps.players
-        .filter((p) => !p.isHuman)
+        .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
         .forEach((p) => {
           const playerDecisions = (data.aiConversationByPlayer[p.id] || []).map((entry) => ({
             round: entry.round || 0,
@@ -538,7 +538,7 @@ export class AiMemoryManager {
       data.aiCrossGameMessagesByPlayer = {}
     }
     this.deps.players
-      .filter((p) => !p.isHuman)
+      .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
       .forEach((p) => {
         const cached = data.aiConversationCache && data.aiConversationCache[p.id]
         if (Array.isArray(cached) && cached.length > 2) {
@@ -634,7 +634,7 @@ export class AiMemoryManager {
   openAiMemoryPanel(): void {
     const dom = this.deps.dom
     if (!dom.aiMemoryOverlay) return
-    const aiPlayers = this.deps.players.filter((p) => !p.isHuman)
+    const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
     if (aiPlayers.length === 0) {
       if (dom.aiMemoryContent) {
         dom.aiMemoryContent.innerHTML = '<div class="ai-memory-empty">暂无AI玩家</div>'

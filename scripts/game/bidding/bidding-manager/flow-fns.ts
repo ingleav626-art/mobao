@@ -44,7 +44,7 @@ export function waitUntilResumed(deps: BiddingManagerDeps, state: BiddingManager
  */
 export async function kickoffAiRoundDecisions(deps: BiddingManagerDeps, state: BiddingManagerState): Promise<void> {
   log.debug(">>> ENTERED")
-  const aiPlayers = deps.players.filter((p) => !p.isHuman || (p.id === "p2" && deps.isP2AutoPlaying?.()))
+  const aiPlayers = deps.players.filter((p) => !p.isHuman || (p.isHuman && deps.isP2AutoPlaying?.()))
   log.info(`kickoffAiRoundDecisions: aiPlayers count=${aiPlayers.length}, total players=${deps.players.length}, isLan=${deps.getIsLanMode()}`)
 
   // 联机模式无 AI 玩家时，不显示 AI 思考提示
@@ -128,7 +128,7 @@ export function buildRoundBids(
   const lastRoundBids = getLastRoundBidMap(deps.getPlayerRoundHistory())
   const aiIntelMap = deps.buildAiIntelSnapshot()
 
-  const aiPlayers = deps.players.filter((player) => !player.isHuman || (player.id === "p2" && deps.isP2AutoPlaying?.()))
+  const aiPlayers = deps.players.filter((player) => !player.isHuman || (player.isHuman && deps.isP2AutoPlaying?.()))
   const aiEngine = deps.getAiEngine()
   const round = deps.getRound()
   const aiBidMap = aiEngine
@@ -174,7 +174,7 @@ export function buildRoundBids(
   log.info(`buildRoundBids: players count=${deps.players.length}, round=${round}`)
 
   const roundBids = deps.players.map((player) => {
-    const isAutoPlaying = deps.isP2AutoPlaying?.() && player.id === "p2"
+    const isAutoPlaying = deps.isP2AutoPlaying?.() && player.isHuman
     if (player.isSelf && !isAutoPlaying) {
       log.info(
         `buildRoundBids: player ${player.id} (isSelf=true) -> bid=${deps.getPlayerRoundBid()} (source=playerRoundBid)`
