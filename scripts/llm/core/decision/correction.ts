@@ -364,7 +364,8 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
         return
       }
 
-      const aiPlayers = this.players.filter((player: Player) => !player.isHuman)
+      const autoplayP2 = this.autoplayManager?.isActive?.() ? "p2" : null
+      const aiPlayers = this.players.filter((player: Player) => !player.isHuman || player.id === autoplayP2)
       const activePlayers = aiPlayers.filter((player: Player) => this.canUseLlmDecisionForPlayer(player.id))
       const disabledPlayers = aiPlayers.filter((player: Player) => !this.canUseLlmDecisionForPlayer(player.id))
       if (activePlayers.length === 0) {
@@ -440,7 +441,8 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
         this.aiErrorCorrectionHistory = {}
       }
 
-      const aiPlayers = this.players.filter((player: Player) => !player.isHuman)
+      const autoplayP2 = this.autoplayManager?.isActive?.() ? "p2" : null
+      const aiPlayers = this.players.filter((player: Player) => !player.isHuman || player.id === autoplayP2)
       const activePlayers = aiPlayers.filter((player: Player) => this.canUseLlmDecisionForPlayer(player.id))
       const disabledPlayers = aiPlayers.filter((player: Player) => !this.canUseLlmDecisionForPlayer(player.id))
 

@@ -187,7 +187,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
     "keydown-P",
     () => {
       if (this.isLanMode && !this.lanIsHost) return
-      this.toggleRoundPause()
+      this.roundManager.toggleRoundPause()
     }
   )
 

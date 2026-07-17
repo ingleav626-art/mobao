@@ -25,7 +25,7 @@ export function startNewRun(this: WarehouseSceneThis): void {
   log.debug("[fn-file] startNewRun CALLED")
   this.beginRunTracking()
   this.cancelSettlementReveal()
-  this.stopRoundTimer()
+  this.roundManager.stopRoundTimer()
   this.exitSettlementPage()
   this.guardWarehouseCapacity()
   this.state.resetForNewRun()
@@ -53,6 +53,7 @@ export function startNewRun(this: WarehouseSceneThis): void {
 
   this.resetPlayerHistoryState()
 
+  this.autoplayManager.resetForNewRun()
   this.skillManager.resetForNewRun()
   this.skillManager.onNewRound()
   this.syncItemManagerFromShop()
@@ -82,7 +83,7 @@ export function startNewRun(this: WarehouseSceneThis): void {
     itemCount: this.items.length
   })
   this.pushRunStartContextToAi()
-  this.startRound()
+  this.roundManager.startRound()
   this.updateHud()
   this.writeLog("新仓库已生成：回合限时开始，可先用道具/技能再提交整仓出价。")
 }

@@ -45,6 +45,7 @@ import type { ShopBridge } from "../lobby/character-select-manager"
 import { AiReflectionManager } from "../ai/reflection-manager"
 import type { CrossGameMemory as ReflectionCrossGameMemory } from "../ai/reflection"
 import { AiMemoryManager } from "../ai/memory-manager"
+import { AutoPlayManager } from "../ai/autoplay-manager"
 import type { AiMemoryData } from "../ai/memory-manager"
 import { WarehouseManager } from "../warehouse/warehouse-manager"
 import type { WarehouseManagerState } from "../warehouse/warehouse-manager"
@@ -433,6 +434,7 @@ class WarehouseScene extends _PhaserScene {
   roundManager!: RoundManager
   biddingManager!: BiddingManager
   lanIndexManager!: LanIndexManager
+  autoplayManager!: AutoPlayManager
   // Phase 2: Manager 依赖的跨 Mixin 方法（运行时由 Object.assign 提供）
   isSettlementPageActive!: () => boolean
   saveAiMemoryToStorage!: () => void
@@ -638,13 +640,13 @@ class WarehouseScene extends _PhaserScene {
       () => this.players,
       () => this.aiWallets,
       () => ({
-      currentBid: this.currentBid,
-      aiMaxBid: this.aiMaxBid,
-      aiWallets: this.aiWallets,
-      isLanMode: this.isLanMode,
-      slotIdToLanId: this.slotIdToLanId,
-      lanHostWallets: this.lanHostWallets
-    }))
+        currentBid: this.currentBid,
+        aiMaxBid: this.aiMaxBid,
+        aiWallets: this.aiWallets,
+        isLanMode: this.isLanMode,
+        slotIdToLanId: this.slotIdToLanId,
+        lanHostWallets: this.lanHostWallets
+      }))
     this.historyManager = new HistoryManager({
       get players() {
         return scene.players
@@ -696,6 +698,7 @@ class WarehouseScene extends _PhaserScene {
       canUseIntelActions: () => this.canUseIntelActions(),
       closeItemDrawer: () => this.closeItemDrawer(),
       writeLog: (msg: string) => this.writeLog(msg),
+      showGameConfirm: (msg: string, onOk: () => void) => this.showGameConfirm(msg, onOk),
       buildSkillContext: () => this.buildSkillContext(),
       updateHud: () => this.updateHud(),
       recordPlayerUsage: (playerId: string, actionId: string) => this.recordPlayerUsage(playerId, actionId),
@@ -711,7 +714,9 @@ class WarehouseScene extends _PhaserScene {
         if (MobaoShopBridge) {
           MobaoShopBridge.consumeItem(itemId)
         }
-      }
+      },
+      recordPlayerSkill: (actionId: string, isItem: boolean) => scene.autoplayManager.recordPlayerSkill(actionId, isItem),
+      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
     })
     this.panelsManager = new PanelsManager({
       get privateIntelEntries() {
@@ -794,7 +799,8 @@ class WarehouseScene extends _PhaserScene {
       getLlmSettings: () => this.getLlmSettings(),
       isAiReflectionEnabled: () => this.aiReflectionManager.isAiReflectionEnabled(),
       getCurrentPublicEvent: () => this.currentPublicEvent,
-      getPlayerRoundHistory: () => this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>
+      getPlayerRoundHistory: () => this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>,
+      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
     })
 
     this.aiReflectionManager = new AiReflectionManager({
@@ -814,6 +820,7 @@ class WarehouseScene extends _PhaserScene {
         aiMemoryData.aiCrossGameMemory as unknown as Record<string, ReflectionCrossGameMemory>,
       getAiCrossGameMessagesByPlayer: () => aiMemoryData.aiCrossGameMessagesByPlayer,
       getAiConversationCache: () => aiMemoryData.aiConversationCache as unknown as Record<string, unknown[]> | null,
+      getAiConversationByPlayer: () => aiMemoryData.aiConversationByPlayer as unknown as Record<string, unknown[]> | null,
       getPendingNextRunAiSummaryByPlayer: () =>
         aiMemoryData.pendingNextRunAiSummaryByPlayer as unknown as Record<string, string>,
       getPendingSettlementSummary: () => aiMemoryData.pendingSettlementSummary ?? "",
@@ -862,7 +869,8 @@ class WarehouseScene extends _PhaserScene {
       enterLobby: () => this.enterLobby(),
       enterLanRoom: () => this.enterLanRoom(),
       openBattleRecordPanel: () => this.openBattleRecordPanel(),
-      writeLog: (text: string) => this.writeLog(text)
+      writeLog: (text: string) => this.writeLog(text),
+      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
     })
 
     this.settlementManager = new SettlementManager({
@@ -885,7 +893,7 @@ class WarehouseScene extends _PhaserScene {
       setSettled: (b: boolean) => {
         this.settled = b
       },
-      stopRoundTimer: () => this.stopRoundTimer(),
+      stopRoundTimer: () => this.roundManager.stopRoundTimer(),
       enterSettlementPage: (player, bid, reason) => this.enterSettlementPage(player, bid, reason),
       updateSettlementPanelMetrics: (totalValue, winnerProfit) =>
         this.updateSettlementPanelMetrics(totalValue, winnerProfit),
@@ -965,7 +973,7 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as WarehouseSceneThis).previewAnchor
       },
       set previewAnchor(v) {
-        ;(scene as unknown as WarehouseSceneThis).previewAnchor = v
+        ; (scene as unknown as WarehouseSceneThis).previewAnchor = v
       },
       get previewOpenTick() {
         return scene.previewOpenTick
@@ -977,19 +985,19 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as WarehouseSceneThis).pendingRevealHintTargets
       },
       set pendingRevealHintTargets(v) {
-        ;(scene as unknown as WarehouseSceneThis).pendingRevealHintTargets = v
+        ; (scene as unknown as WarehouseSceneThis).pendingRevealHintTargets = v
       },
       get pendingRevealHintText() {
         return (scene as unknown as WarehouseSceneThis).pendingRevealHintText
       },
       set pendingRevealHintText(v) {
-        ;(scene as unknown as WarehouseSceneThis).pendingRevealHintText = v
+        ; (scene as unknown as WarehouseSceneThis).pendingRevealHintText = v
       },
       get pendingRevealHintSeenIds() {
         return (scene as unknown as WarehouseSceneThis).pendingRevealHintSeenIds
       },
       set pendingRevealHintSeenIds(v) {
-        ;(scene as unknown as WarehouseSceneThis).pendingRevealHintSeenIds = v
+        ; (scene as unknown as WarehouseSceneThis).pendingRevealHintSeenIds = v
       },
       get warehouseTrueValue() {
         return scene.warehouseTrueValue
@@ -1077,13 +1085,13 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as WarehouseSceneThis).aiCharacterAssignments
       },
       set aiCharacterAssignments(v) {
-        ;(scene as unknown as WarehouseSceneThis).aiCharacterAssignments = v
+        ; (scene as unknown as WarehouseSceneThis).aiCharacterAssignments = v
       },
       get aiErrorCorrectionHistory() {
         return (scene as unknown as WarehouseSceneThis).aiErrorCorrectionHistory
       },
       set aiErrorCorrectionHistory(v) {
-        ;(scene as unknown as WarehouseSceneThis).aiErrorCorrectionHistory = v
+        ; (scene as unknown as WarehouseSceneThis).aiErrorCorrectionHistory = v
       },
       get highValuePriceThreshold() {
         return scene.highValuePriceThreshold
@@ -1183,6 +1191,7 @@ class WarehouseScene extends _PhaserScene {
         (this as unknown as WarehouseSceneThis).buildAiToolResultSummary(result, actionType, actionId),
       getActionDefById: (actionId: string) => (this as unknown as WarehouseSceneThis).getActionDefById(actionId),
       addPublicInfoEntry: (entry: { source: string; text: string }) => this.addPublicInfoEntry(entry),
+      addPrivateIntelEntry: (entry: { source: string; text: string }) => this.addPrivateIntelEntry(entry),
       requestAiLlmFollowupBid: (player: Player, plan: LlmPlanResult | null, toolSummary: string) =>
         (this as unknown as WarehouseSceneThis).requestAiLlmFollowupBid(player, plan, toolSummary),
       setPlayerBidReady: (playerId: string, ready: boolean) =>
@@ -1191,7 +1200,11 @@ class WarehouseScene extends _PhaserScene {
       areAllPlayersBidReady: () => (this as unknown as WarehouseSceneThis).areAllPlayersBidReady(),
       resolveRoundBids: (reason: string) => this.resolveRoundBids(reason) as unknown as Promise<void>,
       getItemInfo: (itemId: string) => this.getItemInfo(itemId) as { label?: string } | null,
-      waitUntilResumed: () => (this as unknown as WarehouseSceneThis).waitUntilResumed()
+      waitUntilResumed: () => (this as unknown as WarehouseSceneThis).waitUntilResumed(),
+      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
+      getP2ShopInventory: () =>
+        (MobaoShopBridge as unknown as { getFullInventory?: () => Record<string, number> }).getFullInventory?.() ?? {},
+      consumeP2ShopItem: (itemId: string) => MobaoShopBridge.consumeItem(itemId),
     })
 
     this.uiOverlayManager = new UiOverlayManager({
@@ -1236,7 +1249,7 @@ class WarehouseScene extends _PhaserScene {
       getLlmProvider: () => this.getLlmProvider() as unknown as OverlayLlmProvider | null,
       writeLog: (msg: string) => this.writeLog(msg),
       pushRunStartContextToAi: () => this.pushRunStartContextToAi(),
-      toggleRoundPause: () => this.toggleRoundPause(),
+      toggleRoundPause: () => this.roundManager.toggleRoundPause(),
       ensureAiCrossGameMemory: (playerId: string) =>
         this.aiMemoryManager.ensureAiCrossGameMemory(playerId) as unknown as CrossGameMemory,
       shouldShowReflectionUI: () => this.shouldShowReflectionUI(),
@@ -1269,7 +1282,7 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as WarehouseSceneThis).lanPlayers as unknown as LobbyIndexState["lanPlayers"]
       },
       set lanPlayers(v) {
-        ;(scene as unknown as WarehouseSceneThis).lanPlayers = v as unknown as typeof scene.lanPlayers
+        ; (scene as unknown as WarehouseSceneThis).lanPlayers = v as unknown as typeof scene.lanPlayers
       },
       get lanAiPlayers() {
         return scene.lanAiPlayers as unknown as LobbyIndexState["lanAiPlayers"]
@@ -1287,7 +1300,7 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as WarehouseSceneThis).lanHostBids as unknown as LobbyIndexState["lanHostBids"]
       },
       set lanHostBids(v) {
-        ;(scene as unknown as WarehouseSceneThis).lanHostBids = v as unknown as Record<string, number>
+        ; (scene as unknown as WarehouseSceneThis).lanHostBids = v as unknown as Record<string, number>
       },
       get lanAiLlmEnabled() {
         return scene.lanAiLlmEnabled
@@ -1365,26 +1378,26 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as WarehouseSceneThis)._carouselOffset
       },
       set carouselOffset(v) {
-        ;(scene as unknown as WarehouseSceneThis)._carouselOffset = v
+        ; (scene as unknown as WarehouseSceneThis)._carouselOffset = v
       },
       get mapQualityWeights() {
         return (scene as unknown as WarehouseSceneThis)._mapQualityWeights
       },
       set mapQualityWeights(v) {
-        ;(scene as unknown as WarehouseSceneThis)._mapQualityWeights = v
+        ; (scene as unknown as WarehouseSceneThis)._mapQualityWeights = v
       },
       get mapCategoryWeights() {
         return (scene as unknown as WarehouseSceneThis)._mapCategoryWeights
       },
       set mapCategoryWeights(v) {
-        ;(scene as unknown as WarehouseSceneThis)._mapCategoryWeights = v
+        ; (scene as unknown as WarehouseSceneThis)._mapCategoryWeights = v
       },
       get aiCharacterAssignments() {
         return (scene as unknown as WarehouseSceneThis)
           .aiCharacterAssignments as unknown as LobbyIndexState["aiCharacterAssignments"]
       },
       set aiCharacterAssignments(v) {
-        ;(scene as unknown as WarehouseSceneThis).aiCharacterAssignments =
+        ; (scene as unknown as WarehouseSceneThis).aiCharacterAssignments =
           v as unknown as WarehouseSceneThis["aiCharacterAssignments"]
       },
       get playerHistoryPanels() {
@@ -1417,7 +1430,7 @@ class WarehouseScene extends _PhaserScene {
       initLanLobby: () => (this as unknown as WarehouseSceneThis).initLanLobby(),
       showCharacterSelectPage: (mapProfile: { name?: string; params?: Record<string, unknown> } | null) =>
         (this as unknown as WarehouseSceneThis).showCharacterSelectPage(mapProfile),
-      stopRoundTimer: () => this.stopRoundTimer(),
+      stopRoundTimer: () => this.roundManager.stopRoundTimer(),
       exitSettlementPage: () => this.exitSettlementPage(),
       startNewRun: () => this.startNewRun(),
       stopLive2dLoop: () => (this as unknown as WarehouseSceneThis)._stopLive2dLoop(),
@@ -1510,10 +1523,10 @@ class WarehouseScene extends _PhaserScene {
       getSettled: () => scene.settled,
       getLanBridge: () => scene.lanBridge as { togglePause: (paused: boolean, timeLeft: number) => void } | null,
       getTimerSpan: () => scene._timerSpan,
-      clearCurrentRoundUsage: () => scene.clearCurrentRoundUsage(),
-      resetAiRoundResources: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).resetAiRoundResources(),
-      closeBidKeypad: () => scene.closeBidKeypad(),
-      kickoffAiRoundDecisions: () => scene.kickoffAiRoundDecisions(),
+      clearCurrentRoundUsage: () => scene.historyManager.clearCurrentRoundUsage(),
+      resetAiRoundResources: () => scene.aiIntelManager.resetAiRoundResources(),
+      closeBidKeypad: () => scene.biddingManager.closeBidKeypad(),
+      kickoffAiRoundDecisions: () => scene.biddingManager.kickoffAiRoundDecisions(),
       updateHud: () => scene.updateHud(),
       writeLog: (msg: string) => scene.writeLog(msg),
       resolveRoundBids: (reason: string) => scene.resolveRoundBids(reason),
@@ -1597,21 +1610,23 @@ class WarehouseScene extends _PhaserScene {
       setKeypadValue: (v: string) => {
         scene.keypadValue = v
       },
-      stopRoundTimer: () => scene.stopRoundTimer(),
+      stopRoundTimer: () => scene.roundManager.stopRoundTimer(),
       captureAiDecisionTelemetry: (bids: unknown[]) => scene.captureAiDecisionTelemetry(bids),
       recordAiThoughtLogs: (telemetry: unknown) => scene.recordAiThoughtLogs(telemetry),
       renderAiLogicPanel: () => scene.renderAiLogicPanel(),
       recordRoundHistory: (roundBids: Array<{ playerId: string; bid: number }>) => scene.recordRoundHistory(roundBids),
       markRoundRanking: (sorted: Array<{ playerId: string; bid: number }>) => scene.markRoundRanking(sorted),
       finishAuction: (winner: { playerId: string; bid: number }, mode: string) => scene.finishAuction(winner, mode),
-      startRound: () => scene.startRound(),
+      startRound: () => scene.roundManager.startRound(),
       processAiDecisions: () => scene.processAiDecisions() as Promise<void>,
       hasAnyInfo: (item: Artifact) => scene.hasAnyInfo(item),
       buildAiIntelSnapshot: () => scene.buildAiIntelSnapshot(),
       canUseLlmDecisionForPlayer: (playerId: string) => scene.canUseLlmDecisionForPlayer(playerId),
       getAiWallet: (id: string) => scene.getAiWallet(id),
       normalizeAiBidValue: (playerId: string, bid: number, wallet?: number | null) =>
-        scene.normalizeAiBidValue(playerId, bid, wallet)
+        scene.normalizeAiBidValue(playerId, bid, wallet),
+      recordPlayerBid: (bid: number) => scene.autoplayManager.recordPlayerBid(bid),
+      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
     })
 
     // LanIndexManager 状态容器（getter/setter 同步场景属性）
@@ -1632,7 +1647,7 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as Record<string, unknown>).lanPlayers as LanPlayer[]
       },
       set lanPlayers(v) {
-        ;(scene as unknown as Record<string, unknown>).lanPlayers = v
+        ; (scene as unknown as Record<string, unknown>).lanPlayers = v
       },
       get lanAiPlayers() {
         return scene.lanAiPlayers as unknown as LanIndexState["lanAiPlayers"]
@@ -1650,7 +1665,7 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as Record<string, unknown>).lanHostBids as Record<string, number>
       },
       set lanHostBids(v) {
-        ;(scene as unknown as Record<string, unknown>).lanHostBids = v
+        ; (scene as unknown as Record<string, unknown>).lanHostBids = v
       },
       get lanAiLlmEnabled() {
         return scene.lanAiLlmEnabled
@@ -1716,7 +1731,7 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as Record<string, unknown>).lanStatusEl as HTMLElement | null
       },
       set lanStatusEl(v) {
-        ;(scene as unknown as Record<string, unknown>).lanStatusEl = v
+        ; (scene as unknown as Record<string, unknown>).lanStatusEl = v
       },
       get _pauseSnapshotTimeLeft() {
         return scene._pauseSnapshotTimeLeft
@@ -1866,13 +1881,13 @@ class WarehouseScene extends _PhaserScene {
         return (scene as unknown as Record<string, unknown>)._mapQualityWeights as Record<string, number> | null
       },
       set _mapQualityWeights(v) {
-        ;(scene as unknown as Record<string, unknown>)._mapQualityWeights = v
+        ; (scene as unknown as Record<string, unknown>)._mapQualityWeights = v
       },
       get _mapCategoryWeights() {
         return (scene as unknown as Record<string, unknown>)._mapCategoryWeights as Record<string, number> | null
       },
       set _mapCategoryWeights(v) {
-        ;(scene as unknown as Record<string, unknown>)._mapCategoryWeights = v
+        ; (scene as unknown as Record<string, unknown>)._mapCategoryWeights = v
       },
       get players() {
         return scene.players
@@ -1975,8 +1990,8 @@ class WarehouseScene extends _PhaserScene {
       setOnlineStatus: (text: string, cls: string) =>
         (scene as unknown as Record<string, (...args: unknown[]) => unknown>).setOnlineStatus(text, cls),
       showGameConfirm: (msg: string, onConfirm: () => void) => scene.showGameConfirm(msg, onConfirm),
-      stopRoundTimer: () => scene.stopRoundTimer(),
-      startRound: () => scene.startRound(),
+      stopRoundTimer: () => scene.roundManager.stopRoundTimer(),
+      startRound: () => scene.roundManager.startRound(),
       updateHud: () => scene.updateHud(),
       beginRunTracking: () => scene.beginRunTracking(),
       cancelSettlementReveal: () => scene.cancelSettlementReveal(),
@@ -2009,7 +2024,7 @@ class WarehouseScene extends _PhaserScene {
       renderAiLogicPanel: () => scene.renderAiLogicPanel(),
       waitUntilResumed: () => scene.waitUntilResumed() as Promise<void>,
       setPlayerBidReady: (playerId: string, ready: boolean) => scene.setPlayerBidReady(playerId, ready),
-      syncPauseButton: () => scene.syncPauseButton(),
+      syncPauseButton: () => scene.roundManager.syncPauseButton(),
       showLanPauseOverlay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).showLanPauseOverlay(),
       hideLanPauseOverlay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).hideLanPauseOverlay(),
       enterLanRoom: () => scene.enterLanRoom(),
@@ -2050,6 +2065,17 @@ class WarehouseScene extends _PhaserScene {
       setSettingsDirectTakeRatio: (v: number) => {
         scene.state.settings.directTakeRatio = v
       }
+    })
+
+    this.autoplayManager = new AutoPlayManager({
+      isLanMode: () => scene.isLanMode,
+      updateHud: () => scene.updateHud(),
+      getRound: () => scene.round,
+      canUseLlmDecision: () => scene.canUseLlmDecision(),
+      getP2Conversation: () => (scene.state.ai.aiConversationByPlayer["p2"] || []) as { round: number; bid: number; skill: string; item: string; thought: string; result: string }[],
+      setP2Conversation: (v) => {
+        scene.state.ai.aiConversationByPlayer["p2"] = v as unknown as ConversationMessage[]
+      },
     })
 
     this.syncItemManagerFromShop()

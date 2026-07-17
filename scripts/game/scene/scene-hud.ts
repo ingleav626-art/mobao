@@ -130,6 +130,15 @@ export function updateHud(this: WarehouseSceneThis): void {
   this.updateSidePanels(skillState, itemState, clueCount, occupiedCells, capacity, bidState)
   this.updateActionAvailability()
 
+  // AI 托管按钮状态
+  const toggleBtn = this.dom.autoPlayToggle
+  if (toggleBtn) {
+    const llmOn = this.canUseLlmDecision()
+    toggleBtn.classList.toggle("is-active", this.autoplayManager.isActive())
+    toggleBtn.textContent = this.autoplayManager.isActive() ? "托管中" : "托管"
+    ;(toggleBtn as HTMLButtonElement).disabled = !llmOn || this.isLanMode
+  }
+
   // 同步到 Pinia store（Vue HUD 渐进迁移）
   try {
     const gameStore = useGameStore()

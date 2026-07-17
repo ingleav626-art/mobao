@@ -1049,6 +1049,8 @@ describe("AiIntelManager", () => {
       // 至少有一个 action 记录
       expect(state.lastAiIntelActions.length).toBeGreaterThanOrEqual(0)
     })
+
+    })
   })
 
   describe("executeAiIntelAction", () => {

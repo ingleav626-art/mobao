@@ -69,6 +69,9 @@ export interface SkillItemManagerDeps {
 
   /** 消耗道具（MobaoShopBridge.consumeItem 的回调） */
   consumeItem: (itemId: string) => void
+  recordPlayerSkill?: (actionId: string, isItem: boolean) => void
+  isP2AutoPlaying?: () => boolean
+  showGameConfirm: (msg: string, onOk: () => void) => void
 }
 
 interface UseActionOptions {
@@ -79,6 +82,7 @@ interface UseActionOptions {
   lanActionType: string
   fallbackText: string
   closeDrawer: boolean
+  isItem: boolean
   onAfterUse?: (actionId: string) => void
 }
 
@@ -98,6 +102,12 @@ export class SkillItemManager {
    */
   private useAction(options: UseActionOptions): void {
     const { manager, defs, actionId, actionLabel, lanActionType, fallbackText, closeDrawer, onAfterUse } = options
+
+    if (this.deps.isP2AutoPlaying?.()) {
+      this.deps.showGameConfirm("AI 托管中，不可手动使用技能/道具。", () => {})
+      if (closeDrawer) this.deps.closeItemDrawer()
+      return
+    }
 
     if (!this.deps.canUseIntelActions()) {
       if (closeDrawer) this.deps.closeItemDrawer()
@@ -140,6 +150,7 @@ export class SkillItemManager {
     })
     this.deps.writeLog(result.message)
     this.deps.updateHud()
+    this.deps.recordPlayerSkill?.(actionId, options.isItem)
     if (closeDrawer) this.deps.closeItemDrawer()
     const bridge = this.deps.lanBridge()
     if (this.deps.isLanMode() && bridge) {
@@ -163,7 +174,8 @@ export class SkillItemManager {
       actionLabel: "技能",
       lanActionType: "skill",
       fallbackText: "技能效果",
-      closeDrawer: false
+      closeDrawer: false,
+      isItem: false,
     })
   }
 
@@ -177,6 +189,7 @@ export class SkillItemManager {
       lanActionType: "item",
       fallbackText: "道具效果",
       closeDrawer: true,
+      isItem: true,
       onAfterUse: (id) => {
         this.deps.consumeItem(id)
       }

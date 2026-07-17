@@ -77,6 +77,7 @@ export function cacheDom(this: WarehouseSceneThis): void {
   this.dom.rerollBtn = document.getElementById("rerollBtn")
   this.dom.nextRoundBtn = document.getElementById("nextRoundBtn")
   this.dom.pauseRoundBtn = document.getElementById("pauseRoundBtn")
+  this.dom.autoPlayToggle = document.getElementById("autoPlayToggle")
   this.dom.aiLogicBtn = document.getElementById("aiLogicBtn")
   this.dom.aiLogicOverlay = document.getElementById("aiLogicOverlay")
   this.dom.aiLogicPanel = document.getElementById("aiLogicPanel")

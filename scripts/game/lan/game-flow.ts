@@ -25,7 +25,7 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
   lanResolveRound(reason: string) {
     if (this.roundResolving || this.settled) return
     this.roundResolving = true
-    this.stopRoundTimer()
+    this.roundManager.stopRoundTimer()
     const allBids = this.players.map((p) => {
       const lanId = p.lanId || p.id
       const bid = this.lanHostBids[lanId] || 0
@@ -81,7 +81,7 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
         this.skillManager.onNewRound()
         this.lanHostBids = {}
         this.lanBroadcastRoundStart()
-        this.startRound()
+        this.roundManager.startRound()
         this.updateHud()
       }, waitMs)
     }
@@ -132,11 +132,11 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
         `[lanComputeAiBids] ${ai.id} slotId=${slotId} plan:`,
         plan
           ? {
-              failed: plan.failed,
-              hasBidDecision: plan.hasBidDecision,
-              bid: plan.bid,
-              canUseLlm: this.canUseLlmDecisionForPlayer(slotId)
-            }
+            failed: plan.failed,
+            hasBidDecision: plan.hasBidDecision,
+            bid: plan.bid,
+            canUseLlm: this.canUseLlmDecisionForPlayer(slotId)
+          }
           : "null"
       )
       if (!plan || plan.failed || !plan.hasBidDecision || !this.canUseLlmDecisionForPlayer(slotId)) return
@@ -156,7 +156,7 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
     this.currentBid = msg.currentBid || 0
     this.playerBidSubmitted = false
     this.playerRoundBid = 0
-    this.startRound()
+    this.roundManager.startRound()
     if (msg.ts && msg.roundSeconds) {
       const elapsed = Math.round((Date.now() - msg.ts) / 1000)
       const corrected = msg.roundSeconds - elapsed
@@ -180,13 +180,13 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
     if (window.NativeBridge && window.NativeBridge.isNative && window.NativeBridge.isNative()) {
       try {
         window.NativeBridge.setGameRunning(true)
-      } catch (_) {}
+      } catch (_) { }
     }
     this.beginRunTracking()
     this.battleRecordReplayActive = false
     this.battleRecordReplayRecordId = null
     this.cancelSettlementReveal()
-    this.stopRoundTimer()
+    this.roundManager.stopRoundTimer()
     this.exitSettlementPage()
     this.guardWarehouseCapacity()
 
@@ -330,7 +330,7 @@ export const LanGameFlowMixin: ThisType<WarehouseSceneThis> = {
       this.lanBroadcastRoundStart()
     }
 
-    this.startRound()
+    this.roundManager.startRound()
     this.updateHud()
     this.writeLog("联机游戏已开始！" + (this.lanIsHost ? "（你是主机）" : ""))
   },

@@ -71,6 +71,7 @@ export interface AiMemoryManagerDeps {
   getCurrentPublicEvent: () => { category: string; text: string } | null
   /** 获取玩家回合历史（动态值，创建跨局记录用） */
   getPlayerRoundHistory: () => Record<string, Array<{ round: number; bid: number }>>
+  isP2AutoPlaying?: () => boolean
 }
 
 /**
@@ -102,7 +103,7 @@ export class AiMemoryManager {
     if (!settings || !settings.autoSummarizeEnabled || !settings.multiGameMemoryEnabled) return false
     const contextLength = (settings.contextLength as number) || 5
     if (!MobaoGameHistory) return false
-    const aiPlayers = this.deps.players.filter((p) => !p.isHuman)
+    const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.id === "p2" && this.deps.isP2AutoPlaying?.()))
     if (aiPlayers.length === 0) return false
     const count = MobaoGameHistory.getCount(aiPlayers[0].id, this.deps.getIsLanMode())
     return count > 0 && count >= contextLength
@@ -417,9 +418,9 @@ export class AiMemoryManager {
       if (parsed.pendingSummaryByPlayer && typeof parsed.pendingSummaryByPlayer === "object") {
         data.pendingNextRunAiSummaryByPlayer = parsed.pendingSummaryByPlayer
       } else if (typeof parsed.pendingSummary === "string" && parsed.pendingSummary) {
-        this.deps.players
-          .filter((p) => !p.isHuman)
-          .forEach((p) => {
+    this.deps.players
+      .filter((p) => !p.isHuman || (p.id === "p2" && this.deps.isP2AutoPlaying?.()))
+      .forEach((p) => {
             data.pendingNextRunAiSummaryByPlayer[p.id] = parsed.pendingSummary
           })
       }
@@ -485,6 +486,16 @@ export class AiMemoryManager {
         }
         this.updateLastAiRoundResult(p.id, resultText)
       })
+
+    // p2 滑动窗口：未托管时跨局消息超出 contextLength 则丢弃最旧
+    const p2Msgs = data.aiCrossGameMessagesByPlayer["p2"]
+    if (p2Msgs && !this.deps.isP2AutoPlaying?.()) {
+      const settings = this.deps.getLlmSettings()
+      const contextLength = (settings && (settings.contextLength as number)) || 5
+      while (p2Msgs.length > contextLength) {
+        p2Msgs.shift()
+      }
+    }
 
     if (MobaoGameHistory) {
       const qualityCounts = this.getQualityCounts()

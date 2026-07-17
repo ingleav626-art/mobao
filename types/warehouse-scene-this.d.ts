@@ -72,6 +72,7 @@ import type { LobbyIndexManager } from "../scripts/game/lobby/lobby-index-manage
 import type { RoundManager } from "../scripts/game/core/round-manager-class"
 import type { BiddingManager } from "../scripts/game/bidding/bidding-manager"
 import type { LanIndexManager } from "../scripts/game/lan/lan-index-manager"
+import type { AutoPlayManager } from "../scripts/game/ai/autoplay-manager"
 import type { GameState } from "../scripts/game/core/state/index"
 
 export interface WarehouseSceneThis {
@@ -276,6 +277,7 @@ export interface WarehouseSceneThis {
   roundManager: RoundManager
   biddingManager: BiddingManager
   lanIndexManager: LanIndexManager
+  autoplayManager: AutoPlayManager
   // AI 属性（来自 AiWalletMixin）
   aiWallets: Record<string, number>
   aiLlmPlayerEnabled: Record<string, boolean>

@@ -258,7 +258,7 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
     bridge.on("room:player-left", (msg: RoomMessage) => {
       syncSlotsFromPlayers(msg.players || [])
       if (msg.isHost && !this.lanIsHost) {
-        this.stopRoundTimer()
+        this.roundManager.stopRoundTimer()
         this.roundPaused = false
         this.hideLanPauseOverlay()
         if (msg.canReconnect) {
@@ -367,12 +367,12 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
         this.lanAiPlayers =
           aiPlayersFromMsg.length > 0
             ? aiPlayersFromMsg.map((ai: { id: string; name: string; llm?: boolean }) => ({
-                id: ai.id,
-                name: ai.name,
-                isAI: true,
-                isHost: false,
-                llm: ai.llm
-              }))
+              id: ai.id,
+              name: ai.name,
+              isAI: true,
+              isHost: false,
+              llm: ai.llm
+            }))
             : []
         this.lanAiPlayers.forEach((ai) => {
           this.lanPlayers.push(ai as LanPlayer)
@@ -487,7 +487,7 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
         }
         this._pauseSnapshotTimeLeft = null
       }
-      this.syncPauseButton()
+      this.roundManager.syncPauseButton()
       this.updateHud()
       if (this.roundPaused) {
         this.showLanPauseOverlay()
@@ -503,10 +503,10 @@ export const LanEventsMixin: ThisType<WarehouseSceneThis> = {
 
     bridge.on("ai-bids-ready", (msg: RoomMessage) => {
       if (!this.lanIdToSlotId) return
-      ;(msg.aiPlayerIds || []).forEach((aiId: string) => {
-        const slotId = this.lanIdToSlotId[aiId]
-        if (slotId) this.setPlayerBidReady(slotId, true)
-      })
+        ; (msg.aiPlayerIds || []).forEach((aiId: string) => {
+          const slotId = this.lanIdToSlotId[aiId]
+          if (slotId) this.setPlayerBidReady(slotId, true)
+        })
     })
 
     bridge.on("ai-item-use", (msg: RoomMessage) => {

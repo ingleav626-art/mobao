@@ -72,7 +72,6 @@ import { BiddingMixin } from "./bidding/index"
 import { OverlayMixin, PanelsMixin, HistoryMixin } from "./ui/index"
 import { LanIndexMixin } from "./lan/index"
 import { LobbyIndexMixin, CarouselMixin, CharacterSelectMixin } from "./lobby/index"
-import { RoundManagerMixin } from "./core/round-manager"
 import { SkillItemManagerMixin } from "./core/skill-item-manager"
 import { SettlementManagerMixin } from "./core/settlement-manager"
 
@@ -155,7 +154,6 @@ Object.assign(
   CarouselMixin,
   CharacterSelectMixin,
   LanIndexMixin,
-  RoundManagerMixin,
   SkillItemManagerMixin,
   SettlementManagerMixin
 )

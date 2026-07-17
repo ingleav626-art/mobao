@@ -74,8 +74,19 @@
       font-size: 16px !important;
     }
 
-    #vue-app { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-    #vue-app > * { pointer-events: auto; }
+    #vue-app {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #vue-app>* {
+      pointer-events: auto;
+    }
   </style>
 </head>
 
@@ -391,6 +402,7 @@
       </div>
       <div class="hud-right">
         <button id="nextRoundBtn" type="button">结束本轮</button>
+        <button id="autoPlayToggle" type="button" class="autoplay-toggle" title="AI托管：让AI代替你操作">AI托管</button>
         <button id="settleBtn" type="button">结算本局</button>
         <button id="rerollBtn" type="button">重新随机</button>
         <span class="hud-money" id="hudMoney"><img src="./assets/images/icons/ui/money-rmb.svg" alt="" class="hud-icon">

@@ -69,6 +69,7 @@ function makeDeps(overrides: Partial<AiReflectionManagerDeps> = {}): AiReflectio
   let battleRecordReplayRecordId: string | null = null
   let currentRunLog: RunLog | null = null
   const aiCrossGameMessagesByPlayer: Record<string, unknown[][]> = {}
+  const aiConversationByPlayer: Record<string, unknown[]> = {}
   let _aiReflectionState = ""
   let _aiReflectionStateDetail = ""
   let _aiReflectionTotal = 0
@@ -85,6 +86,7 @@ function makeDeps(overrides: Partial<AiReflectionManagerDeps> = {}): AiReflectio
     getAiCrossGameMemory: () => crossGameMemory,
     getAiCrossGameMessagesByPlayer: () => aiCrossGameMessagesByPlayer,
     getAiConversationCache: () => null,
+    getAiConversationByPlayer: () => aiConversationByPlayer,
     getPendingNextRunAiSummaryByPlayer: () => pendingNextRunAiSummaryByPlayer,
     getPendingSettlementSummary: () => pendingSettlementSummary,
     getBattleRecordReplayActive: () => battleRecordReplayActive,
@@ -501,6 +503,51 @@ describe("AiReflectionManager", () => {
 
       expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toContain("反思内容")
       expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toContain("左上AI")
+    })
+
+    it("needsSummary 为 true 时总结完成后清空对话桶", async () => {
+      // 应在总结完成后清空 aiConversationByPlayer，避免下局上下文膨胀
+      const mockProvider = makeMockProvider({
+        ok: true,
+        content: JSON.stringify({ summary: "跨局总结内容" }),
+      })
+      const aiConversationByPlayer: Record<string, unknown[]> = {
+        "ai-1": [
+          { round: 1, bid: 60000, skill: "无", item: "探测罗盘", thought: "试探", result: "未中标" },
+          { round: 2, bid: 75000, skill: "探测", item: "无", thought: "加码", result: "中标" },
+        ],
+      }
+      const aiConversationCache: Record<string, unknown[]> = {
+        "ai-1": [
+          { role: "system", content: "你是一个AI玩家" },
+          { role: "user", content: "当前回合信息..." },
+          { role: "assistant", content: "我的决策是..." },
+        ],
+      }
+      const pendingNextRunAiSummaryByPlayer: Record<string, string> = {}
+      const clearHistoryFn = vi.fn()
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        getAiConversationByPlayer: () => aiConversationByPlayer,
+        getAiConversationCache: () => aiConversationCache,
+        getPendingNextRunAiSummaryByPlayer: () => pendingNextRunAiSummaryByPlayer,
+        shouldGenerateSummary: () => true,
+        clearGameHistoryForPlayer: clearHistoryFn,
+      })
+      const manager = new AiReflectionManager(deps)
+      expect(aiConversationByPlayer["ai-1"]).toHaveLength(2)
+      expect(aiConversationCache["ai-1"]).toHaveLength(3)
+
+      await manager.triggerAiReflection(makeRecord())
+
+      // 总结生成后概要存入 pendingNextRunAiSummaryByPlayer
+      expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toBe("跨局总结内容")
+      // 历史已清
+      expect(clearHistoryFn).toHaveBeenCalledWith("ai-1")
+      // 对话桶已清：被总结的那批消息不应残留
+      expect(aiConversationByPlayer["ai-1"]).toHaveLength(0)
+      // 对话缓存已清：下局结算不会再读旧数据推进跨局消息
+      expect(aiConversationCache["ai-1"]).toBeUndefined()
     })
   })
 

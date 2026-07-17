@@ -292,7 +292,7 @@ export const LanSyncMixin: ThisType<WarehouseSceneThis> = {
       this.roundTimeLeft = this._pauseSnapshotTimeLeft
       this._pauseSnapshotTimeLeft = null
     }
-    this.syncPauseButton()
+    this.roundManager.syncPauseButton()
     this.updateHud()
     if (this.roundPaused) {
       this.showLanPauseOverlay()

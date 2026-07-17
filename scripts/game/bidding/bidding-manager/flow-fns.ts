@@ -44,7 +44,7 @@ export function waitUntilResumed(deps: BiddingManagerDeps, state: BiddingManager
  */
 export async function kickoffAiRoundDecisions(deps: BiddingManagerDeps, state: BiddingManagerState): Promise<void> {
   log.debug(">>> ENTERED")
-  const aiPlayers = deps.players.filter((p) => !p.isHuman)
+  const aiPlayers = deps.players.filter((p) => !p.isHuman || (p.id === "p2" && deps.isP2AutoPlaying?.()))
   log.info(`kickoffAiRoundDecisions: aiPlayers count=${aiPlayers.length}, total players=${deps.players.length}, isLan=${deps.getIsLanMode()}`)
 
   // 联机模式无 AI 玩家时，不显示 AI 思考提示
@@ -128,7 +128,7 @@ export function buildRoundBids(
   const lastRoundBids = getLastRoundBidMap(deps.getPlayerRoundHistory())
   const aiIntelMap = deps.buildAiIntelSnapshot()
 
-  const aiPlayers = deps.players.filter((player) => !player.isHuman)
+  const aiPlayers = deps.players.filter((player) => !player.isHuman || (player.id === "p2" && deps.isP2AutoPlaying?.()))
   const aiEngine = deps.getAiEngine()
   const round = deps.getRound()
   const aiBidMap = aiEngine
@@ -174,14 +174,15 @@ export function buildRoundBids(
   log.info(`buildRoundBids: players count=${deps.players.length}, round=${round}`)
 
   const roundBids = deps.players.map((player) => {
-    if (player.isSelf) {
+    const isAutoPlaying = deps.isP2AutoPlaying?.() && player.id === "p2"
+    if (player.isSelf && !isAutoPlaying) {
       log.info(
         `buildRoundBids: player ${player.id} (isSelf=true) -> bid=${deps.getPlayerRoundBid()} (source=playerRoundBid)`
       )
       return { playerId: player.id, bid: deps.getPlayerRoundBid() }
     }
 
-    if (player.isHuman) {
+    if (player.isHuman && !isAutoPlaying) {
       const lanHostBids = deps.getLanHostBids()
       const existingBid = player.lanId !== undefined ? lanHostBids[player.lanId] : undefined
       log.info(
@@ -235,7 +236,8 @@ export async function resolveRoundBids(
   }
 
   try {
-    if (!deps.getPlayerBidSubmitted()) {
+    // 托管模式：p2 的 AI 出价直接走 buildRoundBids，不需要 playerBidSubmitted
+    if (!deps.getPlayerBidSubmitted() && !deps.isP2AutoPlaying?.()) {
       deps.setPlayerRoundBid(0)
       deps.writeLog(reason === "timeout" ? "回合超时：玩家本轮出价记为 0。" : "玩家未提交出价，本轮按 0 处理。")
       const myId = deps.getIsLanMode() ? deps.getLanMySlotId() : "p2"

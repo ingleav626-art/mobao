@@ -213,6 +213,7 @@ export interface AiIntelManagerDeps {
   buildAiToolResultSummary: (result: unknown, actionType: string, actionId: string) => string
   getActionDefById: (actionId: string) => ActionDef
   addPublicInfoEntry: (entry: { source: string; text: string }) => void
+  addPrivateIntelEntry?: (entry: { source: string; text: string }) => void
   requestAiLlmFollowupBid: (
     player: Player,
     plan: LlmPlanResult | null,
@@ -224,6 +225,9 @@ export interface AiIntelManagerDeps {
   resolveRoundBids: (reason: string) => Promise<void>
   getItemInfo: (itemId: string) => { label?: string } | null
   waitUntilResumed: () => Promise<void>
+  isP2AutoPlaying?: () => boolean
+  getP2ShopInventory?: () => Record<string, number>
+  consumeP2ShopItem?: (itemId: string) => void
 }
 
 /**

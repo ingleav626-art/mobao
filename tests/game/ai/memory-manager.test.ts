@@ -3,6 +3,7 @@ import { JSDOM } from "jsdom"
 import { AiMemoryManager, type AiMemoryData, type AiMemoryManagerDeps } from "../../../scripts/game/ai/memory-manager"
 import type { LlmSettings } from "../../../types/llm"
 import type { CrossGameMemory } from "../../../types/ai"
+import type { Player } from "../../../types/game"
 import { DEFAULT_CROSS_GAME_STATS } from "../../../scripts/game/ai/memory"
 
 function makeData(): AiMemoryData {
@@ -59,6 +60,7 @@ function makeManager(overrides: {
   isAiReflectionEnabled?: () => boolean
   getCurrentPublicEvent?: () => { category: string; text: string } | null
   getPlayerRoundHistory?: () => Record<string, Array<{ round: number; bid: number }>>
+  isP2AutoPlaying?: () => boolean
 } = {}): { manager: AiMemoryManager; data: AiMemoryData; deps: AiMemoryManagerDeps } {
   const data = overrides.data || makeData()
   const dom = new JSDOM('<div id="overlay" class="hidden"></div><div id="content"></div>')
@@ -78,6 +80,7 @@ function makeManager(overrides: {
     getCurrentPublicEvent: overrides.getCurrentPublicEvent || (() => null),
     getPlayerRoundHistory:
       overrides.getPlayerRoundHistory || (() => ({ p1: [{ round: 1, bid: 5000 }], ai1: [{ round: 1, bid: 3000 }] })),
+    isP2AutoPlaying: overrides.isP2AutoPlaying,
   }
   const manager = new AiMemoryManager(deps)
   return { manager, data, deps }
@@ -794,4 +797,30 @@ describe("AiMemoryManager", () => {
       expect(() => manager.pushRunStartContextToAi()).not.toThrow()
     })
   })
+
+  // ════════════ AI托管：p2 结算写入 ════════════
+  describe("pushRunSettlementContextToAi with p2 autoplay", () => {
+    it("isP2AutoPlaying=true 时 p2 得到结算总结", () => {
+      const { manager, deps } = makeManager()
+      manager.pushRunSettlementContextToAi({ winnerId: "p1", winnerName: "AI1", winnerBid: 5000, totalValue: 20000, winnerProfit: 15000, reasonText: "直接拿下" })
+
+      // 默认 p2 不在总结列表中（isHuman=true 被过滤）
+      const p2summary = deps.data.pendingNextRunAiSummaryByPlayer["p2"]
+      expect(p2summary).toBeUndefined()
+    })
+
+    it("isP2AutoPlaying=true 时 p2 得到结算总结", () => {
+      const players = [
+        { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
+        { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
+      ] as Player[]
+      const { manager, deps } = makeManager({ players, isP2AutoPlaying: () => true })
+      manager.pushRunSettlementContextToAi({ winnerId: "p1", winnerName: "AI1", winnerBid: 5000, totalValue: 20000, winnerProfit: 15000, reasonText: "直接拿下" })
+
+      // p2 应该得到总结（托管中）
+      const allKeys = Object.keys(deps.data.pendingNextRunAiSummaryByPlayer)
+      // p1 (AI) 和 p2 (托管中的玩家) 都应该有总结
+      expect(allKeys).toContain("p2")
+      expect(deps.data.pendingNextRunAiSummaryByPlayer["p2"]).toContain("AI1")
+    })
 })

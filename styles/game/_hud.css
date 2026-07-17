@@ -201,3 +201,22 @@
 .thought-log-content::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
+
+/* ══════ AI 托管按钮 ══════ */
+#autoPlayToggle {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+#autoPlayToggle:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+#autoPlayToggle.is-active {
+  background: rgba(0, 255, 0, 0.12);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+#autoPlayToggle:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

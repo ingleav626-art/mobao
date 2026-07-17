@@ -29,7 +29,7 @@ export function executeAiIntelAction(
 /** 处理所有 AI 玩家的情报动作（批量） */
 export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<void> {
   log.debug("[fn-file] processAiIntelActions CALLED, isLanMode={0}", deps.isLanMode())
-  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman)
+  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman || (player.id === "p2" && deps.isP2AutoPlaying?.()))
   const roundProgress = GAME_SETTINGS.maxRounds <= 1 ? 1 : (deps.getRound() - 1) / (GAME_SETTINGS.maxRounds - 1)
 
   const state = deps.state
@@ -412,6 +412,14 @@ export async function processSingleAiIntelAction(
     text: actionDef.description
   })
 
+  // 托管 p2 用道具时写入私人情报
+  if (player.id === "p2" && deps.isP2AutoPlaying?.() && deps.addPrivateIntelEntry) {
+    deps.addPrivateIntelEntry({
+      source: actionDef.name,
+      text: actionDef.description
+    })
+  }
+
   if (deps.isLanMode() && deps.isLanHost()) {
     const lanBridge = deps.getLanBridge()
     if (lanBridge) {
@@ -537,7 +545,9 @@ function _executeAiIntelActionImpl(
       return { ok: false, revealed: 0, message: "AI技能不存在。" }
     }
 
-    const result = skill.execute(buildAiPrivateRevealContext(deps, deps.state, playerId))
+    const isAutoplayP2 = playerId === "p2" && deps.isP2AutoPlaying?.()
+    const ctx = isAutoplayP2 ? _makeVisualRevealContext(deps) : buildAiPrivateRevealContext(deps, deps.state, playerId)
+    const result = skill.execute(ctx)
     if (!result.ok) {
       return result
     }
@@ -557,14 +567,36 @@ function _executeAiIntelActionImpl(
       return { ok: false, revealed: 0, message: "AI道具不存在。" }
     }
 
-    const result = item.execute(buildAiPrivateRevealContext(deps, deps.state, playerId))
+    const isAutoplayP2 = playerId === "p2" && deps.isP2AutoPlaying?.()
+    const ctx = isAutoplayP2 ? _makeVisualRevealContext(deps) : buildAiPrivateRevealContext(deps, deps.state, playerId)
+    const result = item.execute(ctx)
     if (!result.ok) {
       return result
     }
 
     resourceState.items[plan.actionId] = remain - 1
+    if (isAutoplayP2 && deps.consumeP2ShopItem) {
+      deps.consumeP2ShopItem(plan.actionId)
+    }
     return result
   }
 
   return { ok: false, revealed: 0, message: "未知AI行动类型。" }
+}
+
+/** 构建托管 p2 的画布视觉揭示上下文，直接调 deps 的 batch 函数触发视觉效果 */
+function _makeVisualRevealContext(deps: AiIntelManagerDeps) {
+  return {
+    revealOutline: (opts: { count: number; category?: string | null; allowCategoryFallback?: boolean }) =>
+      deps.revealOutlineBatch(opts.count, opts.category ?? null, opts.allowCategoryFallback ?? false, null),
+    revealQuality: (opts: { count: number; category?: string | null; allowCategoryFallback?: boolean }) =>
+      deps.revealQualityBatch(opts.count, opts.category ?? null, opts.allowCategoryFallback ?? false, null),
+    revealAll: (opts: { count: number; sortStrategy?: string }) =>
+      deps.revealArtifactFullyBatch({
+        count: opts.count,
+        sortStrategy: opts.sortStrategy ?? "largestFirst",
+        category: null,
+        allowCategoryFallback: false
+      })
+  }
 }

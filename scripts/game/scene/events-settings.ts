@@ -195,12 +195,15 @@ export function bindSettingsEvents(this: WarehouseSceneThis): void {
   const backToLobbyBtn = document.getElementById("backToLobbyBtn")
   if (backToLobbyBtn) {
     backToLobbyBtn.addEventListener("click", () => {
-      this.stopRoundTimer()
+      this.roundManager.stopRoundTimer()
       this.enterLobby()
     })
   }
   this.dom.nextRoundBtn?.addEventListener("click", () => this.resolveRoundBids("manual"))
   if (this.dom.pauseRoundBtn) {
-    this.dom.pauseRoundBtn?.addEventListener("click", () => this.toggleRoundPause())
+    this.dom.pauseRoundBtn?.addEventListener("click", () => this.roundManager.toggleRoundPause())
   }
+  this.dom.autoPlayToggle?.addEventListener("click", () => {
+    this.autoplayManager.toggle()
+  })
 }

@@ -41,6 +41,10 @@ export function openBidKeypad(deps: BiddingManagerDeps, state: BiddingManagerSta
     `playerBidSubmitted=${deps.getPlayerBidSubmitted()}, settled=${deps.getSettled()}, ` +
     `roundResolving=${deps.getRoundResolving()}, round=${deps.getRound()}`
   )
+  if (deps.isP2AutoPlaying?.()) {
+    deps.showGameConfirm("AI 托管中，不可手动操作。", () => {})
+    return
+  }
   if (deps.getSettled() || deps.getRoundResolving()) {
     log.info(
       `openBidKeypad: BLOCKED by ${deps.getSettled() ? "settled" : "roundResolving"}, ` +
@@ -176,6 +180,11 @@ export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState):
   )
   deps.closeItemDrawer()
 
+  if (deps.isP2AutoPlaying?.()) {
+    deps.writeLog("AI 托管中，不可手动出价。")
+    return
+  }
+
   if (deps.getSettled()) {
     deps.writeLog("本局已结算，请重新开局。")
     return
@@ -226,6 +235,7 @@ export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState):
   closeBidKeypad(deps)
   deps.writeLog(`玩家已提交本轮密封出价：${bid}。提交后不可再用道具/技能。`)
   deps.updateHud()
+  deps.recordPlayerBid?.(bid)
 
   if (deps.getIsLanMode() && deps.getLanBridge()) {
     log.info(`playerBid: calling lanBridge.submitBid(${bid})`)

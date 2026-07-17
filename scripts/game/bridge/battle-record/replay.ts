@@ -38,7 +38,7 @@ export function createReplaySlice(_deps: BattleRecordDeps): {
       this.battleRecordReplayRecordId = record.id || null
       this.isSettlementRevealMode = true
       this.closeBattleRecordPanel()
-      this.stopRoundTimer()
+      this.roundManager.stopRoundTimer()
       this.roundResolving = false
       this.roundPaused = false
       this.playerBidSubmitted = true

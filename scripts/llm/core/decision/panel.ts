@@ -25,7 +25,8 @@ export function createLlmPanelMethods(deps: LlmDecisionDeps) {
 
   const methods: ThisType<WarehouseSceneThis> = {
     captureAiDecisionTelemetry(roundBids: Array<Record<string, unknown>>): void {
-      const aiPlayers = this.players.filter((player: Player) => !player.isHuman)
+      const autoplayP2 = this.autoplayManager?.isActive?.() ? "p2" : null
+      const aiPlayers = this.players.filter((player: Player) => !player.isHuman || player.id === autoplayP2)
       const hasLlm = aiPlayers.some((player: Player) => Boolean(this.aiLlmRoundPlans[player.id]))
 
       if (!hasLlm) {

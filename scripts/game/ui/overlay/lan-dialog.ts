@@ -117,7 +117,7 @@ export const LanDialogMixin: ThisType<WarehouseSceneThis> = {
         "padding:10px 28px;border-radius:6px;border:1px solid #d4a843;background:rgba(212,168,67,0.15);color:#d4a843;cursor:pointer;font-size:15px;font-weight:bold;"
       resumeBtn.textContent = "结束暂停"
       resumeBtn.addEventListener("click", () => {
-        this.toggleRoundPause()
+        this.roundManager.toggleRoundPause()
       })
       box.appendChild(resumeBtn)
     }

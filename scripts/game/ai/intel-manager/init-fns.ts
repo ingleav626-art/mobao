@@ -27,14 +27,28 @@ export function initAiIntelSystems(deps: AiIntelManagerDeps): void {
   state.aiCharacterAssignments = {}
 
   const aiPlayers = deps.players.filter((player: Player) => !player.isHuman)
+  const initPlayers = [...aiPlayers]
+  // 始终为 p2 初始化情报池（为托管做准备），但不在这里分配 AI 角色
+  const p2 = deps.players.find((player: Player) => player.id === "p2")
+  if (p2 && !initPlayers.includes(p2)) {
+    initPlayers.push(p2)
+  }
+
   const allCharacters = CHARACTERS || []
   const allItems = [...ITEM_DEFS]
 
-  aiPlayers.forEach((player: Player) => {
+  initPlayers.forEach((player: Player) => {
     state.aiPrivateIntel[player.id] = createEmptyAiPrivateIntelPool()
 
-    const randomCharIndex = Math.floor(Math.random() * allCharacters.length)
-    const assignedChar = allCharacters[randomCharIndex] || allCharacters[0]
+    let assignedChar
+    if (player.isHuman) {
+      // p2 使用玩家自己的角色
+      const activeChar = getActiveCharacter()
+      assignedChar = activeChar && activeChar.id ? activeChar : allCharacters[0]
+    } else {
+      const randomCharIndex = Math.floor(Math.random() * allCharacters.length)
+      assignedChar = allCharacters[randomCharIndex] || allCharacters[0]
+    }
     state.aiCharacterAssignments[player.id] = {
       characterId: assignedChar.id,
       characterName: assignedChar.name,
@@ -46,12 +60,18 @@ export function initAiIntelSystems(deps: AiIntelManagerDeps): void {
     const skillDef = SKILL_DEFS.find((s) => s.id === assignedChar.skillId)
     const skillEntry = skillDef ? { [skillDef.id]: skillDef.maxPerRound } : {}
 
-    const shuffledItems = shuffle([...allItems])
-    const selectedItems = shuffledItems.slice(0, 4)
-    const itemEntries: Record<string, number> = {}
-    selectedItems.forEach((item) => {
-      itemEntries[item.id] = item.initialCount
-    })
+    // 托管 p2 道具从商店库存同步，不走随机分配
+    let itemEntries: Record<string, number>
+    if (player.id === "p2" && deps.isP2AutoPlaying?.() && deps.getP2ShopInventory) {
+      itemEntries = deps.getP2ShopInventory()
+    } else {
+      const shuffledItems = shuffle([...allItems])
+      const selectedItems = shuffledItems.slice(0, 4)
+      itemEntries = {}
+      selectedItems.forEach((item) => {
+        itemEntries[item.id] = item.initialCount
+      })
+    }
 
     state.aiResourceState[player.id] = {
       skills: skillEntry,

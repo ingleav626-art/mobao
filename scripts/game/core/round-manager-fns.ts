@@ -112,8 +112,6 @@ export function startRoundFn(deps: RoundManagerDeps): void {
   deps.roundTimeLeft = GAME_SETTINGS.roundSeconds
   deps.playerBidSubmitted = false
   deps.playerRoundBid = 0
-  deps.privateIntelEntries.length = 0
-  deps.publicInfoEntries.length = 0
   deps.clearCurrentRoundUsage()
   deps.resetAiRoundResources()
   deps.aiLlmRoundPlans = {}
