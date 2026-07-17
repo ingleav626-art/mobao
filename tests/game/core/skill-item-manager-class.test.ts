@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest"
 import { SkillItemManager, type SkillItemManagerDeps } from "../../../scripts/game/core/skill-item-manager-class"
 import type { SkillContext } from "../../../types/game"
+import { SKILL_DEFS } from "../../../scripts/game/data/skills"
+import { wrapContextWithCharacterBonus } from "../../../scripts/game/core/skill-item-manager"
 
 function makeSkillContext(): SkillContext {
   return {
@@ -457,6 +459,50 @@ describe("SkillItemManager", () => {
       const result = manager.getItemInfo("totally-unknown-id")
       expect(result.label).toBe("未知道具")
       expect(result.tip).toContain("暂无说明")
+    })
+  })
+
+  // ═══ 鉴踪直取技能链：verify sortStrategy passes through correctly ═══
+  describe("skill-reveal-largest (鉴踪直取)", () => {
+    it("execute 调用 revealAll 时 sortStrategy=largestFirst 正确传递", () => {
+      const revealAllSpy = vi.fn()
+      const ctx: SkillContext = {
+        revealOutline: vi.fn(),
+        revealQuality: vi.fn(),
+        revealAll: revealAllSpy,
+      }
+
+      const skill = SKILL_DEFS.find((d) => d.id === "skill-reveal-largest")!
+      skill.execute(ctx)
+
+      expect(revealAllSpy).toHaveBeenCalledWith({
+        count: 1,
+        sortStrategy: "largestFirst",
+      })
+    })
+
+    it("wrapContextWithCharacterBonus 角色 sortStrategy 不覆盖技能自带 largestFirst", () => {
+      const inner = vi.fn()
+      const ctx: SkillContext = {
+        revealOutline: vi.fn(),
+        revealQuality: vi.fn(),
+        revealAll: inner,
+      }
+      const wrapped = wrapContextWithCharacterBonus(ctx, 0, 0, "smallestFirst")
+      wrapped.revealAll({ count: 1, sortStrategy: "largestFirst" })
+      expect(inner).toHaveBeenCalledWith({ count: 1, sortStrategy: "largestFirst" })
+    })
+
+    it("wrapContextWithCharacterBonus 技能无 sortStrategy 时回退到角色策略", () => {
+      const inner = vi.fn()
+      const ctx: SkillContext = {
+        revealOutline: vi.fn(),
+        revealQuality: vi.fn(),
+        revealAll: inner,
+      }
+      const wrapped = wrapContextWithCharacterBonus(ctx, 0, 0, "largestFirst")
+      wrapped.revealAll({ count: 1, sortStrategy: "" })
+      expect(inner).toHaveBeenCalledWith({ count: 1, sortStrategy: "largestFirst" })
     })
   })
 })

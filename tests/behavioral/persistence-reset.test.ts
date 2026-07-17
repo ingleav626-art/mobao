@@ -275,3 +275,58 @@ describe("resetForNewRun 多字段组合保留", () => {
     expect(state.warehouse.items).toEqual([])
   })
 })
+
+// ============================================================
+// 6. resetLanState 保留持久化字段（showLobbyMain 调用 resetLanState 后不应清 aiLlmPlayerEnabled）
+// ============================================================
+describe("resetLanState 保留持久化字段", () => {
+  it("resetLanState 应保留 aiLlmPlayerEnabled（持久化设置，showLobbyMain 调用 resetLanState 后不清）", () => {
+    const state = new GameState()
+
+    // 预设：模拟 LLM 勾选状态
+    state.ai.aiLlmPlayerEnabled = { p1: true, p3: false }
+
+    // 执行 resetLanState（showLobbyMain 在导航前调用）
+    state.resetLanState()
+
+    // 验证：保留，不被清空
+    expect(state.ai.aiLlmPlayerEnabled).toEqual({ p1: true, p3: false })
+  })
+})
+
+// ============================================================
+// 7. resetLanGameState 保留持久化字段（enterLanRoom 调用 resetLanGameState 后不应清 aiLlmPlayerEnabled）
+// ============================================================
+describe("resetLanGameState 保留持久化字段", () => {
+  it("resetLanGameState 应保留 aiLlmPlayerEnabled（持久化设置，enterLanRoom 调用 resetLanGameState 后不清）", () => {
+    const state = new GameState()
+
+    // 预设：模拟 LLM 勾选状态
+    state.ai.aiLlmPlayerEnabled = { p1: true, p3: false }
+
+    // 执行 resetLanGameState（enterLanRoom 在进入房间前调用）
+    state.resetLanGameState()
+
+    // 验证：保留，不被清空
+    expect(state.ai.aiLlmPlayerEnabled).toEqual({ p1: true, p3: false })
+  })
+})
+
+// ============================================================
+// 8. 组合场景：resetForNewRun + resetLanState 后保留（模拟 startNewRun 流程）
+// ============================================================
+describe("组合场景 resetForNewRun + resetLanState 保留持久化字段", () => {
+  it("resetForNewRun 后 resetLanState 应保留 aiLlmPlayerEnabled", () => {
+    const state = new GameState()
+
+    // 预设：模拟 LLM 勾选状态（持久化设置）
+    state.ai.aiLlmPlayerEnabled = { p1: true, p3: false }
+
+    // 执行 startNewRun 的两个核心步骤（先 resetLanState 再 resetForNewRun）
+    state.resetLanState()
+    state.resetForNewRun()
+
+    // 验证：持久化设置跨两个 reset 保留
+    expect(state.ai.aiLlmPlayerEnabled).toEqual({ p1: true, p3: false })
+  })
+})

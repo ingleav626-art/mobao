@@ -176,6 +176,10 @@ function makeClientDeps(
     skillManager: { onNewRound: vi.fn(), resetForNewRun: vi.fn() },
     getProfile: null,
     getSelectedProfileId: null,
+    getSettingsMaxRounds: () => 5,
+    getSettingsDirectTakeRatio: () => 0.2,
+    setSettingsMaxRounds: vi.fn(),
+    setSettingsDirectTakeRatio: vi.fn(),
     ...overrides
   }
 }

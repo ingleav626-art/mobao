@@ -57,6 +57,14 @@ function createMockDeps(overrides: Partial<BiddingManagerDeps> = {}): BiddingMan
     getAiRoundEffects: () => ({}),
     getLanBridge: () => null,
     getLastAiDecisionTelemetry: () => null,
+    getRound: () => 1,
+    getCurrentBid: () => 0,
+    getBidLeader: () => "none",
+    getSecondHighestBid: () => 0,
+    getPlayerBidSubmitted: () => false,
+    getPlayerRoundBid: () => 0,
+    getRoundResolving: () => false,
+    getKeypadValue: () => "0",
 
     closeItemDrawer: vi.fn(),
     hideInfoPopup: vi.fn(),
@@ -65,6 +73,12 @@ function createMockDeps(overrides: Partial<BiddingManagerDeps> = {}): BiddingMan
     writeLog: vi.fn(),
     setPlayerBidSubmitted: vi.fn(),
     setPlayerRoundBid: vi.fn(),
+    setCurrentBid: vi.fn(),
+    setBidLeader: vi.fn(),
+    setSecondHighestBid: vi.fn(),
+    setRound: vi.fn(),
+    setRoundResolving: vi.fn(),
+    setKeypadValue: vi.fn(),
     stopRoundTimer: vi.fn(),
     captureAiDecisionTelemetry: vi.fn(),
     recordAiThoughtLogs: vi.fn(),
@@ -118,6 +132,45 @@ describe("BiddingManager", () => {
       mgr.setPlayerBidReady("p2", true)
       mgr.setPlayerBidReady("p3", true)
       expect(mgr.areAllPlayersBidReady()).toBe(true)
+    })
+  })
+
+  describe("resetForNewRound", () => {
+    it("重置回合级字段为初始值", () => {
+      const setPlayerBidSubmitted = vi.fn()
+      const setPlayerRoundBid = vi.fn()
+      const setCurrentBid = vi.fn()
+      const setBidLeader = vi.fn()
+      const setSecondHighestBid = vi.fn()
+      const setRoundResolving = vi.fn()
+      const setKeypadValue = vi.fn()
+      const deps = createMockDeps({
+        setPlayerBidSubmitted,
+        setPlayerRoundBid,
+        setCurrentBid,
+        setBidLeader,
+        setSecondHighestBid,
+        setRoundResolving,
+        setKeypadValue
+      })
+      const mgr = createManager(deps)
+
+      // 模拟上一轮残留：已出价 5000，已提交，currentBid=5000
+      mgr.setPlayerBidReady("p1", true)
+      mgr.setPlayerBidReady("p2", true)
+      mgr.setPlayerBidReady("p3", true)
+
+      mgr.resetForNewRound()
+
+      // BiddingManagerState 只保留 roundBidReadyState + keypadValue，回合字段走 deps
+      expect(mgr.areAllPlayersBidReady()).toBe(false)
+      expect(setPlayerBidSubmitted).toHaveBeenCalledWith(false)
+      expect(setPlayerRoundBid).toHaveBeenCalledWith(0)
+      expect(setCurrentBid).toHaveBeenCalledWith(0)
+      expect(setBidLeader).toHaveBeenCalledWith("none")
+      expect(setSecondHighestBid).toHaveBeenCalledWith(0)
+      expect(setRoundResolving).toHaveBeenCalledWith(false)
+      expect(setKeypadValue).toHaveBeenCalledWith("0")
     })
   })
 
@@ -257,8 +310,7 @@ describe("BiddingManager", () => {
 
     it("正在结算时拒绝出价", () => {
       const writeLog = vi.fn()
-      const mgr = createManager(createMockDeps({ writeLog }))
-      mgr["state"].roundResolving = true
+      const mgr = createManager(createMockDeps({ getRoundResolving: () => true, writeLog }))
       mgr.playerBid()
       expect(writeLog).toHaveBeenCalledWith("本轮正在结算中，请等待出价揭示。")
     })
@@ -272,8 +324,7 @@ describe("BiddingManager", () => {
 
     it("已提交后拒绝重复出价", () => {
       const writeLog = vi.fn()
-      const mgr = createManager(createMockDeps({ writeLog }))
-      mgr["state"].playerBidSubmitted = true
+      const mgr = createManager(createMockDeps({ getPlayerBidSubmitted: () => true, writeLog }))
       mgr.playerBid()
       expect(writeLog).toHaveBeenCalledWith("你已提交本轮出价，不可再次提交。")
     })
@@ -298,11 +349,16 @@ describe("BiddingManager", () => {
 
       const writeLog = vi.fn()
       const updateHud = vi.fn()
-      const mgr = createManager(createMockDeps({ dom, writeLog, updateHud }))
+      const setPlayerRoundBid = vi.fn()
+      const setPlayerBidSubmitted = vi.fn()
+      const mgr = createManager(createMockDeps({
+        dom, writeLog, updateHud,
+        setPlayerRoundBid, setPlayerBidSubmitted
+      }))
 
       mgr.playerBid()
-      expect(mgr["state"].playerRoundBid).toBe(5000)
-      expect(mgr["state"].playerBidSubmitted).toBe(true)
+      expect(setPlayerRoundBid).toHaveBeenCalledWith(5000)
+      expect(setPlayerBidSubmitted).toHaveBeenCalledWith(true)
       expect(writeLog).toHaveBeenCalled()
       expect(updateHud).toHaveBeenCalled()
     })
@@ -343,10 +399,11 @@ describe("BiddingManager", () => {
     it("联机模式直接返回", async () => {
       const getIsLanMode = vi.fn(() => true)
       const getLanBridge = vi.fn(() => ({ submitBid: vi.fn() }))
-      const mgr = createManager(createMockDeps({ getIsLanMode, getLanBridge }))
+      const setRoundResolving = vi.fn()
+      const mgr = createManager(createMockDeps({ getIsLanMode, getLanBridge, setRoundResolving }))
       await mgr.resolveRoundBids()
       // 联机模式下不应该继续执行结算逻辑
-      expect(mgr["state"].roundResolving).toBe(false)
+      expect(setRoundResolving).not.toHaveBeenCalled()
     })
 
     it("玩家未提交出价时记为 0", { timeout: 30000 }, async () => {
@@ -357,21 +414,21 @@ describe("BiddingManager", () => {
       const updateHud = vi.fn()
       const getAiEngine = vi.fn(() => null)
       const getItems = vi.fn(() => [])
+      const setPlayerRoundBid = vi.fn()
 
       const mgr = createManager(createMockDeps({
         dom,
         writeLog,
         updateHud,
         getAiEngine,
-        getItems
+        getItems,
+        setPlayerRoundBid
       }))
 
-      // 模拟 resolveRoundBids 执行
-      mgr["state"].round = 1
       await mgr.resolveRoundBids("timeout")
 
       // 玩家未提交出价，记为 0
-      expect(mgr["state"].playerRoundBid).toBe(0)
+      expect(setPlayerRoundBid).toHaveBeenCalledWith(0)
       expect(writeLog).toHaveBeenCalledWith("回合超时：玩家本轮出价记为 0。")
     })
   })
@@ -416,6 +473,105 @@ describe("BiddingManager", () => {
       const mgr = createManager(createMockDeps({ getSettled: () => true, writeLog }))
       mgr.settleCurrentRun()
       expect(writeLog).toHaveBeenCalledWith("本局已结算，请重新开局。")
+    })
+  })
+
+  describe("deps 与 Manager 方法联动", () => {
+    it("playerBid 提交后 getPlayerRoundBid 返回提交值（防止 buildRoundBids 读到旧值）", () => {
+      let playerBidSubmitted = false
+      let playerRoundBid = 0
+      const dom: Record<string, HTMLElement | null> = {}
+      dom.bidInput = document.createElement("input")
+      dom.bidInput.value = "7777"
+      dom.bidKeypad = document.createElement("div")
+      dom["playerCard-p2"] = document.createElement("div")
+
+      const deps = createMockDeps({
+        dom,
+        getPlayerBidSubmitted: () => playerBidSubmitted,
+        getPlayerRoundBid: () => playerRoundBid,
+        setPlayerBidSubmitted: vi.fn((v: boolean) => { playerBidSubmitted = v }),
+        setPlayerRoundBid: vi.fn((v: number) => { playerRoundBid = v }),
+      })
+      const mgr = createManager(deps)
+
+      mgr.playerBid()
+
+      expect(deps.getPlayerRoundBid()).toBe(7777)
+      expect(deps.getPlayerBidSubmitted()).toBe(true)
+    })
+
+    it("resetForNewRound 后第二轮可正常出价（防止第二轮被拒出价的核心 bug）", () => {
+      let playerBidSubmitted = false
+      let playerRoundBid = 0
+      const dom: Record<string, HTMLElement | null> = {}
+      dom.bidInput = document.createElement("input")
+      dom.bidInput.value = "5000"
+      dom.bidKeypad = document.createElement("div")
+      dom["playerCard-p2"] = document.createElement("div")
+
+      const deps = createMockDeps({
+        dom,
+        getPlayerBidSubmitted: () => playerBidSubmitted,
+        getPlayerRoundBid: () => playerRoundBid,
+        setPlayerBidSubmitted: vi.fn((v: boolean) => { playerBidSubmitted = v }),
+        setPlayerRoundBid: vi.fn((v: number) => { playerRoundBid = v }),
+        setCurrentBid: vi.fn(),
+        setBidLeader: vi.fn(),
+        setSecondHighestBid: vi.fn(),
+        setRoundResolving: vi.fn(),
+        setKeypadValue: vi.fn(),
+      })
+      const mgr = createManager(deps)
+
+      // 第一轮已出价
+      mgr.playerBid()
+      expect(deps.getPlayerBidSubmitted()).toBe(true)
+
+      // 换轮
+      mgr.resetForNewRound()
+      expect(deps.getPlayerBidSubmitted()).toBe(false)
+
+      // 第二轮可正常出价（不会被"已提交"拦截）
+      dom.bidInput.value = "3000"
+      mgr.playerBid()
+      expect(deps.getPlayerRoundBid()).toBe(3000)
+
+      // buildRoundBids 读到正确的出价
+      const bids = mgr.buildRoundBids()
+      const playerBidEntry = bids.find((b) => b.playerId === "p2")
+      expect(playerBidEntry).toBeDefined()
+      expect(playerBidEntry!.bid).toBe(3000)
+    })
+
+    it("resetForNewRound 后 roundBidReadyState 清空（防止跨轮残留）", () => {
+      const mgr = createManager()
+
+      mgr.setPlayerBidReady("p1", true)
+      mgr.setPlayerBidReady("p2", true)
+
+      mgr.resetForNewRound()
+
+      expect(mgr.areAllPlayersBidReady()).toBe(false)
+    })
+
+    it("resetForNewRound 后 keypadValue 重置为 \"0\"", () => {
+      let keypadValue = "9999"
+      const dom: Record<string, HTMLElement | null> = {}
+      dom.keypadScreen = document.createElement("span")
+      dom.keypadDirectHint = document.createElement("span")
+      dom.bidInput = document.createElement("input")
+
+      const deps = createMockDeps({
+        dom,
+        getKeypadValue: () => keypadValue,
+        setKeypadValue: vi.fn((v: string) => { keypadValue = v }),
+      })
+      const mgr = createManager(deps)
+
+      mgr.resetForNewRound()
+
+      expect(deps.getKeypadValue()).toBe("0")
     })
   })
 })

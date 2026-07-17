@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi, beforeAll } from "vitest"
 import { JSDOM } from "jsdom"
 import { WarehouseManager, type WarehouseManagerDeps, type WarehouseManagerState } from "../../../scripts/game/warehouse/warehouse-manager"
 import type { Artifact } from "../../../types/game"
+import { pickRevealTargets } from "../../../scripts/game/warehouse/index"
+import { ARTIFACT_LIBRARY } from "../../../scripts/game/data/artifacts/library"
 import { GRID_COLS, GRID_ROWS, CELL_SIZE, MARGIN, MAX_WAREHOUSE_CELLS } from "../../../scripts/game/core/constants"
 
 // ─── Phaser 全局 mock ───
@@ -1069,6 +1071,114 @@ describe("WarehouseManager", () => {
       manager.setupPreviewTouchScroll()
       expect(addSpy).toHaveBeenCalledWith("touchstart", expect.any(Function), expect.any(Object))
       expect(addSpy).toHaveBeenCalledWith("touchmove", expect.any(Function), expect.any(Object))
+    })
+  })
+
+  // ════════════════ pickRevealTargets 排序逻辑（纯函数，鉴踪直取） ════════════════
+  describe("pickRevealTargets 排序（鉴踪直取选取最大件）", () => {
+    type TestItem = { id: string; w: number; h: number; category: string; revealed: { outline: boolean; qualityCell: unknown } }
+
+    function t(id: string, w: number, h: number): TestItem {
+      return { id, w, h, category: "杂项", revealed: { outline: false, qualityCell: null } }
+    }
+
+    it("largestFirst 返回面积最大的项", () => {
+      const items = [t("a", 2, 2), t("b", 4, 3), t("c", 1, 1)]
+      // b:12, a:4, c:1 → 最大 b
+      const result = pickRevealTargets(items, { mode: "outline", count: 1, category: null, allowCategoryFallback: false, sortStrategy: "largestFirst" })
+      expect(result[0].id).toBe("b")
+    })
+
+    it("smallestFirst 返回面积最小的项", () => {
+      const items = [t("a", 5, 4), t("b", 2, 1), t("c", 3, 3)]
+      // b:2, c:9, a:20 → 最小 b
+      const result = pickRevealTargets(items, { mode: "outline", count: 1, category: null, allowCategoryFallback: false, sortStrategy: "smallestFirst" })
+      expect(result[0].id).toBe("b")
+    })
+
+    it("count=3 且无 sortStrategy 时返回所有项（shuffle 无排序保证）", () => {
+      const items = [t("a", 1, 1), t("b", 2, 2), t("c", 3, 3)]
+      const result = pickRevealTargets(items, { mode: "outline", count: 3, category: null, allowCategoryFallback: false, sortStrategy: null })
+      expect(result).toHaveLength(3)
+    })
+
+    it("已揭示轮廓的项被排除", () => {
+      const items = [
+        t("a", 5, 5),
+        { ...t("b", 2, 2), revealed: { outline: true, qualityCell: null } },
+      ]
+      // b 已揭示轮廓 → 排除 → 只剩 a
+      const result = pickRevealTargets(items, { mode: "outline", count: 1, category: null, allowCategoryFallback: false, sortStrategy: "largestFirst" })
+      expect(result[0].id).toBe("a")
+    })
+
+    it("品类过滤", () => {
+      const items = [
+        { ...t("a", 5, 5), category: "玉器" },
+        t("b", 2, 2), // 杂项
+      ]
+      const result = pickRevealTargets(items, { mode: "outline", count: 1, category: "玉器", allowCategoryFallback: false, sortStrategy: "largestFirst" })
+      expect(result[0].id).toBe("a") // 只选玉器
+    })
+
+    it("用 ARTIFACT_LIBRARY 真实数据验证 largestFirst 选出面积最大件", () => {
+      const items = ARTIFACT_LIBRARY.map((lib, i) => ({
+        id: lib.key || `item-${i}`,
+        w: lib.w, h: lib.h,
+        category: lib.category,
+        revealed: { outline: false, qualityCell: null },
+      }))
+      const maxArea = Math.max(...items.map((it) => it.w * it.h))
+
+      // 直接验证 import 进来的 pickRevealTargets
+      const result = pickRevealTargets(items, {
+        mode: "outline", count: 1, category: null,
+        allowCategoryFallback: false, sortStrategy: "largestFirst",
+      })
+
+      expect(result[0].w * result[0].h).toBe(maxArea)
+    })
+
+    it("same data inline sort with explicit return works", () => {
+      const items = ARTIFACT_LIBRARY.map((lib, i) => ({
+        id: lib.key || `item-${i}`,
+        w: lib.w, h: lib.h,
+        category: lib.category,
+        revealed: { outline: false, qualityCell: null },
+      }))
+      const maxArea = Math.max(...items.map((it) => it.w * it.h))
+
+      // 提取面积数组单独排序验证
+      const plainAreas = items.map((it) => it.w * it.h)
+      const sortedAreas = [...plainAreas].sort((a, b) => b - a)
+      console.log("first area from plain sort:", sortedAreas[0], "maxArea:", maxArea)
+
+      const copy = [...items]
+      copy.sort((a, b) => {
+        const areaA = a.w * a.h
+        const areaB = b.w * b.h
+        return areaB - areaA
+      })
+      console.log("first 3 ids:", copy.slice(0, 3).map((x) => x.id + "(" + x.w * x.h + ")").join(", "))
+
+      expect(copy[0].w * copy[0].h).toBe(maxArea)
+    })
+
+    it("smallestFirst + ARTIFACT_LIBRARY 选出面积最小件", () => {
+      const items = ARTIFACT_LIBRARY.map((lib, i) => ({
+        id: lib.key || `item-${i}`,
+        w: lib.w, h: lib.h,
+        category: lib.category,
+        revealed: { outline: false, qualityCell: null },
+      }))
+      const minArea = Math.min(...items.map((it) => it.w * it.h))
+
+      const result = pickRevealTargets(items, {
+        mode: "outline", count: 1, category: null,
+        allowCategoryFallback: false, sortStrategy: "smallestFirst",
+      })
+
+      expect(result[0].w * result[0].h).toBe(minArea)
     })
   })
 })

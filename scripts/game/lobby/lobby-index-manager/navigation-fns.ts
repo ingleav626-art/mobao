@@ -35,7 +35,6 @@ export function showLobbyMain(deps: LobbyIndexManagerDeps, state: LobbyIndexStat
   }
   deps.getState().resetLanState()
   log.info("showLobbyMain: LAN state reset via resetLanState")
-  state.aiLlmPlayerEnabled = {}
   state.players = [
     { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
     { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },

@@ -200,6 +200,10 @@ function makeLanDeps(
     },
     getProfile: null,
     getSelectedProfileId: null,
+    getSettingsMaxRounds: () => 5,
+    getSettingsDirectTakeRatio: () => 0.2,
+    setSettingsMaxRounds: vi.fn(),
+    setSettingsDirectTakeRatio: vi.fn(),
     ...overrides
   }
   return defaultDeps
@@ -215,14 +219,6 @@ function makeBidState(
   return {
     roundBidReadyState: {},
     keypadValue: "0",
-    playerBidSubmitted: false,
-    playerRoundBid: 0,
-    roundResolving: false,
-    secondHighestBid: 0,
-    currentBid: 0,
-    bidLeader: null,
-    round: 1,
-    lastAiDecisionTelemetry: null,
     ...overrides
   }
 }
@@ -255,6 +251,15 @@ function makeBidDeps(
     getAiRoundEffects: () => ({}),
     getLanBridge: () => null,
     getLastAiDecisionTelemetry: () => null,
+    getRound: () => 1,
+    getCurrentBid: () => 0,
+    getBidLeader: () => "none",
+    getSecondHighestBid: () => 0,
+    getPlayerBidSubmitted: () => false,
+    getPlayerRoundBid: () => 0,
+    getRoundResolving: () => false,
+    getKeypadValue: () => "0",
+    resolveRoundBids: vi.fn(() => Promise.resolve()),
     closeItemDrawer: vi.fn(),
     hideInfoPopup: vi.fn(),
     showGameConfirm: vi.fn(),
@@ -262,6 +267,12 @@ function makeBidDeps(
     writeLog: vi.fn(),
     setPlayerBidSubmitted: vi.fn(),
     setPlayerRoundBid: vi.fn(),
+    setCurrentBid: vi.fn(),
+    setBidLeader: vi.fn(),
+    setSecondHighestBid: vi.fn(),
+    setRound: vi.fn(),
+    setRoundResolving: vi.fn(),
+    setKeypadValue: vi.fn(),
     stopRoundTimer: vi.fn(),
     captureAiDecisionTelemetry: vi.fn(),
     recordAiThoughtLogs: vi.fn(),

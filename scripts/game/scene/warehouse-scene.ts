@@ -43,7 +43,6 @@ import { SettlementManager } from "../core/settlement-manager-class"
 import { CharacterSelectManager } from "../lobby/character-select-manager"
 import type { ShopBridge } from "../lobby/character-select-manager"
 import { AiReflectionManager } from "../ai/reflection-manager"
-import type { ReflectionStatus } from "../ai/reflection-manager"
 import type { CrossGameMemory as ReflectionCrossGameMemory } from "../ai/reflection"
 import { AiMemoryManager } from "../ai/memory-manager"
 import type { AiMemoryData } from "../ai/memory-manager"
@@ -798,14 +797,6 @@ class WarehouseScene extends _PhaserScene {
       getPlayerRoundHistory: () => this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>
     })
 
-    const reflectionStatus: ReflectionStatus = {
-      state: "idle",
-      detail: "",
-      completed: 0,
-      total: 0,
-      beforeUnloadHandler: null
-    }
-
     this.aiReflectionManager = new AiReflectionManager({
       getLlmSettings: () => this.getLlmSettings(),
       canUseLlmDecision: () => this.canUseLlmDecision(),
@@ -837,18 +828,29 @@ class WarehouseScene extends _PhaserScene {
       setBattleRecordReplayRecordId: (value: string | null) => {
         this.battleRecordReplayRecordId = value
       },
+      setAiReflectionState: (v: string) => {
+        scene.aiReflectionState = v
+      },
+      setAiReflectionStateDetail: (v: string) => {
+        scene.aiReflectionStateDetail = v
+      },
+      setAiReflectionTotal: (v: number) => {
+        scene.aiReflectionTotal = v
+      },
+      setAiReflectionCompleted: (v: number) => {
+        scene.aiReflectionCompleted = v
+      },
+      getAiReflectionState: () => scene.aiReflectionState,
+      getAiReflectionStateDetail: () => scene.aiReflectionStateDetail,
+      getAiReflectionTotal: () => scene.aiReflectionTotal,
+      getAiReflectionCompleted: () => scene.aiReflectionCompleted,
       get players() {
         return scene.players
       },
-      reflectionStatus,
       ensureAiCrossGameMemory: (playerId: string) =>
         this.aiMemoryManager.ensureAiCrossGameMemory(playerId) as unknown as ReflectionCrossGameMemory,
       saveAiMemoryToStorage: () => this.aiMemoryManager.saveAiMemoryToStorage(),
       updateReflectionStatusUI: () => {
-        scene.aiReflectionState = reflectionStatus.state
-        scene.aiReflectionStateDetail = reflectionStatus.detail
-        scene.aiReflectionTotal = reflectionStatus.total
-        scene.aiReflectionCompleted = reflectionStatus.completed
         scene.updateReflectionStatusUI()
       },
       renderAiThoughtLog: () => this.renderAiThoughtLog(),
@@ -1241,7 +1243,13 @@ class WarehouseScene extends _PhaserScene {
       shouldGenerateSummary: () => this.aiMemoryManager.shouldGenerateSummary(),
       isAiMultiGameMemoryEnabled: () => this.isAiMultiGameMemoryEnabled(),
       proceedToNewRun: () => this.proceedToNewRun(),
-      proceedToBack: () => this.proceedToBack()
+      proceedToBack: () => this.proceedToBack(),
+      setGameConfirmCallback: (v: (() => void) | null) => {
+        (scene as unknown as WarehouseSceneThis)._gameConfirmCallback = v
+      },
+      setGameCancelCallback: (v: (() => void) | null) => {
+        (scene as unknown as WarehouseSceneThis)._gameCancelCallback = v
+      }
     })
 
     const lobbyIndexState: LobbyIndexState = {
@@ -1547,6 +1555,14 @@ class WarehouseScene extends _PhaserScene {
           round: number
           entries?: Array<Record<string, unknown>>
         } | null,
+      getRound: () => scene.round,
+      getCurrentBid: () => scene.currentBid,
+      getBidLeader: () => scene.bidLeader,
+      getSecondHighestBid: () => scene.secondHighestBid,
+      getPlayerBidSubmitted: () => scene.playerBidSubmitted,
+      getPlayerRoundBid: () => scene.playerRoundBid,
+      getRoundResolving: () => scene.roundResolving,
+      getKeypadValue: () => scene.keypadValue,
       resolveRoundBids: async (reason?: string, forceSettle?: boolean) => {
         // 场景的 resolveRoundBids 声明为 void，实际是 BiddingMixin 代理（async Promise<void>）
         await (scene as unknown as Record<string, (...args: unknown[]) => unknown>).resolveRoundBids(reason, forceSettle)
@@ -1562,6 +1578,24 @@ class WarehouseScene extends _PhaserScene {
       },
       setPlayerRoundBid: (v: number) => {
         scene.playerRoundBid = v
+      },
+      setCurrentBid: (v: number) => {
+        scene.currentBid = v
+      },
+      setBidLeader: (v: string) => {
+        scene.bidLeader = v
+      },
+      setSecondHighestBid: (v: number) => {
+        scene.secondHighestBid = v
+      },
+      setRound: (v: number) => {
+        scene.round = v
+      },
+      setRoundResolving: (v: boolean) => {
+        scene.roundResolving = v
+      },
+      setKeypadValue: (v: string) => {
+        scene.keypadValue = v
       },
       stopRoundTimer: () => scene.stopRoundTimer(),
       captureAiDecisionTelemetry: (bids: unknown[]) => scene.captureAiDecisionTelemetry(bids),
@@ -2007,7 +2041,15 @@ class WarehouseScene extends _PhaserScene {
       },
       skillManager: scene.skillManager as unknown as { onNewRound: () => void; resetForNewRun: () => void },
       getProfile: null,
-      getSelectedProfileId: null
+      getSelectedProfileId: null,
+      getSettingsMaxRounds: () => scene.state.settings.maxRounds,
+      getSettingsDirectTakeRatio: () => scene.state.settings.directTakeRatio,
+      setSettingsMaxRounds: (v: number) => {
+        scene.state.settings.maxRounds = v
+      },
+      setSettingsDirectTakeRatio: (v: number) => {
+        scene.state.settings.directTakeRatio = v
+      }
     })
 
     this.syncItemManagerFromShop()

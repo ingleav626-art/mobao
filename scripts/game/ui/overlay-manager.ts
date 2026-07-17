@@ -138,6 +138,8 @@ export interface UiOverlayManagerDeps {
   isAiMultiGameMemoryEnabled: () => boolean
   proceedToNewRun: () => void
   proceedToBack: () => void
+  setGameConfirmCallback: (v: (() => void) | null) => void
+  setGameCancelCallback: (v: (() => void) | null) => void
 }
 
 /** UiOverlayManager 私有状态（由 Manager 内部持有，供函数文件读写） */

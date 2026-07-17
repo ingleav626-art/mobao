@@ -577,6 +577,10 @@ describe("类型 B：createXxx 没配 setXxx", () => {
         skillManager: { onNewRound: () => {}, resetForNewRun: () => {} },
         getProfile: null,
         getSelectedProfileId: null,
+        getSettingsMaxRounds: () => 5,
+        getSettingsDirectTakeRatio: () => 0.2,
+        setSettingsMaxRounds: () => {},
+        setSettingsDirectTakeRatio: () => {},
       })
 
       // 模拟 inicreateLanLobby 调用 createLanBridge + setLanBridge 的配对模式

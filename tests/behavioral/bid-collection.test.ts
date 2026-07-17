@@ -3,7 +3,7 @@
  * @description 行为测试：出价收集全链路。验证出价从提交到收集的完整流程。
  *
  * 全链路步骤：
- * 1. playerBid（真实提交函数）-> 存到 state.playerRoundBid
+ * 1. playerBid（真实提交函数）-> 调用 deps.setPlayerRoundBid
  * 2. 验证中间值：playerRoundBid, playerBidSubmitted, roundBidReadyState
  * 3. buildRoundBids（真实收集函数）-> 从 playerRoundBid + aiBidMap + lanHostBids 读
  * 4. 验证中间值：roundBids 含所有玩家，出价正确
@@ -11,7 +11,7 @@
  * 不准 mock 中间出价数据--让出价走真实提交函数流过去
  *
  * 出价收集规则（从 buildRoundBids 读出）：
- * 1. 自己（isSelf=true）：返回 state.playerRoundBid
+ * 1. 自己（isSelf=true）：返回 deps.getPlayerRoundBid()
  * 2. 其他人机玩家（isHuman=true, isSelf=false）：返回 deps.getLanHostBids()[lanId] || 0
  * 3. AI 玩家（isAI=true）：调用 aiEngine.buildAIBids() 获取出价，再应用 LLM 覆盖
  * 4. LLM 覆盖：如果 AI 有 LLM 计划且未失败且有出价决策，用 normalizedBid 覆盖 aiBidMap
@@ -43,19 +43,10 @@ afterEach(() => {
 
 // ─── Mock 工厂：BiddingManagerDeps ───
 
-function makeBiddingState(overrides: Partial<BiddingManagerState> = {}): BiddingManagerState {
+function makeBiddingState(): BiddingManagerState {
   return {
     roundBidReadyState: {},
-    keypadValue: "0",
-    playerBidSubmitted: false,
-    playerRoundBid: 0,
-    roundResolving: false,
-    secondHighestBid: 0,
-    currentBid: 0,
-    bidLeader: null,
-    round: 1,
-    lastAiDecisionTelemetry: null,
-    ...overrides
+    keypadValue: "0"
   }
 }
 
@@ -64,6 +55,16 @@ function makeBiddingDeps(
   aiBidMap: Record<string, number> = {},
   overrides: Partial<BiddingManagerDeps> = {}
 ): BiddingManagerDeps {
+  const backing = {
+    playerRoundBid: 0,
+    playerBidSubmitted: false,
+    roundResolving: false,
+    currentBid: 0,
+    bidLeader: "none" as string,
+    secondHighestBid: 0,
+    round: 1,
+    keypadValue: "0",
+  }
   const dom: Record<string, HTMLElement | null> = {}
   const bidInput = document.createElement("input")
   bidInput.value = "0"
@@ -91,14 +92,28 @@ function makeBiddingDeps(
     getAiRoundEffects: () => ({}),
     getLanBridge: () => null,
     getLastAiDecisionTelemetry: () => null,
+    getRound: () => backing.round,
+    getCurrentBid: () => backing.currentBid,
+    getBidLeader: () => backing.bidLeader,
+    getSecondHighestBid: () => backing.secondHighestBid,
+    getPlayerBidSubmitted: () => backing.playerBidSubmitted,
+    getPlayerRoundBid: () => backing.playerRoundBid,
+    getRoundResolving: () => backing.roundResolving,
+    getKeypadValue: () => backing.keypadValue,
 
     closeItemDrawer: vi.fn(),
     hideInfoPopup: vi.fn(),
     showGameConfirm: vi.fn(),
     updateHud: vi.fn(),
     writeLog: vi.fn(),
-    setPlayerBidSubmitted: vi.fn(),
-    setPlayerRoundBid: vi.fn(),
+    setPlayerBidSubmitted: vi.fn((v: boolean) => { backing.playerBidSubmitted = v }),
+    setPlayerRoundBid: vi.fn((v: number) => { backing.playerRoundBid = v }),
+    setCurrentBid: vi.fn((v: number) => { backing.currentBid = v }),
+    setBidLeader: vi.fn((v: string) => { backing.bidLeader = v }),
+    setSecondHighestBid: vi.fn((v: number) => { backing.secondHighestBid = v }),
+    setRound: vi.fn((v: number) => { backing.round = v }),
+    setRoundResolving: vi.fn((v: boolean) => { backing.roundResolving = v }),
+    setKeypadValue: vi.fn((v: string) => { backing.keypadValue = v }),
     stopRoundTimer: vi.fn(),
     captureAiDecisionTelemetry: vi.fn(),
     recordAiThoughtLogs: vi.fn(),
@@ -266,6 +281,10 @@ function makeLanDeps(
     skillManager: { onNewRound: vi.fn(), resetForNewRun: vi.fn() },
     getProfile: null,
     getSelectedProfileId: null,
+    getSettingsMaxRounds: () => 5,
+    getSettingsDirectTakeRatio: () => 0.2,
+    setSettingsMaxRounds: vi.fn(),
+    setSettingsDirectTakeRatio: vi.fn(),
     ...overrides
   }
 }
@@ -284,10 +303,10 @@ describe("单机 buildRoundBids 全链路", () => {
     const state = makeBiddingState()
     const deps = makeBiddingDeps(players, { p1: 3000, p3: 2000 })
 
-    // 预期：playerBid(5000) 后 state.playerRoundBid === 5000
+    // 预期：playerBid(5000) 后 setPlayerRoundBid 被调用，值为 5000
     submitBid(deps, state, 5000)
-    expect(state.playerRoundBid).toBe(5000)
-    expect(state.playerBidSubmitted).toBe(true)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(5000)
+    expect(deps.setPlayerBidSubmitted).toHaveBeenCalledWith(true)
 
     // 全链路第2步：调 buildRoundBids 收集所有出价
     const bids = buildRoundBids(deps, state)
@@ -305,7 +324,7 @@ describe("单机 buildRoundBids 全链路", () => {
       { id: "p1", name: "AI1", isHuman: false, isAI: true, isSelf: false },
       { id: "p2", name: "玩家", isHuman: true, isAI: false, isSelf: true }
     ]
-    const state = makeBiddingState({ playerRoundBid: 0 })
+    const state = makeBiddingState()
     const deps = makeBiddingDeps(players, { p1: 3000 })
 
     // 不调 playerBid，直接调 buildRoundBids
@@ -324,7 +343,7 @@ describe("单机 buildRoundBids 全链路", () => {
     const deps = makeBiddingDeps(players, {}) // 空出价
 
     submitBid(deps, state, 5000)
-    expect(state.playerRoundBid).toBe(5000)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(5000)
 
     const bids = buildRoundBids(deps, state)
     // 预期：AI 出价为 0（引擎返回空，normalizeAiBidValue 处理为 0）
@@ -343,7 +362,7 @@ describe("单机 buildRoundBids 全链路", () => {
     deps.getAiEngine = () => null
 
     submitBid(deps, state, 5000)
-    expect(state.playerRoundBid).toBe(5000)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(5000)
 
     const bids = buildRoundBids(deps, state)
     // 预期：AI 出价为 0（引擎为 null）
@@ -366,7 +385,7 @@ describe("单机 buildRoundBids 全链路", () => {
 
     // 调 playerBid 提交出价
     submitBid(deps, state, 5000)
-    expect(state.playerRoundBid).toBe(5000)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(5000)
 
     // 收集出价
     const bids = buildRoundBids(deps, state)
@@ -425,7 +444,7 @@ describe("单机 buildRoundBids 全链路", () => {
     const deps = makeBiddingDeps(players, { p1: 5000, p3: 3000, p4: 1000 })
 
     submitBid(deps, state, 10000)
-    expect(state.playerRoundBid).toBe(10000)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(10000)
 
     const bids = buildRoundBids(deps, state)
 
@@ -467,13 +486,13 @@ describe("单机 buildRoundBids 全链路", () => {
 
     // 玩家自己提交出价
     submitBid(deps, state, 150)
-    expect(state.playerRoundBid).toBe(150)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(150)
 
     // 调 buildRoundBids 收集所有出价
     const bids = buildRoundBids(deps, state)
 
     // 预期：roundBids 有 3 条
-    // p1 是自己（isSelf=true），读 state.playerRoundBid = 150
+     // p1 是自己（isSelf=true），读 deps.getPlayerRoundBid() = 150
     // p2 是其他人类玩家，读 lanHostBids["lan2"] = 200
     // p3 是其他人类玩家，读 lanHostBids["lan3"] = 50
     expect(bids).toHaveLength(3)
@@ -500,7 +519,7 @@ describe("单机 buildRoundBids 全链路", () => {
     lanHostBids["lan2"] = 200
     // 玩家自己提交出价
     submitBid(deps, state, 500)
-    expect(state.playerRoundBid).toBe(500)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(500)
 
     const bids = buildRoundBids(deps, state)
 

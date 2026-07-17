@@ -103,9 +103,9 @@ export function pickRevealTargets<
   const sortByArea = (arr: T[], strategy: string | null): T[] => {
     const shuffled = shuffle(arr)
     if (strategy === "smallestFirst") {
-      return shuffled.sort((a, b) => a.w * a.h - b.w * b.h)
+      return shuffled.sort((a, b) => { const aa = a.w * a.h; const bb = b.w * b.h; return aa - bb })
     } else if (strategy === "largestFirst") {
-      return shuffled.sort((a, b) => b.w * b.h - a.w * b.h)
+      return shuffled.sort((a, b) => { const aa = a.w * a.h; const bb = b.w * b.h; return bb - aa })
     }
     return shuffled
   }

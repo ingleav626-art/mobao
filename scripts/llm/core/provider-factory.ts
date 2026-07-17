@@ -581,24 +581,37 @@ export function createOpenAICompatibleProvider(config: OpenAICompatibleProviderC
       }
 
       const choices = payload && payload.choices ? (payload.choices as Array<Record<string, unknown>>) : null
-      const message = choices && choices[0] ? choices[0] : null
+      const choice = choices && choices[0] ? choices[0] : null
+      const choiceMessage = choice && choice.message ? (choice.message as Record<string, unknown>) : null
 
-      const content = message && typeof message.content === "string" ? message.content : ""
+      // 标准 OpenAI API：choices[0].message.content
+      // 兼容非标准 API：choices[0].content（如某些代理服务直接把 content 放在顶层 choice）
+      let content = ""
+      if (choiceMessage && typeof choiceMessage.content === "string") {
+        content = choiceMessage.content
+      } else if (choice && typeof choice.content === "string") {
+        content = choice.content
+      }
+      const hasContent = content.length > 0
 
       base.log("info", "response.parsed", {
         requestId,
-        hasMessage: message !== null,
-        messageKeys: message ? Object.keys(message) : [],
-        contentType: message && message.content ? typeof message.content : "none",
+        hasMessage: choiceMessage !== null,
+        messageKeys: choiceMessage ? Object.keys(choiceMessage) : [],
+        contentType: choiceMessage && choiceMessage.content ? typeof choiceMessage.content : "none",
         contentLength: content.length,
         contentPreview: compactText(content, 200)
       })
 
       let reasoningContent = ""
-      if (message && typeof message.reasoning_content === "string") {
-        reasoningContent = message.reasoning_content
-      } else if (message && typeof message.reasoning === "string") {
-        reasoningContent = message.reasoning
+      if (choiceMessage && typeof choiceMessage.reasoning_content === "string") {
+        reasoningContent = choiceMessage.reasoning_content
+      } else if (choiceMessage && typeof choiceMessage.reasoning === "string") {
+        reasoningContent = choiceMessage.reasoning
+      } else if (choice && typeof choice.reasoning_content === "string") {
+        reasoningContent = choice.reasoning_content
+      } else if (choice && typeof choice.reasoning === "string") {
+        reasoningContent = choice.reasoning
       }
 
       base.log("info", "request.success", {

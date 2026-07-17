@@ -54,14 +54,6 @@ function makeBiddingState(overrides: Partial<BiddingManagerState> = {}): Bidding
   return {
     roundBidReadyState: {},
     keypadValue: "0",
-    playerBidSubmitted: false,
-    playerRoundBid: 0,
-    roundResolving: false,
-    secondHighestBid: 0,
-    currentBid: 0,
-    bidLeader: null,
-    round: 1,
-    lastAiDecisionTelemetry: null,
     ...overrides
   }
 }
@@ -75,6 +67,17 @@ function makeBiddingDeps(
   const bidInput = document.createElement("input")
   bidInput.value = "0"
   dom.bidInput = bidInput
+
+  const backing = {
+    playerRoundBid: 0,
+    playerBidSubmitted: false,
+    roundResolving: false,
+    currentBid: 0,
+    bidLeader: "none" as string,
+    secondHighestBid: 0,
+    round: 1,
+    keypadValue: "0",
+  }
 
   return {
     dom,
@@ -99,13 +102,29 @@ function makeBiddingDeps(
     getLanBridge: () => null,
     getLastAiDecisionTelemetry: () => null,
 
+    getRound: () => backing.round,
+    getCurrentBid: () => backing.currentBid,
+    getBidLeader: () => backing.bidLeader,
+    getSecondHighestBid: () => backing.secondHighestBid,
+    getPlayerBidSubmitted: () => backing.playerBidSubmitted,
+    getPlayerRoundBid: () => backing.playerRoundBid,
+    getRoundResolving: () => backing.roundResolving,
+    getKeypadValue: () => backing.keypadValue,
+
+    setPlayerBidSubmitted: vi.fn((v: boolean) => { backing.playerBidSubmitted = v }),
+    setPlayerRoundBid: vi.fn((v: number) => { backing.playerRoundBid = v }),
+    setCurrentBid: vi.fn((v: number) => { backing.currentBid = v }),
+    setBidLeader: vi.fn((v: string) => { backing.bidLeader = v }),
+    setSecondHighestBid: vi.fn((v: number) => { backing.secondHighestBid = v }),
+    setRound: vi.fn((v: number) => { backing.round = v }),
+    setRoundResolving: vi.fn((v: boolean) => { backing.roundResolving = v }),
+    setKeypadValue: vi.fn((v: string) => { backing.keypadValue = v }),
+
     closeItemDrawer: vi.fn(),
     hideInfoPopup: vi.fn(),
     showGameConfirm: vi.fn(),
     updateHud: vi.fn(),
     writeLog: vi.fn(),
-    setPlayerBidSubmitted: vi.fn(),
-    setPlayerRoundBid: vi.fn(),
     stopRoundTimer: vi.fn(),
     captureAiDecisionTelemetry: vi.fn(),
     recordAiThoughtLogs: vi.fn(),
@@ -263,10 +282,10 @@ describe("单机结算全链路", () => {
     // 执行：提交出价 100
     submitBid(deps, state, 100)
 
-    // 预期中间值：playerRoundBid === 100
-    expect(state.playerRoundBid).toBe(100)
-    // 预期中间值：playerBidSubmitted === true
-    expect(state.playerBidSubmitted).toBe(true)
+    // 预期中间值：playerRoundBid === 100（通过 deps setter）
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(100)
+    // 预期中间值：playerBidSubmitted === true（通过 deps setter）
+    expect(deps.setPlayerBidSubmitted).toHaveBeenCalledWith(true)
     // 预期中间值：roundBidReadyState[p2] === true（p2 是单机模式下 myId）
     expect(state.roundBidReadyState["p2"]).toBe(true)
   })
@@ -284,8 +303,8 @@ describe("单机结算全链路", () => {
 
     // 第1步：玩家提交出价 50
     submitBid(deps, state, 50)
-    // 预期中间值：playerRoundBid 已设
-    expect(state.playerRoundBid).toBe(50)
+    // 预期中间值：playerRoundBid 已设（通过 deps setter）
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(50)
 
     // 第2步：收集所有出价
     const roundBids = buildRoundBids(deps, state)
@@ -296,7 +315,7 @@ describe("单机结算全链路", () => {
     expect(roundBids.find((b) => b.playerId === "p3")!.bid).toBe(30)
 
     // 第3步：结算判定
-    const result = settleRound(roundBids, state.round, maxRounds, ratio)
+    const result = settleRound(roundBids, deps.getRound(), maxRounds, ratio)
     // 预期：最高价 50（p2），次高价 45，50 < ceil(45*1.2)=54 -> 不直接拿下
     expect(result.bidLeader).toBe("p2")
     expect(result.currentBid).toBe(50)
@@ -320,7 +339,7 @@ describe("单机结算全链路", () => {
 
     // 提交出价 50（与 AI 平局）
     submitBid(deps, state, 50)
-    expect(state.playerRoundBid).toBe(50)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(50)
 
     const roundBids = buildRoundBids(deps, state)
     expect(roundBids).toHaveLength(3)
@@ -329,7 +348,7 @@ describe("单机结算全链路", () => {
     expect(roundBids.find((b) => b.playerId === "p2")!.bid).toBe(50)
     expect(roundBids.find((b) => b.playerId === "p1")!.bid).toBe(50)
 
-    const result = settleRound(roundBids, state.round, maxRounds, ratio)
+    const result = settleRound(roundBids, deps.getRound(), maxRounds, ratio)
     // 平局时 sort 稳定排序，保持原顺序，p1 先出现（数组索引更小）
     // 50 < ceil(50*1.2)=60，不直接拿下
     expect(result.bidLeader).toBe("p1")
@@ -349,12 +368,12 @@ describe("单机结算全链路", () => {
 
     // 玩家出价 0
     submitBid(deps, state, 0)
-    expect(state.playerRoundBid).toBe(0)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(0)
 
     const roundBids = buildRoundBids(deps, state)
     expect(roundBids).toHaveLength(3)
 
-    const result = settleRound(roundBids, state.round, maxRounds, ratio)
+    const result = settleRound(roundBids, deps.getRound(), maxRounds, ratio)
     // 预期：AI p1 最高价 50，p2 出价 0 排最后
     expect(result.bidLeader).toBe("p1")
     expect(result.currentBid).toBe(50)
@@ -373,12 +392,12 @@ describe("单机结算全链路", () => {
 
     // 玩家出价 100，远超 AI 出价
     submitBid(deps, state, 100)
-    expect(state.playerRoundBid).toBe(100)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(100)
 
     const roundBids = buildRoundBids(deps, state)
     expect(roundBids).toHaveLength(3)
 
-    const result = settleRound(roundBids, state.round, maxRounds, ratio)
+    const result = settleRound(roundBids, deps.getRound(), maxRounds, ratio)
     // 预期：100 >= ceil(50*1.2)=60，直接拿下
     expect(result.isDirectTake).toBe(true)
     expect(result.shouldFinish).toBe(true)
@@ -392,16 +411,17 @@ describe("单机结算全链路", () => {
       { id: "p2", name: "玩家", isHuman: true, isAI: false, isSelf: true },
       { id: "p3", name: "AI2", isHuman: false, isAI: true, isSelf: false }
     ]
-    const state = makeBiddingState({ round: 5 }) // 最后一轮
+    const state = makeBiddingState()
     const deps = makeBiddingDeps(players, { p1: 55, p3: 50 })
+    deps.setRound(5) // 最后一轮
 
     submitBid(deps, state, 60)
-    expect(state.playerRoundBid).toBe(60)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(60)
 
     const roundBids = buildRoundBids(deps, state)
     expect(roundBids).toHaveLength(3)
 
-    const result = settleRound(roundBids, state.round, maxRounds, ratio)
+    const result = settleRound(roundBids, deps.getRound(), maxRounds, ratio)
     // 预期：最后一轮，强制结束，不触发直接拿下
     expect(result.isDirectTake).toBe(false)
     expect(result.shouldFinish).toBe(true)
@@ -419,12 +439,12 @@ describe("单机结算全链路", () => {
     const deps = makeBiddingDeps(players, { p1: 0 })
 
     submitBid(deps, state, 0)
-    expect(state.playerRoundBid).toBe(0)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(0)
 
     const roundBids = buildRoundBids(deps, state)
     expect(roundBids).toHaveLength(2)
 
-    const result = settleRound(roundBids, state.round, maxRounds, ratio)
+    const result = settleRound(roundBids, deps.getRound(), maxRounds, ratio)
     // 预期：首价 0，不直接拿下，不结束
     expect(result.isDirectTake).toBe(false)
     expect(result.shouldFinish).toBe(false)
@@ -445,12 +465,12 @@ describe("单机结算全链路", () => {
     const deps = makeBiddingDeps(players, { p1: 45, p3: 40 })
 
     submitBid(deps, state, 50)
-    expect(state.playerRoundBid).toBe(50)
+    expect(deps.setPlayerRoundBid).toHaveBeenCalledWith(50)
 
     const roundBids = buildRoundBids(deps, state)
     expect(roundBids).toHaveLength(3)
 
-    const result = settleRound(roundBids, state.round, maxRounds, ratio)
+    const result = settleRound(roundBids, deps.getRound(), maxRounds, ratio)
     // 预期：50 < ceil(45*1.2)=54，不直接拿下
     expect(result.isDirectTake).toBe(false)
     expect(result.shouldFinish).toBe(false)
@@ -464,10 +484,10 @@ describe("单机结算全链路", () => {
       { id: "p2", name: "玩家", isHuman: true, isAI: false, isSelf: true },
       { id: "p3", name: "AI2", isHuman: false, isAI: true, isSelf: false }
     ]
-    const state = makeBiddingState({ playerBidSubmitted: false, playerRoundBid: 0 })
+    const state = makeBiddingState()
     const deps = makeBiddingDeps(players, { p1: 80, p3: 60 })
 
-    // 不调 playerBid，模拟超时未提交 -> state.playerBidSubmitted 仍为 false
+    // 不调 playerBid，模拟超时未提交 -> deps.getPlayerBidSubmitted() 仍为 false
     // resolveRoundBids 中的第 211-222 行会处理：设 playerRoundBid = 0，标记 ready
     // 但调 resolveRoundBids 有动画副作用，我们直接验证 buildRoundBids 结果
 
@@ -629,6 +649,10 @@ describe("联机结算全链路", () => {
       skillManager: { onNewRound: vi.fn(), resetForNewRun: vi.fn() },
       getProfile: null,
       getSelectedProfileId: null,
+      getSettingsMaxRounds: () => 5,
+      getSettingsDirectTakeRatio: () => 0.2,
+      setSettingsMaxRounds: vi.fn(),
+      setSettingsDirectTakeRatio: vi.fn(),
       ...overrides
     }
   }
@@ -825,9 +849,9 @@ describe("联机结算全链路", () => {
     const singleState = makeBiddingState()
     const singleDeps = makeBiddingDeps(singlePlayers, {})
 
-    // 单机：手动模拟出价
-    singleState.playerRoundBid = 100
-    singleState.playerBidSubmitted = true
+    // 单机：手动模拟出价（通过 deps setter）
+    singleDeps.setPlayerRoundBid(100)
+    singleDeps.setPlayerBidSubmitted(true)
     // 其他人类玩家在单机中出价为 0（无 lanHostBids）
     // 为了奇偶测试，我们模拟人类玩家出价 50 和 30
     // 但单机 buildRoundBids 对非自己的其他人类玩家读 lanHostBids

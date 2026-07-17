@@ -60,7 +60,6 @@ export function enterLobby(deps: LobbyIndexManagerDeps, state: LobbyIndexState) 
   }
   deps.getState().resetLanState()
   log.info("enterLobby: LAN state reset via resetLanState")
-  state.aiLlmPlayerEnabled = {}
   state.players = [
     { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
     { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
@@ -101,7 +100,6 @@ export function enterLanRoom(deps: LobbyIndexManagerDeps, state: LobbyIndexState
   log.info("enterLanRoom: isLanMode=" + state.isLanMode + " | lanIsHost=" + state.lanIsHost)
   deps.getState().resetLanGameState()
   log.info("enterLanRoom: LAN game state reset via resetLanGameState (preserved bridge/players/roomCode)")
-  state.aiLlmPlayerEnabled = {}
   const lobbyPage = document.getElementById("lobbyPage")
   const gameArea = document.getElementById("gameArea")
   if (lobbyPage) lobbyPage.classList.remove("hidden")

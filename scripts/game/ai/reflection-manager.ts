@@ -134,10 +134,17 @@ export interface AiReflectionManagerDeps {
   setPendingSettlementSummary: (value: string) => void
   setBattleRecordReplayActive: (value: boolean) => void
   setBattleRecordReplayRecordId: (value: string | null) => void
+  setAiReflectionState: (v: string) => void
+  setAiReflectionStateDetail: (v: string) => void
+  setAiReflectionTotal: (v: number) => void
+  setAiReflectionCompleted: (v: number) => void
+  getAiReflectionState: () => string
+  getAiReflectionStateDetail: () => string
+  getAiReflectionTotal: () => number
+  getAiReflectionCompleted: () => number
 
   // ── 可变容器 ──
   players: Player[]
-  reflectionStatus: ReflectionStatus
 
   // ── 回调 ──
   ensureAiCrossGameMemory: (playerId: string) => CrossGameMemory
@@ -226,7 +233,7 @@ export class AiReflectionManager {
 
   /** 局结算后触发所有 AI 玩家的反思 */
   async triggerAiReflection(record: ReflectionRecord): Promise<void> {
-    const status = this.deps.reflectionStatus
+    let _beforeUnloadHandler: (() => void) | null = null
     log.debug("called, checking conditions...")
     log.debug(
       "isAiReflectionEnabled:",
@@ -240,22 +247,22 @@ export class AiReflectionManager {
       log.debug("EARLY RETURN: conditions not met")
       return
     }
-    status.state = "pending"
-    status.detail = ""
-    status.completed = 0
+    this.deps.setAiReflectionState("pending")
+    this.deps.setAiReflectionStateDetail("")
+    this.deps.setAiReflectionCompleted(0)
     this.deps.updateReflectionStatusUI()
 
-    status.beforeUnloadHandler = () => {
+    _beforeUnloadHandler = () => {
       this.deps.saveAiMemoryToStorage()
     }
-    window.addEventListener("beforeunload", status.beforeUnloadHandler)
+    window.addEventListener("beforeunload", _beforeUnloadHandler)
     const originalCrossGameMemory = this.deps.getAiCrossGameMemory()
     const aiPlayers = this.deps.players.filter((p: Player) => !p.isHuman && this.deps.canUseLlmDecisionForPlayer(p.id))
-    status.total = aiPlayers.length
+    this.deps.setAiReflectionTotal(aiPlayers.length)
     this.deps.updateReflectionStatusUI()
     log.debug("aiPlayers count:", aiPlayers.length)
     if (aiPlayers.length === 0) {
-      status.state = "done"
+      this.deps.setAiReflectionState("done")
       this.deps.updateReflectionStatusUI()
       return
     }
@@ -561,7 +568,7 @@ export class AiReflectionManager {
             cacheHitRate
           }
         }
-        status.completed++
+        this.deps.setAiReflectionCompleted(this.deps.getAiReflectionCompleted() + 1)
         this.deps.updateReflectionStatusUI()
         if (result.code === "TIMEOUT") {
           timeoutPlayers.push({
@@ -602,14 +609,14 @@ export class AiReflectionManager {
             thinkingEnabled
           )
         }
-        status.completed++
+        this.deps.setAiReflectionCompleted(this.deps.getAiReflectionCompleted() + 1)
         this.deps.updateReflectionStatusUI()
         return { playerId: player.id, reflection: null, error: result.error || result.code }
       } catch (err) {
         const errMsg = err && (err as Error).message ? (err as Error).message : "异常"
         failedPlayers.push({ playerId: player.id, playerName: player.name, reason: errMsg, exception: true })
         log.error("EXCEPTION for player:", player.id, "error:", errMsg)
-        status.completed++
+        this.deps.setAiReflectionCompleted(this.deps.getAiReflectionCompleted() + 1)
         this.deps.updateReflectionStatusUI()
         return { playerId: player.id, reflection: null, error: errMsg }
       }
@@ -633,26 +640,25 @@ export class AiReflectionManager {
     }
     await Promise.all(reflectionPromises)
     if (timeoutPlayers.length > 0) {
-      status.state = "timeout"
+      this.deps.setAiReflectionState("timeout")
       const timeoutInfo = timeoutPlayers
         .map((p) => `${p.playerName}(${p.reason}${p.thinkingEnabled ? ",思考模式" : ""})`)
         .join("; ")
-      status.detail = timeoutInfo
+      this.deps.setAiReflectionStateDetail(timeoutInfo)
       log.warn("TIMEOUT players:", timeoutInfo)
     } else if (failedPlayers.length > 0) {
-      status.state = "error"
+      this.deps.setAiReflectionState("error")
       const failedInfo = failedPlayers
         .map((p) => `${p.playerName}(${p.reason}${p.code ? `,${p.code}` : ""}${p.thinkingEnabled ? ",思考模式" : ""})`)
         .join("; ")
-      status.detail = failedInfo
+      this.deps.setAiReflectionStateDetail(failedInfo)
       log.warn("FAILED players:", failedInfo)
     } else {
-      status.state = "done"
-      status.detail = ""
+      this.deps.setAiReflectionState("done")
+      this.deps.setAiReflectionStateDetail("")
     }
-    if (status.beforeUnloadHandler) {
-      window.removeEventListener("beforeunload", status.beforeUnloadHandler)
-      status.beforeUnloadHandler = null
+    if (_beforeUnloadHandler) {
+      window.removeEventListener("beforeunload", _beforeUnloadHandler)
     }
     this.deps.updateReflectionStatusUI()
   }

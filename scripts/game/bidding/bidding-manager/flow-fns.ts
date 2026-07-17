@@ -25,7 +25,7 @@ export function waitUntilResumed(deps: BiddingManagerDeps, state: BiddingManager
       return
     }
     const check = () => {
-      if (deps.getSettled() || state.roundResolving) {
+      if (deps.getSettled() || deps.getRoundResolving()) {
         reject(new Error("PAUSE_CANCELLED"))
         return
       }
@@ -130,13 +130,14 @@ export function buildRoundBids(
 
   const aiPlayers = deps.players.filter((player) => !player.isHuman)
   const aiEngine = deps.getAiEngine()
+  const round = deps.getRound()
   const aiBidMap = aiEngine
     ? aiEngine.buildAIBids({
         aiPlayers,
         clueRate,
-        round: state.round,
+        round,
         maxRounds: GAME_SETTINGS.maxRounds,
-        currentBid: state.currentBid,
+        currentBid: deps.getCurrentBid(),
         lastRoundBids,
         bidStep: GAME_SETTINGS.bidStep,
         aiIntelMap,
@@ -170,14 +171,14 @@ export function buildRoundBids(
     aiBidMap[player.id] = normalizedBid
   })
 
-  log.info(`buildRoundBids: players count=${deps.players.length}, round=${state.round}`)
+  log.info(`buildRoundBids: players count=${deps.players.length}, round=${round}`)
 
   const roundBids = deps.players.map((player) => {
     if (player.isSelf) {
       log.info(
-        `buildRoundBids: player ${player.id} (isSelf=true) -> bid=${state.playerRoundBid} (source=playerRoundBid)`
+        `buildRoundBids: player ${player.id} (isSelf=true) -> bid=${deps.getPlayerRoundBid()} (source=playerRoundBid)`
       )
-      return { playerId: player.id, bid: state.playerRoundBid }
+      return { playerId: player.id, bid: deps.getPlayerRoundBid() }
     }
 
     if (player.isHuman) {
@@ -214,10 +215,11 @@ export async function resolveRoundBids(
   reason: string = "manual",
   forceSettle: boolean = false
 ): Promise<void> {
+  const currentRound = deps.getRound()
   log.info(
-    `resolveRoundBids: reason=${reason}, forceSettle=${forceSettle}, settled=${deps.getSettled()}, roundResolving=${state.roundResolving}, round=${state.round}, isLan=${deps.getIsLanMode()}`
+    `resolveRoundBids: reason=${reason}, forceSettle=${forceSettle}, settled=${deps.getSettled()}, roundResolving=${deps.getRoundResolving()}, round=${currentRound}, isLan=${deps.getIsLanMode()}`
   )
-  if (deps.getSettled() || state.roundResolving) {
+  if (deps.getSettled() || deps.getRoundResolving()) {
     return
   }
 
@@ -225,7 +227,7 @@ export async function resolveRoundBids(
     return
   }
 
-  state.roundResolving = true
+  deps.setRoundResolving(true)
   deps.stopRoundTimer()
 
   if (AudioUI) {
@@ -233,8 +235,8 @@ export async function resolveRoundBids(
   }
 
   try {
-    if (!state.playerBidSubmitted) {
-      state.playerRoundBid = 0
+    if (!deps.getPlayerBidSubmitted()) {
+      deps.setPlayerRoundBid(0)
       deps.writeLog(reason === "timeout" ? "回合超时：玩家本轮出价记为 0。" : "玩家未提交出价，本轮按 0 处理。")
       const myId = deps.getIsLanMode() ? deps.getLanMySlotId() : "p2"
       if (myId) {
@@ -254,8 +256,7 @@ export async function resolveRoundBids(
       roundBids.map((b) => ({ playerId: b.playerId, bid: b.bid }))
     )
     deps.captureAiDecisionTelemetry(roundBids)
-    state.lastAiDecisionTelemetry = deps.getLastAiDecisionTelemetry()
-    deps.recordAiThoughtLogs(state.lastAiDecisionTelemetry)
+    deps.recordAiThoughtLogs(deps.getLastAiDecisionTelemetry())
     deps.renderAiLogicPanel()
     await revealRoundBidsSequential(deps, state, roundBids)
     deps.recordRoundHistory(roundBids)
@@ -271,26 +272,26 @@ export async function resolveRoundBids(
       `second={playerId: ${second.playerId || "none"}, bid: ${second.bid}}`
     )
 
-    state.currentBid = first.bid
-    state.bidLeader = first.playerId
-    state.secondHighestBid = second.bid
+    deps.setCurrentBid(first.bid)
+    deps.setBidLeader(first.playerId)
+    deps.setSecondHighestBid(second.bid)
 
     log.info(
-      `resolveRoundBids: winner=${first.playerId}, currentBid=${state.currentBid}, ` +
-      `bidLeader=${state.bidLeader}, secondHighestBid=${state.secondHighestBid}, ` +
+      `resolveRoundBids: winner=${first.playerId}, currentBid=${deps.getCurrentBid()}, ` +
+      `bidLeader=${deps.getBidLeader()}, secondHighestBid=${deps.getSecondHighestBid()}, ` +
       `directTakeRatio=${GAME_SETTINGS.directTakeRatio}`
     )
 
     const directTakeFlag = shouldDirectTake(
-      state.round,
+      currentRound,
       GAME_SETTINGS.maxRounds,
       first.bid,
       second.bid,
       GAME_SETTINGS.directTakeRatio
     )
 
-    if (state.round === GAME_SETTINGS.maxRounds || directTakeFlag || forceSettle) {
-      const mode = forceSettle ? "manual" : state.round === GAME_SETTINGS.maxRounds ? "final" : "direct"
+    if (currentRound === GAME_SETTINGS.maxRounds || directTakeFlag || forceSettle) {
+      const mode = forceSettle ? "manual" : currentRound === GAME_SETTINGS.maxRounds ? "final" : "direct"
       log.info(`resolveRoundBids: auction ends, mode=${mode}, winner=${first.playerId}, bid=${first.bid}`)
       await deps.finishAuction(first, mode)
       return
@@ -300,22 +301,39 @@ export async function resolveRoundBids(
 
     if (MobaoAnimations) {
       await MobaoAnimations.roundTransition({
-        text: "第 " + (state.round + 1) + " 回合"
+        text: "第 " + (currentRound + 1) + " 回合"
       })
     }
 
-    state.round += 1
+    deps.setRound(currentRound + 1)
+    resetBiddingStateForNewRound(state, deps)
     deps.skillManager.onNewRound()
     deps.startRound()
     deps.updateHud()
-    deps.writeLog(`进入第 ${state.round} 回合。`)
+    deps.writeLog(`进入第 ${deps.getRound()} 回合。`)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "未知异常"
-    state.roundResolving = false
+    deps.setRoundResolving(false)
     deps.writeLog(`回合结算异常：${message}`)
     deps.updateHud()
     log.error("resolveRoundBids failed", error)
   }
+}
+
+/**
+ * 重置 BiddingManagerState 的回合级字段（换轮时调用）。
+ * 对应 gameSlice.resetForNewRound。回合级状态全部通过 deps 直达 gameSlice。
+ */
+export function resetBiddingStateForNewRound(state: BiddingManagerState, deps: BiddingManagerDeps): void {
+  deps.setCurrentBid(0)
+  deps.setBidLeader("none")
+  deps.setSecondHighestBid(0)
+  deps.setPlayerBidSubmitted(false)
+  deps.setPlayerRoundBid(0)
+  deps.setRoundResolving(false)
+  state.roundBidReadyState = {}
+  state.keypadValue = "0"
+  deps.setKeypadValue("0")
 }
 
 /**

@@ -1,0 +1,2390 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90mD:/web/demo2-trae[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - isAiLlmEnabledForPlayer[2m > [22m[2maiLlmPlayerEnabled 涓?null 杩斿洖 false
+[22m[39m[isAiLlmEnabledForPlayer] ai1 false: aiLlmPlayerEnabled is null or not object
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - isAiLlmEnabledForPlayer[2m > [22m[2maiLlmPlayerEnabled 涓洪潪瀵硅薄杩斿洖 false
+[22m[39m[isAiLlmEnabledForPlayer] ai1 false: aiLlmPlayerEnabled is null or not object
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - isAiLlmEnabledForPlayer[2m > [22m[2mplayerId 鍦?map 涓负 true 杩斿洖 true
+[22m[39m[isAiLlmEnabledForPlayer] ai1 = true, allEnabled: { ai1: [33mtrue[39m, ai2: [33mfalse[39m }
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - isAiLlmEnabledForPlayer[2m > [22m[2mplayerId 鍦?map 涓负 false 杩斿洖 false
+[22m[39m[isAiLlmEnabledForPlayer] ai2 = false, allEnabled: { ai1: [33mtrue[39m, ai2: [33mfalse[39m }
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - isAiLlmEnabledForPlayer[2m > [22m[2mplayerId 涓嶅湪 map 涓繑鍥?false
+[22m[39m[isAiLlmEnabledForPlayer] ai3 = false, allEnabled: { ai1: [33mtrue[39m }
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecision[2m > [22m[2msettings.enabled=false 杩斿洖 false
+[22m[39m[canUseLlmDecision] false: settings= { enabled: [33mfalse[39m } provider= test
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecision[2m > [22m[2mprovider=null 杩斿洖 false
+[22m[39m[canUseLlmDecision] false: settings= { enabled: [33mtrue[39m } provider= null
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecision[2m > [22m[2msettings=null 杩斿洖 false
+[22m[39m[canUseLlmDecision] false: settings= null provider= test
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecision[2m > [22m[2mapiKey 涓虹┖鐧借繑鍥?false锛堟棤浠ｇ悊绔偣锛?[22m[39m[canUseLlmDecision] false: settings= { enabled: [33mtrue[39m } provider= test
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecision[2m > [22m[2m浠ｇ悊绔偣 + 鍘熺敓鐜锛圢ativeBridge锛夎繑鍥?false
+[22m[39m[canUseLlmDecision] false: settings= { enabled: [33mtrue[39m } provider= test
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecision[2m > [22m[2mgetLlmProvider 涓嶆槸鍑芥暟杩斿洖 false
+[22m[39m[canUseLlmDecision] false: settings= { enabled: [33mtrue[39m } provider= null
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecisionForPlayer[2m > [22m[2m涓よ€呴兘涓?true 杩斿洖 true
+[22m[39m[isAiLlmEnabledForPlayer] ai1 = true, allEnabled: { ai1: [33mtrue[39m }
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecisionForPlayer[2m > [22m[2mLLM 鍙敤浣嗙帺瀹舵湭鍚敤杩斿洖 false
+[22m[39m[isAiLlmEnabledForPlayer] ai1 = false, allEnabled: { ai1: [33mfalse[39m }
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - canUseLlmDecisionForPlayer[2m > [22m[2mLLM 涓嶅彲鐢ㄤ絾鐜╁宸插惎鐢ㄨ繑鍥?false
+[22m[39m[canUseLlmDecision] false: settings= { enabled: [33mfalse[39m } provider= null
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - getAiModelConfigForPlayer[2m > [22m[2mindependentModelEnabled=false 杩斿洖 null
+[22m[39m[getAiModelConfigForPlayer] playerId: ai1 settings.independentModelEnabled: [33mfalse[39m
+[getAiModelConfigForPlayer] independentModelEnabled is false, returning null
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - getAiModelConfigForPlayer[2m > [22m[2m鏃犳晥 aiIndex 杩斿洖 null
+[22m[39m[getAiModelConfigForPlayer] playerId: unknown settings.independentModelEnabled: [33mtrue[39m
+[getAiModelConfigForPlayer] invalid aiIndex: [33m-1[39m returning null
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - getAiModelConfigForPlayer[2m > [22m[2m鏈?getAiModelConfig 涓旈厤缃畬鏁磋繑鍥?config
+[22m[39m[getAiModelConfigForPlayer] playerId: ai1 settings.independentModelEnabled: [33mtrue[39m
+[getAiModelConfigForPlayer] got config for aiIndex [33m0[39m : { apiKey: [32m'(宸茶缃?'[39m, endpoint: [32m'https://api.test.com'[39m, model: [32m'gpt-4'[39m }
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - getAiModelConfigForPlayer[2m > [22m[2mconfig 缂哄皯 apiKey 杩斿洖 null
+[22m[39m[getAiModelConfigForPlayer] playerId: ai1 settings.independentModelEnabled: [33mtrue[39m
+[getAiModelConfigForPlayer] got config for aiIndex [33m0[39m : { apiKey: [32m'(绌?'[39m, endpoint: [90mundefined[39m, model: [32m'gpt-4'[39m }
+[getAiModelConfigForPlayer] config is invalid (missing apiKey or model), returning null
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - getAiModelConfigForPlayer[2m > [22m[2mconfig 缂哄皯 model 杩斿洖 null
+[22m[39m[getAiModelConfigForPlayer] playerId: ai1 settings.independentModelEnabled: [33mtrue[39m
+[getAiModelConfigForPlayer] got config for aiIndex [33m0[39m : { apiKey: [32m'(宸茶缃?'[39m, endpoint: [90mundefined[39m, model: [32m''[39m }
+[getAiModelConfigForPlayer] config is invalid (missing apiKey or model), returning null
+
+[90mstdout[2m | tests/llm/core/llm-decision.test.ts[2m > [22m[2mllm-decision - getAiModelConfigForPlayer[2m > [22m[2m鏃?getAiModelConfig 鏂规硶杩斿洖 null
+[22m[39m[getAiModelConfigForPlayer] playerId: ai1 settings.independentModelEnabled: [33mtrue[39m
+[getAiModelConfigForPlayer] getAiModelConfig not available, returning null
+
+ [32m鉁?[39m tests/llm/core/llm-decision.test.ts [2m([22m[2m96 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mupdateCrossGameMemory[2m > [22m[2m璋冪敤 ensureAiCrossGameMemory 鑾峰彇璁板繂骞舵洿鏂扮粺璁?[22m[39m[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=50000, praises=1, strategies=1, lessons=1
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mupdateCrossGameMemory[2m > [22m[2mmemory 涓?null 鏃朵笉宕╂簝锛坋nsureAiCrossGameMemory 杩斿洖绌哄璞℃椂浠嶆甯革級
+[22m[39m[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=50000, praises=0, strategies=0, lessons=0
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2m鍙嶆€濇湭鍚敤鏃舵彁鍓嶈繑鍥?[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mfalse[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] EARLY RETURN: conditions not met
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mcanUseLlmDecision 涓?false 鏃舵彁鍓嶈繑鍥?[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mfalse[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] EARLY RETURN: conditions not met
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mllmEverUsedThisRun 涓?false 鏃舵彁鍓嶈繑鍥?[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mfalse[39m
+[DEBUG][AI.Reflection] EARLY RETURN: conditions not met
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2m鏃?AI 鐜╁鏃剁姸鎬佷负 done
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m0[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mLLM Provider 涓?null 鏃剁姸鎬佷负 error
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: null
+
+stderr | tests/game/ai/reflection-manager.test.ts > AiReflectionManager > triggerAiReflection > LLM Provider 涓?null 鏃剁姸鎬佷负 error
+[WARN][AI.Reflection] FAILED: no llmProvider for player: ai-1
+
+stderr | tests/game/ai/reflection-manager.test.ts > AiReflectionManager > triggerAiReflection > LLM Provider 涓?null 鏃剁姸鎬佷负 error
+[WARN][AI.Reflection] FAILED players: 宸︿笂AI(鏃燣LM Provider)
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mLLM 杩斿洖鎴愬姛鏃舵洿鏂拌蹇嗗苟璁板綍鍒?currentRunLog
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mLLM 杩斿洖鎴愬姛鏃舵洿鏂拌蹇嗗苟璁板綍鍒?currentRunLog
+[22m[39m[DEBUG][AI.Reflection] result for player: ai-1 ok: [33mtrue[39m code: [90mundefined[39m error: [90mundefined[39m contentLength: [33m84[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] SUCCESS for player: ai-1 reflection length: [33m84[39m
+[DEBUG][AI.Reflection] ai-1 cache: hit=100, miss=50, rate=67%
+[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=50000, praises=1, strategies=1, lessons=1
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mLLM 杩斿洖瓒呮椂鏃剁姸鎬佷负 timeout
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mLLM 杩斿洖瓒呮椂鏃剁姸鎬佷负 timeout
+[22m[39m[DEBUG][AI.Reflection] result for player: ai-1 ok: [33mfalse[39m code: TIMEOUT error: 璇锋眰瓒呮椂 contentLength: [33m0[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] TIMEOUT for player: ai-1 timeoutMs: [33m40000[39m thinkingEnabled: [90mundefined[39m
+
+stderr | tests/game/ai/reflection-manager.test.ts > AiReflectionManager > triggerAiReflection > LLM 杩斿洖瓒呮椂鏃剁姸鎬佷负 timeout
+[WARN][AI.Reflection] TIMEOUT players: 宸︿笂AI(瓒呮椂(40000ms))
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mLLM 杩斿洖澶辫触鏃剁姸鎬佷负 error
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mLLM 杩斿洖澶辫触鏃剁姸鎬佷负 error
+[22m[39m[DEBUG][AI.Reflection] result for player: ai-1 ok: [33mfalse[39m code: API_ERROR error: API 璋冪敤澶辫触 contentLength: [33m0[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] FAILED for player: ai-1 code: API_ERROR error: API 璋冪敤澶辫触 status:  thinkingEnabled: [90mundefined[39m
+
+stderr | tests/game/ai/reflection-manager.test.ts > AiReflectionManager > triggerAiReflection > LLM 杩斿洖澶辫触鏃剁姸鎬佷负 error
+[WARN][AI.Reflection] FAILED players: 宸︿笂AI(API 璋冪敤澶辫触,API_ERROR)
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mLLM 璇锋眰鎶涘紓甯告椂鐘舵€佷负 error
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+stderr | tests/game/ai/reflection-manager.test.ts > AiReflectionManager > triggerAiReflection > LLM 璇锋眰鎶涘紓甯告椂鐘舵€佷负 error
+[ERROR][AI.Reflection] EXCEPTION for player: ai-1 error: 缃戠粶寮傚父
+
+stderr | tests/game/ai/reflection-manager.test.ts > AiReflectionManager > triggerAiReflection > LLM 璇锋眰鎶涘紓甯告椂鐘舵€佷负 error
+[WARN][AI.Reflection] FAILED players: 宸︿笂AI(缃戠粶寮傚父)
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mpendingSettlementSummary 闈炵┖鏃惰拷鍔犲埌璺ㄥ眬娑堟伅
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2mpendingSettlementSummary 闈炵┖鏃惰拷鍔犲埌璺ㄥ眬娑堟伅
+[22m[39m[DEBUG][AI.Reflection] result for player: ai-1 ok: [33mtrue[39m code: [90mundefined[39m error: [90mundefined[39m contentLength: [33m14[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] SUCCESS for player: ai-1 reflection length: [33m14[39m
+[DEBUG][AI.Reflection] ai-1 cache: hit=0, miss=0, rate=0%
+[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=50000, praises=0, strategies=0, lessons=0
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2m澶?AI 鐜╁鏃跺叏閮ㄥ畬鎴愬悗鐘舵€佷负 done
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m2[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-2 鍙充笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-2 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+[DEBUG][AI.Reflection] result for player: ai-1 ok: [33mtrue[39m code: [90mundefined[39m error: [90mundefined[39m contentLength: [33m14[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] SUCCESS for player: ai-1 reflection length: [33m14[39m
+[DEBUG][AI.Reflection] ai-1 cache: hit=0, miss=0, rate=0%
+[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=50000, praises=0, strategies=0, lessons=0
+[DEBUG][AI.Reflection] result for player: ai-2 ok: [33mtrue[39m code: [90mundefined[39m error: [90mundefined[39m contentLength: [33m14[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] SUCCESS for player: ai-2 reflection length: [33m14[39m
+[DEBUG][AI.Reflection] ai-2 cache: hit=0, miss=0, rate=0%
+[DEBUG][AI.Reflection] ai-2 updated: games=1, winRate=0%, avgProfit=0, praises=0, strategies=0, lessons=0
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2misAiMultiGameMemoryEnabled 涓?false 鏃跺皢鍙嶆€濊拷鍔犲埌 summary
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mtriggerAiReflection[2m > [22m[2misAiMultiGameMemoryEnabled 涓?false 鏃跺皢鍙嶆€濊拷鍔犲埌 summary
+[22m[39m[DEBUG][AI.Reflection] result for player: ai-1 ok: [33mtrue[39m code: [90mundefined[39m error: [90mundefined[39m contentLength: [33m4[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] SUCCESS for player: ai-1 reflection length: [33m4[39m
+[DEBUG][AI.Reflection] ai-1 cache: hit=0, miss=0, rate=0%
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mdeps reflection 鐘舵€佹祦杞?[2m > [22m[2m鏃?AI 鐜╁鏃朵笉淇濆瓨璁板繂涓旂姸鎬佺洿鎺?done
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m0[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mdeps reflection 鐘舵€佹祦杞?[2m > [22m[2m鏈?AI 鐜╁鏃舵瘡涓?AI 鐜╁鐨勮法灞€璁板繂琚洿鏂板苟淇濆瓨
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m2[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-2 鍙充笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-2 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+[DEBUG][AI.Reflection] result for player: ai-1 ok: [33mtrue[39m code: [90mundefined[39m error: [90mundefined[39m contentLength: [33m14[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] SUCCESS for player: ai-1 reflection length: [33m14[39m
+[DEBUG][AI.Reflection] ai-1 cache: hit=0, miss=0, rate=0%
+[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=50000, praises=0, strategies=0, lessons=0
+[DEBUG][AI.Reflection] result for player: ai-2 ok: [33mtrue[39m code: [90mundefined[39m error: [90mundefined[39m contentLength: [33m14[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] SUCCESS for player: ai-2 reflection length: [33m14[39m
+[DEBUG][AI.Reflection] ai-2 cache: hit=0, miss=0, rate=0%
+[DEBUG][AI.Reflection] ai-2 updated: games=1, winRate=0%, avgProfit=0, praises=0, strategies=0, lessons=0
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mdeps reflection 鐘舵€佹祦杞?[2m > [22m[2mLLM 杩斿洖 code=TIMEOUT 鏃剁姸鎬佸彉涓?timeout
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mdeps reflection 鐘舵€佹祦杞?[2m > [22m[2mLLM 杩斿洖 code=TIMEOUT 鏃剁姸鎬佸彉涓?timeout
+[22m[39m[DEBUG][AI.Reflection] result for player: ai-1 ok: [90mundefined[39m code: TIMEOUT error: [90mundefined[39m contentLength: [33m0[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] TIMEOUT for player: ai-1 timeoutMs: [33m40000[39m thinkingEnabled: [90mundefined[39m
+
+stderr | tests/game/ai/reflection-manager.test.ts > AiReflectionManager > deps reflection 鐘舵€佹祦杞?[2m > LLM 杩斿洖 code=TIMEOUT 鏃剁姸鎬佸彉涓?timeout
+[WARN][AI.Reflection] TIMEOUT players: 宸︿笂AI(瓒呮椂(40000ms))
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mdeps reflection 鐘舵€佹祦杞?[2m > [22m[2mLLM 杩斿洖 code=API_ERROR 鏃剁姸鎬佸彉涓?error
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mdeps reflection 鐘舵€佹祦杞?[2m > [22m[2mLLM 杩斿洖 code=API_ERROR 鏃剁姸鎬佸彉涓?error
+[22m[39m[DEBUG][AI.Reflection] result for player: ai-1 ok: [90mundefined[39m code: API_ERROR error: API 璋冪敤澶辫触 contentLength: [33m0[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] FAILED for player: ai-1 code: API_ERROR error: API 璋冪敤澶辫触 status:  thinkingEnabled: [90mundefined[39m
+
+stderr | tests/game/ai/reflection-manager.test.ts > AiReflectionManager > deps reflection 鐘舵€佹祦杞?[2m > LLM 杩斿洖 code=API_ERROR 鏃剁姸鎬佸彉涓?error
+[WARN][AI.Reflection] FAILED players: 宸︿笂AI(API 璋冪敤澶辫触,API_ERROR)
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mdeps reflection 鐘舵€佹祦杞?[2m > [22m[2mLLM 杩斿洖 ok:true 鏃朵繚瀛樿法灞€璁板繂
+[22m[39m[DEBUG][AI.Reflection] called, checking conditions...
+[DEBUG][AI.Reflection] isAiReflectionEnabled: [33mtrue[39m canUseLlmDecision: [33mtrue[39m llmEverUsedThisRun: [33mtrue[39m
+[DEBUG][AI.Reflection] aiPlayers count: [33m1[39m
+[DEBUG][AI.Reflection] starting reflection for player: ai-1 宸︿笂AI
+[DEBUG][AI.Reflection] llmProvider: mock
+[DEBUG][AI.Reflection] independentReflectionEnabled: [33mtrue[39m
+[DEBUG][AI.Reflection] no cache, using simple prompt
+[DEBUG][AI.Reflection] requesting chat for player: ai-1 thinkingEnabled: [90mundefined[39m maxTokens: [33m800[39m timeoutMs: [33m40000[39m
+
+[90mstdout[2m | tests/game/ai/reflection-manager.test.ts[2m > [22m[2mAiReflectionManager[2m > [22m[2mdeps reflection 鐘舵€佹祦杞?[2m > [22m[2mLLM 杩斿洖 ok:true 鏃朵繚瀛樿法灞€璁板繂
+[22m[39m[DEBUG][AI.Reflection] result for player: ai-1 ok: [33mtrue[39m code: [90mundefined[39m error: [90mundefined[39m contentLength: [33m14[39m reasoningContentLength: [33m0[39m
+[DEBUG][AI.Reflection] SUCCESS for player: ai-1 reflection length: [33m14[39m
+[DEBUG][AI.Reflection] ai-1 cache: hit=0, miss=0, rate=0%
+[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=50000, praises=0, strategies=0, lessons=0
+
+ [32m鉁?[39m tests/game/ai/reflection-manager.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 75[2mms[22m[39m
+ [32m鉁?[39m tests/game/lobby/carousel-manager.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 150[2mms[22m[39m
+ [32m鉁?[39m tests/game/ui/panels-manager.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 318[2mms[22m[39m
+ [32m鉁?[39m tests/game/bridge/battle-record.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m鉁?[39m tests/game/core/utils.test.ts [2m([22m[2m92 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2mpositionPreview[2m > [22m[2m璁剧疆棰勮閿氱偣骞舵樉绀哄脊绐?[22m[39m[DEBUG][Warehouse] [manager] positionPreview CALLED, canvasX={0}, canvasY={1} [33m100[39m [33m200[39m
+[DEBUG][Warehouse] [fn-file] positionPreview CALLED, canvasX={0}, canvasY={1} [33m100[39m [33m200[39m
+[DEBUG][Warehouse] positionPreview shown at ({0}, {1}) [33m100[39m [33m200[39m
+
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2mhidePreview[2m > [22m[2m闅愯棌寮圭獥骞舵竻绌哄唴瀹?[22m[39m[DEBUG][Warehouse] [manager] hidePreview CALLED
+[DEBUG][Warehouse] [fn-file] hidePreview CALLED
+[DEBUG][Warehouse] hidePreview
+
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2monArtifactClicked[2m > [22m[2m鍑轰环閿洏鍙鏃朵笉鍝嶅簲
+[22m[39m[DEBUG][Warehouse] [fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2} artifact-1 [33m0[39m [33m0[39m
+
+ [32m鉁?[39m tests/game/core/round-manager-class.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 135[2mms[22m[39m
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2monArtifactClicked[2m > [22m[2m閬撳叿鎶藉眽鍙鏃朵笉鍝嶅簲
+[22m[39m[DEBUG][Warehouse] [fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2} artifact-1 [33m0[39m [33m0[39m
+
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2monArtifactClicked[2m > [22m[2m缁撶畻椤甸潰 + 宸叉彮绀鸿疆寤?-> 鎵撳紑缁撶畻棰勮
+[22m[39m[DEBUG][Warehouse] [fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2} artifact-1 [33m100[39m [33m200[39m
+[DEBUG][Warehouse] [fn-file] positionPreview CALLED, canvasX={0}, canvasY={1} [33m100[39m [33m200[39m
+[DEBUG][Warehouse] positionPreview shown at ({0}, {1}) [33m100[39m [33m200[39m
+
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2monArtifactClicked[2m > [22m[2m缁撶畻椤甸潰 + 鏈彮绀鸿疆寤?-> 涓嶅搷搴?[22m[39m[DEBUG][Warehouse] [fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2} artifact-1 [33m100[39m [33m200[39m
+
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2monArtifactClicked[2m > [22m[2m宸茬粨绠楃姸鎬?-> 涓嶅搷搴?[22m[39m[DEBUG][Warehouse] [fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2} artifact-1 [33m0[39m [33m0[39m
+
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2monArtifactClicked[2m > [22m[2m鏃犵嚎绱㈣棌鍝?-> 鎻愮ず鏃犳硶棰勮
+[22m[39m[DEBUG][Warehouse] [fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2} artifact-1 [33m0[39m [33m0[39m
+
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2monArtifactClicked[2m > [22m[2m鏈夌嚎绱㈣棌鍝?-> 鎵撳紑鍊欓€夐瑙?[22m[39m[DEBUG][Warehouse] [fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2} artifact-1 [33m100[39m [33m200[39m
+[DEBUG][Warehouse] [fn-file] positionPreview CALLED, canvasX={0}, canvasY={1} [33m100[39m [33m200[39m
+[DEBUG][Warehouse] positionPreview shown at ({0}, {1}) [33m100[39m [33m200[39m
+
+ [32m鉁?[39m tests/game/ai/memory-manager.test.ts [2m([22m[2m63 tests[22m[2m)[22m[33m 978[2mms[22m[39m
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2monArtifactClicked[2m > [22m[2m浠呭搧璐ㄦ牸绾跨储 + 鐐瑰嚮闈炲搧璐ㄦ牸 -> 鎻愮ず鍙兘鐐瑰嚮鍝佽川鏍?[22m[39m[DEBUG][Warehouse] [fn-file] onArtifactClicked CALLED, item={0}, pointer.x={1}, pointer.y={2} artifact-1 [33m128[39m [33m0[39m
+
+[90mstdout[2m | tests/game/warehouse/warehouse-manager.test.ts[2m > [22m[2mWarehouseManager[2m > [22m[2mpickRevealTargets 鎺掑簭锛堥壌韪洿鍙栭€夊彇鏈€澶т欢锛?[2m > [22m[2msame data inline sort with explicit return works
+[22m[39mfirst area from plain sort: [33m6[39m maxArea: [33m6[39m
+first 3 ids: metal-gold-bowl-tuanhua(6), metal-silver-gilt-ewer(6), metal-silver-plate-hunting(6)
+
+ [32m鉁?[39m tests/game/warehouse/warehouse-manager.test.ts [2m([22m[2m82 tests[22m[2m)[22m[33m 1493[2mms[22m[39m
+[90mstdout[2m | tests/game/ai/decision-manager.test.ts[2m > [22m[2mAiDecisionManager[2m > [22m[2mrecordAiThoughtLogs[2m > [22m[2mllm 妯″紡鏈?entries 鏃惰褰曞埌 aiThoughtLogs
+[22m[39m[DEBUG][AI.Decision] roundNo=1, telemetry.round=1, entries=1
+
+ [32m鉁?[39m tests/game/ai/decision-manager.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+ [32m鉁?[39m tests/game/data/artifacts.test.ts [2m([22m[2m50 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m鉁?[39m tests/game/bridge/battle-record/pure.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+[90mstdout[2m | tests/game/ai/decision.test.ts[2m > [22m[2mdecision[2m > [22m[2mrecordAiThoughtLogs[2m > [22m[2mllm 妯″紡鏈?entries 鏃惰褰曞埌 aiThoughtLogs
+[22m[39m[DEBUG][AI.Decision] roundNo=1, telemetry.round=1, entries=1
+
+[90mstdout[2m | tests/game/ai/decision.test.ts[2m > [22m[2mdecision[2m > [22m[2mrecordAiThoughtLogs[2m > [22m[2m绌?thought 涓旀棤鍏朵粬淇℃伅鏃惰烦杩?[22m[39m[DEBUG][AI.Decision] roundNo=1, telemetry.round=1, entries=1
+
+ [32m鉁?[39m tests/game/ui/panels.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 169[2mms[22m[39m
+[90mstdout[2m | tests/game/ai/decision.test.ts[2m > [22m[2mdecision[2m > [22m[2mrecordAiThoughtLogs[2m > [22m[2m绾犻敊淇℃伅鍖呭惈鍦?thought 涓?[22m[39m[DEBUG][AI.Decision] roundNo=1, telemetry.round=1, entries=1
+
+[90mstdout[2m | tests/game/ai/decision.test.ts[2m > [22m[2mdecision[2m > [22m[2mrecordAiThoughtLogs[2m > [22m[2m鍘嗗彶鍜岃法灞€璁板繂淇℃伅鍖呭惈鍦?thought 涓?[22m[39m[DEBUG][AI.Decision] roundNo=1, telemetry.round=1, entries=1
+
+ [32m鉁?[39m tests/game/core/round-manager-fns.test.ts [2m([22m[2m52 tests[22m[2m)[22m[32m 139[2mms[22m[39m
+ [32m鉁?[39m tests/game/ai/decision.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 179[2mms[22m[39m
+[90mstdout[2m | tests/behavioral/reconnect-stop.test.ts[2m > [22m[2m閲嶈繛鍋滄琛屼负[2m > [22m[2mRoom not found 鏃跺仠姝㈤噸杩?[2m > [22m[2mreconnect 澶辫触杩斿洖 'Room not found' 鍚庡仠姝㈤噸杩炲惊鐜?[22m[39m[INFO][LAN] reconnect attempt 1/5 (delay=1000ms, room=ABCD)
+
+stderr | tests/behavioral/reconnect-stop.test.ts > 閲嶈繛鍋滄琛屼负 > Room not found 鏃跺仠姝㈤噸杩?[2m > reconnect 澶辫触杩斿洖 'Room not found' 鍚庡仠姝㈤噸杩炲惊鐜?[WARN][LAN] reconnect stopped: room not found (room disbanded)
+
+[90mstdout[2m | tests/behavioral/reconnect-stop.test.ts[2m > [22m[2m閲嶈繛鍋滄琛屼负[2m > [22m[2mRoom not found 鏃跺仠姝㈤噸杩?[2m > [22m[2mRoom not found 鍚庝笉鍐嶇户缁噸杩烇紙涓嶉€掑綊锛?[22m[39m[INFO][LAN] reconnect attempt 1/5 (delay=1000ms, room=ABCD)
+
+stderr | tests/behavioral/reconnect-stop.test.ts > 閲嶈繛鍋滄琛屼负 > Room not found 鏃跺仠姝㈤噸杩?[2m > Room not found 鍚庝笉鍐嶇户缁噸杩烇紙涓嶉€掑綊锛?[WARN][LAN] reconnect stopped: room not found (room disbanded)
+
+[90mstdout[2m | tests/behavioral/reconnect-stop.test.ts[2m > [22m[2m閲嶈繛鍋滄琛屼负[2m > [22m[2mRoom not found 鏃跺仠姝㈤噸杩?[2m > [22m[2m鍏朵粬閿欒锛堣繛鎺ヨ秴鏃讹級缁х画閲嶈繛
+[22m[39m[INFO][LAN] reconnect attempt 1/5 (delay=1000ms, room=ABCD)
+
+[90mstdout[2m | tests/behavioral/reconnect-stop.test.ts[2m > [22m[2m閲嶈繛鍋滄琛屼负[2m > [22m[2mRoom not found 鏃跺仠姝㈤噸杩?[2m > [22m[2m鍏朵粬閿欒锛堣繛鎺ヨ秴鏃讹級缁х画閲嶈繛
+[22m[39m[INFO][LAN] reconnect attempt 2/5 (delay=2000ms, room=ABCD)
+
+[90mstdout[2m | tests/behavioral/reconnect-stop.test.ts[2m > [22m[2m閲嶈繛鍋滄琛屼负[2m > [22m[2mRoom not found 鏃跺仠姝㈤噸杩?[2m > [22m[2m鍏朵粬閿欒锛堣繛鎺ヨ秴鏃讹級缁х画閲嶈繛
+[22m[39m[INFO][LAN] reconnect attempt 3/5 (delay=4000ms, room=ABCD)
+
+[90mstdout[2m | tests/behavioral/reconnect-stop.test.ts[2m > [22m[2m閲嶈繛鍋滄琛屼负[2m > [22m[2mRoom not found 鏃跺仠姝㈤噸杩?[2m > [22m[2m鍏朵粬閿欒锛堣繛鎺ヨ秴鏃讹級缁х画閲嶈繛
+[22m[39m[INFO][LAN] requestFullSync: TRIGGERED from lanAttemptReconnect, reason=reconnect-success, isLanMode=true, round=1, lanMySlotId=null, players count=0, playerBidSubmitted=false, settled=false
+
+stderr | tests/behavioral/reconnect-stop.test.ts > 閲嶈繛鍋滄琛屼负 > 鍗曟満妯″紡鏃堕噸杩炰笉瑙﹀彂 UI 鏇存柊 > isLanMode=false 鏃?lanAttemptReconnect 鐩存帴閫€鍑?[WARN][LAN] reconnect stopped: not in LAN mode (solo game started)
+
+[90mstdout[2m | tests/behavioral/reconnect-stop.test.ts[2m > [22m[2m閲嶈繛鍋滄琛屼负[2m > [22m[2m鍗曟満妯″紡鏃堕噸杩炰笉瑙﹀彂 UI 鏇存柊[2m > [22m[2msetTimeout 鍥炶皟鏃?isLanMode 鍙樹负 false 鍒欏仠姝㈤噸杩?[22m[39m[INFO][LAN] reconnect attempt 1/5 (delay=1000ms, room=ABCD)
+
+stderr | tests/behavioral/reconnect-stop.test.ts > 閲嶈繛鍋滄琛屼负 > 鍗曟満妯″紡鏃堕噸杩炰笉瑙﹀彂 UI 鏇存柊 > setTimeout 鍥炶皟鏃?isLanMode 鍙樹负 false 鍒欏仠姝㈤噸杩?[WARN][LAN] reconnect success ignored: not in LAN mode anymore
+
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+ [32m鉁?[39m tests/behavioral/reconnect-stop.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mselectCharacter[2m > [22m[2m閫夋嫨鏈夋晥瑙掕壊鍚庢洿鏂?selectedCharacter 鐘舵€?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611661
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611663
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611681
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611681
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mselectCharacter[2m > [22m[2m閫夋嫨瑙掕壊鍚庝繚瀛樺埌 localStorage
+[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611714
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611714
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611715
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611715
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mselectCharacter[2m > [22m[2m閫夋嫨瑙掕壊鍚庤皟鐢?updatePlayerAvatar
+[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611730
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611730
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611731
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611731
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mselectCharacter[2m > [22m[2m鏃犱汉绫荤帺瀹舵椂涓嶈皟鐢?updatePlayerAvatar
+[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611744
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611744
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611745
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611745
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mgetSelectedCharacterForGame[2m > [22m[2m宸查€夋嫨鏃惰繑鍥炲凡閫夎鑹?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611758
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611758
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611759
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611759
+
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2mplayerBid 鎻愪氦鍚?buildRoundBids 鏀堕泦鐜╁鍑轰环姝ｇ‘
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=5000, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=5000, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=3000 (source=aiBidMap, raw=3000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=5000 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=2000 (source=aiBidMap, raw=2000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":3000},{"playerId":"p2","bid":5000},{"playerId":"p3","bid":2000}]
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2mplayerBid 鏈彁浜ゆ椂锛堟湭璋?playerBid锛夛紝playerRoundBid 涓?0
+[22m[39m[DEBUG][Bidding] p1 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=2, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=3000 (source=aiBidMap, raw=3000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=0 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":3000},{"playerId":"p2","bid":0}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2mgame:init 浜嬩欢 -> startLanRun 閾炬潯[2m > [22m[2mstartLanRun 搴旀纭槧灏?players锛坕d=p1/p2/p3, lanId, isHuman, isAI, isSelf锛?[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"host1"},{"id":"client1"},{"id":"ai1"}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"涓绘満","isHuman":true,"isAI":false,"isSelf":true},{"id":"p2","name":"瀹㈡満","isHuman":true,"isAI":false,"isSelf":false},{"id":"p3","name":"AI-1","isHuman":false,"isAI":true,"isSelf":false}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=3
+[INFO][LAN] startLanRun slot mapping: myPlayerId=host1 | lanIdToSlotId={"host1":"p1","client1":"p2","ai1":"p3"} | players.lanId list=["host1","client1","ai1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p1
+[INFO][LAN] startLanRun done: isLanMode=false, lanMySlotId=p1, players count=3, lanPlayers count=3, round=1, playerBidSubmitted=false, lanIdToSlotId={"host1":"p1","client1":"p2","ai1":"p3"}, lanIsHost=true
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2mAI 寮曟搸杩斿洖绌烘椂 AI 鍑轰环涓?0锛坣ormalizeAiBidValue 澶勭悊锛?[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=5000, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=5000, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=2, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=0 (source=aiBidMap, raw=0, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=5000 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":0},{"playerId":"p2","bid":5000}]
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2mplayerBid 鎻愪氦鍚庨獙璇佷腑闂村嚭浠风姸鎬?[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=100, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=100, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2mAI 寮曟搸杩斿洖 null 鏃舵墍鏈?AI 鍑轰环涓?0
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=5000, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=5000, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=2, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=0 (source=aiBidMap, raw=0, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=5000 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":0},{"playerId":"p2","bid":5000}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2mgame:init 浜嬩欢 -> startLanRun 閾炬潯[2m > [22m[2m搴斿缓绔?lanIdToSlotId 鍜?slotIdToLanId 鍙屽悜鏄犲皠
+[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"host1"},{"id":"client1"},{"id":"ai1"}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"涓绘満","isHuman":true,"isAI":false,"isSelf":true},{"id":"p2","name":"瀹㈡満","isHuman":true,"isAI":false,"isSelf":false},{"id":"p3","name":"AI-1","isHuman":false,"isAI":true,"isSelf":false}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=3
+[INFO][LAN] startLanRun slot mapping: myPlayerId=host1 | lanIdToSlotId={"host1":"p1","client1":"p2","ai1":"p3"} | players.lanId list=["host1","client1","ai1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p1
+[INFO][LAN] startLanRun done: isLanMode=false, lanMySlotId=p1, players count=3, lanPlayers count=3, round=1, playerBidSubmitted=false, lanIdToSlotId={"host1":"p1","client1":"p2","ai1":"p3"}, lanIsHost=true
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m姝ｅ父鍑轰环锛歱layerBid -> buildRoundBids -> 缁撶畻鍒ゅ畾姝ｇ‘
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=50, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=50, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=45 (source=aiBidMap, raw=45, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=50 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=30 (source=aiBidMap, raw=30, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":45},{"playerId":"p2","bid":50},{"playerId":"p3","bid":30}]
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2mLLM 瑕嗙洊锛歱layerBid 鎻愪氦鍚庯紝LLM 璁″垝瑕嗙洊 AI 寮曟搸鍑轰环
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=5000, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=5000, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: { failed: [33mfalse[39m, hasBidDecision: [33mtrue[39m, bid: [33m8000[39m, canUseLlm: [33mtrue[39m }
+[DEBUG][Bidding] p1 LLM bid override: 3000 -> 8000 (wallet=3000000)
+[INFO][Bidding] buildRoundBids: players count=2, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=8000 (source=aiBidMap, raw=8000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=5000 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":8000},{"playerId":"p2","bid":5000}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2mgame:init 浜嬩欢 -> startLanRun 閾炬潯[2m > [22m[2m銆愬叧閿€戝簲姝ｇ‘瑙ｆ瀽 lanMySlotId 涓轰富鏈烘Ы浣?p1锛堜笉鏄粯璁?p2锛?[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"host1"},{"id":"ai1"}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"涓绘満","isHuman":true,"isAI":false,"isSelf":true},{"id":"p2","name":"AI-1","isHuman":false,"isAI":true,"isSelf":false}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=2
+[INFO][LAN] startLanRun slot mapping: myPlayerId=host1 | lanIdToSlotId={"host1":"p1","ai1":"p2"} | players.lanId list=["host1","ai1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p1
+[INFO][LAN] startLanRun done: isLanMode=false, lanMySlotId=p1, players count=2, lanPlayers count=2, round=1, playerBidSubmitted=false, lanIdToSlotId={"host1":"p1","ai1":"p2"}, lanIsHost=true
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m骞冲眬鍑轰环锛歱layerBid -> buildRoundBids -> 缁撶畻鍒ゅ畾姝ｇ‘
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=50, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=50, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=50 (source=aiBidMap, raw=50, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=50 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=30 (source=aiBidMap, raw=30, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":50},{"playerId":"p2","bid":50},{"playerId":"p3","bid":30}]
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2mLLM 璁″垝澶辫触鏃朵娇鐢?AI 寮曟搸鍘熷鍑轰环
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=5000, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=5000, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: { failed: [33mtrue[39m, hasBidDecision: [33mtrue[39m, bid: [33m8000[39m, canUseLlm: [33mtrue[39m }
+[INFO][Bidding] buildRoundBids: players count=2, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=3000 (source=aiBidMap, raw=3000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=5000 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":3000},{"playerId":"p2","bid":5000}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2mgame:init 浜嬩欢 -> startLanRun 閾炬潯[2m > [22m[2m銆愬叧閿€戝簲姝ｇ‘瑙ｆ瀽 lanMySlotId 涓哄鏈烘Ы浣?p2锛堜笉鏄粯璁?p2 浣嗚矾寰勬纭級
+[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"host1"},{"id":"client1"},{"id":"ai1"}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"涓绘満","isHuman":true,"isAI":false,"isSelf":false},{"id":"p2","name":"瀹㈡満","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"AI-1","isHuman":false,"isAI":true,"isSelf":false}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=3
+[INFO][LAN] startLanRun slot mapping: myPlayerId=client1 | lanIdToSlotId={"host1":"p1","client1":"p2","ai1":"p3"} | players.lanId list=["host1","client1","ai1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p2
+[INFO][LAN] startLanRun done: isLanMode=false, lanMySlotId=p2, players count=3, lanPlayers count=3, round=1, playerBidSubmitted=false, lanIdToSlotId={"host1":"p1","client1":"p2","ai1":"p3"}, lanIsHost=false
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2mLLM 鏃犲嚭浠峰喅绛栨椂浣跨敤 AI 寮曟搸鍘熷鍑轰环
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=5000, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=5000, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: { failed: [33mfalse[39m, hasBidDecision: [33mfalse[39m, bid: [33m8000[39m, canUseLlm: [33mtrue[39m }
+[INFO][Bidding] buildRoundBids: players count=2, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=3000 (source=aiBidMap, raw=3000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=5000 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":3000},{"playerId":"p2","bid":5000}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2mgame:init 浜嬩欢 -> startLanRun 閾炬潯[2m > [22m[2mstartLanRun 搴旇皟鐢?beginRunTracking / exitSettlementPage / startRound / updateHud
+[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"host1"}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"涓绘満","isHuman":true,"isAI":false,"isSelf":true}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=1
+[INFO][LAN] startLanRun slot mapping: myPlayerId=host1 | lanIdToSlotId={"host1":"p1"} | players.lanId list=["host1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p1
+[INFO][LAN] startLanRun done: isLanMode=false, lanMySlotId=p1, players count=1, lanPlayers count=1, round=1, playerBidSubmitted=false, lanIdToSlotId={"host1":"p1"}, lanIsHost=true
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m鏈変汉鍑?0锛歱layerBid(0) -> buildRoundBids -> 缁撶畻鍒ゅ畾姝ｇ‘
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=0, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=0, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=50 (source=aiBidMap, raw=50, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=0 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=45 (source=aiBidMap, raw=45, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":50},{"playerId":"p2","bid":0},{"playerId":"p3","bid":45}]
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2m澶?AI 鐜╁锛歱layerBid 鎻愪氦鍚庢瘡涓?AI 鐨勫嚭浠风嫭绔嬫敹闆?[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=10000, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=10000, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[DEBUG][Bidding] p4 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=4, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=5000 (source=aiBidMap, raw=5000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=10000 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=3000 (source=aiBidMap, raw=3000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p4 (isAI=true) -> bid=1000 (source=aiBidMap, raw=1000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":5000},{"playerId":"p2","bid":10000},{"playerId":"p3","bid":3000},{"playerId":"p4","bid":1000}]
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2m鑱旀満妯″紡锛氭ā鎷?bid:received -> lanHostBids 绉疮 -> buildRoundBids 璇诲彇姝ｇ‘
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=true, mySlotId=null, amount=150, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=150, playerBidSubmitted=true, roundBidReadyState={}, myId=null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isSelf=true) -> bid=150 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p2 (isHuman=true, lanId=lan2) -> bid=200 (source=lanHostBids, lanHostBids={"lan1":100,"lan2":200,"lan3":50})
+[INFO][Bidding] buildRoundBids: player p3 (isHuman=true, lanId=lan3) -> bid=50 (source=lanHostBids, lanHostBids={"lan1":100,"lan2":200,"lan3":50})
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":150},{"playerId":"p2","bid":200},{"playerId":"p3","bid":50}]
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鍗曟満 buildRoundBids 鍏ㄩ摼璺?[2m > [22m[2m鑱旀満 buildRoundBids锛氬涓汉绫荤帺瀹?+ AI 娣峰悎鏀堕泦
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=true, mySlotId=null, amount=500, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=500, playerBidSubmitted=true, roundBidReadyState={}, myId=null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isSelf=true) -> bid=500 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p2 (isHuman=true, lanId=lan2) -> bid=200 (source=lanHostBids, lanHostBids={"lan2":200})
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=3000 (source=aiBidMap, raw=3000, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":500},{"playerId":"p2","bid":200},{"playerId":"p3","bid":3000}]
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m鐩存帴鎷夸笅锛歱layerBid(100) -> buildRoundBids -> 缁撶畻鍒ゅ畾鐩存帴鎷夸笅
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=100, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=100, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=50 (source=aiBidMap, raw=50, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=100 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=30 (source=aiBidMap, raw=30, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":50},{"playerId":"p2","bid":100},{"playerId":"p3","bid":30}]
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鑱旀満 lanComputeAiBids 鍏ㄩ摼璺?[2m > [22m[2m鑱旀満 AI 鍑轰环琚纭绠楋紙AI 寮曟搸 + 鏄犲皠锛?[22m[39m[DEBUG][LAN] [lanComputeAiBids] ai1 slotId=p2 plan: null
+[DEBUG][LAN] [lanComputeAiBids] ai2 slotId=p3 plan: null
+[INFO][LAN] lanComputeAiBids: result=[{"playerId":"ai1","bid":5000},{"playerId":"ai2","bid":3000}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2m缁撶畻鍚屾閾炬潯[2m > [22m[2mlanOnSettle 搴旈€氳繃 lanIdToSlotId 鎵惧埌鑳滆€呭苟璋冪敤 finishAuction
+[22m[39m[INFO][Settlement] lanOnSettle: 鏀跺埌缁撶畻鍚屾, winnerId=host1, winnerBid=80000, mode=final
+[INFO][Settlement] lanOnSettle: 鎵惧埌鑳滆€?id=p1, name=涓绘満, 璋冪敤 finishAuction
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m鏈€鍚庝竴杞己鍒剁粨鏉燂紝鏃犺鍑轰环宸窛
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=60, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=60, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=5
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=55 (source=aiBidMap, raw=55, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=60 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=50 (source=aiBidMap, raw=50, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":55},{"playerId":"p2","bid":60},{"playerId":"p3","bid":50}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2m缁撶畻鍚屾閾炬潯[2m > [22m[2mlanOnSettle 鍦ㄦ壘涓嶅埌 lanIdToSlotId 鏃跺洖閫€鍒版悳绱?lanId
+[22m[39m[INFO][Settlement] lanOnSettle: 鏀跺埌缁撶畻鍚屾, winnerId=host1, winnerBid=50000, mode=direct
+[INFO][Settlement] lanOnSettle: 鎵惧埌鑳滆€?id=p1, name=涓绘満, 璋冪敤 finishAuction
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鑱旀満 lanComputeAiBids 鍏ㄩ摼璺?[2m > [22m[2m鑱旀満 LLM 瑕嗙洊锛欰I 寮曟搸鍑轰环琚?LLM 璁″垝瑕嗙洊
+[22m[39m[DEBUG][LAN] [lanComputeAiBids] ai1 slotId=p2 plan: { failed: [33mfalse[39m, hasBidDecision: [33mtrue[39m, bid: [33m9000[39m, canUseLlm: [33mtrue[39m }
+[DEBUG][LAN] [lanComputeAiBids] ai1 LLM bid override: 3000 -> 9000 (wallet=3000000)
+[INFO][LAN] lanComputeAiBids: result=[{"playerId":"ai1","bid":9000}]
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m鍏ㄩ儴鍑?0锛氫笉鐩存帴鎷夸笅锛岃繘鍏ヤ笅涓€杞?[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=0, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=0, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=2, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=0 (source=aiBidMap, raw=0, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=0 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":0},{"playerId":"p2","bid":0}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2m缁撶畻鍚屾閾炬潯[2m > [22m[2mlanOnSettle 鍦ㄦ壘涓嶅埌鑳滆€呮椂鍥為€€鍒扮涓€涓帺瀹?[22m[39m[INFO][Settlement] lanOnSettle: 鏀跺埌缁撶畻鍚屾, winnerId=unknown_id, winnerBid=30000, mode=final
+
+stderr | tests/integration/lan-flow.test.ts > LAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯 > 缁撶畻鍚屾閾炬潯 > lanOnSettle 鍦ㄦ壘涓嶅埌鑳滆€呮椂鍥為€€鍒扮涓€涓帺瀹?[WARN][Settlement] lanOnSettle: 鎵句笉鍒拌儨鑰?unknown_id锛屽皾璇曠洿鎺ョ粨绠?
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m澶氳疆閫掕繘锛氱涓€杞笉鐩存帴鎷夸笅锛岄鏈熶笉缁撴潫
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=null, amount=50, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=50, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=45 (source=aiBidMap, raw=45, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=50 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=40 (source=aiBidMap, raw=40, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":45},{"playerId":"p2","bid":50},{"playerId":"p3","bid":40}]
+
+[90mstdout[2m | tests/behavioral/bid-collection.test.ts[2m > [22m[2m鑱旀満 lanComputeAiBids 鍏ㄩ摼璺?[2m > [22m[2m鑱旀満鏃?AI 鐜╁鏃惰繑鍥炵┖瀵硅薄
+[22m[39m[INFO][LAN] lanComputeAiBids: result=[]
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鍗曟満缁撶畻鍏ㄩ摼璺?[2m > [22m[2mresolveRoundBids 澶勭悊鏈彁浜ゅ嚭浠凤細瓒呮椂璁颁负 0
+[22m[39m[DEBUG][Bidding] p1 aiLlmPlan: null
+[DEBUG][Bidding] p3 aiLlmPlan: null
+[INFO][Bidding] buildRoundBids: players count=3, round=1
+[INFO][Bidding] buildRoundBids: player p1 (isAI=true) -> bid=80 (source=aiBidMap, raw=80, wallet=3000000)
+[INFO][Bidding] buildRoundBids: player p2 (isSelf=true) -> bid=0 (source=playerRoundBid)
+[INFO][Bidding] buildRoundBids: player p3 (isAI=true) -> bid=60 (source=aiBidMap, raw=60, wallet=3000000)
+[INFO][Bidding] buildRoundBids: roundBids=[{"playerId":"p1","bid":80},{"playerId":"p2","bid":0},{"playerId":"p3","bid":60}]
+
+[90mstdout[2m | tests/integration/lan-flow.test.ts[2m > [22m[2mLAN 鑱旀満娴佺▼闆嗘垚娴嬭瘯[2m > [22m[2m缁撶畻鍚屾閾炬潯[2m > [22m[2m銆愬叧閿€憀anRestoreWarehouseFromSync 搴旇皟鐢?renderItem 娓叉煋姣忎釜钘忓搧
+[22m[39m[INFO][LAN] lanRestoreWarehouseFromSync: 鎭㈠浠撳簱锛岃棌鍝佹暟=2, items=sword,shield
+[DEBUG][LAN] lanRestoreWarehouseFromSync: 宸叉覆鏌撹棌鍝?id=item-1, key=sword, name=瀹濆墤, qualityKey=rare
+[DEBUG][LAN] lanRestoreWarehouseFromSync: 宸叉覆鏌撹棌鍝?id=item-2, key=shield, name=鐩剧墝, qualityKey=normal
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鑱旀満缁撶畻鍏ㄩ摼璺?[2m > [22m[2mlanHostBids 绉疮鍚?-> lanResolveRound 鑱旀満缁撶畻缁撴灉姝ｇ‘
+[22m[39m[INFO][LAN] lanResolveRound: reason=all-in, round=1, lanHostBids keys=["lan1","lan2","lan3"], lanHostBids={"lan1":100,"lan2":200,"lan3":50}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":100},{"playerId":"lan2","bid":200},{"playerId":"lan3","bid":50}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan2","bid":200},{"playerId":"lan1","bid":100},{"playerId":"lan3","bid":50}], first={playerId: lan2, bid: 200}, second={playerId: lan1, bid: 100}, winner=p2, currentBid=200, secondHighestBid=100
+[INFO][LAN] lanResolveRound: auction ends, mode=direct, winnerLanId=lan2, winnerSlotId=p2, bid=200
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mshowCharacterSelectPage[2m > [22m[2m鏄剧ず椤甸潰骞剁Щ闄?hidden 绫?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611804
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611804
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611805
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611805
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鑱旀満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m鑱旀満骞冲眬锛歭anHostBids 绉疮鍚庣粨绠楃粨鏋滄纭?[22m[39m[INFO][LAN] lanResolveRound: reason=all-in, round=1, lanHostBids keys=["lan1","lan2","lan3"], lanHostBids={"lan1":50,"lan2":50,"lan3":30}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":50},{"playerId":"lan2","bid":50},{"playerId":"lan3","bid":30}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan1","bid":50},{"playerId":"lan2","bid":50},{"playerId":"lan3","bid":30}], first={playerId: lan1, bid: 50}, second={playerId: lan2, bid: 50}, winner=p1, currentBid=50, secondHighestBid=50
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鑱旀満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m鑱旀満鐩存帴鎷夸笅锛歭anHostBids 绉疮鍚庣粨绠楃粨鏋滄纭?[22m[39m[INFO][LAN] lanResolveRound: reason=all-in, round=1, lanHostBids keys=["lan1","lan2","lan3"], lanHostBids={"lan1":200,"lan2":50,"lan3":30}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":200},{"playerId":"lan2","bid":50},{"playerId":"lan3","bid":30}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan1","bid":200},{"playerId":"lan2","bid":50},{"playerId":"lan3","bid":30}], first={playerId: lan1, bid: 200}, second={playerId: lan2, bid: 50}, winner=p1, currentBid=200, secondHighestBid=50
+[INFO][LAN] lanResolveRound: auction ends, mode=direct, winnerLanId=lan1, winnerSlotId=p1, bid=200
+
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鑱旀満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m鑱旀満鏈€鍚庝竴杞己鍒剁粨鏉?[22m[39m[INFO][LAN] lanResolveRound: reason=all-in, round=5, lanHostBids keys=["lan1","lan2"], lanHostBids={"lan1":60,"lan2":55}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":60},{"playerId":"lan2","bid":55}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan1","bid":60},{"playerId":"lan2","bid":55}], first={playerId: lan1, bid: 60}, second={playerId: lan2, bid: 55}, winner=p1, currentBid=60, secondHighestBid=55
+[INFO][LAN] lanResolveRound: auction ends, mode=final, winnerLanId=lan1, winnerSlotId=p1, bid=60
+
+[90mstdout[2m | tests/behavioral/settlement-flow.test.ts[2m > [22m[2m鑱旀満缁撶畻鍏ㄩ摼璺?[2m > [22m[2m鑱旀満涓庡崟鏈哄悓杈撳叆缁撴灉涓€鑷达紙濂囧伓娴嬭瘯锛?[22m[39m[INFO][LAN] lanResolveRound: reason=all-in, round=1, lanHostBids keys=["lan1","lan2","lan3"], lanHostBids={"lan1":100,"lan2":50,"lan3":30}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":100},{"playerId":"lan2","bid":50},{"playerId":"lan3","bid":30}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan1","bid":100},{"playerId":"lan2","bid":50},{"playerId":"lan3","bid":30}], first={playerId: lan1, bid: 100}, second={playerId: lan2, bid: 50}, winner=p1, currentBid=100, secondHighestBid=50
+[INFO][LAN] lanResolveRound: auction ends, mode=direct, winnerLanId=lan1, winnerSlotId=p1, bid=100
+
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+ [32m鉁?[39m tests/behavioral/bid-collection.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mshowCharacterSelectPage[2m > [22m[2m璁剧疆鍦板浘鍚嶇О
+[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611863
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611863
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611863
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611864
+
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+ [32m鉁?[39m tests/integration/lan-flow.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+ [32m鉁?[39m tests/behavioral/settlement-flow.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mshowCharacterSelectPage[2m > [22m[2mmapProfile 涓?null 鏃朵笉璁剧疆鍦板浘鍚嶇О
+[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611895
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611896
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611897
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611897
+
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+[90mstdout[2m | tests/integration/bridge-flow.test.ts[2m > [22m[2m鎴樼哗 bridge 閾炬潯[2m > [22m[2msaveBattleRecord 鍐欏叆璁板綍[2m > [22m[2m鍐欏叆鍚庡彲閫氳繃 loadBattleRecords 璇诲彇
+[22m[39m[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mshowCharacterSelectPage[2m > [22m[2m鏈垵濮嬪寲鏃惰嚜鍔ㄨ皟鐢?initCharacterSelect
+[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611916
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611916
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611917
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611917
+
+ [32m鉁?[39m tests/game/core/skill-item-manager-class.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: Window's alert() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's load() method
+[90mstdout[2m | tests/integration/bridge-flow.test.ts[2m > [22m[2m鎴樼哗 bridge 閾炬潯[2m > [22m[2msaveBattleRecord 鍐欏叆璁板綍[2m > [22m[2m澶氭潯璁板綍鍙繚鐣欐渶杩?20 鏉?[22m[39m[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+[saveBattleRecord] hasLlm=false, aiDecisionPanelText=0, roundPanelTexts keys=none, roundLogsByRound keys=none
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mhideAllLobbySubPages[2m > [22m[2m闅愯棌鎵€鏈夊ぇ鍘呭瓙椤甸潰
+[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m瑙掕壊閫夋嫨[2m > [22m[2mhideAllLobbySubPages[2m > [22m[2m鍋滄 Live2D 寰幆锛堣棰戣鏆傚仠锛?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m鎼哄甫閬撳叿[2m > [22m[2mconfirmCharacterSelection[2m > [22m[2m鏃犳惡甯﹂亾鍏锋椂鐩存帴鍚姩娓告垙
+[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611984
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611984
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611985
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611985
+
+ [32m鉁?[39m tests/integration/bridge-flow.test.ts [2m([22m[2m52 tests[22m[2m)[22m[32m 105[2mms[22m[39m
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m鎼哄甫閬撳叿[2m > [22m[2mconfirmCharacterSelection[2m > [22m[2m鑷姩琛ュ厖涓旇祫閲戜笉瓒虫椂鏄剧ず纭瀵硅瘽妗?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275611996
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275611996
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275611997
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275611997
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2m鎼哄甫閬撳叿[2m > [22m[2mconfirmCharacterSelection[2m > [22m[2m鑷姩琛ュ厖鎴愬姛鍚庡惎鍔ㄦ父鎴?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+[Live2D] ========== 寮€濮嬫棤缂濆惊鐜?v2 ==========
+[Live2D] 瑙嗛婧? assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D] requestVideoFrameCallback 鏀寔: [33mfalse[39m
+[Live2D] 璁惧绫诲瀷: 妗岄潰绔?[Live2D] 棰勭儹鏃堕棿: [33m2[39m s
+[Live2D] 鍒囨崲鏃堕棿: [33m0.033[39m s
+[Live2D-DIAG] ========== 寮€濮嬪姞杞借棰?==========
+[Live2D-DIAG] 瑙嗛璺緞: assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG] 寮€濮嬫椂闂? 1784275612007
+[Live2D-DIAG] videoA涔嬪墠鐨剆rc: 
+[Live2D-DIAG] videoB涔嬪墠鐨剆rc: 
+[Live2D-DIAG] 鏄惁鍒囨崲鍒扮浉鍚岃棰? false
+[Live2D-DIAG] videoA 鍒濆鐘舵€?
+[Live2D-DIAG]   src: 
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璁剧疆src鍚? 1784275612007
+[Live2D-DIAG] videoA 璁剧疆src鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-DIAG] 璋冪敤load()鍚? 1784275612008
+[Live2D-DIAG] videoA load()鍚?
+[Live2D-DIAG]   src: http://localhost:3000/assets/images/characters/live2D/character-appraiser-live2d.webm
+[Live2D-DIAG]   readyState: 0 (HAVE_NOTHING)
+[Live2D-DIAG]   networkState: 0 (NETWORK_EMPTY)
+[Live2D-DIAG]   currentTime: 0.000s
+[Live2D-DIAG]   duration: NaNs
+[Live2D-DIAG]   paused: true
+[Live2D-DIAG]   buffered: 0 ranges
+[Live2D-PERF] ========== 鎬ц兘璁℃椂寮€濮?==========
+[Live2D-PERF] 寮€濮嬫椂闂? 1784275612008
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2mLive2D[2m > [22m[2m_stopLive2dLoop[2m > [22m[2m鏃犵姸鎬佹椂涓嶆姤閿?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+
+[90mstdout[2m | tests/game/ui/history-manager.test.ts[2m > [22m[2mHistoryManager[2m > [22m[2mresetPlayerHistoryState[2m > [22m[2m鍒濆鍖栨墍鏈夌帺瀹剁殑鍘嗗彶鏁版嵁
+[22m[39m[DEBUG][UI] refreshPlayerHistoryUI: players count=2, playerIds=["p1","p2"], currentRoundUsage keys=["p1","p2"]
+
+stderr | tests/game/core/settlement-manager-class.test.ts > SettlementManager > prepareFinishAuction > 鎻ず钘忓搧寮傚父琚崟鑾峰苟鍐欐棩蹇?[ERROR][Settlement] revealAllArtifactsForSettlement failed Error: 鎻ず鐖嗙偢
+    at D:/web/demo2-trae/tests/game/core/settlement-manager-class.test.ts:296:68
+    at file:///D:/web/demo2-trae/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///D:/web/demo2-trae/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///D:/web/demo2-trae/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///D:/web/demo2-trae/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///D:/web/demo2-trae/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///D:/web/demo2-trae/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///D:/web/demo2-trae/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2mLive2D[2m > [22m[2m_stopLive2dLoop[2m > [22m[2m娓呯悊瑙嗛鍏冪礌锛堟殏鍋溿€佹竻闄?src銆佺Щ闄や簨浠跺鐞嗗櫒锛?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+
+[90mstdout[2m | tests/game/ui/history-manager.test.ts[2m > [22m[2mHistoryManager[2m > [22m[2mclearCurrentRoundUsage[2m > [22m[2m娓呯┖鎵€鏈夌帺瀹跺綋鍓嶅洖鍚堜娇鐢ㄨ褰?[22m[39m[DEBUG][UI] clearCurrentRoundUsage: players count=2, playerIds=["p1","p2"], before keys=["p1"]
+
+stderr | tests/game/core/settlement-manager-class.test.ts > SettlementManager > prepareFinishAuction > 鎻ず寮傚父鏃?message 鏃跺洖閫€涓?鏈煡閿欒'
+[ERROR][Settlement] revealAllArtifactsForSettlement failed strange error
+
+[90mstdout[2m | tests/game/lobby/character-select-manager.test.ts[2m > [22m[2mCharacterSelectManager[2m > [22m[2mLive2D[2m > [22m[2m_stopLive2dLoop[2m > [22m[2m娓呯悊 loadingPlaceholder 鍙鐘舵€?[22m[39m[Live2D-DIAG] 宸插仠姝㈠惊鐜苟娓呯悊瑙嗛璧勬簮
+
+[90mstdout[2m | tests/game/ui/history-manager.test.ts[2m > [22m[2mHistoryManager[2m > [22m[2mrecordPlayerUsage[2m > [22m[2m璁板綍閬撳叿浣跨敤
+[22m[39m[DEBUG][UI] refreshPlayerHistoryUI: players count=2, playerIds=["p1","p2"], currentRoundUsage keys=["p1"]
+
+[90mstdout[2m | tests/game/ui/history-manager.test.ts[2m > [22m[2mHistoryManager[2m > [22m[2mrecordRoundHistory[2m > [22m[2m璁板綍涓€杞嚭浠峰拰閬撳叿浣跨敤
+[22m[39m[DEBUG][UI] refreshPlayerHistoryUI: players count=2, playerIds=["p1","p2"], currentRoundUsage keys=["p1","p2"]
+[DEBUG][UI] refreshPlayerHistoryUI: players count=2, playerIds=["p1","p2"], currentRoundUsage keys=["p1","p2"]
+
+[90mstdout[2m | tests/game/ui/history-manager.test.ts[2m > [22m[2mHistoryManager[2m > [22m[2mrecordRoundHistory[2m > [22m[2m浣跨敤娉ㄥ叆鐨?getRound 鍥炶皟鑾峰彇鍥炲悎鍙?[22m[39m[DEBUG][UI] refreshPlayerHistoryUI: players count=2, playerIds=["p1","p2"], currentRoundUsage keys=["p1","p2"]
+[DEBUG][UI] refreshPlayerHistoryUI: players count=2, playerIds=["p1","p2"], currentRoundUsage keys=["p1","p2"]
+
+ [32m鉁?[39m tests/game/lobby/character-select-manager.test.ts [2m([22m[2m58 tests[22m[2m)[22m[33m 509[2mms[22m[39m
+ [32m鉁?[39m tests/game/core/settlement-manager-class.test.ts [2m([22m[2m46 tests[22m[2m)[22m[32m 84[2mms[22m[39m
+ [32m鉁?[39m tests/game/ui/history-manager.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 289[2mms[22m[39m
+[90mstdout[2m | tests/llm/core/llm-decision-chain.test.ts[2m > [22m[2mcreateLlmRequestMethods[2m > [22m[2mrequestAiLlmPlan[2m > [22m[2mprovider 涓?null 鏃惰繑鍥炲け璐?plan锛堜笉鎶涘紓甯革級
+[22m[39m[requestAiLlmPlan] ai1-1784275612733 START, player: ai1, batchId: test, delay from batch start: 0ms
+[requestAiLlmPlan] provider: [1mnull[22m
+[requestAiLlmPlan] ERROR: provider is null
+
+[90mstdout[2m | tests/llm/core/llm-decision-chain.test.ts[2m > [22m[2mcreateLlmRequestMethods[2m > [22m[2mrequestAiLlmPlan[2m > [22m[2mprovider.requestChat 涓?undefined 鏃惰繑鍥炲け璐?plan
+[22m[39m[requestAiLlmPlan] ai1-1784275612738 START, player: ai1, batchId: test, delay from batch start: 0ms
+[requestAiLlmPlan] provider: mock
+[requestAiLlmPlan] base settings: {
+  enabled: [33mtrue[39m,
+  apiKey: [32m'(宸茶缃?'[39m,
+  endpoint: [32m'https://api.example.com/v1'[39m,
+  model: [32m'test-model'[39m
+}
+[requestAiLlmPlan] about to call getAiModelConfigForPlayer, player.id: ai1
+[requestAiLlmPlan] aiModelConfig: [1mnull[22m
+[requestAiLlmPlan] ai1-1784275612738 CALLING requestChat, model: test-model, elapsed so far: 1ms
+[requestAiLlmPlan] ai1-1784275612738 messages count: 2, historyMessages count: 0, crossGameMemoryCount: 0
+[requestAiLlmPlan] ERROR: provider.requestChat is undefined
+
+[90mstdout[2m | tests/llm/core/llm-decision-chain.test.ts[2m > [22m[2mcreateLlmRequestMethods[2m > [22m[2mrequestAiLlmPlan[2m > [22m[2mresult.ok = false 鏃惰繑鍥炲け璐?plan 骞惰缃?LLM 閿欒
+[22m[39m[requestAiLlmPlan] ai1-1784275612742 START, player: ai1, batchId: test, delay from batch start: 0ms
+[requestAiLlmPlan] provider: mock
+[requestAiLlmPlan] base settings: {
+  enabled: [33mtrue[39m,
+  apiKey: [32m'(宸茶缃?'[39m,
+  endpoint: [32m'https://api.example.com/v1'[39m,
+  model: [32m'test-model'[39m
+}
+[requestAiLlmPlan] about to call getAiModelConfigForPlayer, player.id: ai1
+[requestAiLlmPlan] aiModelConfig: [1mnull[22m
+[requestAiLlmPlan] ai1-1784275612742 CALLING requestChat, model: test-model, elapsed so far: 0ms
+[requestAiLlmPlan] ai1-1784275612742 messages count: 2, historyMessages count: 0, crossGameMemoryCount: 0
+
+ [32m鉁?[39m tests/game/ai/intel.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+[90mstdout[2m | tests/llm/core/llm-decision-chain.test.ts[2m > [22m[2mcreateLlmRequestMethods[2m > [22m[2mrequestAiLlmPlan[2m > [22m[2mresult.ok = false 鏃惰繑鍥炲け璐?plan 骞惰缃?LLM 閿欒
+[22m[39m[requestAiLlmPlan] ai1-1784275612742 requestChat DONE, ok: false, elapsed: 1ms, total: 1ms
+
+[90mstdout[2m | tests/llm/core/llm-decision-chain.test.ts[2m > [22m[2mcreateLlmRequestMethods[2m > [22m[2mrequestAiLlmPlan[2m > [22m[2m姝ｅ父璇锋眰鎴愬姛鍚庤繑鍥炴纭?bid
+[22m[39m[requestAiLlmPlan] ai1-1784275612766 START, player: ai1, batchId: test, delay from batch start: 0ms
+[requestAiLlmPlan] provider: mock
+[requestAiLlmPlan] base settings: {
+  enabled: [33mtrue[39m,
+  apiKey: [32m'(宸茶缃?'[39m,
+  endpoint: [32m'https://api.example.com/v1'[39m,
+  model: [32m'test-model'[39m
+}
+[requestAiLlmPlan] about to call getAiModelConfigForPlayer, player.id: ai1
+[requestAiLlmPlan] aiModelConfig: [1mnull[22m
+[requestAiLlmPlan] ai1-1784275612766 CALLING requestChat, model: test-model, elapsed so far: 1ms
+[requestAiLlmPlan] ai1-1784275612766 messages count: 2, historyMessages count: 0, crossGameMemoryCount: 0
+
+[90mstdout[2m | tests/llm/core/llm-decision-chain.test.ts[2m > [22m[2mcreateLlmRequestMethods[2m > [22m[2mrequestAiLlmPlan[2m > [22m[2m姝ｅ父璇锋眰鎴愬姛鍚庤繑鍥炴纭?bid
+[22m[39m[requestAiLlmPlan] ai1-1784275612766 requestChat DONE, ok: true, elapsed: 0ms, total: 1ms
+[requestAiLlmPlan] ai1-1784275612766 cache: hit=100, miss=400, rate=20%
+
+ [32m鉁?[39m tests/llm/core/llm-decision-chain.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2m鎴愬姛鎵ц鍚庤皟鐢?addPublicInfoEntry 鑰岄潪 addPrivateIntelEntry
+[22m[39m[DEBUG][AI.Intel] [fn-file] processAiIntelActions CALLED, isLanMode={0} [33mfalse[39m
+[DEBUG][AI.Intel] batch intel-1784275612928-ed9d START, aiPlayers: 1, players: ai-1
+[INFO][AI.Intel] processAiIntelActions: processing 1 AI players: ai-1
+[DEBUG][AI.Intel] ai-1-1784275612929 START, delay from batch start: 1ms
+[DEBUG][AI.Intel] ai-1 plan: null
+[DEBUG][AI.Intel] ai-1 llmPlan: null
+[DEBUG][AI.Intel] ai-1 llmBidReady: false
+[DEBUG][AI.Intel] ai-1 executeAiIntelAction result: {
+  ok: [33mtrue[39m,
+  actionType: [32m'skill'[39m,
+  actionId: [32m'skill-outline-scan'[39m,
+  message: [90mundefined[39m
+}
+[DEBUG][AI.Intel] ai-1-1784275612929 END, elapsed: 3ms
+
+Not implemented: HTMLMediaElement's load() method
+Not implemented: HTMLMediaElement's load() method
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanComputeAiBids[2m > [22m[2m鏃?AI 鐜╁鏃惰繑鍥炵┖瀵硅薄
+[22m[39m[INFO][LAN] lanComputeAiBids: result=[]
+
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2m鎴愬姛鎵ц鍚庤皟鐢?addPublicInfoEntry 鑰岄潪 addPrivateIntelEntry
+[22m[39m[DEBUG][AI.Intel] batch intel-1784275612928-ed9d END, total elapsed: 5ms
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanComputeAiBids[2m > [22m[2m鏈?AI 鐜╁涓旀棤 LLM 瑕嗙洊鏃惰繑鍥炶鍒欏嚭浠?[22m[39m[DEBUG][LAN] [lanComputeAiBids] ai-1 no slotId mapping, skipping
+[INFO][LAN] lanComputeAiBids: result=[{"playerId":"ai-1","bid":500}]
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanOnRoundStart[2m > [22m[2m璁剧疆鍥炲悎鐘舵€佸苟寮€濮嬪洖鍚?[22m[39m[INFO][LAN] lanOnRoundStart: round=3, isLanMode=false, lanMySlotId=null, players count=0, playerBidSubmitted=false
+
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2mLAN 妯″紡涓嬭烦杩囨湰鍦?AI 澶勭悊
+[22m[39m[DEBUG][AI.Intel] [fn-file] processAiIntelActions CALLED, isLanMode={0} [33mtrue[39m
+[DEBUG][AI.Intel] batch intel-1784275612955-e573 START, aiPlayers: 1, players: ai-1
+[DEBUG][AI.Intel] processAiIntelActions: LAN mode, skipping local AI processing (aiPlayers=1)
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanOnRoundStart[2m > [22m[2m鏃堕棿鏍℃鐢熸晥
+[22m[39m[INFO][LAN] lanOnRoundStart: round=2, isLanMode=false, lanMySlotId=null, players count=0, playerBidSubmitted=false
+
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2m鍗曟満妯″紡涓嬫甯稿鐞?AI 鐜╁
+[22m[39m[DEBUG][AI.Intel] [fn-file] processAiIntelActions CALLED, isLanMode={0} [33mfalse[39m
+[DEBUG][AI.Intel] batch intel-1784275612957-17a3 START, aiPlayers: 2, players: ai-1,ai-2
+[INFO][AI.Intel] processAiIntelActions: processing 2 AI players: ai-1,ai-2
+[DEBUG][AI.Intel] ai-1-1784275612957 START, delay from batch start: 0ms
+[DEBUG][AI.Intel] ai-1 plan: null
+[DEBUG][AI.Intel] ai-1 llmPlan: null
+[DEBUG][AI.Intel] ai-1 llmBidReady: false
+[DEBUG][AI.Intel] ai-1 executeAiIntelAction result: {
+  ok: [33mtrue[39m,
+  actionType: [32m'skill'[39m,
+  actionId: [32m'skill-outline-scan'[39m,
+  message: [90mundefined[39m
+}
+[DEBUG][AI.Intel] ai-1-1784275612957 END, elapsed: 1ms
+[DEBUG][AI.Intel] ai-2-1784275612958 START, delay from batch start: 1ms
+[DEBUG][AI.Intel] ai-2 plan: null
+[DEBUG][AI.Intel] ai-2 llmPlan: null
+[DEBUG][AI.Intel] ai-2 llmBidReady: false
+[DEBUG][AI.Intel] ai-2 executeAiIntelAction result: {
+  ok: [33mtrue[39m,
+  actionType: [32m'skill'[39m,
+  actionId: [32m'skill-outline-scan'[39m,
+  message: [90mundefined[39m
+}
+[DEBUG][AI.Intel] ai-2-1784275612958 END, elapsed: 0ms
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mstartLanRun[2m > [22m[2m鍒濆鍖栨父鎴忕姸鎬佸苟鍒涘缓鐜╁
+[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"lan-1","carryItems":[]}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"Host","isHuman":true,"isAI":false,"isSelf":true}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=1
+[INFO][LAN] startLanRun slot mapping: myPlayerId=lan-1 | lanIdToSlotId={"lan-1":"p1"} | players.lanId list=["lan-1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p1
+[INFO][LAN] startLanRun done: isLanMode=false, lanMySlotId=p1, players count=1, lanPlayers count=1, round=1, playerBidSubmitted=false, lanIdToSlotId={"lan-1":"p1"}, lanIsHost=true
+
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2m鍗曟満妯″紡涓嬫甯稿鐞?AI 鐜╁
+[22m[39m[DEBUG][AI.Intel] batch intel-1784275612957-17a3 END, total elapsed: 2ms
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mstartLanRun[2m > [22m[2m闈炰富鏈鸿皟鐢?initAiWallets
+[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"lan-1","carryItems":[]}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"Client","isHuman":true,"isAI":false,"isSelf":true}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=1
+[INFO][LAN] startLanRun slot mapping: myPlayerId=lan-1 | lanIdToSlotId={"lan-1":"p1"} | players.lanId list=["lan-1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p1
+[INFO][LAN] startLanRun done: isLanMode=false, lanMySlotId=p1, players count=1, lanPlayers count=1, round=1, playerBidSubmitted=false, lanIdToSlotId={"lan-1":"p1"}, lanIsHost=false
+
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2m鏃?AI 鐜╁鏃朵笉鍋氫换浣曟搷浣?[22m[39m[DEBUG][AI.Intel] [fn-file] processAiIntelActions CALLED, isLanMode={0} [33mfalse[39m
+[DEBUG][AI.Intel] batch intel-1784275612960-3d87 START, aiPlayers: 0, players: 
+[INFO][AI.Intel] processAiIntelActions: processing 0 AI players: 
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanOnAllBidsIn[2m > [22m[2m鏀堕泦 AI 鍜岀帺瀹跺嚭浠峰悗瑙ｆ瀽鍥炲悎
+[22m[39m[INFO][LAN] lanOnAllBidsIn: before aiBids, lanHostBids={}, playerRoundBid=0, myPid=lan-1
+[INFO][LAN] lanComputeAiBids: result=[]
+[INFO][LAN] lanOnAllBidsIn: host bid not in lanHostBids, adding playerRoundBid=0 for lan-1
+[INFO][LAN] lanOnAllBidsIn: final lanHostBids={"lan-1":0}, keys=["lan-1"]
+[INFO][LAN] lanResolveRound: reason=all-in, round=1, lanHostBids keys=["lan-1"], lanHostBids={"lan-1":0}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"p1","bid":0}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"p1","bid":0}], first={playerId: p1, bid: 0}, second={playerId: none, bid: 0}, winner=p1, currentBid=0, secondHighestBid=0
+
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2m鏃?AI 鐜╁鏃朵笉鍋氫换浣曟搷浣?[22m[39m[DEBUG][AI.Intel] batch intel-1784275612960-3d87 END, total elapsed: 0ms
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanOnRoundTimeout[2m > [22m[2m瓒呮椂鏃朵娇鐢ㄥ凡鏈夊嚭浠峰苟瑙ｆ瀽鍥炲悎
+[22m[39m[INFO][LAN] lanOnRoundTimeout: lanHostBids before={}, playerRoundBid=0, myPid=lan-1
+[INFO][LAN] lanComputeAiBids: result=[]
+[INFO][LAN] lanOnRoundTimeout: lanHostBids after={"lan-1":0}, keys=["lan-1"]
+[INFO][LAN] lanResolveRound: reason=timeout, round=1, lanHostBids keys=["lan-1"], lanHostBids={"lan-1":0}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"p1","bid":0}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"p1","bid":0}], first={playerId: p1, bid: 0}, second={playerId: none, bid: 0}, winner=p1, currentBid=0, secondHighestBid=0
+
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2mAI 鍔ㄤ綔缁撴灉鍐欏叆 lastAiIntelActions
+[22m[39m[DEBUG][AI.Intel] [fn-file] processAiIntelActions CALLED, isLanMode={0} [33mfalse[39m
+[DEBUG][AI.Intel] batch intel-1784275612961-ec9c START, aiPlayers: 1, players: ai-1
+[INFO][AI.Intel] processAiIntelActions: processing 1 AI players: ai-1
+[DEBUG][AI.Intel] ai-1-1784275612962 START, delay from batch start: 1ms
+[DEBUG][AI.Intel] ai-1 plan: null
+[DEBUG][AI.Intel] ai-1 llmPlan: null
+[DEBUG][AI.Intel] ai-1 llmBidReady: false
+[DEBUG][AI.Intel] ai-1 executeAiIntelAction result: {
+  ok: [33mfalse[39m,
+  actionType: [32m'none'[39m,
+  actionId: [32m'none'[39m,
+  message: [32m'鏈墽琛孉I鎯呮姤琛屽姩銆?[39m
+}
+[DEBUG][AI.Intel] ai-1-1784275612962 END (no action), elapsed: 0ms
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanOnFullSync[2m > [22m[2m闈炰富鏈烘椂鏇存柊鐘舵€?[22m[39m[INFO][LAN] lanOnFullSync: skipped per-player state sync (playerBidSubmitted/playerRoundBid)
+
+[90mstdout[2m | tests/game/ai/intel-manager.test.ts[2m > [22m[2mAiIntelManager[2m > [22m[2mprocessAiIntelActions[2m > [22m[2mAI 鍔ㄤ綔缁撴灉鍐欏叆 lastAiIntelActions
+[22m[39m[DEBUG][AI.Intel] batch intel-1784275612961-ec9c END, total elapsed: 1ms
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanOnSettle[2m > [22m[2m鎵惧埌鑳滆€呭苟缁撶畻
+[22m[39m[INFO][Settlement] lanOnSettle: 鏀跺埌缁撶畻鍚屾, winnerId=lan-1, winnerBid=3000, mode=direct
+[INFO][Settlement] lanOnSettle: 鎵惧埌鑳滆€?id=p1, name=鑳滆€? 璋冪敤 finishAuction
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanOnRestartGo[2m > [22m[2m閲嶆柊鍒濆鍖栬仈鏈虹姸鎬?[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"lan-1","carryItems":[]}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"Host","isHuman":true,"isAI":false,"isSelf":true}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=1
+[INFO][LAN] startLanRun slot mapping: myPlayerId=lan-1 | lanIdToSlotId={"lan-1":"p1"} | players.lanId list=["lan-1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p1
+[INFO][LAN] startLanRun done: isLanMode=true, lanMySlotId=p1, players count=1, lanPlayers count=1, round=1, playerBidSubmitted=false, lanIdToSlotId={"lan-1":"p1"}, lanIsHost=true
+
+[90mstdout[2m | tests/game/lan/lan-index-manager.test.ts[2m > [22m[2mLanIndexManager[2m > [22m[2mlanOnRestartGo[2m > [22m[2m涓绘満妯″紡璁剧疆閽卞寘
+[22m[39m[DEBUG][LAN] startLanRun carryItems mapping: {0} [{"id":"lan-1","carryItems":[]}]
+[INFO][LAN] startLanRun: players=[{"id":"p1","name":"Host","isHuman":true,"isAI":false,"isSelf":true}]
+[INFO][LAN] startLanRun: resetPlayerHistoryState after players set, count=1
+[INFO][LAN] startLanRun slot mapping: myPlayerId=lan-1 | lanIdToSlotId={"lan-1":"p1"} | players.lanId list=["lan-1"]
+[INFO][LAN] startLanRun: lanMySlotId resolved to p1
+[INFO][LAN] startLanRun done: isLanMode=true, lanMySlotId=p1, players count=1, lanPlayers count=1, round=1, playerBidSubmitted=false, lanIdToSlotId={"lan-1":"p1"}, lanIsHost=true
+
+ [32m鉁?[39m tests/game/lan/lan-index-manager.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 127[2mms[22m[39m
+[90mstdout[2m | tests/game/ui/overlay-manager.test.ts
+[22m[39m[LlmUiBridge] initialize() 寮€濮嬫墽琛?[LlmUiBridge] getElements() 缁撴灉: {
+  providerSelect: [32m'鏈壘鍒?[39m,
+  addProviderBtn: [32m'鏈壘鍒?[39m,
+  deleteProviderBtn: [32m'鏈壘鍒?[39m,
+  testBtn: [32m'鏈壘鍒?[39m,
+  customProviderModal: [32m'鏈壘鍒?[39m,
+  customProviderConfirm: [32m'鏈壘鍒?[39m,
+  customProviderCancel: [32m'鏈壘鍒?[39m
+}
+[LlmUiBridge] initialProviderId: deepseek
+[LlmUiBridge] refreshProviderSelect() 琚皟鐢? selectValue: deepseek
+[loadProviderSettings] providerId: deepseek
+[loadProviderSettings] provider: [1mnull[22m
+[loadProviderSettings] provider not found, using defaults
+
+ [32m鉁?[39m tests/game/ai/intel-manager.test.ts [2m([22m[2m82 tests[22m[2m)[22m[32m 138[2mms[22m[39m
+stderr | tests/game/ui/overlay-manager.test.ts
+[LlmUiBridge] providerSelect 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] refreshProviderSelect - providerSelect 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] testBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] addProviderBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] deleteProviderBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] customProviderConfirm 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] customProviderCancel 鍏冪礌鏈壘鍒帮紒
+
+[90mstdout[2m | tests/llm/core/llm-manager.test.ts[2m > [22m[2mLlmManager 鏍稿績鏂规硶[2m > [22m[2mregisterProvider / getProvider / unregisterProvider
+[22m[39m[LlmManager.getProvider] by id: test-mock result: test-mock
+[LlmManager.getProvider] by id: test-mock result: [1mnull[22m
+
+[90mstdout[2m | tests/llm/core/llm-manager.test.ts[2m > [22m[2mLlmManager 鏍稿績鏂规硶[2m > [22m[2msetActiveProvider 鍒囨崲娲昏穬 provider
+[22m[39m[LlmManager.setActiveProvider] providerId: test-active exists: [33mtrue[39m
+[LlmManager.setActiveProvider] success, activeProviderId: test-active
+
+[90mstdout[2m | tests/llm/core/llm-manager.test.ts[2m > [22m[2mbroadcastToTokenMonitor[2m > [22m[2m鎴愬姛缁撴灉鍐欏叆 localStorage
+[22m[39m[TokenMonitor] broadcast called from player:ai1, ok:true, elapsed:100ms
+[TokenMonitor] data sent, requestId:r1
+
+[90mstdout[2m | tests/llm/core/llm-manager.test.ts[2m > [22m[2mbroadcastToTokenMonitor[2m > [22m[2m澶辫触缁撴灉涔熷啓鍏?[22m[39m[TokenMonitor] broadcast called from unknown, ok:false, elapsed:5000ms
+[TokenMonitor] data sent, requestId:r2
+
+[90mstdout[2m | tests/llm/core/llm-manager.test.ts[2m > [22m[2mbroadcastToTokenMonitor[2m > [22m[2m鍖呭惈 usage 鏃跺啓鍏?normalizedUsage
+[22m[39m[TokenMonitor] broadcast called from unknown, ok:true, elapsed:200ms
+[TokenMonitor] data sent, requestId:r3
+
+[90mstdout[2m | tests/llm/core/llm-manager.test.ts[2m > [22m[2mcreateBaseProvider[2m > [22m[2mloadSettings 杩斿洖榛樿鍊?apiKey
+[22m[39m[loadSettings] storageKey: mobao_test-base_settings_v1 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_test-base_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+
+[90mstdout[2m | tests/llm/core/llm-manager.test.ts[2m > [22m[2mcreateBaseProvider[2m > [22m[2msaveSettings 鍚?loadSettings 鍙鍥?[22m[39m[saveSettings] input settings: { enabled: [33mtrue[39m, apiKey: [32m'sk-test123'[39m, model: [32m'test-model'[39m }
+[saveSettings] normalized thinkingEnabled: [90mundefined[39m independentModelEnabled: [90mundefined[39m apiKey: (宸茶缃?
+[saveSettings] saved to localStorage, apiKeyStorageKey: mobao_test-base_api_key_v1
+[loadSettings] storageKey: mobao_test-base_settings_v1 raw: {"enabled":true,"apiKey":"","endpoint":"https://api.test.com","model":"test-model","timeoutMs":30000,"temperature":0.2,"maxTokens":2048}
+[loadSettings] apiKeyStorageKey: mobao_test-base_api_key_v1 storedApiKey: (宸茶缃?
+[loadSettings] parsed: {
+  enabled: [33mtrue[39m,
+  apiKey: [32m''[39m,
+  endpoint: [32m'https://api.test.com'[39m,
+  model: [32m'test-model'[39m,
+  timeoutMs: [33m30000[39m,
+  temperature: [33m0.2[39m,
+  maxTokens: [33m2048[39m
+}
+[loadSettings] normalized thinkingEnabled: [90mundefined[39m independentModelEnabled: [90mundefined[39m apiKey: (绌?
+[loadSettings] final apiKey: (宸茶缃?
+
+[90mstdout[2m | tests/llm/core/llm-manager.test.ts[2m > [22m[2mcreateBaseProvider[2m > [22m[2mapiKey 鍗曠嫭瀛樺偍涓嶅湪 JSON settings 涓?[22m[39m[saveSettings] input settings: { enabled: [33mtrue[39m, apiKey: [32m'sk-secret'[39m, model: [32m'test-model'[39m }
+[saveSettings] normalized thinkingEnabled: [90mundefined[39m independentModelEnabled: [90mundefined[39m apiKey: (宸茶缃?
+[saveSettings] saved to localStorage, apiKeyStorageKey: mobao_test-base_api_key_v1
+
+ [32m鉁?[39m tests/llm/core/llm-manager.test.ts [2m([22m[2m64 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+[90mstdout[2m | tests/integration/manager-state-sync.test.ts[2m > [22m[2mManager 鐘舵€佸悓姝ラ泦鎴愭祴璇曪紙瀵硅薄鐢熷懡鍛ㄦ湡锛?[2m > [22m[2mAiWalletManager 鍘熷湴淇敼鍚屾[2m > [22m[2mresetAiWallets: 鍘熷湴淇敼 aiWallets锛屽満鏅紩鐢ㄤ笉鍙?[22m[39m[INFO][AI.Wallet] AI wallets reset to [33m1000000[39m
+
+[90mstdout[2m | tests/integration/manager-state-sync.test.ts[2m > [22m[2mManager 鐘舵€佸悓姝ラ泦鎴愭祴璇曪紙瀵硅薄鐢熷懡鍛ㄦ湡锛?[2m > [22m[2mAiWalletManager 鍘熷湴淇敼鍚屾[2m > [22m[2minitAiWallets: 鍘熷湴淇敼 aiWallets锛屽満鏅紩鐢ㄤ笉鍙?[22m[39m[INFO][AI.Wallet] AI wallets loaded: { ai1: [33m1000000[39m, ai2: [33m1000000[39m }
+
+[90mstdout[2m | tests/integration/manager-state-sync.test.ts[2m > [22m[2mManager 鐘舵€佸悓姝ラ泦鎴愭祴璇曪紙瀵硅薄鐢熷懡鍛ㄦ湡锛?[2m > [22m[2mAiWalletManager 鍘熷湴淇敼鍚屾[2m > [22m[2minitAiWallets: 浠?localStorage 鍔犺浇鏃跺師鍦板啓鍏ュ瓨鍌ㄥ€?[22m[39m[INFO][AI.Wallet] AI wallets loaded: { ai1: [33m777000[39m, ai2: [33m888000[39m }
+
+ [32m鉁?[39m tests/integration/manager-state-sync.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m鉁?[39m tests/game/ai/bidding/pure.test.ts [2m([22m[2m46 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts
+[22m[39m[INFO][Mobile] init - isMobile: [33mfalse[39m isTouch: [33mtrue[39m hasAndroidKeyboard: [33mfalse[39m screenHeight: [33m768[39m
+
+[90mstdout[2m | tests/game/scene/warehouse-scene-constructor.test.ts
+[22m[39m[LlmUiBridge] initialize() 寮€濮嬫墽琛?[LlmUiBridge] getElements() 缁撴灉: {
+  providerSelect: [32m'鏈壘鍒?[39m,
+  addProviderBtn: [32m'鏈壘鍒?[39m,
+  deleteProviderBtn: [32m'鏈壘鍒?[39m,
+  testBtn: [32m'鏈壘鍒?[39m,
+  customProviderModal: [32m'鏈壘鍒?[39m,
+  customProviderConfirm: [32m'鏈壘鍒?[39m,
+  customProviderCancel: [32m'鏈壘鍒?[39m
+}
+[LlmManager.init] managerSettings: { activeProviderId: [1mnull[22m }
+[LlmManager.init] available providers: [ [32m'deepseek'[39m ]
+[LlmManager.init] set activeProviderId to first provider: deepseek
+[LlmUiBridge] initialProviderId: deepseek
+[LlmUiBridge] refreshProviderSelect() 琚皟鐢? selectValue: deepseek
+[loadProviderSettings] providerId: deepseek
+[LlmManager.getProvider] by id: deepseek result: deepseek
+[loadProviderSettings] provider: deepseek
+[loadSettings] storageKey: mobao_deepseek_settings_v2 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_deepseek_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+[loadProviderSettings] settings: {
+  provider: [32m'deepseek'[39m,
+  enabled: [33mfalse[39m,
+  multiGameMemoryEnabled: [33mfalse[39m,
+  reflectionEnabled: [33mfalse[39m,
+  contextLength: [33m5[39m,
+  autoSummarizeEnabled: [33mtrue[39m,
+  reflectionScope: [32m'current'[39m,
+  thinkingEnabled: [33mfalse[39m,
+  thinkingParams: [32m''[39m,
+  independentModelEnabled: [33mfalse[39m,
+  independentReflectionEnabled: [33mtrue[39m,
+  endpoint: [32m'/api/deepseek/chat/completions'[39m,
+  model: [32m'deepseek-v4-flash'[39m,
+  apiKey: [32m''[39m,
+  timeoutMs: [33m40000[39m,
+  temperature: [33m0.2[39m,
+  maxTokens: [33m2048[39m
+}
+
+stderr | tests/game/scene/warehouse-scene-constructor.test.ts
+[LlmUiBridge] providerSelect 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] refreshProviderSelect - providerSelect 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] testBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] addProviderBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] deleteProviderBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] customProviderConfirm 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] customProviderCancel 鍏冪礌鏈壘鍒帮紒
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts
+[22m[39m[LlmUiBridge] initialize() 寮€濮嬫墽琛?[LlmUiBridge] getElements() 缁撴灉: {
+  providerSelect: [32m'鏈壘鍒?[39m,
+  addProviderBtn: [32m'鏈壘鍒?[39m,
+  deleteProviderBtn: [32m'鏈壘鍒?[39m,
+  testBtn: [32m'鏈壘鍒?[39m,
+  customProviderModal: [32m'鏈壘鍒?[39m,
+  customProviderConfirm: [32m'鏈壘鍒?[39m,
+  customProviderCancel: [32m'鏈壘鍒?[39m
+}
+[LlmManager.init] managerSettings: { activeProviderId: [1mnull[22m }
+[LlmManager.init] available providers: [ [32m'deepseek'[39m ]
+[LlmManager.init] set activeProviderId to first provider: deepseek
+[LlmUiBridge] initialProviderId: deepseek
+[LlmUiBridge] refreshProviderSelect() 琚皟鐢? selectValue: deepseek
+[loadProviderSettings] providerId: deepseek
+[LlmManager.getProvider] by id: deepseek result: deepseek
+[loadProviderSettings] provider: deepseek
+[loadSettings] storageKey: mobao_deepseek_settings_v2 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_deepseek_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+[loadProviderSettings] settings: {
+  provider: [32m'deepseek'[39m,
+  enabled: [33mfalse[39m,
+  multiGameMemoryEnabled: [33mfalse[39m,
+  reflectionEnabled: [33mfalse[39m,
+  contextLength: [33m5[39m,
+  autoSummarizeEnabled: [33mtrue[39m,
+  reflectionScope: [32m'current'[39m,
+  thinkingEnabled: [33mfalse[39m,
+  thinkingParams: [32m''[39m,
+  independentModelEnabled: [33mfalse[39m,
+  independentReflectionEnabled: [33mtrue[39m,
+  endpoint: [32m'/api/deepseek/chat/completions'[39m,
+  model: [32m'deepseek-v4-flash'[39m,
+  apiKey: [32m''[39m,
+  timeoutMs: [33m40000[39m,
+  temperature: [33m0.2[39m,
+  maxTokens: [33m2048[39m
+}
+
+stderr | tests/integration/scene-assembly.test.ts
+[LlmUiBridge] providerSelect 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] refreshProviderSelect - providerSelect 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] testBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] addProviderBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] deleteProviderBtn 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] customProviderConfirm 鍏冪礌鏈壘鍒帮紒
+[LlmUiBridge] customProviderCancel 鍏冪礌鏈壘鍒帮紒
+
+[90mstdout[2m | tests/game/lobby/index.test.ts
+[22m[39m[INFO][Mobile] init - isMobile: [33mfalse[39m isTouch: [33mtrue[39m hasAndroidKeyboard: [33mfalse[39m screenHeight: [33m768[39m
+
+ [32m鉁?[39m tests/game/ai/game-history.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+[90mstdout[2m | tests/game/scene/warehouse-scene-constructor.test.ts
+[22m[39m[INFO][Mobile] init - isMobile: [33mfalse[39m isTouch: [33mtrue[39m hasAndroidKeyboard: [33mfalse[39m screenHeight: [33m768[39m
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts
+[22m[39m[INFO][Mobile] init - isMobile: [33mfalse[39m isTouch: [33mtrue[39m hasAndroidKeyboard: [33mfalse[39m screenHeight: [33m768[39m
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m椤甸潰瀵艰埅[2m > [22m[2mshowLobbyMain[2m > [22m[2m闅愯棌瀛愰〉闈㈠苟鏄剧ず涓婚〉
+[22m[39m[DEBUG][LAN] [manager] showLobbyMain CALLED, skipAnimation={0} [90mundefined[39m
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [90mundefined[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m椤甸潰瀵艰埅[2m > [22m[2mshowLobbyMain[2m > [22m[2m閲嶇疆 isLanMode 鍜?lanIsHost
+[22m[39m[DEBUG][LAN] [manager] showLobbyMain CALLED, skipAnimation={0} [90mundefined[39m
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [90mundefined[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m椤甸潰瀵艰埅[2m > [22m[2mshowLobbyMain[2m > [22m[2mskipAnimation=true 鏃朵笉娣诲姞鍔ㄧ敾绫?[22m[39m[DEBUG][LAN] [manager] showLobbyMain CALLED, skipAnimation={0} [33mtrue[39m
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [33mtrue[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m椤甸潰瀵艰埅[2m > [22m[2mshowLobbyMain[2m > [22m[2mskipAnimation=false 鏃舵坊鍔犲姩鐢荤被
+[22m[39m[DEBUG][LAN] [manager] showLobbyMain CALLED, skipAnimation={0} [33mfalse[39m
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [33mfalse[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2m鍊兼崟鑾峰洖褰掓祴璇曪紙闃叉 deps 鍊兼崟鑾?bug 澶嶅彂锛?[2m > [22m[2mplayers 閲嶆柊璧嬪€?[2m > [22m[2mwalletManager.resetAiWallets 鐪嬪埌鏂?players
+[22m[39m[INFO][AI.Wallet] AI wallets reset to [33m1000000[39m
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2m鍊兼崟鑾峰洖褰掓祴璇曪紙闃叉 deps 鍊兼崟鑾?bug 澶嶅彂锛?[2m > [22m[2mplayers 閲嶆柊璧嬪€?[2m > [22m[2mhistoryManager.resetPlayerHistoryState 鐪嬪埌鏂?players
+[22m[39m[DEBUG][UI] refreshPlayerHistoryUI: players count=2, playerIds=["h-new-1","h-new-2"], currentRoundUsage keys=["h-new-1","h-new-2"]
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2m鍊兼崟鑾峰洖褰掓祴璇曪紙闃叉 deps 鍊兼崟鑾?bug 澶嶅彂锛?[2m > [22m[2maiWallets 閲嶆柊璧嬪€?[2m > [22m[2mwalletManager.initAiWallets 鐪嬪埌鏂?aiWallets 瀵硅薄
+[22m[39m[INFO][AI.Wallet] AI wallets loaded: { p1: [33m1000000[39m, p3: [33m1000000[39m, p4: [33m1000000[39m }
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2mstartNewRun 鐘舵€侀噸缃摼鏉?[2m > [22m[2m璋冪敤鍚?isLanMode=false, players 閲嶇疆, lanPlayers 娓呯┖
+[22m[39m[DEBUG][LAN] [fn-file] startNewRun CALLED
+[INFO][LAN] startNewRun: state reset via slices, GAME_SETTINGS reloaded from localStorage
+[DEBUG][LAN] startNewRun: players reset, count=4
+[INFO][LAN] startNewRun: reloaded aiLlmPlayerEnabled from localStorage, keys=0
+
+ [32m鉁?[39m tests/game/lobby/index.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2mstartNewRun 鐘舵€侀噸缃摼鏉?[2m > [22m[2mAI 鎸佷箙鍖栧瓧娈碉紙aiConversationByPlayer/aiCrossGameMemory/aiLlmPlayerEnabled锛夎法灞€淇濈暀
+[22m[39m[DEBUG][LAN] [fn-file] startNewRun CALLED
+[INFO][LAN] startNewRun: state reset via slices, GAME_SETTINGS reloaded from localStorage
+[DEBUG][LAN] startNewRun: players reset, count=4
+[INFO][LAN] startNewRun: reloaded aiLlmPlayerEnabled from localStorage, keys=0
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2mstartNewRun 鐘舵€侀噸缃摼鏉?[2m > [22m[2mAI 鐬€佸瓧娈碉紙lastAiDecisionTelemetry/llmEverUsedThisRun/aiReflectionState锛夎閲嶇疆
+[22m[39m[DEBUG][LAN] [fn-file] startNewRun CALLED
+[INFO][LAN] startNewRun: state reset via slices, GAME_SETTINGS reloaded from localStorage
+[DEBUG][LAN] startNewRun: players reset, count=4
+[INFO][LAN] startNewRun: reloaded aiLlmPlayerEnabled from localStorage, keys=0
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2mstartNewRun 鐘舵€侀噸缃摼鏉?[2m > [22m[2mstartNewRun 涓嶅啀璋冪敤 resetAiConversations锛圓I 璁板繂鐢?slice 淇濇姢锛?[22m[39m[DEBUG][LAN] [fn-file] startNewRun CALLED
+[INFO][LAN] startNewRun: state reset via slices, GAME_SETTINGS reloaded from localStorage
+[DEBUG][LAN] startNewRun: players reset, count=4
+[INFO][LAN] startNewRun: reloaded aiLlmPlayerEnabled from localStorage, keys=0
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2mMixin 浠ｇ悊 -> Manager 濮旀墭閾炬潯[2m > [22m[2mscene.positionPreview() -> warehouseManager.positionPreview 琚皟鐢?[22m[39m[DEBUG][Warehouse] [manager] positionPreview CALLED, canvasX={0}, canvasY={1} [33m100[39m [33m200[39m
+[DEBUG][Warehouse] [fn-file] positionPreview CALLED, canvasX={0}, canvasY={1} [33m100[39m [33m200[39m
+[DEBUG][Warehouse] positionPreview shown at ({0}, {1}) [33m100[39m [33m200[39m
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2mMixin 浠ｇ悊 -> Manager 濮旀墭閾炬潯[2m > [22m[2mscene.playerBid() -> biddingManager.playerBid 琚皟鐢?[22m[39m[DEBUG][Bidding] [mixin] playerBid CALLED
+[DEBUG][Bidding] [manager] playerBid CALLED
+[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=p2, amount=0, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=0, playerBidSubmitted=true, roundBidReadyState={}, myId=p2
+
+[90mstdout[2m | tests/integration/scene-assembly.test.ts[2m > [22m[2mMixin 浠ｇ悊 -> Manager 濮旀墭閾炬潯[2m > [22m[2mMixin 浠ｇ悊鏂规硶浣跨敤 scene 浣滀负 this 涓婁笅鏂?[22m[39m[DEBUG][Warehouse] [manager] positionPreview CALLED, canvasX={0}, canvasY={1} [33m50[39m [33m75[39m
+[DEBUG][Warehouse] [fn-file] positionPreview CALLED, canvasX={0}, canvasY={1} [33m50[39m [33m75[39m
+[DEBUG][Warehouse] positionPreview shown at ({0}, {1}) [33m50[39m [33m75[39m
+[DEBUG][Bidding] [mixin] playerBid CALLED
+[DEBUG][Bidding] [manager] playerBid CALLED
+[INFO][Bidding] playerBid: ENTRY, isLan=false, mySlotId=p2, amount=0, playerBidSubmitted=true, settled=false, roundResolving=false, roundBidReadyState={"p2":true}
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLobby[2m > [22m[2m閲嶇疆鎵€鏈?LAN 鐘舵€?[22m[39m[INFO][LAN] enterLobby: LAN state reset via resetLanState
+[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [33mtrue[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+ [32m鉁?[39m tests/game/scene/warehouse-scene-constructor.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 3343[2mms[22m[39m
+ [32m鉁?[39m tests/integration/scene-assembly.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 2725[2mms[22m[39m
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLobby[2m > [22m[2m鍒濆鍖?4 涓粯璁ょ帺瀹?[22m[39m[INFO][LAN] enterLobby: LAN state reset via resetLanState
+[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [33mtrue[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLobby[2m > [22m[2m璋冪敤 initPlayersUI 鍜?showLobbyMain(true)
+[22m[39m[INFO][LAN] enterLobby: LAN state reset via resetLanState
+[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [33mtrue[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLobby[2m > [22m[2m鏄剧ず澶у巺椤甸潰骞堕殣钘忔父鎴忓尯鍩?[22m[39m[INFO][LAN] enterLobby: LAN state reset via resetLanState
+[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [33mtrue[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+Not implemented: HTMLMediaElement's pause() method
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLobby[2m > [22m[2m鏄剧ず鑱旀満杩炴帴闈㈡澘骞堕殣钘忔埧闂撮潰鏉?[22m[39m[INFO][LAN] enterLobby: LAN state reset via resetLanState
+[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+[DEBUG][LAN] [fn-file] showLobbyMain CALLED, skipAnimation={0} [33mtrue[39m
+[INFO][LAN] showLobbyMain: LAN state reset via resetLanState
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLanRoom[2m > [22m[2m璋冪敤 cleanupGameScene 鍜?exitSettlementPage
+[22m[39m[DEBUG][LAN] [manager] enterLanRoom CALLED
+[DEBUG][LAN] [fn-file] enterLanRoom CALLED, isLanMode={0}, lanIsHost={1} [33mfalse[39m [33mfalse[39m
+[DEBUG][LAN] enterLanRoom: players reset, count=4
+[INFO][LAN] enterLanRoom: isLanMode=false | lanIsHost=false
+[INFO][LAN] enterLanRoom: LAN game state reset via resetLanGameState (preserved bridge/players/roomCode)
+
+ [32m鉁?[39m tests/game/ui/overlay-manager.test.ts [2m([22m[2m79 tests[22m[2m)[22m[33m 1039[2mms[22m[39m
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLanRoom[2m > [22m[2m鏄剧ず鎴块棿闈㈡澘骞堕殣钘忚繛鎺ラ潰鏉?[22m[39m[DEBUG][LAN] [manager] enterLanRoom CALLED
+[DEBUG][LAN] [fn-file] enterLanRoom CALLED, isLanMode={0}, lanIsHost={1} [33mfalse[39m [33mfalse[39m
+[DEBUG][LAN] enterLanRoom: players reset, count=4
+[INFO][LAN] enterLanRoom: isLanMode=false | lanIsHost=false
+[INFO][LAN] enterLanRoom: LAN game state reset via resetLanGameState (preserved bridge/players/roomCode)
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLanRoom[2m > [22m[2misLanMode 涓?lanIsHost 涓?lanBridge 瀛樺湪鏃跺彂閫?room:return
+[22m[39m[DEBUG][LAN] [manager] enterLanRoom CALLED
+[DEBUG][LAN] [fn-file] enterLanRoom CALLED, isLanMode={0}, lanIsHost={1} [33mtrue[39m [33mtrue[39m
+[DEBUG][LAN] enterLanRoom: players reset, count=4
+[INFO][LAN] enterLanRoom: isLanMode=true | lanIsHost=true
+[INFO][LAN] enterLanRoom: LAN game state reset via resetLanGameState (preserved bridge/players/roomCode)
+[DEBUG][LAN] [fn-file] enterLanRoom sending room:return to notify clients
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍏ュ彛鍒囨崲[2m > [22m[2menterLanRoom[2m > [22m[2m鍙戦€佸け璐ユ椂璋冪敤 writeLog
+[22m[39m[DEBUG][LAN] [manager] enterLanRoom CALLED
+[DEBUG][LAN] [fn-file] enterLanRoom CALLED, isLanMode={0}, lanIsHost={1} [33mtrue[39m [33mtrue[39m
+[DEBUG][LAN] enterLanRoom: players reset, count=4
+[INFO][LAN] enterLanRoom: isLanMode=true | lanIsHost=true
+[INFO][LAN] enterLanRoom: LAN game state reset via resetLanGameState (preserved bridge/players/roomCode)
+[DEBUG][LAN] [fn-file] enterLanRoom sending room:return to notify clients
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍒濆鍖栧叧閿祦绋?[2m > [22m[2minitPlayersUI[2m > [22m[2m娲昏穬鐜╁鍗＄墖绉婚櫎 hidden 绫伙紝闈炴椿璺冪帺瀹朵繚鐣?[22m[39m[INFO][UI] initPlayersUI: players count=2, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true}]
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍒濆鍖栧叧閿祦绋?[2m > [22m[2minitPlayersUI[2m > [22m[2m璁剧疆鐜╁鍚嶇О
+[22m[39m[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍒濆鍖栧叧閿祦绋?[2m > [22m[2minitPlayersUI[2m > [22m[2m涓?AI 鐜╁鍒涘缓 LLM 寮€鍏?[22m[39m[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍒濆鍖栧叧閿祦绋?[2m > [22m[2minitPlayersUI[2m > [22m[2mLLM 寮€鍏?change 浜嬩欢鏇存柊 aiLlmPlayerEnabled
+[22m[39m[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍒濆鍖栧叧閿祦绋?[2m > [22m[2minitPlayersUI[2m > [22m[2m璋冪敤 refreshPlayerHistoryUI 鍜?updatePlayerCharNames
+[22m[39m[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+
+[90mstdout[2m | tests/game/lobby/lobby-index-manager.test.ts[2m > [22m[2mLobbyIndexManager[2m > [22m[2m鍒濆鍖栧叧閿祦绋?[2m > [22m[2minitPlayersUI[2m > [22m[2misLanMode=true 鏃?LLM 寮€鍏崇鐢?[22m[39m[INFO][UI] initPlayersUI: players count=4, players=[{"id":"p1","name":"宸︿笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p2","name":"鐜╁","isHuman":true,"isAI":false,"isSelf":true},{"id":"p3","name":"鍙充笂AI","isHuman":false,"isAI":true,"isSelf":false},{"id":"p4","name":"鍙充笅AI","isHuman":false,"isAI":true,"isSelf":false}]
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2mOpenAI 鏍囧噯鏍煎紡 choices[0].message.content[2m > [22m[2mDeepSeek provider: 姝ｇ‘鎻愬彇 content
+[22m[39m[requestChat] deepseek-1784275614717-e584 START, provider: deepseek, model: deepseek-v4-flash
+[loadSettings] storageKey: mobao_deepseek_settings_v2 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_deepseek_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+[API DEBUG] loadedSettings.endpoint: "/api/deepseek/chat/completions" type: string
+[API DEBUG] input.settings?.endpoint: "https://api.deepseek.com/v1" type: string
+[API DEBUG] mergedSettings.endpoint: "https://api.deepseek.com/v1" type: string
+[requestChat] deepseek-1784275614717-e584 settings merged, model: deepseek-v4-flash, endpoint: https://api.deepseek.com/v1, elapsed: 3ms
+[requestChat] fetchEndpoint: /llm-cors-proxy/https://api.deepseek.com/v1/chat/completions type: string startsWith https: [33mfalse[39m
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2mOpenAI 鏍囧噯鏍煎紡 choices[0].message.content[2m > [22m[2mDeepSeek provider: 姝ｇ‘鎻愬彇 content
+[22m[39m[requestChat] deepseek-1784275614717-e584 SUCCESS, elapsed: 14ms, http: 10ms
+[TokenMonitor] broadcast called from unknown, ok:true, elapsed:10ms
+[TokenMonitor] data sent, requestId:deepseek-1784275614721-2d7574
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2mOpenAI 鏍囧噯鏍煎紡 choices[0].message.content[2m > [22m[2mDeepSeek provider: 姝ｇ‘鎻愬彇 reasoningContent锛堟€濈淮閾撅級
+[22m[39m[requestChat] deepseek-1784275614736-09f0 START, provider: deepseek, model: deepseek-reasoner
+[loadSettings] storageKey: mobao_deepseek_settings_v2 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_deepseek_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+[API DEBUG] loadedSettings.endpoint: "/api/deepseek/chat/completions" type: string
+[API DEBUG] input.settings?.endpoint: "https://api.deepseek.com/v1" type: string
+[API DEBUG] mergedSettings.endpoint: "https://api.deepseek.com/v1" type: string
+[requestChat] deepseek-1784275614736-09f0 settings merged, model: deepseek-reasoner, endpoint: https://api.deepseek.com/v1, elapsed: 1ms
+[requestChat] fetchEndpoint: /llm-cors-proxy/https://api.deepseek.com/v1/chat/completions type: string startsWith https: [33mfalse[39m
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2mOpenAI 鏍囧噯鏍煎紡 choices[0].message.content[2m > [22m[2mDeepSeek provider: 姝ｇ‘鎻愬彇 reasoningContent锛堟€濈淮閾撅級
+[22m[39m[requestChat] deepseek-1784275614736-09f0 SUCCESS, elapsed: 2ms, http: 1ms
+[TokenMonitor] broadcast called from unknown, ok:true, elapsed:1ms
+[TokenMonitor] data sent, requestId:deepseek-1784275614737-962219
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2mOpenAI 鏍囧噯鏍煎紡 choices[0].message.content[2m > [22m[2mQwen provider: 姝ｇ‘鎻愬彇 content
+[22m[39m[requestChat] qwen-1784275614740-c340 START, provider: qwen, model: qwen-plus
+[loadSettings] storageKey: mobao_qwen_settings_v1 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_qwen_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+[API DEBUG] loadedSettings.endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" type: string
+[API DEBUG] input.settings?.endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1" type: string
+[API DEBUG] mergedSettings.endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1" type: string
+[requestChat] qwen-1784275614740-c340 settings merged, model: qwen-plus, endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1, elapsed: 0ms
+[requestChat] fetchEndpoint: /llm-cors-proxy/https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions type: string startsWith https: [33mfalse[39m
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2mOpenAI 鏍囧噯鏍煎紡 choices[0].message.content[2m > [22m[2mQwen provider: 姝ｇ‘鎻愬彇 content
+[22m[39m[requestChat] qwen-1784275614740-c340 SUCCESS, elapsed: 1ms, http: 1ms
+[TokenMonitor] broadcast called from unknown, ok:true, elapsed:1ms
+[TokenMonitor] data sent, requestId:qwen-1784275614740-766129
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2m闈炴爣鍑嗘牸寮?choices[0].content锛堝吋瀹规€э級[2m > [22m[2mflat choice 鏍煎紡锛氭纭彁鍙?content
+[22m[39m[requestChat] deepseek-1784275614743-bbc7 START, provider: deepseek, model: custom-model
+[loadSettings] storageKey: mobao_deepseek_settings_v2 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_deepseek_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+[API DEBUG] loadedSettings.endpoint: "/api/deepseek/chat/completions" type: string
+[API DEBUG] input.settings?.endpoint: "https://api.example.com/v1" type: string
+[API DEBUG] mergedSettings.endpoint: "https://api.example.com/v1" type: string
+[requestChat] deepseek-1784275614743-bbc7 settings merged, model: custom-model, endpoint: https://api.example.com/v1, elapsed: 1ms
+[requestChat] fetchEndpoint: /llm-cors-proxy/https://api.example.com/v1/chat/completions type: string startsWith https: [33mfalse[39m
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2m闈炴爣鍑嗘牸寮?choices[0].content锛堝吋瀹规€э級[2m > [22m[2mflat choice 鏍煎紡锛氭纭彁鍙?content
+[22m[39m[requestChat] deepseek-1784275614743-bbc7 SUCCESS, elapsed: 2ms, http: 1ms
+[TokenMonitor] broadcast called from unknown, ok:true, elapsed:1ms
+[TokenMonitor] data sent, requestId:deepseek-1784275614744-e4456e
+
+Not implemented: HTMLMediaElement's pause() method
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2m绌鸿繑鍥炴娴?[2m > [22m[2mAPI 杩斿洖鏃?content 鏃?content 涓虹┖瀛楃涓诧紙闈?null/undefined锛?[22m[39m[requestChat] deepseek-1784275614746-7585 START, provider: deepseek, model: deepseek-v4-flash
+[loadSettings] storageKey: mobao_deepseek_settings_v2 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_deepseek_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+[API DEBUG] loadedSettings.endpoint: "/api/deepseek/chat/completions" type: string
+[API DEBUG] input.settings?.endpoint: "https://api.deepseek.com/v1" type: string
+[API DEBUG] mergedSettings.endpoint: "https://api.deepseek.com/v1" type: string
+[requestChat] deepseek-1784275614746-7585 settings merged, model: deepseek-v4-flash, endpoint: https://api.deepseek.com/v1, elapsed: 1ms
+[requestChat] fetchEndpoint: /llm-cors-proxy/https://api.deepseek.com/v1/chat/completions type: string startsWith https: [33mfalse[39m
+
+Not implemented: HTMLMediaElement's pause() method
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2m绌鸿繑鍥炴娴?[2m > [22m[2mAPI 杩斿洖鏃?content 鏃?content 涓虹┖瀛楃涓诧紙闈?null/undefined锛?[22m[39m[requestChat] deepseek-1784275614746-7585 SUCCESS, elapsed: 2ms, http: 1ms
+[TokenMonitor] broadcast called from unknown, ok:true, elapsed:1ms
+[TokenMonitor] data sent, requestId:deepseek-1784275614747-cb35a4
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2m绌鸿繑鍥炴娴?[2m > [22m[2mAPI 杩斿洖绌?choices 鏃朵笉宕╂簝
+[22m[39m[requestChat] deepseek-1784275614749-828c START, provider: deepseek, model: deepseek-v4-flash
+[loadSettings] storageKey: mobao_deepseek_settings_v2 raw: [1mnull[22m
+[loadSettings] apiKeyStorageKey: mobao_deepseek_api_key_v1 storedApiKey: (绌?
+[loadSettings] no raw data, returning defaults
+[API DEBUG] loadedSettings.endpoint: "/api/deepseek/chat/completions" type: string
+[API DEBUG] input.settings?.endpoint: "https://api.deepseek.com/v1" type: string
+[API DEBUG] mergedSettings.endpoint: "https://api.deepseek.com/v1" type: string
+[requestChat] deepseek-1784275614749-828c settings merged, model: deepseek-v4-flash, endpoint: https://api.deepseek.com/v1, elapsed: 1ms
+[requestChat] fetchEndpoint: /llm-cors-proxy/https://api.deepseek.com/v1/chat/completions type: string startsWith https: [33mfalse[39m
+
+[90mstdout[2m | tests/llm/providers/response-parse.test.ts[2m > [22m[2mrequestChat 鍝嶅簲瑙ｆ瀽[2m > [22m[2m绌鸿繑鍥炴娴?[2m > [22m[2mAPI 杩斿洖绌?choices 鏃朵笉宕╂簝
+[22m[39m[requestChat] deepseek-1784275614749-828c SUCCESS, elapsed: 2ms, http: 1ms
+[TokenMonitor] broadcast called from unknown, ok:true, elapsed:1ms
+[TokenMonitor] data sent, requestId:deepseek-1784275614750-c0c4c2
+
+ [32m鉁?[39m tests/llm/providers/response-parse.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m鉁?[39m tests/game/lobby/lobby-index-manager.test.ts [2m([22m[2m43 tests[22m[2m)[22m[33m 516[2mms[22m[39m
+[90mstdout[2m | tests/behavioral/bid-chain-e2e.test.ts[2m > [22m[2m绔埌绔嚭浠烽摼娴嬭瘯锛堟埧涓诲嚭浠蜂笉涓㈠け锛?[2m > [22m[2m鍏ㄩ摼璺細鎴夸富 playerBid(2) -> scene.playerRoundBid=2 -> lanResolveRound -> 璧㈠鏄埧涓?[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=true, mySlotId=p1, amount=2, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=2, playerBidSubmitted=true, roundBidReadyState={}, myId=p1
+[INFO][LAN] lanResolveRound: reason=all-in, round=1, lanHostBids keys=["lan2","lan1"], lanHostBids={"lan2":1,"lan1":2}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":2},{"playerId":"lan2","bid":1}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan1","bid":2},{"playerId":"lan2","bid":1}], first={playerId: lan1, bid: 2}, second={playerId: lan2, bid: 1}, winner=p1, currentBid=2, secondHighestBid=1
+[INFO][LAN] lanResolveRound: auction ends, mode=direct, winnerLanId=lan1, winnerSlotId=p1, bid=2
+
+[90mstdout[2m | tests/behavioral/bid-chain-e2e.test.ts[2m > [22m[2m绔埌绔嚭浠烽摼娴嬭瘯锛堟埧涓诲嚭浠蜂笉涓㈠け锛?[2m > [22m[2m瀹㈡満鍑洪珮浠疯耽锛氭埧涓诲嚭浠?1, 瀹㈡満鍑轰环 3 -> 璧㈠鏄鏈?[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=true, mySlotId=p1, amount=1, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=1, playerBidSubmitted=true, roundBidReadyState={}, myId=p1
+[INFO][LAN] lanResolveRound: reason=all-in, round=5, lanHostBids keys=["lan2","lan1"], lanHostBids={"lan2":3,"lan1":1}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":1},{"playerId":"lan2","bid":3}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan2","bid":3},{"playerId":"lan1","bid":1}], first={playerId: lan2, bid: 3}, second={playerId: lan1, bid: 1}, winner=p2, currentBid=3, secondHighestBid=1
+[INFO][LAN] lanResolveRound: auction ends, mode=final, winnerLanId=lan2, winnerSlotId=p2, bid=3
+
+[90mstdout[2m | tests/behavioral/bid-chain-e2e.test.ts[2m > [22m[2m绔埌绔嚭浠烽摼娴嬭瘯锛堟埧涓诲嚭浠蜂笉涓㈠け锛?[2m > [22m[2m骞冲眬锛氭埧涓诲嚭浠?2, 瀹㈡満鍑轰环 2 -> 鎴夸富鍏堝嚭鐜帮紙鏁扮粍椤哄簭锛?[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=true, mySlotId=p1, amount=2, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=2, playerBidSubmitted=true, roundBidReadyState={}, myId=p1
+[INFO][LAN] lanResolveRound: reason=all-in, round=1, lanHostBids keys=["lan2","lan1"], lanHostBids={"lan2":2,"lan1":2}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":2},{"playerId":"lan2","bid":2}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan1","bid":2},{"playerId":"lan2","bid":2}], first={playerId: lan1, bid: 2}, second={playerId: lan2, bid: 2}, winner=p1, currentBid=2, secondHighestBid=2
+
+[90mstdout[2m | tests/behavioral/bid-chain-e2e.test.ts[2m > [22m[2m绔埌绔嚭浠烽摼娴嬭瘯锛堟埧涓诲嚭浠蜂笉涓㈠け锛?[2m > [22m[2m澶氫汉鍦烘櫙锛氭埧涓?2, 瀹㈡満1 鍑?1, 瀹㈡満2 鍑?3 -> 璧㈠鏄鏈?
+[22m[39m[INFO][Bidding] playerBid: ENTRY, isLan=true, mySlotId=p1, amount=2, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=2, playerBidSubmitted=true, roundBidReadyState={}, myId=p1
+[INFO][LAN] lanResolveRound: reason=all-in, round=5, lanHostBids keys=["lan2","lan3","lan1"], lanHostBids={"lan2":1,"lan3":3,"lan1":2}
+[INFO][LAN] lanResolveRound: allBids=[{"playerId":"lan1","bid":2},{"playerId":"lan2","bid":1},{"playerId":"lan3","bid":3}]
+[INFO][LAN] lanResolveRound: sorted=[{"playerId":"lan3","bid":3},{"playerId":"lan1","bid":2},{"playerId":"lan2","bid":1}], first={playerId: lan3, bid: 3}, second={playerId: lan1, bid: 2}, winner=p3, currentBid=3, secondHighestBid=2
+[INFO][LAN] lanResolveRound: auction ends, mode=final, winnerLanId=lan3, winnerSlotId=p3, bid=3
+
+[90mstdout[2m | tests/behavioral/bid-chain-e2e.test.ts[2m > [22m[2m绔埌绔嚭浠烽摼娴嬭瘯锛堟埧涓诲嚭浠蜂笉涓㈠け锛?[2m > [22m[2m涓绘満鍑轰环 -> full-sync 缁欏鏈?-> 瀹㈡満鍑轰环涓嶅彈褰卞搷锛堜笉琚?playerBidSubmitted 闃绘锛?[22m[39m[INFO][LAN] lanOnFullSync: skipped per-player state sync (playerBidSubmitted/playerRoundBid)
+[INFO][Bidding] playerBid: ENTRY, isLan=true, mySlotId=p1, amount=150000, playerBidSubmitted=false, settled=false, roundResolving=false, roundBidReadyState={}
+[INFO][Bidding] playerBid: stored playerRoundBid=150000, playerBidSubmitted=true, roundBidReadyState={}, myId=p1
+
+ [32m鉁?[39m tests/behavioral/bid-chain-e2e.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m鉁?[39m tests/game/ai/context-builder.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m鉁?[39m tests/behavioral/single-player-flow.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m鉁?[39m tests/game/bidding/bidding-manager.test.ts [2m([22m[2m34 tests[22m[2m)[22m[33m 5107[2mms[22m[39m
+       [33m[2m鉁?[22m[39m 鐜╁鏈彁浜ゅ嚭浠锋椂璁颁负 0 [33m 4993[2mms[22m[39m
+ [32m鉁?[39m tests/game/data/map-profiles.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+[90mstdout[2m | tests/game/ai/reflection.test.ts[2m > [22m[2mreflection[2m > [22m[2mupdateCrossGameMemory[2m > [22m[2m棣栨娓告垙缁熻鍒濆鍖栨纭?[22m[39m[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=50000, praises=0, strategies=0, lessons=0
+
+[90mstdout[2m | tests/game/ai/reflection.test.ts[2m > [22m[2mreflection[2m > [22m[2mupdateCrossGameMemory[2m > [22m[2m澶氬眬绱Н缁熻姝ｇ‘
+[22m[39m[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=30000, praises=0, strategies=0, lessons=0
+[DEBUG][AI.Reflection] ai-1 updated: games=2, winRate=50%, avgProfit=17500, praises=0, strategies=0, lessons=0
+
+[90mstdout[2m | tests/game/ai/reflection.test.ts[2m > [22m[2mreflection[2m > [22m[2mupdateCrossGameMemory[2m > [22m[2mreflection 鎿嶄綔搴旂敤鍒扮粡楠屾湰
+[22m[39m[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=100%, avgProfit=0, praises=1, strategies=1, lessons=1
+
+[90mstdout[2m | tests/game/ai/reflection.test.ts[2m > [22m[2mreflection[2m > [22m[2mupdateCrossGameMemory[2m > [22m[2m鍒嗙孩鏈哄埗璁＄畻姝ｇ‘
+[22m[39m[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=0%, avgProfit=8000, praises=0, strategies=0, lessons=0
+
+[90mstdout[2m | tests/game/ai/reflection.test.ts[2m > [22m[2mreflection[2m > [22m[2mupdateCrossGameMemory[2m > [22m[2m闂ㄧエ鏈哄埗璁＄畻姝ｇ‘锛堣礋鍒╂鼎锛?[22m[39m[DEBUG][AI.Reflection] ai-1 updated: games=1, winRate=0%, avgProfit=-3000, praises=0, strategies=0, lessons=0
+
+ [32m鉁?[39m tests/game/ai/reflection.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m鉁?[39m tests/game/ai/bidding/intel-action.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m鉁?[39m tests/game/core/settings.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m鉁?[39m tests/game/data/public-events.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+[90mstdout[2m | tests/game/ai/wallet-manager.test.ts[2m > [22m[2mAiWalletManager[2m > [22m[2mresetAiWallets[2m > [22m[2m閲嶇疆鎵€鏈?AI 閽卞寘涓哄垵濮嬪€?[22m[39m[INFO][AI.Wallet] AI wallets reset to [33m1000000[39m
+
+[90mstdout[2m | tests/game/ai/wallet-manager.test.ts[2m > [22m[2mAiWalletManager[2m > [22m[2minitAiWallets[2m > [22m[2m浠庡瓨鍌ㄥ姞杞介挶鍖?[22m[39m[INFO][AI.Wallet] AI wallets loaded: { [32m'ai-1'[39m: [33m777000[39m }
+
+[90mstdout[2m | tests/game/ai/wallet-manager.test.ts[2m > [22m[2mAiWalletManager[2m > [22m[2minitAiWallets[2m > [22m[2m瀛樺偍鏃犳暟鎹椂浣跨敤榛樿鍊?[22m[39m[INFO][AI.Wallet] AI wallets loaded: { [32m'ai-new'[39m: [33m1000000[39m }
+
+ [32m鉁?[39m tests/game/ai/wallet-manager.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m鉁?[39m tests/integration/bid-flow.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+[90mstdout[2m | tests/game/ai/wallet.test.ts[2m > [22m[2mwallet[2m > [22m[2mresetAiWallets[2m > [22m[2m閲嶇疆鎵€鏈堿I閽卞寘涓哄垵濮嬪€?[22m[39m[INFO][AI.Wallet] AI wallets reset to [33m1000000[39m
+
+[90mstdout[2m | tests/game/ai/wallet.test.ts[2m > [22m[2mwallet[2m > [22m[2mlocalStorage[2m > [22m[2minitAiWallets 浠庡瓨鍌ㄥ姞杞?[22m[39m[INFO][AI.Wallet] AI wallets loaded: { [32m'ai-1'[39m: [33m777000[39m }
+
+[90mstdout[2m | tests/game/ai/wallet.test.ts[2m > [22m[2mwallet[2m > [22m[2mlocalStorage[2m > [22m[2minitAiWallets 瀛樺偍鏃犳暟鎹椂浣跨敤榛樿鍊?[22m[39m[INFO][AI.Wallet] AI wallets loaded: { [32m'ai-new'[39m: [33m1000000[39m }
+
+ [32m鉁?[39m tests/game/ai/wallet.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m鉁?[39m tests/game/lan/lobby/pure.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m鉁?[39m tests/llm/core/llm-error.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+[90mstdout[2m | tests/game/ui/history.test.ts[2m > [22m[2mhistory[2m > [22m[2mclearCurrentRoundUsage[2m > [22m[2m娓呯┖鎵€鏈夌帺瀹跺綋鍓嶅洖鍚堜娇鐢ㄨ褰?[22m[39m[DEBUG][UI] clearCurrentRoundUsage: players count=2, playerIds=["p1","p2"], before keys=["p1","p2"]
+
+ [32m鉁?[39m tests/game/ui/history.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m鉁?[39m tests/behavioral/persistence-reset.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m鉁?[39m tests/game/bridge/shop.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+[90mstdout[2m | tests/behavioral/full-sync-isolation.test.ts[2m > [22m[2m鍏ㄩ噺鍚屾闅旂娴嬭瘯锛堟瘡鐜╁鐘舵€佷笉琚富鏈鸿鐩栵級[2m > [22m[2m淇鍓嶅け璐ワ細full-sync 鍚庡鏈?playerBidSubmitted 浠嶆槸 false锛堟瘡鐜╁鐘舵€佷笉琚富鏈鸿鐩栵級
+[22m[39m[INFO][LAN] lanOnFullSync: skipped per-player state sync (playerBidSubmitted/playerRoundBid)
+
+[90mstdout[2m | tests/behavioral/full-sync-isolation.test.ts[2m > [22m[2m鍏ㄩ噺鍚屾闅旂娴嬭瘯锛堟瘡鐜╁鐘舵€佷笉琚富鏈鸿鐩栵級[2m > [22m[2m瀹㈡満 playerBidSubmitted=true 鏃?full-sync 涓嶈鐩栵紙宸插嚭浠风姸鎬佷繚鐣欙級
+[22m[39m[INFO][LAN] lanOnFullSync: skipped per-player state sync (playerBidSubmitted/playerRoundBid)
+
+ [32m鉁?[39m tests/behavioral/full-sync-isolation.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m鉁?[39m tests/game/ui/overlay.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m鉁?[39m tests/behavioral/state-reset.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m鉁?[39m tests/game/data/def-manager-helpers.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m鉁?[39m tests/llm/providers/deepseek-provider.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m鉁?[39m tests/game/ai/memory.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m鉁?[39m tests/game/warehouse/index.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m鉁?[39m tests/game/data/items.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m鉁?[39m tests/game/data/characters.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m鉁?[39m tests/integration/lan-bid-flow.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m鉁?[39m tests/llm/core/llm-settings.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m鉁?[39m tests/behavioral/state-isolation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m鉁?[39m tests/game/data/character-system.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m鉁?[39m tests/integration/lan-isolation.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+[90mstdout[2m | tests/integration/deps-wiring.test.ts
+[22m[39m[INFO][Mobile] init - isMobile: [33mfalse[39m isTouch: [33mtrue[39m hasAndroidKeyboard: [33mfalse[39m screenHeight: [33m768[39m
+
+ [32m鉁?[39m tests/llm/providers/qwen-provider.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+[90mstdout[2m | tests/integration/deps-wiring.test.ts[2m > [22m[2m绫诲瀷 A锛氬€兼崟鑾峰簲涓?getter[2m > [22m[2mAiWalletManager 鈥?players getter[2m > [22m[2m閲嶆柊璧嬪€?players 鍚庯紝resetAiWallets 鐪嬪埌鏂版暟缁?[22m[39m[INFO][AI.Wallet] AI wallets reset to [33m1000000[39m
+
+ [32m鉁?[39m tests/integration/deps-wiring.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m鉁?[39m tests/game/ai/summarizer.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m鉁?[39m tests/game/core/app-state.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m鉁?[39m tests/server/bid-flow.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m鉁?[39m tests/llm/providers/glm-provider.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m鉁?[39m tests/llm/providers/openai-provider.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m鉁?[39m tests/game/data/skills.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m鉁?[39m tests/game/core/settlement-manager.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m鉁?[39m tests/game/ai/bidding.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m鉁?[39m tests/game/core/skill-item-manager.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m鉁?[39m tests/llm/providers/kimi-provider.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m鉁?[39m tests/game/lobby/character-select.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m鉁?[39m tests/game/bidding/index.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m鉁?[39m tests/behavioral/settings-flow.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m84 passed[39m[22m[90m (84)[39m
+[2m      Tests [22m [1m[32m2157 passed[39m[22m[90m (2157)[39m
+[2m   Start at [22m 16:06:36
+[2m   Duration [22m 30.11s[2m (transform 36.45s, setup 0ms, import 51.59s, tests 19.52s, environment 650.91s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   38.82 |    32.66 |   37.13 |   39.53 |                   
+ audio             |    2.62 |     2.06 |    3.27 |    2.95 |                   
+  audio-manager.ts |    2.42 |     2.91 |    4.87 |    2.73 | ...26,431,437-496 
+  audio-ui.ts      |    3.27 |        0 |       0 |     3.7 | 45-172            
+ game              |    0.34 |        0 |       0 |    0.38 |                   
+  animations.ts    |    0.37 |        0 |       0 |    0.41 | 56-496            
+  main.ts          |       0 |        0 |       0 |       0 | 53-192            
+ game/ai           |   80.36 |    68.43 |   67.62 |   80.59 |                   
+  bidding.ts       |   71.98 |    63.01 |   73.91 |   72.72 | ...1213,1219-1221 
+  ...xt-builder.ts |   87.39 |    59.61 |   81.25 |   86.13 | ...74,179,303-330 
+  ...on-manager.ts |   78.26 |       70 |   91.66 |   78.26 | 85,105-109        
+  decision.ts      |   77.41 |    77.29 |   72.22 |   77.41 | ...78,394,419-435 
+  game-history.ts  |   96.47 |    82.27 |     100 |   97.33 | 88-89             
+  intel-manager.ts |   89.47 |      100 |   89.47 |   89.47 | 244,327,390,461   
+  intel.ts         |    2.63 |      100 |       0 |    2.63 | 33-184            
+  ...ry-manager.ts |      90 |    68.59 |    93.1 |   91.42 | ...25-727,735-739 
+  memory.ts        |      46 |    91.66 |   20.58 |   42.55 | 101-205           
+  ...on-manager.ts |   82.24 |    54.47 |      75 |   83.73 | ...14,519-524,558 
+  reflection.ts    |   87.09 |    78.57 |      50 |      90 | 101,193-221       
+  summarizer.ts    |   95.83 |    95.65 |     100 |   94.44 | 87                
+  ...et-manager.ts |      90 |      100 |    87.5 |      90 | 43                
+  wallet.ts        |    83.6 |    76.47 |   56.25 |   81.81 | 52,61,120,130-148 
+ game/ai/bidding   |   93.61 |    86.79 |     100 |   93.43 |                   
+  intel-action.ts  |     100 |       94 |     100 |     100 | 45-46,130         
+  pure.ts          |   91.42 |    83.48 |     100 |   91.26 | 258-260,281-287   
+  types.ts         |       0 |        0 |       0 |       0 |                   
+ game/ai/intel     |    8.57 |     8.18 |   17.35 |    7.08 |                   
+  action.ts        |       0 |        0 |       0 |       0 | 21-541            
+  init.ts          |       0 |        0 |       0 |       0 | 23-136            
+  panel.ts         |       0 |        0 |       0 |       0 | 19-247            
+  pure.ts          |     100 |    98.11 |     100 |     100 | 36                
+  reveal.ts        |       0 |        0 |       0 |       0 | 41-580            
+  snapshot.ts      |       0 |        0 |       0 |       0 | 20-103            
+ .../intel-manager |   61.29 |     42.9 |   74.25 |   62.05 |                   
+  action-fns.ts    |   42.97 |     28.8 |   82.35 |   42.38 | ...73,542,560-569 
+  init-fns.ts      |    88.5 |    71.69 |     100 |   87.34 | 86-93,106-107,111 
+  panel-fns.ts     |   83.11 |    54.95 |   78.26 |   82.66 | ...56,250-251,290 
+  reveal-fns.ts    |   58.96 |    53.09 |   53.84 |   63.35 | ...60,662,669-671 
+  snapshot-fns.ts  |     100 |    83.33 |     100 |     100 | 40                
+ game/bidding      |   72.72 |      100 |    64.7 |   72.72 |                   
+  ...ng-manager.ts |   72.72 |      100 |    64.7 |   72.72 | ...73-177,189-193 
+ ...idding-manager |   71.91 |     65.5 |      70 |   73.45 |                   
+  flow-fns.ts      |   66.66 |    53.46 |      60 |   68.55 | ...97,315-319,349 
+  keypad-fns.ts    |   79.33 |    77.77 |      90 |   80.17 | ...31-233,237-238 
+ game/bridge       |    38.7 |     30.3 |   43.93 |   39.26 |                   
+  battle-record.ts |     100 |      100 |     100 |     100 |                   
+  ...-particles.ts |    1.08 |        0 |       0 |    1.16 | 15-245            
+  settlement.ts    |   38.35 |    27.51 |   30.76 |   38.54 | ...39,553,566,574 
+  shop.ts          |   61.76 |       50 |   76.92 |   64.46 | ...83-284,336-401 
+ .../battle-record |   32.72 |    21.32 |   32.07 |   33.25 |                   
+  log-view.ts      |     2.6 |        0 |    6.25 |    2.85 | 16-27,40-232      
+  panel.ts         |    8.45 |     1.83 |   18.18 |    8.45 | ...28-135,137-189 
+  persist.ts       |   60.71 |     42.1 |      75 |   62.96 | 85,103,161-187    
+  pure.ts          |      96 |    77.17 |     100 |   96.84 | 80,143,149        
+  replay.ts        |    4.16 |        0 |      25 |    4.34 | 18-82             
+  restore.ts       |       6 |        0 |   14.28 |       6 | 21-117            
+  types.ts         |       0 |        0 |       0 |       0 |                   
+ game/core         |   93.38 |    92.11 |   83.47 |   93.62 |                   
+  app-state.ts     |     100 |      100 |     100 |     100 |                   
+  constants.ts     |     100 |      100 |     100 |     100 |                   
+  deps.ts          |     100 |      100 |     100 |     100 |                   
+  logger.ts        |   80.76 |    68.18 |     100 |    90.9 | 17-18             
+  player-money.ts  |     100 |      100 |     100 |     100 |                   
+  ...ager-class.ts |     100 |      100 |     100 |     100 |                   
+  ...anager-fns.ts |     100 |      100 |     100 |     100 |                   
+  round-manager.ts |       0 |      100 |       0 |       0 | 10-36             
+  settings.ts      |     100 |      100 |     100 |     100 |                   
+  ...ager-class.ts |   96.92 |     87.5 |     100 |    96.8 | 330-331,425-427   
+  ...nt-manager.ts |      80 |      100 |   33.33 |      80 | 122-142           
+  ...ager-class.ts |     100 |      100 |     100 |     100 |                   
+  ...em-manager.ts |   84.61 |    93.54 |   69.23 |   81.81 | 87-99             
+  utils.ts         |   90.42 |    88.46 |   88.46 |   90.32 | ...96-200,214-218 
+ game/core/state   |   87.59 |      100 |   90.47 |   87.59 |                   
+  ai-slice.ts      |     100 |      100 |     100 |     100 |                   
+  game-slice.ts    |     100 |      100 |     100 |     100 |                   
+  lan-slice.ts     |     100 |      100 |     100 |     100 |                   
+  record-slice.ts  |     100 |      100 |     100 |     100 |                   
+  ...ings-slice.ts |   23.52 |      100 |   66.66 |   23.52 | 32-44             
+  ui-slice.ts      |      20 |      100 |      50 |      20 | 20-23             
+  ...ouse-slice.ts |     100 |      100 |     100 |     100 |                   
+ game/data         |   86.29 |    73.71 |   83.33 |   86.42 |                   
+  artifacts.ts     |       0 |        0 |       0 |       0 |                   
+  ...ter-system.ts |   83.11 |    64.51 |   94.11 |   86.15 | 26-31,101,125,131 
+  characters.ts    |     100 |      100 |     100 |     100 |                   
+  ...er-helpers.ts |     100 |     87.5 |     100 |     100 | 51                
+  items.ts         |   54.16 |      100 |   52.17 |      50 | 36-150            
+  map-profiles.ts  |     100 |    83.33 |     100 |     100 | 137               
+  public-events.ts |   91.34 |    77.31 |     100 |   90.81 | ...53,283,292,316 
+  skills.ts        |   94.11 |      100 |   93.75 |   93.33 | 50                
+ ...data/artifacts |   58.21 |    60.49 |   59.09 |   60.93 |                   
+  config.ts        |     100 |      100 |     100 |     100 |                   
+  library.ts       |     100 |      100 |     100 |     100 |                   
+  manager.ts       |   32.81 |    47.72 |   34.78 |    37.5 | 27-91,147-166     
+  pure.ts          |   76.92 |    75.67 |   85.71 |   77.94 | 131,159-185       
+ game/lan          |    1.26 |        0 |    6.55 |    1.39 |                   
+  events.ts        |       0 |        0 |       0 |       0 | 37-551            
+  game-flow.ts     |       0 |        0 |       0 |       0 | 22-414            
+  ...ex-manager.ts |      80 |      100 |   79.31 |      80 | 289-293,346       
+  live2d.ts        |       0 |        0 |       0 |       0 | 26-310            
+  lobby.ts         |       0 |        0 |       0 |       0 | 42-1479           
+  reconnect.ts     |       0 |        0 |       0 |       0 | 30-86             
+  settle.ts        |       0 |        0 |       0 |       0 | 44-126            
+  sync.ts          |       0 |        0 |       0 |       0 | 21-330            
+ ...-index-manager |   28.25 |    20.77 |   19.33 |   29.93 |                   
+  events-fns.ts    |   11.89 |        0 |    1.69 |   12.75 | ...23-637,643-644 
+  game-flow-fns.ts |   85.05 |    66.28 |   88.57 |   88.16 | ...55,460,523-524 
+  live2d-fns.ts    |   24.41 |     11.2 |   10.81 |   27.56 | ...91-297,300-306 
+  lobby-fns.ts     |    0.11 |        0 |       0 |    0.12 | 39-1506           
+  reconnect-fns.ts |    47.5 |    42.85 |      75 |   51.42 | 58-59,61-84       
+  settle-fns.ts    |   81.25 |    67.74 |   63.63 |   83.72 | 31-32,112-127     
+  sync-fns.ts      |   89.57 |     67.4 |     100 |   90.04 | ...84-289,376-391 
+ game/lan/lobby    |    97.5 |    96.66 |     100 |     100 |                   
+  pure.ts          |    97.5 |    96.66 |     100 |     100 | 112               
+ game/lobby        |    47.6 |    36.63 |   38.46 |   48.35 |                   
+  ...el-manager.ts |     100 |      100 |     100 |     100 |                   
+  carousel.ts      |   82.85 |    60.71 |      65 |   83.51 | ...92,142,236-252 
+  ...ct-manager.ts |   48.43 |    37.57 |   37.06 |   49.58 | ...1266-1267,1281 
+  ...ter-select.ts |     3.7 |      100 |       0 |     3.7 | 24-124            
+  collection.ts    |    9.82 |    20.56 |   11.11 |     9.8 | 60-237            
+  ...ex-manager.ts |      75 |      100 |      70 |      75 | 152,189,197-209   
+ ...aracter-select |    2.49 |      3.7 |     3.4 |    2.29 |                   
+  carry-items.ts   |       0 |        0 |       0 |       0 | 31-286            
+  live2d.ts        |       0 |        0 |       0 |       0 | 30-598            
+  pure.ts          |     100 |      100 |     100 |     100 |                   
+ ...-index-manager |   81.37 |    57.91 |   64.28 |   83.16 |                   
+  cleanup-fns.ts   |   88.97 |    58.66 |      80 |   88.03 | ...08,158-159,171 
+  init-fns.ts      |    75.4 |    53.44 |   57.89 |   78.34 | ...65-269,281-333 
+  ...gation-fns.ts |   88.15 |    72.91 |      75 |   90.62 | ...,63-64,117-118 
+ game/scene        |   15.47 |     0.82 |   22.59 |   16.05 |                   
+  ...-ai-memory.ts |       0 |        0 |       0 |       0 | 16-455            
+  ...s-ai-panel.ts |       0 |        0 |       0 |       0 | 11-23             
+  ...tle-record.ts |       0 |        0 |       0 |       0 | 11-78             
+  ...tem-drawer.ts |       0 |        0 |       0 |       0 | 11-38             
+  ...ts-overlay.ts |       0 |        0 |       0 |       0 | 14-388            
+  ...s-settings.ts |       0 |        0 |       0 |       0 | 15-204            
+  ...settlement.ts |       0 |        0 |       0 |       0 | 12-67             
+  ...e-ai-panel.ts |       0 |        0 |       0 |       0 | 29-161            
+  ...tle-record.ts |       0 |      100 |       0 |       0 | 16                
+  ...-character.ts |       0 |        0 |       0 |       0 | 17-47             
+  scene-hud.ts     |       0 |        0 |       0 |       0 | 22-141            
+  scene-init.ts    |       0 |        0 |       0 |       0 | 36-232            
+  scene-run.ts     |      96 |     62.5 |     100 |      96 | 69-70             
+  ...settlement.ts |       0 |        0 |       0 |       0 |                   
+  scene-utils.ts   |       0 |        0 |       0 |       0 | 36-172            
+  ...ouse-scene.ts |   30.24 |     12.5 |   27.08 |   30.24 | ...2051,2061-2274 
+ game/ui           |   67.26 |    62.69 |    57.8 |    69.4 |                   
+  ...ry-manager.ts |   97.56 |    83.33 |   95.65 |     100 | 166               
+  history.ts       |   66.66 |     58.9 |   52.94 |    74.5 | ...28-238,259-295 
+  ...ay-manager.ts |      90 |      100 |   89.79 |      90 | ...01,230-233,310 
+  overlay.ts       |    1.96 |        0 |       0 |    1.96 | 18-173            
+  ...ls-manager.ts |   78.12 |    16.66 |     100 |   77.41 | 122-130           
+  panels.ts        |   86.11 |    84.84 |   58.33 |   84.84 | 115-131           
+ game/ui/overlay   |     2.8 |     3.69 |    7.05 |    2.27 |                   
+  ...mory-panel.ts |       0 |        0 |       0 |       0 | 13-155            
+  ...del-config.ts |       0 |        0 |       0 |       0 | 13-138            
+  ...ion-dialog.ts |       0 |        0 |       0 |       0 | 20-139            
+  ...irm-dialog.ts |       0 |        0 |       0 |       0 | 11-22             
+  core.ts          |       0 |        0 |       0 |       0 | 17-99             
+  detail-popup.ts  |       0 |        0 |       0 |       0 | 19-112            
+  info-popup.ts    |       0 |        0 |       0 |       0 | 13-87             
+  lan-dialog.ts    |       0 |        0 |       0 |       0 | 11-130            
+  pure.ts          |     100 |    88.88 |     100 |     100 | 30                
+  settings.ts      |       0 |        0 |       0 |       0 | 26-314            
+ ...verlay-manager |   81.12 |     56.8 |   86.36 |   82.68 |                   
+  ai-config-fns.ts |    89.7 |    63.79 |     100 |   92.06 | 18,27,72,132-133  
+  ai-memory-fns.ts |      84 |    51.47 |      80 |   88.57 | 129-131,139-143   
+  ...ection-fns.ts |   94.36 |    65.78 |    87.5 |   95.65 | 44-45,113         
+  ...dialog-fns.ts |     100 |       70 |     100 |     100 | 16-17,19          
+  core-fns.ts      |   71.69 |    45.83 |   77.77 |   70.58 | ...,81,86,105-107 
+  ...-popup-fns.ts |   94.59 |    62.06 |     100 |   94.11 | 91-92             
+  ...-popup-fns.ts |   82.97 |     61.9 |      90 |   82.97 | ...64-65,75,83,86 
+  ...dialog-fns.ts |   94.93 |       88 |      80 |   97.22 | 86,115            
+  settings-fns.ts  |   62.64 |    44.44 |      75 |   64.88 | ...94,309,312-313 
+ game/warehouse    |   84.44 |    66.66 |   83.33 |   84.44 |                   
+  types.ts         |       0 |        0 |       0 |       0 |                   
+  ...se-manager.ts |   84.44 |    66.66 |   83.33 |   84.44 | ...90,196-199,212 
+ ...ehouse-manager |   70.19 |    60.11 |   56.09 |   70.25 |                   
+  core-fns.ts      |    80.3 |    70.58 |   57.69 |   78.88 | ...78,283,292-297 
+  preview-fns.ts   |   88.52 |    70.83 |   85.71 |   89.07 | ...23-125,134-138 
+  reveal-fns.ts    |   57.77 |    50.83 |   45.23 |   58.51 | ...70,697,736-742 
+  types.ts         |       0 |        0 |       0 |       0 |                   
+ llm/core          |   36.31 |    28.67 |   38.01 |   37.44 |                   
+  llm-decision.ts  |     100 |      100 |     100 |     100 |                   
+  llm-error.ts     |   63.88 |     62.5 |   57.14 |   63.26 | ...26-128,153-197 
+  llm-manager.ts   |   36.23 |    29.71 |   30.76 |   36.23 | ...61,469-470,475 
+  llm-prompt.ts    |       0 |        0 |       0 |       0 | 121-762           
+  llm-settings.ts  |   27.13 |    15.73 |      50 |   27.13 | 73-271            
+  llm-ui-bridge.ts |    24.7 |    18.48 |    27.5 |    27.2 | ...91,897-916,943 
+  manager-utils.ts |   96.25 |    95.18 |     100 |    96.2 | 95,157,180        
+  prompts.ts       |     100 |      100 |     100 |     100 |                   
+  ...er-factory.ts |   62.86 |    54.38 |   69.56 |   63.13 | ...40-680,684-703 
+  scene-llm.ts     |       0 |      100 |       0 |       0 | 30-40             
+ llm/core/decision |   44.62 |    36.69 |   29.57 |   44.42 |                   
+  correction.ts    |   20.62 |    22.78 |    8.57 |   21.63 | ...17-324,338-649 
+  panel.ts         |    3.52 |        0 |    6.25 |    3.75 | 28-211            
+  pure.ts          |   88.23 |    85.98 |     100 |    86.4 | 165,187-204       
+  request.ts       |   66.02 |    38.12 |      70 |   66.02 | ...38-545,553-628 
+  types.ts         |       0 |        0 |       0 |       0 |                   
+ llm/providers     |   50.31 |    31.74 |   96.15 |   50.31 |                   
+  ...k-provider.ts |   66.66 |    59.25 |     100 |   66.66 | ...29,151-160,166 
+  glm-provider.ts  |   33.33 |        0 |      90 |   33.33 | ...,89-90,111-126 
+  kimi-provider.ts |   47.36 |      100 |     100 |   47.36 | 55-65,85-100      
+  ...i-provider.ts |   33.33 |        0 |      90 |   33.33 | ...,92-93,114-129 
+  qwen-provider.ts |      60 |    33.33 |     100 |      60 | ...93,114-123,129 
+ mobile            |   91.66 |    66.66 |     100 |   91.66 |                   
+  ...le-handler.ts |   91.66 |    66.66 |     100 |   91.66 | 53                
+ ...mobile-handler |   22.19 |    10.19 |      45 |   22.89 |                   
+  core.ts          |     100 |      100 |     100 |     100 |                   
+  custom-select.ts |   11.42 |    12.12 |   31.81 |   12.03 | ...,40,52-228,236 
+  input.ts         |   17.64 |     4.08 |      40 |      18 | ...4,50-52,57-193 
+  keyboard.ts      |   15.55 |        0 |   54.54 |   16.27 | 22,26-85,95-108   
+  orientation.ts   |    64.7 |       50 |   66.66 |   68.75 | 24-27,30,39       
+  pure.ts          |   23.07 |        5 |      60 |   23.07 | 23-43             
+  styles.ts        |   83.33 |       50 |     100 |     100 | 8                 
+  types.ts         |       0 |        0 |       0 |       0 |                   
+  vibration.ts     |   36.36 |    26.66 |      50 |   33.33 | 17-26             
+ vue               |       0 |        0 |       0 |       0 |                   
+  app.ts           |       0 |        0 |       0 |       0 |                   
+ vue/stores        |    4.67 |        0 |       0 |    4.81 |                   
+  aiPanelStore.ts  |    7.69 |        0 |       0 |    7.69 | 96-151            
+  ...ecordStore.ts |    3.57 |        0 |       0 |       4 | 6-18,22-67        
+  ...ctionStore.ts |    4.54 |        0 |       0 |    4.54 | 5-71              
+  gameStore.ts     |       0 |        0 |       0 |       0 | 9-68              
+  ...ntoryStore.ts |    4.16 |        0 |       0 |    4.54 | 26-91             
+  panelsStore.ts   |   11.11 |      100 |       0 |   11.11 | 5-43              
+  playerStore.ts   |       0 |      100 |       0 |       0 | 15-16             
+  settingsStore.ts |    7.14 |        0 |       0 |    7.14 | 31-105            
+  ...ementStore.ts |     3.7 |      100 |       0 |     3.7 | 34-93             
+  uiStore.ts       |    6.25 |        0 |       0 |    6.25 | 4-59              
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 38.82% ( 7367/18977 )
+Branches     : 32.66% ( 4498/13768 )
+Functions    : 37.13% ( 1520/4093 )
+Lines        : 39.53% ( 7020/17758 )
+================================================================================

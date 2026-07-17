@@ -16,6 +16,8 @@ export function showGameConfirm(
   if (deps.dom.gameConfirmMsg) deps.dom.gameConfirmMsg.textContent = message
   state.gameConfirmCallback = onConfirm || null
   state.gameCancelCallback = onCancel || null
+  deps.setGameConfirmCallback(onConfirm || null)
+  deps.setGameCancelCallback(onCancel || null)
   deps.dom.gameConfirmOverlay?.classList.remove("hidden")
   // 同步到 Vue uiStore
   import("../../../vue/stores/uiStore")
@@ -31,6 +33,8 @@ export function hideGameConfirm(deps: UiOverlayManagerDeps, state: UiOverlayMana
   deps.dom.gameConfirmOverlay?.classList.add("hidden")
   state.gameConfirmCallback = null
   state.gameCancelCallback = null
+  deps.setGameConfirmCallback(null)
+  deps.setGameCancelCallback(null)
   // 同步到 Vue uiStore
   import("../../../vue/stores/uiStore")
     .then(({ useUiStore }) => {

@@ -184,6 +184,10 @@ function makeDeps(overrides: Partial<LanIndexManagerDeps> = {}): {
     },
     getProfile: null,
     getSelectedProfileId: null,
+    getSettingsMaxRounds: () => 5,
+    getSettingsDirectTakeRatio: () => 0.2,
+    setSettingsMaxRounds: vi.fn(),
+    setSettingsDirectTakeRatio: vi.fn(),
     ...overrides,
   }
 

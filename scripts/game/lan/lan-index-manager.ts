@@ -260,6 +260,12 @@ export interface LanIndexManagerDeps {
       } | null)
     | null
   getSelectedProfileId: (() => string) | null
+
+  // ─── 设置访问（走 settingsSlice，防 LAN 直接改 GAME_SETTINGS 泄漏单机） ───
+  getSettingsMaxRounds: () => number
+  getSettingsDirectTakeRatio: () => number
+  setSettingsMaxRounds: (v: number) => void
+  setSettingsDirectTakeRatio: (v: number) => void
 }
 
 // ─── Manager 类 ───

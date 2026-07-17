@@ -192,6 +192,10 @@ function makeLanDeps(
     skillManager: { onNewRound: vi.fn(), resetForNewRun: vi.fn() },
     getProfile: null,
     getSelectedProfileId: null,
+    getSettingsMaxRounds: () => 5,
+    getSettingsDirectTakeRatio: () => 0.2,
+    setSettingsMaxRounds: vi.fn(),
+    setSettingsDirectTakeRatio: vi.fn(),
     ...overrides
   }
 }
@@ -201,14 +205,6 @@ function makeBidState(overrides: Partial<BiddingManagerState> = {}): BiddingMana
   return {
     roundBidReadyState: {},
     keypadValue: "0",
-    playerBidSubmitted: false,
-    playerRoundBid: 0,
-    roundResolving: false,
-    secondHighestBid: 0,
-    currentBid: 0,
-    bidLeader: null,
-    round: 1,
-    lastAiDecisionTelemetry: null,
     ...overrides
   }
 }
@@ -223,6 +219,17 @@ function makeBidDeps(
   const bidInput = document.createElement("input")
   bidInput.value = "0"
   dom.bidInput = bidInput
+
+  const backing = {
+    playerRoundBid: 0,
+    playerBidSubmitted: false,
+    roundResolving: false,
+    currentBid: 0,
+    bidLeader: "none" as string,
+    secondHighestBid: 0,
+    round: 1,
+    keypadValue: "0",
+  }
 
   return {
     dom,
@@ -244,14 +251,28 @@ function makeBidDeps(
     getAiRoundEffects: () => ({}),
     getLanBridge: () => null,
     getLastAiDecisionTelemetry: () => null,
+    getRound: () => backing.round,
+    getCurrentBid: () => backing.currentBid,
+    getBidLeader: () => backing.bidLeader,
+    getSecondHighestBid: () => backing.secondHighestBid,
+    getPlayerBidSubmitted: () => backing.playerBidSubmitted,
+    getPlayerRoundBid: () => backing.playerRoundBid,
+    getRoundResolving: () => backing.roundResolving,
+    getKeypadValue: () => backing.keypadValue,
 
     closeItemDrawer: vi.fn(),
     hideInfoPopup: vi.fn(),
     showGameConfirm: vi.fn(),
     updateHud: vi.fn(),
     writeLog: vi.fn(),
-    setPlayerBidSubmitted: (v: boolean) => { lanState.playerBidSubmitted = v },
-    setPlayerRoundBid: (v: number) => { lanState.playerRoundBid = v }, // 修复：同步到 scene
+    setPlayerBidSubmitted: vi.fn((v: boolean) => { backing.playerBidSubmitted = v; lanState.playerBidSubmitted = v }),
+    setPlayerRoundBid: vi.fn((v: number) => { backing.playerRoundBid = v; lanState.playerRoundBid = v }),
+    setCurrentBid: vi.fn((v: number) => { backing.currentBid = v }),
+    setBidLeader: vi.fn((v: string) => { backing.bidLeader = v }),
+    setSecondHighestBid: vi.fn((v: number) => { backing.secondHighestBid = v }),
+    setRound: vi.fn((v: number) => { backing.round = v }),
+    setRoundResolving: vi.fn((v: boolean) => { backing.roundResolving = v }),
+    setKeypadValue: vi.fn((v: string) => { backing.keypadValue = v }),
     stopRoundTimer: vi.fn(),
     captureAiDecisionTelemetry: vi.fn(),
     recordAiThoughtLogs: vi.fn(),
@@ -330,8 +351,8 @@ describe("端到端出价链测试（房主出价不丢失）", () => {
     // ===== 第1步：房主出价 2 =====
     hostSubmitBid(bidDeps, bidState, 2)
 
-    // 验证：BiddingManagerState.playerRoundBid === 2
-    expect(bidState.playerRoundBid).toBe(2)
+    // 验证：setPlayerRoundBid 回调被调用，值为 2
+    expect(bidDeps.setPlayerRoundBid).toHaveBeenCalledWith(2)
 
     // 验证：lanState.playerRoundBid === 2（修复后应同步，修复前为 0）
     // 修复前：setPlayerRoundBid 不存在，不更新，lanState.playerRoundBid 仍为 0
@@ -586,8 +607,8 @@ describe("端到端出价链测试（房主出价不丢失）", () => {
     playerBid(bidDeps, bidState)
 
     // 验证：客机出价成功
-    expect(bidState.playerBidSubmitted).toBe(true)
-    expect(bidState.playerRoundBid).toBe(150000)
+    expect(bidDeps.setPlayerBidSubmitted).toHaveBeenCalledWith(true)
+    expect(bidDeps.setPlayerRoundBid).toHaveBeenCalledWith(150000)
     // 验证：客机出价同步到联机状态
     expect(clientLanState.playerBidSubmitted).toBe(true)
     expect(clientLanState.playerRoundBid).toBe(150000)

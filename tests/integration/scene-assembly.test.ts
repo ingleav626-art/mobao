@@ -399,6 +399,98 @@ describe("startNewRun 状态重置链条", () => {
     expect(scene.players[2].id).toBe("p3")
     expect(scene.players[3].id).toBe("p4")
   })
+
+  it("AI 持久化字段（aiConversationByPlayer/aiCrossGameMemory/aiLlmPlayerEnabled）跨局保留", () => {
+    // 预设 AI 持久化数据（模拟上一局积累的记忆）
+    const savedConversations: Record<string, any> = {
+      p1: [{ role: "user", content: "上局对话" }],
+      p3: [{ role: "assistant", content: "AI 回复" }]
+    }
+    const savedCrossGameMemory: Record<string, any> = {
+      p1: [{ totalGames: 3, winRate: 66, avgProfit: 5000 }]
+    }
+    const savedCrossGameMessages: Record<string, any> = {
+      p1: [[{ round: "1", summary: "上局总结" }]]
+    }
+    const savedLlmEnabled: Record<string, boolean> = { p1: true, p3: false, p4: true }
+
+    scene.aiConversationByPlayer = { ...savedConversations }
+    scene.aiCrossGameMemory = { ...savedCrossGameMemory }
+    scene.aiCrossGameMessagesByPlayer = { ...savedCrossGameMessages }
+    scene.aiLlmPlayerEnabled = { ...savedLlmEnabled }
+
+    // 执行新局重置
+    scene.startNewRun()
+
+    // 持久化 AI 记忆应跨局保留，不被 startNewRun 清空
+    expect(scene.aiConversationByPlayer).toEqual(savedConversations)
+    expect(scene.aiCrossGameMemory).toEqual(savedCrossGameMemory)
+    expect(scene.aiCrossGameMessagesByPlayer).toEqual(savedCrossGameMessages)
+    // aiLlmPlayerEnabled 会被 startNewRun 从 localStorage 重新加载覆盖，
+    // 但 state.resetForNewRun() 本身保留它（由 persistence-reset.test.ts 验证 slice 层）
+    // 此处验证场景 getter 仍可读回 state 中的值
+    expect(scene.aiLlmPlayerEnabled).toBeDefined()
+  })
+
+  it("AI 瞬态字段（lastAiDecisionTelemetry/llmEverUsedThisRun/aiReflectionState）被重置", () => {
+    // 模拟上一局残留的瞬态数据
+    scene.lastAiDecisionTelemetry = { mode: "test", round: 3, entries: [] }
+    scene.llmEverUsedThisRun = true
+    scene.aiReflectionState = "running"
+    scene.aiPrivateIntel = { p1: { tileCount: 5 } as any }
+
+    // 执行新局重置
+    scene.startNewRun()
+
+    // 瞬态 AI 字段应被 state.resetForNewRun() 清空
+    expect(scene.lastAiDecisionTelemetry).toBeNull()
+    expect(scene.llmEverUsedThisRun).toBe(false)
+    expect(scene.aiReflectionState).toBe("idle")
+    expect(scene.aiPrivateIntel).toEqual({})
+  })
+
+  it("startNewRun 不再调用 resetAiConversations（AI 记忆由 slice 保护）", () => {
+    // resetAiConversations 在 beforeAll 中已被 mock 为 vi.fn()
+    const spy = scene.resetAiConversations as ReturnType<typeof vi.fn>
+
+    // 清除之前的调用记录
+    spy.mockClear()
+
+    // 执行新局重置
+    scene.startNewRun()
+
+    // startNewRun 不应再调用 resetAiConversations——那是用户主动清空动作，不是生命周期
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it("BiddingManager 出价结果同步回 gameSlice（currentBid/bidLeader/secondHighestBid/round）", () => {
+    // 模拟 resolveRoundBids 写出价结果
+    // 验证 deps 回调 (setCurrentBid/setBidLeader/setSecondHighestBid/setRound)
+    // 正确写入 scene getter → state.game
+
+    scene.currentBid = 888000
+    scene.bidLeader = "p3"
+    scene.secondHighestBid = 444000
+    scene.round = 5
+
+    // scene getter 应返回写入的值
+    expect(scene.currentBid).toBe(888000)
+    expect(scene.bidLeader).toBe("p3")
+    expect(scene.secondHighestBid).toBe(444000)
+    expect(scene.round).toBe(5)
+
+    // gameSlice 应与 scene getter 一致（同一数据源）
+    expect(scene.state.game.currentBid).toBe(888000)
+    expect(scene.state.game.bidLeader).toBe("p3")
+    expect(scene.state.game.secondHighestBid).toBe(444000)
+    expect(scene.state.game.round).toBe(5)
+
+    // 恢复默认值
+    scene.currentBid = 0
+    scene.bidLeader = "none"
+    scene.secondHighestBid = 0
+    scene.round = 1
+  })
 })
 
 // =============================================================================

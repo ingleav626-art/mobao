@@ -66,12 +66,12 @@ export function lanResolveRound(deps: LanIndexManagerDeps, state: LanIndexState,
   })
 
   const shouldDirectTake =
-    state.round < GAME_SETTINGS.maxRounds &&
+    state.round < deps.getSettingsMaxRounds() &&
     first.bid > 0 &&
-    first.bid >= Math.ceil(second.bid * (1 + GAME_SETTINGS.directTakeRatio))
+    first.bid >= Math.ceil(second.bid * (1 + deps.getSettingsDirectTakeRatio()))
 
-  if (state.round === GAME_SETTINGS.maxRounds || shouldDirectTake) {
-    const mode = state.round === GAME_SETTINGS.maxRounds ? "final" : "direct"
+  if (state.round === deps.getSettingsMaxRounds() || shouldDirectTake) {
+    const mode = state.round === deps.getSettingsMaxRounds() ? "final" : "direct"
     const winnerSlotId = state.lanIdToSlotId[first.playerId] || first.playerId
     const winner = { playerId: winnerSlotId, bid: first.bid }
     log.info(
@@ -127,7 +127,7 @@ export function lanComputeAiBids(deps: LanIndexManagerDeps, state: LanIndexState
     aiPlayers,
     clueRate,
     round: state.round,
-    maxRounds: GAME_SETTINGS.maxRounds,
+    maxRounds: deps.getSettingsMaxRounds(),
     currentBid: state.currentBid,
     lastRoundBids,
     bidStep: GAME_SETTINGS.bidStep,
@@ -212,7 +212,7 @@ export function lanOnRoundStart(
 
 export function lanBroadcastRoundStart(deps: LanIndexManagerDeps, state: LanIndexState): void {
   const bridge = deps.getLanBridge()
-  bridge?.broadcastRoundStart(state.round, GAME_SETTINGS.maxRounds, state.currentBid, GAME_SETTINGS.roundSeconds)
+  bridge?.broadcastRoundStart(state.round, deps.getSettingsMaxRounds(), state.currentBid, GAME_SETTINGS.roundSeconds)
 }
 
 export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): void {
@@ -233,8 +233,8 @@ export function startLanRun(deps: LanIndexManagerDeps, state: LanIndexState): vo
     const profile = deps.getProfile(deps.getSelectedProfileId ? deps.getSelectedProfileId() : "")
     if (profile && profile.params) {
       var mp = profile.params
-      if (Number.isFinite(mp.maxRounds)) GAME_SETTINGS.maxRounds = mp.maxRounds
-      if (Number.isFinite(mp.directTakeRatio)) GAME_SETTINGS.directTakeRatio = mp.directTakeRatio
+      if (Number.isFinite(mp.maxRounds)) deps.setSettingsMaxRounds(mp.maxRounds)
+      if (Number.isFinite(mp.directTakeRatio)) deps.setSettingsDirectTakeRatio(mp.directTakeRatio)
       state._mapQualityWeights = mp.qualityWeights || null
       state._mapCategoryWeights = mp.categoryWeights || null
     }

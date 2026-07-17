@@ -16,7 +16,8 @@ import {
   setPlayerBidDisplay,
   settleCurrentRun,
   kickoffAiRoundDecisions,
-  waitUntilResumed
+  waitUntilResumed,
+  resetBiddingStateForNewRound
 } from "./bidding-manager/flow-fns"
 import {
   setPlayerBidReady,
@@ -72,6 +73,14 @@ export interface BiddingManagerDeps {
   getAiRoundEffects: () => Record<string, unknown>
   getLanBridge: () => BiddingLanBridge | null
   getLastAiDecisionTelemetry: () => { mode: string; round: number; entries?: Array<Record<string, unknown>> } | null
+  getRound: () => number
+  getCurrentBid: () => number
+  getBidLeader: () => string
+  getSecondHighestBid: () => number
+  getPlayerBidSubmitted: () => boolean
+  getPlayerRoundBid: () => number
+  getRoundResolving: () => boolean
+  getKeypadValue: () => string
 
   // --- 跨方法回调（Manager 方法委托） ---
   resolveRoundBids: (reason?: string, forceSettle?: boolean) => Promise<void>
@@ -84,6 +93,12 @@ export interface BiddingManagerDeps {
   writeLog: (msg: string) => void
   setPlayerBidSubmitted: (v: boolean) => void
   setPlayerRoundBid: (v: number) => void
+  setCurrentBid: (v: number) => void
+  setBidLeader: (v: string) => void
+  setSecondHighestBid: (v: number) => void
+  setRound: (v: number) => void
+  setRoundResolving: (v: boolean) => void
+  setKeypadValue: (v: string) => void
   stopRoundTimer: () => void
   captureAiDecisionTelemetry: (bids: unknown[]) => void
   recordAiThoughtLogs: (telemetry: unknown) => void
@@ -100,33 +115,17 @@ export interface BiddingManagerDeps {
   normalizeAiBidValue: (playerId: string, bid: number, wallet?: number | null) => number
 }
 
-/** BiddingManager 私有状态（由 Manager 内部持有，供函数文件读写） */
+/** BiddingManager 私有状态（仅保留 UI 瞬态字段，回合级字段走 deps → gameSlice） */
 export interface BiddingManagerState {
   roundBidReadyState: Record<string, boolean>
   keypadValue: string
-  playerBidSubmitted: boolean
-  playerRoundBid: number
-  roundResolving: boolean
-  secondHighestBid: number
-  currentBid: number
-  bidLeader: string | null
-  round: number
-  lastAiDecisionTelemetry: { mode: string; round: number; entries?: Array<Record<string, unknown>> } | null
 }
 
 /** 出价流程管理器（薄协调器） */
 export class BiddingManager {
   private state: BiddingManagerState = {
     roundBidReadyState: {},
-    keypadValue: "0",
-    playerBidSubmitted: false,
-    playerRoundBid: 0,
-    roundResolving: false,
-    secondHighestBid: 0,
-    currentBid: 0,
-    bidLeader: null,
-    round: 1,
-    lastAiDecisionTelemetry: null
+    keypadValue: "0"
   }
 
   constructor(private readonly deps: BiddingManagerDeps) {}
@@ -196,5 +195,9 @@ export class BiddingManager {
 
   settleCurrentRun(): void {
     settleCurrentRun(this.deps, this.state)
+  }
+
+  resetForNewRound(): void {
+    resetBiddingStateForNewRound(this.state, this.deps)
   }
 }

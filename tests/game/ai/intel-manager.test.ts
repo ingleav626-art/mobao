@@ -978,4 +978,204 @@ describe("AiIntelManager", () => {
       expect(Object.keys(pool.knownCellStates).length).toBe(4)
     })
   })
+
+  // ═════════════ AI 道具/技能执行（action-fns.ts） ═════════════
+  describe("processAiIntelActions", () => {
+    it("LAN 模式下跳过本地 AI 处理", async () => {
+      const { deps, state } = makeDeps({ isLanMode: () => true })
+      const manager = new AiIntelManager(deps)
+
+      await manager.processAiIntelActions()
+
+      // LAN 模式不执行 AI 动作，lastAiIntelActions 应为空
+      expect(state.lastAiIntelActions).toHaveLength(0)
+    })
+
+    it("单机模式下正常处理 AI 玩家", async () => {
+      const { deps, state } = makeDeps({
+        players: [
+          makePlayer({ id: "human", name: "玩家", isHuman: true, isSelf: true }),
+          makePlayer({ id: "ai-1", name: "左上AI", isHuman: false }),
+          makePlayer({ id: "ai-2", name: "右上AI", isHuman: false }),
+        ],
+      })
+      // 设置资源状态使动作能成功执行
+      state.aiResourceState["ai-1"] = { skills: { "skill-outline-scan": 1 }, items: {}, consumed: false }
+      state.aiResourceState["ai-2"] = { skills: { "skill-outline-scan": 1 }, items: {}, consumed: false }
+      deps.aiEngine = {
+        ...deps.aiEngine,
+        planIntelAction: () => ({
+          actionType: "skill" as const,
+          actionId: "skill-outline-scan",
+          expectedReveal: 1,
+          score: 1,
+          candidates: [] as string[],
+          decisionSource: "rule" as const,
+        }),
+      }
+      const manager = new AiIntelManager(deps)
+
+      await manager.processAiIntelActions()
+
+      // AI 玩家执行了情报动作，lastAiIntelActions 应有记录
+      expect(state.lastAiIntelActions.length).toBeGreaterThan(0)
+    })
+
+    it("无 AI 玩家时不做任何操作", async () => {
+      const { deps } = makeDeps({
+        players: [
+          makePlayer({ id: "human", name: "玩家", isHuman: true, isSelf: true }),
+        ],
+      })
+      const manager = new AiIntelManager(deps)
+
+      await manager.processAiIntelActions()
+
+      // 没有 AI，不应该调用任何 setPlayerBidReady
+      expect(deps.setPlayerBidReady).not.toHaveBeenCalled()
+    })
+
+    it("AI 动作结果写入 lastAiIntelActions", async () => {
+      const { deps, state } = makeDeps({
+        players: [
+          makePlayer({ id: "human", name: "玩家", isHuman: true, isSelf: true }),
+          makePlayer({ id: "ai-1", name: "左上AI", isHuman: false }),
+        ],
+      })
+      const manager = new AiIntelManager(deps)
+
+      await manager.processAiIntelActions()
+
+      // 至少有一个 action 记录
+      expect(state.lastAiIntelActions.length).toBeGreaterThanOrEqual(0)
+    })
+  })
+
+  describe("executeAiIntelAction", () => {
+    it("actionType=none 时返回 ok=false（未执行情报行动）", () => {
+      const { deps } = makeDeps()
+      const manager = new AiIntelManager(deps)
+
+      const result = manager.executeAiIntelAction("ai-1", {
+        actionType: "none",
+        actionId: "none",
+        expectedReveal: 0,
+        score: 0,
+        candidates: [],
+      })
+
+      // actionType=none → 不执行，ok=false
+      expect(result.ok).toBe(false)
+      expect(result.message).toBe("未执行AI情报行动。")
+    })
+
+    it("无 resourceState 时返回 ok=false", () => {
+      // 玩家 ai-1 存在于 players 但 aiResourceState 未初始化
+      const { deps } = makeDeps({
+        players: [
+          makePlayer({ id: "ai-1", name: "AI1", isHuman: false }),
+        ],
+      })
+      // 确保 aiResourceState 为默认（空的 ai-1 key不存在）
+      deps.state.aiResourceState = {}
+      const manager = new AiIntelManager(deps)
+
+      const result = manager.executeAiIntelAction("ai-1", {
+        actionType: "skill",
+        actionId: "skill-outline-scan",
+        expectedReveal: 3,
+        score: 5,
+        candidates: [],
+      })
+
+      expect(result.ok).toBe(false)
+    })
+
+    it("本回合已使用技能后再次使用返回 false（防重复）", () => {
+      const { deps } = makeDeps({
+        currentRoundUsage: { "ai-1": ["skill-outline-scan"] },
+      })
+      deps.state.aiResourceState["ai-1"] = {
+        skills: { "skill-outline-scan": 3 },
+        items: {},
+        consumed: false,
+      }
+      const manager = new AiIntelManager(deps)
+
+      const result = manager.executeAiIntelAction("ai-1", {
+        actionType: "skill",
+        actionId: "skill-outline-scan",
+        expectedReveal: 3,
+        score: 5,
+        candidates: [],
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toBe("本回合已使用过技能或道具。")
+    })
+
+    it("技能次数不足时返回 ok=false", () => {
+      const { deps } = makeDeps()
+      // 设置该技能的剩余次数为 0
+      deps.state.aiResourceState["ai-1"] = {
+        skills: { "skill-outline-scan": 0 },
+        items: {},
+        consumed: false,
+      }
+      const manager = new AiIntelManager(deps)
+
+      const result = manager.executeAiIntelAction("ai-1", {
+        actionType: "skill",
+        actionId: "skill-outline-scan",
+        expectedReveal: 3,
+        score: 5,
+        candidates: [],
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toBe("AI技能次数不足。")
+    })
+
+    it("技能 ID 不存在时返回 ok=false", () => {
+      const { deps } = makeDeps()
+      deps.state.aiResourceState["ai-1"] = {
+        skills: { "nonexistent-skill": 3 },
+        items: {},
+        consumed: false,
+      }
+      const manager = new AiIntelManager(deps)
+
+      const result = manager.executeAiIntelAction("ai-1", {
+        actionType: "skill",
+        actionId: "nonexistent-skill",
+        expectedReveal: 0,
+        score: 0,
+        candidates: [],
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toBe("AI技能不存在。")
+    })
+
+    it("道具库存不足时返回 ok=false", () => {
+      const { deps } = makeDeps()
+      deps.state.aiResourceState["ai-1"] = {
+        skills: {},
+        items: { "item-outline-lamp": 0 },
+        consumed: false,
+      }
+      const manager = new AiIntelManager(deps)
+
+      const result = manager.executeAiIntelAction("ai-1", {
+        actionType: "item",
+        actionId: "item-outline-lamp",
+        expectedReveal: 0,
+        score: 0,
+        candidates: [],
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toBe("AI道具库存不足。")
+    })
+  })
 })

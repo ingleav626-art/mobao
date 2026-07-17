@@ -184,6 +184,8 @@ function makeDeps(overrides: Partial<UiOverlayManagerDeps> = {}): UiOverlayManag
     isAiMultiGameMemoryEnabled: () => false,
     proceedToNewRun: vi.fn(),
     proceedToBack: vi.fn(),
+    setGameConfirmCallback: vi.fn(),
+    setGameCancelCallback: vi.fn(),
   }
 
   return { ...defaults, ...overrides } as UiOverlayManagerDeps
@@ -917,6 +919,31 @@ describe("UiOverlayManager", () => {
       const popover = document.getElementById("playerInfoPopover")!
       expect(popover.style.left).toBeTruthy()
       expect(popover.style.top).toBeTruthy()
+    })
+  })
+
+  // ════════════════ gameConfirm/Cancel 同步 gameSlice ════════════════
+  describe("showGameConfirm / hideGameConfirm 同步 gameSlice", () => {
+    it("showGameConfirm 设置消息文本并显示覆盖层", () => {
+      const { manager, deps } = makeManager()
+      manager.showGameConfirm("确认操作", () => {}, () => {})
+      expect(deps.dom.gameConfirmMsg!.textContent).toBe("确认操作")
+      expect(deps.dom.gameConfirmOverlay!.classList.contains("hidden")).toBe(false)
+    })
+
+    it("hideGameConfirm 隐藏覆盖层", () => {
+      const { manager, deps } = makeManager()
+      manager.hideGameConfirm()
+      expect(deps.dom.gameConfirmOverlay!.classList.contains("hidden")).toBe(true)
+    })
+
+    it("多次 show → hide → show 后消息文本正确切换", () => {
+      const { manager, deps } = makeManager()
+      manager.showGameConfirm("第一次", () => {})
+      manager.hideGameConfirm()
+      manager.showGameConfirm("第二次", () => {})
+      expect(deps.dom.gameConfirmMsg!.textContent).toBe("第二次")
+      expect(deps.dom.gameConfirmOverlay!.classList.contains("hidden")).toBe(false)
     })
   })
 })

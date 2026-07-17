@@ -137,9 +137,9 @@ export function revealArtifactFullyBatch(
   const sortByArea = (arr: Artifact[], strategy: string | null) => {
     const shuffled = shuffle(arr)
     if (strategy === "smallestFirst") {
-      return shuffled.sort((a: Artifact, b: Artifact) => a.w * a.h - b.w * b.h)
+      return shuffled.sort((a: Artifact, b: Artifact) => { const aa = a.w * a.h; const bb = b.w * b.h; return aa - bb })
     } else if (strategy === "largestFirst") {
-      return shuffled.sort((a: Artifact, b: Artifact) => b.w * b.h - a.w * b.h)
+      return shuffled.sort((a: Artifact, b: Artifact) => { const aa = a.w * a.h; const bb = b.w * b.h; return bb - aa })
     }
     return shuffled
   }

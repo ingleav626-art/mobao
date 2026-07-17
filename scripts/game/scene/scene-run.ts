@@ -14,6 +14,7 @@ import { GAME_SETTINGS as _GAME_SETTINGS, loadGameSettings } from "../core/setti
 import { getActiveCharacter, resetForNewGame } from "../data/character-system"
 import { pickRandomPublicEvent } from "../data/public-events"
 import { createLogger } from "../core/logger"
+import { Deps } from "../core/deps"
 
 const log = createLogger("LAN")
 
@@ -23,54 +24,34 @@ const log = createLogger("LAN")
 export function startNewRun(this: WarehouseSceneThis): void {
   log.debug("[fn-file] startNewRun CALLED")
   this.beginRunTracking()
-  this.battleRecordReplayActive = false
-  this.battleRecordReplayRecordId = null
   this.cancelSettlementReveal()
   this.stopRoundTimer()
   this.exitSettlementPage()
   this.guardWarehouseCapacity()
-  // 重置联机状态，防止联机配置串扰到单机
+  this.state.resetForNewRun()
   this.state.resetLanState()
-  // 停止后台重连循环，防止干扰单机显示
   this.lanReconnecting = false
   this.lanReconnectAttempts = 0
   this._mapQualityWeights = null
   this._mapCategoryWeights = null
   Object.assign(_GAME_SETTINGS, loadGameSettings())
-  log.info("startNewRun: LAN state reset to defaults, GAME_SETTINGS reloaded from localStorage")
+  this.actionsLeft = _GAME_SETTINGS.actionsPerRound
+  this.roundTimeLeft = _GAME_SETTINGS.roundSeconds
+  this.currentBid = 1000
+  this.moneySettledRunToken = this.makeRunToken()
+  log.info("startNewRun: state reset via slices, GAME_SETTINGS reloaded from localStorage")
   this.lanMySlotId = "p2"
-  this.players = [
-    { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
-    { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
-    { id: "p3", name: "右上AI", avatar: "A2", isHuman: false, isAI: true, isSelf: false },
-    { id: "p4", name: "右下AI", avatar: "A3", isHuman: false, isAI: true, isSelf: false }
-  ]
   this.initPlayersUI()
   log.debug("startNewRun: players reset, count=" + this.players.length)
+  this.aiLlmPlayerEnabled = Deps.LLM_BRIDGE ? Deps.LLM_BRIDGE.loadAiLlmPlayerSwitches(this.players) : {}
+  log.info("startNewRun: reloaded aiLlmPlayerEnabled from localStorage, keys=" + Object.keys(this.aiLlmPlayerEnabled).length)
 
   if (getActiveCharacter()) {
     resetForNewGame()
     this.applyCharacterToPlayer()
   }
 
-  this.round = 1
-  this.actionsLeft = _GAME_SETTINGS.actionsPerRound
-  this.roundTimeLeft = _GAME_SETTINGS.roundSeconds
-  this.roundResolving = false
-  this.playerBidSubmitted = false
-  this.playerRoundBid = 0
-  this.selectedItem = null
-  this.currentBid = 1000
-  this.bidLeader = "none"
-  this.aiMaxBid = 0
-  this.warehouseTrueValue = 0
-  this.settled = false
-  this.moneySettledRunToken = this.makeRunToken()
   this.resetPlayerHistoryState()
-
-  this.privateIntelEntries.length = 0
-  this.publicInfoEntries.length = 0
-  this.currentPublicEvent = null
 
   this.skillManager.resetForNewRun()
   this.skillManager.onNewRound()
@@ -100,14 +81,6 @@ export function startNewRun(this: WarehouseSceneThis): void {
     startingBid: this.currentBid,
     itemCount: this.items.length
   })
-  this.lastAiDecisionTelemetry = null
-  this.llmEverUsedThisRun = false
-  this.aiReflectionState = "idle"
-  if (!this.isAiMultiGameMemoryEnabled()) {
-    this.resetAiConversations()
-  } else {
-    this.aiConversationByPlayer = {}
-  }
   this.pushRunStartContextToAi()
   this.startRound()
   this.updateHud()

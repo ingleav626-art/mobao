@@ -11,6 +11,7 @@ import {
 } from "../../../scripts/game/lan/lan-index-manager"
 import type { Player, Artifact } from "../../../types/game"
 import type { LanPlayer } from "../../../types/lan"
+import { GAME_SETTINGS } from "../../../scripts/game/core/settings"
 
 // ─── 测试工具 ───
 
@@ -205,6 +206,10 @@ function makeDeps(overrides: Partial<LanIndexManagerDeps> = {}): { deps: LanInde
     },
     getProfile: null,
     getSelectedProfileId: null,
+    getSettingsMaxRounds: () => 5,
+    getSettingsDirectTakeRatio: () => 0.2,
+    setSettingsMaxRounds: vi.fn(),
+    setSettingsDirectTakeRatio: vi.fn(),
     ...overrides,
   }
 
@@ -657,5 +662,36 @@ describe("LanIndexManager", () => {
       expect(events).toContain("full-sync")
       expect(events).toContain("full-sync-request")
     })
+  })
+
+  // ════════════════ settings 隔离性（防 LAN 泄漏到 GAME_SETTINGS） ════════════════
+  describe("settings deps 隔离性", () => {
+    it("setSettingsMaxRounds 不影响 GAME_SETTINGS.maxRounds（防联机泄漏单机）", () => {
+      const original = GAME_SETTINGS.maxRounds
+      let _maxRounds = 5
+      const { deps } = makeDeps({
+        setSettingsMaxRounds: vi.fn((v: number) => { _maxRounds = v }),
+        getSettingsMaxRounds: () => _maxRounds,
+      })
+      deps.setSettingsMaxRounds(999)
+      // 核心断言：GAME_SETTINGS 未被修改
+      expect(GAME_SETTINGS.maxRounds).toBe(original)
+      expect(GAME_SETTINGS.maxRounds).not.toBe(999)
+      expect(deps.getSettingsMaxRounds()).toBe(999)
+    })
+
+    it("setSettingsDirectTakeRatio 不影响 GAME_SETTINGS.directTakeRatio", () => {
+      const original = GAME_SETTINGS.directTakeRatio
+      let _ratio = 0.2
+      const { deps } = makeDeps({
+        setSettingsDirectTakeRatio: vi.fn((v: number) => { _ratio = v }),
+        getSettingsDirectTakeRatio: () => _ratio,
+      })
+      deps.setSettingsDirectTakeRatio(0.99)
+      expect(GAME_SETTINGS.directTakeRatio).toBe(original)
+      expect(GAME_SETTINGS.directTakeRatio).not.toBe(0.99)
+      expect(deps.getSettingsDirectTakeRatio()).toBe(0.99)
+    })
+
   })
 })

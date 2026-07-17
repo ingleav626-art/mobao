@@ -6,7 +6,6 @@
  */
 import type { LanIndexManagerDeps, LanIndexState } from "../lan-index-manager"
 import { GRID_ROWS, GRID_COLS } from "../../core/constants"
-import { GAME_SETTINGS } from "../../core/settings"
 import { getSelectedProfileId, setSelectedProfileId } from "../../data/map-profiles"
 import { CHARACTERS } from "../../data/characters"
 import { QUALITY_CONFIG } from "../../data/artifacts"
@@ -54,7 +53,7 @@ export function lanBuildFullSyncData(
   return {
     playerId: targetPlayerId,
     round: state.round,
-    maxRounds: GAME_SETTINGS.maxRounds,
+    maxRounds: deps.getSettingsMaxRounds(),
     currentBid: state.currentBid,
     warehouseTrueValue: state.warehouseTrueValue,
     roundTimeLeft: state.roundTimeLeft,
@@ -81,7 +80,7 @@ export function lanOnFullSync(deps: LanIndexManagerDeps, state: LanIndexState, m
     state.round = msg.round as number
   }
   if (msg.maxRounds != null) {
-    GAME_SETTINGS.maxRounds = msg.maxRounds as number
+    deps.setSettingsMaxRounds(msg.maxRounds as number)
   }
   if (msg.currentBid != null) {
     state.currentBid = msg.currentBid as number

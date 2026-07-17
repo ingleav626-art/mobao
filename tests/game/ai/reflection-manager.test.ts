@@ -2,23 +2,12 @@ import { describe, it, expect, vi } from "vitest"
 import {
   AiReflectionManager,
   type AiReflectionManagerDeps,
-  type ReflectionStatus,
   type ReflectionLlmProvider,
   type ReflectionChatResult,
   type ReflectionRecord,
 } from "../../../scripts/game/ai/reflection-manager"
 import type { CrossGameMemory } from "../../../scripts/game/ai/reflection"
 import type { RunLog } from "../../../scripts/game/ai/decision"
-
-function makeReflectionStatus(): ReflectionStatus {
-  return {
-    state: "",
-    detail: "",
-    completed: 0,
-    total: 0,
-    beforeUnloadHandler: null,
-  }
-}
 
 function makeCrossGameMemory(): CrossGameMemory {
   return {
@@ -80,6 +69,10 @@ function makeDeps(overrides: Partial<AiReflectionManagerDeps> = {}): AiReflectio
   let battleRecordReplayRecordId: string | null = null
   let currentRunLog: RunLog | null = null
   const aiCrossGameMessagesByPlayer: Record<string, unknown[][]> = {}
+  let _aiReflectionState = ""
+  let _aiReflectionStateDetail = ""
+  let _aiReflectionTotal = 0
+  let _aiReflectionCompleted = 0
 
   return {
     getLlmSettings: () => ({ reflectionEnabled: true }),
@@ -105,11 +98,26 @@ function makeDeps(overrides: Partial<AiReflectionManagerDeps> = {}): AiReflectio
     setBattleRecordReplayRecordId: (v: string | null) => {
       battleRecordReplayRecordId = v
     },
+    getAiReflectionState: () => _aiReflectionState,
+    getAiReflectionStateDetail: () => _aiReflectionStateDetail,
+    getAiReflectionTotal: () => _aiReflectionTotal,
+    getAiReflectionCompleted: () => _aiReflectionCompleted,
+    setAiReflectionState: vi.fn((v: string) => {
+      _aiReflectionState = v
+    }),
+    setAiReflectionStateDetail: vi.fn((v: string) => {
+      _aiReflectionStateDetail = v
+    }),
+    setAiReflectionTotal: vi.fn((v: number) => {
+      _aiReflectionTotal = v
+    }),
+    setAiReflectionCompleted: vi.fn((v: number) => {
+      _aiReflectionCompleted = v
+    }),
     players: [
       { id: "human", name: "玩家", isHuman: true, isAI: false, avatar: "你" } as never,
       { id: "ai-1", name: "左上AI", isHuman: false, isAI: true, avatar: "A1" } as never,
     ],
-    reflectionStatus: makeReflectionStatus(),
     ensureAiCrossGameMemory: (pid: string) => {
       if (!crossGameMemory[pid]) {
         crossGameMemory[pid] = makeCrossGameMemory()
@@ -327,21 +335,21 @@ describe("AiReflectionManager", () => {
       const deps = makeDeps({ getLlmSettings: () => ({ reflectionEnabled: false }) })
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
-      expect(deps.reflectionStatus.state).toBe("")
+      expect(deps.setAiReflectionState).not.toHaveBeenCalled()
     })
 
     it("canUseLlmDecision 为 false 时提前返回", async () => {
       const deps = makeDeps({ canUseLlmDecision: () => false })
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
-      expect(deps.reflectionStatus.state).toBe("")
+      expect(deps.setAiReflectionState).not.toHaveBeenCalled()
     })
 
     it("llmEverUsedThisRun 为 false 时提前返回", async () => {
       const deps = makeDeps({ llmEverUsedThisRun: () => false })
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
-      expect(deps.reflectionStatus.state).toBe("")
+      expect(deps.setAiReflectionState).not.toHaveBeenCalled()
     })
 
     it("无 AI 玩家时状态为 done", async () => {
@@ -350,17 +358,17 @@ describe("AiReflectionManager", () => {
       })
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
-      expect(deps.reflectionStatus.state).toBe("done")
-      expect(deps.reflectionStatus.total).toBe(0)
+      expect(deps.setAiReflectionState).toHaveBeenLastCalledWith("done")
+      expect(deps.setAiReflectionTotal).toHaveBeenLastCalledWith(0)
     })
 
     it("LLM Provider 为 null 时状态为 error", async () => {
       const deps = makeDeps({ getLlmProvider: () => null })
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
-      expect(deps.reflectionStatus.state).toBe("error")
-      expect(deps.reflectionStatus.detail).toContain("左上AI")
-      expect(deps.reflectionStatus.detail).toContain("无LLM Provider")
+      expect(deps.setAiReflectionState).toHaveBeenLastCalledWith("error")
+      expect(deps.setAiReflectionStateDetail).toHaveBeenLastCalledWith(expect.stringContaining("左上AI"))
+      expect(deps.setAiReflectionStateDetail).toHaveBeenLastCalledWith(expect.stringContaining("无LLM Provider"))
     })
 
     it("LLM 返回成功时更新记忆并记录到 currentRunLog", async () => {
@@ -385,7 +393,7 @@ describe("AiReflectionManager", () => {
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
 
-      expect(deps.reflectionStatus.state).toBe("done")
+      expect(deps.setAiReflectionState).toHaveBeenLastCalledWith("done")
       expect(mockProvider.requestChat).toHaveBeenCalledOnce()
       expect(saveFn).toHaveBeenCalled()
       expect(renderFn).toHaveBeenCalled()
@@ -405,9 +413,9 @@ describe("AiReflectionManager", () => {
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
 
-      expect(deps.reflectionStatus.state).toBe("timeout")
-      expect(deps.reflectionStatus.detail).toContain("左上AI")
-      expect(deps.reflectionStatus.detail).toContain("超时")
+      expect(deps.setAiReflectionState).toHaveBeenLastCalledWith("timeout")
+      expect(deps.setAiReflectionStateDetail).toHaveBeenLastCalledWith(expect.stringContaining("左上AI"))
+      expect(deps.setAiReflectionStateDetail).toHaveBeenLastCalledWith(expect.stringContaining("超时"))
     })
 
     it("LLM 返回失败时状态为 error", async () => {
@@ -420,9 +428,9 @@ describe("AiReflectionManager", () => {
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
 
-      expect(deps.reflectionStatus.state).toBe("error")
-      expect(deps.reflectionStatus.detail).toContain("左上AI")
-      expect(deps.reflectionStatus.detail).toContain("API 调用失败")
+      expect(deps.setAiReflectionState).toHaveBeenLastCalledWith("error")
+      expect(deps.setAiReflectionStateDetail).toHaveBeenLastCalledWith(expect.stringContaining("左上AI"))
+      expect(deps.setAiReflectionStateDetail).toHaveBeenLastCalledWith(expect.stringContaining("API 调用失败"))
     })
 
     it("LLM 请求抛异常时状态为 error", async () => {
@@ -432,8 +440,8 @@ describe("AiReflectionManager", () => {
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
 
-      expect(deps.reflectionStatus.state).toBe("error")
-      expect(deps.reflectionStatus.detail).toContain("网络异常")
+      expect(deps.setAiReflectionState).toHaveBeenLastCalledWith("error")
+      expect(deps.setAiReflectionStateDetail).toHaveBeenLastCalledWith(expect.stringContaining("网络异常"))
     })
 
     it("pendingSettlementSummary 非空时追加到跨局消息", async () => {
@@ -462,15 +470,6 @@ describe("AiReflectionManager", () => {
       expect(lastMsg.content).toBe("结算总结内容")
     })
 
-    it("beforeUnloadHandler 在流程结束后被清除", async () => {
-      const mockProvider = makeMockProvider({ ok: true, content: '{"lessons":[]}' })
-      const deps = makeDeps({ getLlmProvider: () => mockProvider })
-      const manager = new AiReflectionManager(deps)
-      await manager.triggerAiReflection(makeRecord())
-
-      expect(deps.reflectionStatus.beforeUnloadHandler).toBeNull()
-    })
-
     it("多 AI 玩家时全部完成后状态为 done", async () => {
       const mockProvider = makeMockProvider({ ok: true, content: '{"lessons":[]}' })
       const deps = makeDeps({
@@ -484,8 +483,8 @@ describe("AiReflectionManager", () => {
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
 
-      expect(deps.reflectionStatus.state).toBe("done")
-      expect(deps.reflectionStatus.total).toBe(2)
+      expect(deps.setAiReflectionState).toHaveBeenLastCalledWith("done")
+      expect(deps.setAiReflectionTotal).toHaveBeenLastCalledWith(2)
       expect(mockProvider.requestChat).toHaveBeenCalledTimes(2)
     })
 
@@ -502,6 +501,100 @@ describe("AiReflectionManager", () => {
 
       expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toContain("反思内容")
       expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toContain("左上AI")
+    })
+  })
+
+  describe("deps reflection 状态流转", () => {
+    it("无 AI 玩家时不保存记忆且状态直接 done", async () => {
+      const saveSpy = vi.fn()
+      const humanOnly = [
+        { id: "human", name: "玩家", isHuman: true, isAI: false, avatar: "你" } as never,
+      ]
+      const deps = makeDeps({
+        players: humanOnly,
+        saveAiMemoryToStorage: saveSpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 无 AI 玩家 → 无需保存跨局记忆
+      expect(saveSpy).not.toHaveBeenCalled()
+      // 状态直接变为 done（不会卡在 pending）
+      expect(deps.getAiReflectionState()).toBe("done")
+      expect(deps.getAiReflectionTotal()).toBe(0)
+    })
+
+    it("有 AI 玩家时每个 AI 玩家的跨局记忆被更新并保存", async () => {
+      const saveSpy = vi.fn()
+      const mockProvider = makeMockProvider({ ok: true, content: '{"lessons":[]}' })
+      const players = [
+        { id: "human", name: "玩家", isHuman: true, isAI: false, avatar: "你" } as never,
+        { id: "ai-1", name: "左上AI", isHuman: false, isAI: true, avatar: "A1" } as never,
+        { id: "ai-2", name: "右上AI", isHuman: false, isAI: true, avatar: "A2" } as never,
+      ]
+      const deps = makeDeps({
+        players,
+        getLlmProvider: () => mockProvider,
+        saveAiMemoryToStorage: saveSpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 两个 AI 玩家的跨局记忆都已被创建
+      const memory = deps.getAiCrossGameMemory()
+      expect(memory).toHaveProperty("ai-1")
+      expect(memory).toHaveProperty("ai-2")
+      // 反思成功后记忆被保存
+      expect(saveSpy).toHaveBeenCalled()
+      expect(deps.getAiReflectionState()).toBe("done")
+    })
+
+    it("LLM 返回 code=TIMEOUT 时状态变为 timeout", async () => {
+      const updateUISpy = vi.fn()
+      const mockProvider = makeMockProvider({ code: "TIMEOUT" })
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        updateReflectionStatusUI: updateUISpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 超时后状态应变为 timeout，详情含玩家名，UI 已更新
+      expect(deps.getAiReflectionState()).toBe("timeout")
+      expect(deps.getAiReflectionStateDetail()).toContain("左上AI")
+      expect(updateUISpy).toHaveBeenCalled()
+    })
+
+    it("LLM 返回 code=API_ERROR 时状态变为 error", async () => {
+      const updateUISpy = vi.fn()
+      const mockProvider = makeMockProvider({ code: "API_ERROR", error: "API 调用失败" })
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        updateReflectionStatusUI: updateUISpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 错误后状态应变为 error，详情含玩家名和错误信息，UI 已更新
+      expect(deps.getAiReflectionState()).toBe("error")
+      expect(deps.getAiReflectionStateDetail()).toContain("左上AI")
+      expect(deps.getAiReflectionStateDetail()).toContain("API 调用失败")
+      expect(updateUISpy).toHaveBeenCalled()
+    })
+
+    it("LLM 返回 ok:true 时保存跨局记忆", async () => {
+      const saveSpy = vi.fn()
+      const mockProvider = makeMockProvider({ ok: true, content: '{"lessons":[]}' })
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        saveAiMemoryToStorage: saveSpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 反思成功后应保存跨局记忆
+      expect(saveSpy).toHaveBeenCalled()
+      expect(deps.getAiReflectionState()).toBe("done")
     })
   })
 })
