@@ -1486,3 +1486,13 @@
 }
 
 /* 联机房间样式已移至 lan-room.css */
+
+.character-list::-webkit-scrollbar { width: var(--scrollbar-width) }
+.character-list::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.character-list::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.character-list::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }
+
+.carry-picker-body::-webkit-scrollbar { width: var(--scrollbar-width) }
+.carry-picker-body::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.carry-picker-body::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.carry-picker-body::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }

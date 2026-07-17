@@ -42,6 +42,8 @@ export interface GameSlice {
   _gameCancelCallback: (() => void) | null
   runSerial: number
   runLogHistory: unknown[]
+  profitModifierSelf: number
+  profitModifierAll: number
   currentRunLog: {
     runNo: number
     startedAt: number
@@ -101,6 +103,8 @@ export function createGameSlice(): GameSlice {
     _gameCancelCallback: null,
     runSerial: 0,
     runLogHistory: [],
+    profitModifierSelf: 1,
+    profitModifierAll: 1,
     currentRunLog: null,
     _pauseSnapshotTimeLeft: null
   }
@@ -154,6 +158,8 @@ export function resetForNewRun(s: GameSlice): void {
   s._gameCancelCallback = null
   s.runSerial = 0
   s.runLogHistory = []
+  s.profitModifierSelf = 1
+  s.profitModifierAll = 1
   s.currentRunLog = null
   s._pauseSnapshotTimeLeft = null
 }

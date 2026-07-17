@@ -199,6 +199,8 @@ export interface AiIntelManagerDeps {
     category: string | null
     allowCategoryFallback: boolean
   }) => unknown
+  revealAllByQuality?: (qualityKey: string) => { ok: boolean; revealed: number; message: string }
+  revealAllByCategory?: (category: string) => { ok: boolean; revealed: number; message: string }
   canUseLlmDecisionForPlayer: (playerId: string) => boolean
   writeLog: (text: string) => void
   requestAiLlmErrorCorrection: (
@@ -228,6 +230,7 @@ export interface AiIntelManagerDeps {
   isP2AutoPlaying?: () => boolean
   getP2ShopInventory?: () => Record<string, number>
   consumeP2ShopItem?: (itemId: string) => void
+  applyProfitModifier?: (target: string, percent: number) => { ok: boolean; revealed: number; message: string }
 }
 
 /**

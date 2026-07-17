@@ -24,6 +24,31 @@ interface ItemExecContext {
     revealed: number
     message: string
   }
+  revealAll: (options: { count: number; sortStrategy: string }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
+  revealByQuality: (options: { qualityKey: string }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
+  revealByCategory: (options: { category: string }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
+  computeAveragePrice: (options: { scope: string }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
+  applyProfitModifier: (options: { target: string; percent: number }) => {
+    ok: boolean
+    revealed: number
+    message: string
+  }
 }
 
 export const ITEM_DEFS = [
@@ -152,6 +177,195 @@ export const ITEM_DEFS = [
         category: "金石",
         allowCategoryFallback: true
       })
+    }
+  },
+  {
+    id: "item-reveal-all-1",
+    name: "低阶探照灯",
+    description: "直接随机揭示1件毫无信息的藏品。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealAll({ count: 1, sortStrategy: "random" })
+    }
+  },
+  {
+    id: "item-reveal-all-2",
+    name: "中阶探照灯",
+    description: "直接随机揭示2件毫无信息的藏品。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealAll({ count: 2, sortStrategy: "random" })
+    }
+  },
+  {
+    id: "item-reveal-all-4",
+    name: "高阶探照灯",
+    description: "直接随机揭示4件毫无信息的藏品。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealAll({ count: 4, sortStrategy: "random" })
+    }
+  },
+  {
+    id: "item-reveal-all-10",
+    name: "顶阶探照灯",
+    description: "直接随机揭示10件毫无信息的藏品。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealAll({ count: 10, sortStrategy: "random" })
+    }
+  },
+  {
+    id: "item-reveal-top",
+    name: "窥宝镜",
+    description: "直接揭示本局价格最高的1件藏品全部信息。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealAll({ count: 1, sortStrategy: "highestPrice" })
+    }
+  },
+  {
+    id: "item-by-quality-poor",
+    name: "藏品入微镜",
+    description: "揭示所有粗品藏品的全部信息。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealByQuality({ qualityKey: "poor" })
+    }
+  },
+  {
+    id: "item-by-quality-normal",
+    name: "藏品洞察镜",
+    description: "揭示所有良品藏品的全部信息。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealByQuality({ qualityKey: "normal" })
+    }
+  },
+  {
+    id: "item-by-quality-fine",
+    name: "藏品精研镜",
+    description: "揭示所有精品藏品的全部信息。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealByQuality({ qualityKey: "fine" })
+    }
+  },
+  {
+    id: "item-by-cat-porcelain",
+    name: "品类专研-瓷器",
+    description: "揭示所有瓷器藏品的全部信息。",
+    initialCount: 99,
+    execute(context: unknown) {
+      return (context as ItemExecContext).revealByCategory({ category: "瓷器" })
+    }
+  },
+  {
+    id: "item-avg-single",
+    name: "单格均价仪",
+    description: "计算本局所有单格藏品的均价。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).computeAveragePrice({ scope: "singleCell" })
+    }
+  },
+  {
+    id: "item-avg-double",
+    name: "双格均价仪",
+    description: "计算本局所有双格藏品的均价。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).computeAveragePrice({ scope: "doubleCell" })
+    }
+  },
+  {
+    id: "item-avg-quad",
+    name: "四格均价仪",
+    description: "计算本局所有四格藏品的均价。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).computeAveragePrice({ scope: "quadCell" })
+    }
+  },
+  {
+    id: "item-avg-total",
+    name: "全场估价仪",
+    description: "计算本局全仓藏品的均价。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).computeAveragePrice({ scope: "total" })
+    }
+  },
+  {
+    id: "item-avg-poor",
+    name: "粗品估价仪",
+    description: "计算本局所有粗品藏品的均价。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).computeAveragePrice({ scope: "quality:poor" })
+    }
+  },
+  {
+    id: "item-avg-normal",
+    name: "良品估价仪",
+    description: "计算本局所有良品藏品的均价。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).computeAveragePrice({ scope: "quality:normal" })
+    }
+  },
+  {
+    id: "item-avg-fine",
+    name: "精品估价仪",
+    description: "计算本局所有精品藏品的均价。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).computeAveragePrice({ scope: "quality:fine" })
+    }
+  },
+  {
+    id: "item-avg-porcelain",
+    name: "瓷器估价仪",
+    description: "计算本局瓷器藏品的均价。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).computeAveragePrice({ scope: "category:瓷器" })
+    }
+  },
+  {
+    id: "item-bonus-self-up",
+    name: "幸运护符",
+    description: "本局结算时自身获利加成50%。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).applyProfitModifier({ target: "self", percent: 50 })
+    }
+  },
+  {
+    id: "item-bonus-self-down",
+    name: "厄运符咒",
+    description: "本局结算时自身获利减少50%。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).applyProfitModifier({ target: "self", percent: -50 })
+    }
+  },
+  {
+    id: "item-bonus-all-up",
+    name: "群体祝福",
+    description: "本局结算时全体获利加成100%。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).applyProfitModifier({ target: "all", percent: 100 })
+    }
+  },
+  {
+    id: "item-bonus-all-down",
+    name: "群体诅咒",
+    description: "本局结算时全体获利减少200%。",
+    initialCount: 1,
+    execute(context: unknown) {
+      return (context as ItemExecContext).applyProfitModifier({ target: "all", percent: -200 })
     }
   }
 ]

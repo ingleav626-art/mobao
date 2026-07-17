@@ -155,14 +155,15 @@ describe("SkillItemManager", () => {
       expect(entry.text).toBeTruthy()
     })
 
-    it("未找到定义时使用 fallbackText", () => {
+    it("未找到定义时使用 result.message", () => {
       const ctx = makeDeps()
       const manager = new SkillItemManager(ctx.deps)
       manager.useSkill("nonexistent-skill")
 
       const entry = ctx.addPrivateIntelEntry.mock.calls[0][0] as { source: string; text: string }
       expect(entry.source).toBe("nonexistent-skill")
-      expect(entry.text).toBe("技能效果")
+      // result.message 优先于 fallbackText
+      expect(entry.text).toBe("技能使用成功")
     })
   })
 
@@ -225,14 +226,14 @@ describe("SkillItemManager", () => {
       expect(entry.text).toBeTruthy()
     })
 
-    it("未找到定义时使用 fallbackText", () => {
+    it("未找到定义时使用 result.message", () => {
       const ctx = makeDeps()
       const manager = new SkillItemManager(ctx.deps)
       manager.useItem("nonexistent-item")
 
       const entry = ctx.addPrivateIntelEntry.mock.calls[0][0] as { source: string; text: string }
       expect(entry.source).toBe("nonexistent-item")
-      expect(entry.text).toBe("道具效果")
+      expect(entry.text).toBe("道具使用成功")
     })
   })
 

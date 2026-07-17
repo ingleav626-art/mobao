@@ -23,7 +23,7 @@ function makeConfig<T extends DefEntry>(overrides: Partial<UseHelperConfig<T>> =
 }
 
 describe("applyUse", () => {
-  it("条目存在且剩余>0 时执行成功并扣减剩余次数", () => {
+  it("条目存在且剩余>0 时执行成功并扣减剩余次数，message 来自 execute", () => {
     const entry = makeEntry()
     const setRemaining = vi.fn()
     const config = makeConfig({
@@ -36,8 +36,8 @@ describe("applyUse", () => {
 
     expect(result.ok).toBe(true)
     expect(result.revealed).toBe(1)
-    expect(result.message).toContain("测试条目")
-    expect(result.message).toContain("1")
+    // message 来自 entry.execute()，不再被 applyUse 覆盖
+    expect(result.message).toBe("执行成功")
     expect(setRemaining).toHaveBeenCalledWith(entry, 1)
   })
 
@@ -106,7 +106,7 @@ describe("applyUse", () => {
     expect(setRemaining).not.toHaveBeenCalled()
   })
 
-  it("execute 返回 ok 且 revealed=3 时成功消息包含正确数量", () => {
+  it("execute 返回 ok 时 message 透传", () => {
     const entry = makeEntry({
       execute: () => ({ ok: true, revealed: 3, message: "揭示3件" })
     })
@@ -119,7 +119,7 @@ describe("applyUse", () => {
 
     expect(result.ok).toBe(true)
     expect(result.revealed).toBe(3)
-    expect(result.message).toContain("3")
+    expect(result.message).toBe("揭示3件")
   })
 
   it("传入的 context 被透传给 execute", () => {
@@ -162,6 +162,24 @@ describe("applyUse", () => {
     const r4 = applyUse("entry-1", {}, config)
     expect(r4.ok).toBe(false)
     expect(r4.message).toContain("耗尽")
+  })
+
+  it("数据类道具应保留 execute 返回的原始 message，不覆盖为通用文案", () => {
+    // bug: applyUse 第 58 行永远覆盖为 "${name} 生效，揭示 N 件目标。"
+    // 对于均价/加成等非揭示类道具，revealed=0 且 message 含计算结果，覆盖就丢了数据
+    const entry = makeEntry({
+      name: "双格均价仪",
+      execute: () => ({ ok: true, revealed: 0, message: "双格均价：8500" })
+    })
+    const config = makeConfig({
+      entries: [entry],
+      getRemaining: () => 2
+    })
+
+    const result = applyUse("entry-1", {}, config)
+    expect(result.ok).toBe(true)
+    // 应保留原始计算结果而非通用文案
+    expect(result.message).toBe("双格均价：8500")
   })
 })
 

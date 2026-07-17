@@ -46,7 +46,9 @@ import {
   clearQualityVisual,
   renderQualityVisual,
   syncQualityMarkersForOutlinedItem,
-  revealCell
+  revealCell,
+  revealAllByQuality,
+  revealAllByCategory
 } from "./warehouse-manager/reveal-fns"
 import {
   positionPreview,
@@ -200,6 +202,12 @@ export class WarehouseManager {
   }
   revealCell(col: number, row: number): void {
     revealCell(this.deps, col, row)
+  }
+  revealAllByQuality(qualityKey: string): { ok: boolean; revealed: number; message: string } {
+    return revealAllByQuality(this.deps, qualityKey)
+  }
+  revealAllByCategory(category: string): { ok: boolean; revealed: number; message: string } {
+    return revealAllByCategory(this.deps, category)
   }
 
   // ─── WarehousePreviewMixin 逻辑 ───

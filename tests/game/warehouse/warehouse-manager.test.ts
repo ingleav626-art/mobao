@@ -725,6 +725,90 @@ describe("WarehouseManager", () => {
       expect(result.ok).toBe(false)
       expect(result.message).toContain("没有可完全揭示的藏品")
     })
+
+    it("sortStrategy=highestPrice 时揭示基价最高的藏品", () => {
+      const deps = makeMockDeps()
+      deps.state.items = [
+        makeArtifact({ id: "a", basePrice: 100, w: 1, h: 1, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+        makeArtifact({ id: "b", basePrice: 5000, w: 1, h: 1, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+        makeArtifact({ id: "c", basePrice: 300, w: 1, h: 1, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+      ]
+      const manager = new WarehouseManager(deps)
+      const result = manager.revealArtifactFullyBatch({
+        count: 1,
+        sortStrategy: "highestPrice",
+        category: null,
+        allowCategoryFallback: false,
+      }) as any
+      expect(result.ok).toBe(true)
+      expect(result.revealed).toBe(1)
+      expect(result.items[0].basePrice).toBe(5000)
+    })
+
+    it("sortStrategy=lowestPrice 时揭示基价最低的藏品", () => {
+      const deps = makeMockDeps()
+      deps.state.items = [
+        makeArtifact({ id: "a", basePrice: 5000, w: 1, h: 1, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+        makeArtifact({ id: "b", basePrice: 100, w: 1, h: 1, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+        makeArtifact({ id: "c", basePrice: 3000, w: 1, h: 1, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+      ]
+      const manager = new WarehouseManager(deps)
+      const result = manager.revealArtifactFullyBatch({
+        count: 1,
+        sortStrategy: "lowestPrice",
+        category: null,
+        allowCategoryFallback: false,
+      }) as any
+      expect(result.ok).toBe(true)
+      expect(result.revealed).toBe(1)
+      expect(result.items[0].basePrice).toBe(100)
+    })
+  })
+
+  describe("revealAllByQuality", () => {
+    it("揭示指定品质所有未完全揭示的藏品", () => {
+      const deps = makeMockDeps()
+      deps.state.items = [
+        makeArtifact({ id: "a", qualityKey: "poor", basePrice: 100, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+        makeArtifact({ id: "b", qualityKey: "poor", basePrice: 200, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+        makeArtifact({ id: "c", qualityKey: "normal", basePrice: 300, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+      ]
+      const manager = new WarehouseManager(deps)
+      const result = manager.revealAllByQuality("poor")
+      expect(result.ok).toBe(true)
+      expect(result.revealed).toBe(2)
+    })
+
+    it("无匹配品质藏品时返回失败", () => {
+      const deps = makeMockDeps()
+      deps.state.items = [makeArtifact({ qualityKey: "normal", revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } })]
+      const manager = new WarehouseManager(deps)
+      const result = manager.revealAllByQuality("poor")
+      expect(result.ok).toBe(false)
+    })
+  })
+
+  describe("revealAllByCategory", () => {
+    it("揭示指定品类所有未完全揭示的藏品", () => {
+      const deps = makeMockDeps()
+      deps.state.items = [
+        makeArtifact({ id: "a", category: "瓷器", basePrice: 100, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+        makeArtifact({ id: "b", category: "瓷器", basePrice: 200, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+        makeArtifact({ id: "c", category: "玉器", basePrice: 300, revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } }),
+      ]
+      const manager = new WarehouseManager(deps)
+      const result = manager.revealAllByCategory("瓷器")
+      expect(result.ok).toBe(true)
+      expect(result.revealed).toBe(2)
+    })
+
+    it("无匹配品类藏品时返回失败", () => {
+      const deps = makeMockDeps()
+      deps.state.items = [makeArtifact({ category: "玉器", revealed: { outline: true, qualityCell: { x: 0, y: 0 }, exact: false } })]
+      const manager = new WarehouseManager(deps)
+      const result = manager.revealAllByCategory("瓷器")
+      expect(result.ok).toBe(false)
+    })
   })
 
   describe("hideRevealScrollHints", () => {

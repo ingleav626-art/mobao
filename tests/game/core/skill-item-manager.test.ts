@@ -160,5 +160,20 @@ describe('skill-item-manager', () => {
       const output = result.revealAll({ count: 0, sortStrategy: '', category: null, allowCategoryFallback: false }) as any
       expect(output.sortStrategy).toBe('')
     })
+
+    it('有加成时保留 context 上的全部方法（不丢失 computeAveragePrice 等新增方法）', () => {
+      // bug: wrapContextWithCharacterBonus 有加成时新建对象，只抄了 revealOutline/revealQuality/revealAll
+      // 预期：新增方法如 computeAveragePrice 应该透传
+      const ctx = makeContext()
+      ;(ctx as any).computeAveragePrice = (opts: any) => ({ ok: true, revealed: 0, message: `${opts.scope}均价` })
+      const result = wrapContextWithCharacterBonus(ctx, 1, 0, null)
+      // 有 outlineBonus，会走新建对象路径
+      expect(result).not.toBe(ctx)
+      // 新增方法应保留
+      expect(typeof (result as any).computeAveragePrice).toBe('function')
+      const output = (result as any).computeAveragePrice({ scope: 'total' })
+      expect(output.ok).toBe(true)
+      expect(output.message).toContain('均价')
+    })
   })
 })

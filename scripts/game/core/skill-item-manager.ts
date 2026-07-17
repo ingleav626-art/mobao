@@ -64,6 +64,7 @@ export function wrapContextWithCharacterBonus(
     return context
   }
   return {
+    ...context,
     revealOutline: (opts) =>
       context.revealOutline({
         ...opts,

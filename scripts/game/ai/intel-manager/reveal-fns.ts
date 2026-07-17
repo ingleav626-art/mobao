@@ -67,6 +67,10 @@ export function buildSkillContext(deps: AiIntelManagerDeps): {
     category: string | null
     allowCategoryFallback: boolean
   }) => unknown
+  revealByQuality: (opts: { qualityKey: string }) => unknown
+  revealByCategory: (opts: { category: string }) => unknown
+  computeAveragePrice: (opts: { scope: string }) => { ok: boolean; revealed: number; message: string }
+  applyProfitModifier: (opts: { target: string; percent: number }) => { ok: boolean; revealed: number; message: string }
 } {
   return {
     revealOutline: ({
@@ -101,7 +105,15 @@ export function buildSkillContext(deps: AiIntelManagerDeps): {
       sortStrategy: string
       category: string | null
       allowCategoryFallback: boolean
-    }) => deps.revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback })
+    }) => deps.revealArtifactFullyBatch({ count, sortStrategy, category, allowCategoryFallback }),
+    revealByQuality: ({ qualityKey }: { qualityKey: string }) =>
+      deps.revealAllByQuality?.(qualityKey) ?? { ok: false, revealed: 0, message: "函数不可用。" },
+    revealByCategory: ({ category }: { category: string }) =>
+      deps.revealAllByCategory?.(category) ?? { ok: false, revealed: 0, message: "函数不可用。" },
+    computeAveragePrice: ({ scope }: { scope: string }) =>
+      computeAveragePrice(deps.items, scope),
+    applyProfitModifier: ({ target, percent }: { target: string; percent: number }) =>
+      deps.applyProfitModifier?.(target, percent) ?? { ok: false, revealed: 0, message: "函数不可用。" }
   }
 }
 
@@ -129,6 +141,9 @@ export function buildAiPrivateRevealContext(
     category: string | null
     allowCategoryFallback: boolean
   }) => unknown
+  revealByQuality: (opts: { qualityKey: string }) => unknown
+  revealByCategory: (opts: { category: string }) => unknown
+  computeAveragePrice: (opts: { scope: string }) => { ok: boolean; revealed: number; message: string }
 } {
   return {
     revealOutline: ({
@@ -142,16 +157,7 @@ export function buildAiPrivateRevealContext(
       allowCategoryFallback?: boolean
       sortStrategy: string | null
     }) =>
-      revealPrivateIntelBatch(
-        deps,
-        state,
-        playerId,
-        "outline",
-        count,
-        category,
-        allowCategoryFallback,
-        sortStrategy ?? ""
-      ),
+      revealPrivateIntelBatch(deps, state, playerId, "outline", count, category, allowCategoryFallback, sortStrategy ?? ""),
     revealQuality: ({
       count,
       category,
@@ -174,7 +180,13 @@ export function buildAiPrivateRevealContext(
       sortStrategy: string
       category: string | null
       allowCategoryFallback: boolean
-    }) => revealPrivateIntelFully(deps, state, playerId, { count, sortStrategy, category, allowCategoryFallback })
+    }) => revealPrivateIntelFully(deps, state, playerId, { count, sortStrategy, category, allowCategoryFallback }),
+    revealByQuality: ({ qualityKey }: { qualityKey: string }) =>
+      revealPrivateIntelAllByQuality(deps, state, playerId, qualityKey),
+    revealByCategory: ({ category }: { category: string }) =>
+      revealPrivateIntelAllByCategory(deps, state, playerId, category),
+    computeAveragePrice: ({ scope }: { scope: string }) =>
+      computeAveragePrice(deps.items, scope)
   }
 }
 
@@ -542,6 +554,10 @@ export function revealPrivateIntelFully(
       return shuffled.sort((a, b) => { const aa = a.w * a.h; const bb = b.w * b.h; return aa - bb })
     } else if (strategy === "largestFirst") {
       return shuffled.sort((a, b) => { const aa = a.w * a.h; const bb = b.w * b.h; return bb - aa })
+    } else if (strategy === "highestPrice") {
+      return shuffled.sort((a, b) => b.basePrice - a.basePrice)
+    } else if (strategy === "lowestPrice") {
+      return shuffled.sort((a, b) => a.basePrice - b.basePrice)
     }
     return shuffled
   }
@@ -620,6 +636,52 @@ export function revealPrivateIntelFully(
   }
 }
 
+/** AI 情报侧：揭示指定品质的所有藏品 */
+export function revealPrivateIntelAllByQuality(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string,
+  qualityKey: string
+): { ok: boolean; revealed: number; message: string } {
+  const pool = ensureAiPrivateIntel(state, playerId)
+  const targets = deps.items.filter(
+    (item: Artifact) =>
+      item.qualityKey === qualityKey &&
+      (!pool.knownOutlineIds.has(item.id) || !pool.knownQualityIds.has(item.id))
+  )
+  if (targets.length === 0) {
+    return { ok: false, revealed: 0, message: `没有未揭示的${qualityKey}品质藏品。` }
+  }
+  targets.forEach((item: Artifact) => {
+    pool.knownOutlineIds.add(item.id)
+    pool.knownQualityIds.add(item.id)
+  })
+  return { ok: true, revealed: targets.length, message: `揭示了${targets.length}件${qualityKey}品质藏品。` }
+}
+
+/** AI 情报侧：揭示指定品类的所有藏品 */
+export function revealPrivateIntelAllByCategory(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string,
+  category: string
+): { ok: boolean; revealed: number; message: string } {
+  const pool = ensureAiPrivateIntel(state, playerId)
+  const targets = deps.items.filter(
+    (item: Artifact) =>
+      item.category === category &&
+      (!pool.knownOutlineIds.has(item.id) || !pool.knownQualityIds.has(item.id))
+  )
+  if (targets.length === 0) {
+    return { ok: false, revealed: 0, message: `没有未揭示的${category}藏品。` }
+  }
+  targets.forEach((item: Artifact) => {
+    pool.knownOutlineIds.add(item.id)
+    pool.knownQualityIds.add(item.id)
+  })
+  return { ok: true, revealed: targets.length, message: `揭示了${targets.length}件${category}藏品。` }
+}
+
 /** 选择私有揭示目标 */
 export function pickPrivateRevealTargets(
   deps: AiIntelManagerDeps,
@@ -660,6 +722,10 @@ export function pickPrivateRevealTargets(
       return shuffled.sort((a, b) => { const aa = a.w * a.h; const bb = b.w * b.h; return aa - bb })
     } else if (strategy === "largestFirst") {
       return shuffled.sort((a, b) => { const aa = a.w * a.h; const bb = b.w * b.h; return bb - aa })
+    } else if (strategy === "highestPrice") {
+      return shuffled.sort((a, b) => b.basePrice - a.basePrice)
+    } else if (strategy === "lowestPrice") {
+      return shuffled.sort((a, b) => a.basePrice - b.basePrice)
     }
     return shuffled
   }
@@ -672,4 +738,45 @@ export function pickPrivateRevealTargets(
   }
 
   return selected
+}
+
+/** 均价计算（纯函数，不修改任何状态） */
+export function computeAveragePrice(
+  items: Artifact[],
+  scope: string
+): { ok: boolean; revealed: number; message: string } {
+  if (!items || items.length === 0) return { ok: false, revealed: 0, message: "无可计算藏品。" }
+
+  let targets: Artifact[]
+  let label: string
+
+  if (scope === "total") {
+    targets = items
+    label = "全场"
+  } else if (scope === "singleCell") {
+    targets = items.filter((i) => i.w === 1 && i.h === 1)
+    label = "单格"
+  } else if (scope === "doubleCell") {
+    targets = items.filter((i) => i.w * i.h === 2)
+    label = "双格"
+  } else if (scope === "quadCell") {
+    targets = items.filter((i) => i.w === 2 && i.h === 2)
+    label = "四格"
+  } else if (scope.startsWith("quality:")) {
+    const qualityKey = scope.slice("quality:".length)
+    targets = items.filter((i) => i.qualityKey === qualityKey)
+    const qc = QUALITY_CONFIG[qualityKey]
+    label = qc ? qc.label : qualityKey
+  } else if (scope.startsWith("category:")) {
+    const category = scope.slice("category:".length)
+    targets = items.filter((i) => i.category === category)
+    label = category
+  } else {
+    return { ok: false, revealed: 0, message: "未知均价范围。" }
+  }
+
+  if (targets.length === 0) return { ok: false, revealed: 0, message: `${label}无藏品。` }
+  const sum = targets.reduce((s, i) => s + (i.basePrice || 0), 0)
+  const avg = Math.round(sum / targets.length)
+  return { ok: true, revealed: targets.length, message: `${label}均价：${avg}` }
 }

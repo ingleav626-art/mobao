@@ -146,7 +146,7 @@ export class SkillItemManager {
     const def = defs.find((d) => d.id === actionId)
     this.deps.addPrivateIntelEntry({
       source: def ? def.name : actionId,
-      text: def ? def.description : fallbackText
+      text: result.message || (def ? def.description : fallbackText)
     })
     this.deps.writeLog(result.message)
     this.deps.updateHud()

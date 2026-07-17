@@ -14,6 +14,7 @@ import { SKILL_DEFS } from "../../data/skills"
 import { ITEM_DEFS } from "../../data/items"
 import { buildAiPrivateRevealContext } from "./reveal-fns"
 import { getAiIntelSummary, getAiResourceSnapshot } from "./snapshot-fns"
+import { computeAveragePrice } from "./reveal-fns"
 import { createLogger } from "../../core/logger"
 const log = createLogger("AI.Intel")
 
@@ -416,7 +417,7 @@ export async function processSingleAiIntelAction(
   if (player.isHuman && deps.isP2AutoPlaying?.() && deps.addPrivateIntelEntry) {
     deps.addPrivateIntelEntry({
       source: actionDef.name,
-      text: actionDef.description
+      text: result.message || actionDef.description
     })
   }
 
@@ -598,6 +599,14 @@ function _makeVisualRevealContext(deps: AiIntelManagerDeps) {
         sortStrategy: opts.sortStrategy ?? "largestFirst",
         category: null,
         allowCategoryFallback: false
-      })
+      }),
+    revealByQuality: (opts: { qualityKey: string }) =>
+      deps.revealAllByQuality?.(opts.qualityKey) ?? { ok: false, revealed: 0, message: "函数不可用。" },
+    revealByCategory: (opts: { category: string }) =>
+      deps.revealAllByCategory?.(opts.category) ?? { ok: false, revealed: 0, message: "函数不可用。" },
+    computeAveragePrice: (opts: { scope: string }) =>
+      computeAveragePrice(deps.items, opts.scope),
+    applyProfitModifier: (opts: { target: string; percent: number }) =>
+      deps.applyProfitModifier?.(opts.target, opts.percent) ?? { ok: false, revealed: 0, message: "函数不可用。" }
   }
 }

@@ -140,6 +140,10 @@ export function revealArtifactFullyBatch(
       return shuffled.sort((a: Artifact, b: Artifact) => { const aa = a.w * a.h; const bb = b.w * b.h; return aa - bb })
     } else if (strategy === "largestFirst") {
       return shuffled.sort((a: Artifact, b: Artifact) => { const aa = a.w * a.h; const bb = b.w * b.h; return bb - aa })
+    } else if (strategy === "highestPrice") {
+      return shuffled.sort((a: Artifact, b: Artifact) => b.basePrice - a.basePrice)
+    } else if (strategy === "lowestPrice") {
+      return shuffled.sort((a: Artifact, b: Artifact) => a.basePrice - b.basePrice)
     }
     return shuffled
   }
@@ -179,6 +183,44 @@ export function revealArtifactFullyBatch(
     items: results.map((r: { ok: boolean; item: Artifact; message: string }) => r.item),
     bottomCell
   }
+}
+
+/** 揭示指定品质的所有未揭示藏品 */
+export function revealAllByQuality(
+  deps: WarehouseManagerDeps,
+  qualityKey: string
+): { ok: boolean; revealed: number; message: string } {
+  const targets = deps.state.items.filter(
+    (item: Artifact) => !item.revealed.exact && item.qualityKey === qualityKey
+  )
+  if (targets.length === 0) {
+    return { ok: false, revealed: 0, message: `没有未揭示的${qualityKey}品质藏品。` }
+  }
+  let revealed = 0
+  targets.forEach((item: Artifact) => {
+    const result = revealArtifactFully(deps, item)
+    if (result.ok) revealed++
+  })
+  return { ok: true, revealed, message: `揭示了${revealed}件${qualityKey}品质藏品。` }
+}
+
+/** 揭示指定品类的所有未揭示藏品 */
+export function revealAllByCategory(
+  deps: WarehouseManagerDeps,
+  category: string
+): { ok: boolean; revealed: number; message: string } {
+  const targets = deps.state.items.filter(
+    (item: Artifact) => !item.revealed.exact && item.category === category
+  )
+  if (targets.length === 0) {
+    return { ok: false, revealed: 0, message: `没有未揭示的${category}藏品。` }
+  }
+  let revealed = 0
+  targets.forEach((item: Artifact) => {
+    const result = revealArtifactFully(deps, item)
+    if (result.ok) revealed++
+  })
+  return { ok: true, revealed, message: `揭示了${revealed}件${category}藏品。` }
 }
 
 /** 播放完全揭示特效（外环 + 内爆 + 边框/图片动画） */

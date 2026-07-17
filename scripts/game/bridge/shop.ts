@@ -43,6 +43,59 @@ import {
   SHOP_LIMITED_OFFER_STORAGE_KEY,
   PLAYER_MONEY_STORAGE_KEY
 } from "../core/constants"
+import { ITEM_DEFS } from "../data/items"
+
+type ShopItemDef = { id: string; name: string; description: string; price: number; icon: string; maxDaily: number }
+
+/** 道具 → 商店专属字段覆盖（icon / maxDaily / price） */
+const SHOP_OVERRIDES: Record<string, Partial<ShopItemDef>> = {
+  "item-outline-lamp": { icon: "🔦", maxDaily: 999 },
+  "item-quality-needle": { icon: "🪡", maxDaily: 999 },
+  "item-outline-candle": { icon: "🕯️", maxDaily: 999 },
+  "item-quality-glass": { icon: "🔍", maxDaily: 999 },
+  "item-outline-torch": { icon: "🔥", maxDaily: 3 },
+  "item-cat-porcelain": { icon: "🏺", maxDaily: 5 },
+  "item-cat-jade": { icon: "💎", maxDaily: 5 },
+  "item-cat-bronze": { icon: "🪙", maxDaily: 5 },
+  "item-cat-painting": { icon: "📜", maxDaily: 5 },
+  "item-cat-wood": { icon: "🪵", maxDaily: 5 },
+  "item-cat-stone": { icon: "🪨", maxDaily: 5 },
+  "item-reveal-all-1": { icon: "🔦", maxDaily: 999 },
+  "item-reveal-all-2": { icon: "🔦", maxDaily: 999 },
+  "item-reveal-all-4": { icon: "🔦", maxDaily: 999 },
+  "item-reveal-all-10": { icon: "🔦", maxDaily: 999 },
+  "item-reveal-top": { icon: "🔎", maxDaily: 5 },
+  "item-by-quality-poor": { icon: "🔬", maxDaily: 3 },
+  "item-by-quality-normal": { icon: "🔬", maxDaily: 3 },
+  "item-by-quality-fine": { icon: "🔬", maxDaily: 3 },
+  "item-by-cat-porcelain": { icon: "🏺", maxDaily: 3 },
+  "item-avg-single": { icon: "📊", maxDaily: 1 },
+  "item-avg-double": { icon: "📊", maxDaily: 1 },
+  "item-avg-quad": { icon: "📊", maxDaily: 1 },
+  "item-avg-total": { icon: "📊", maxDaily: 1 },
+  "item-avg-poor": { icon: "📊", maxDaily: 1 },
+  "item-avg-normal": { icon: "📊", maxDaily: 1 },
+  "item-avg-fine": { icon: "📊", maxDaily: 1 },
+  "item-avg-porcelain": { icon: "📊", maxDaily: 1 },
+  "item-bonus-self-up": { icon: "🍀", maxDaily: 1 },
+  "item-bonus-self-down": { icon: "🪬", maxDaily: 1 },
+  "item-bonus-all-up": { icon: "✨", maxDaily: 1 },
+  "item-bonus-all-down": { icon: "💀", maxDaily: 1 }
+}
+
+function buildShopItems(): ShopItemDef[] {
+  return ITEM_DEFS.map((def) => {
+    const over = SHOP_OVERRIDES[def.id] || {}
+    return {
+      id: def.id,
+      name: def.name,
+      description: def.description,
+      price: over.price ?? 0,
+      icon: over.icon ?? "📦",
+      maxDaily: over.maxDaily ?? 999
+    }
+  })
+}
 
 const SHOP_STORAGE_KEY = SHOP_INVENTORY_STORAGE_KEY
 const SHOP_REFRESH_DATE_KEY = SHOP_REFRESH_DATE_STORAGE_KEY
@@ -55,68 +108,7 @@ const DISCOUNT_BADGES = [
   { type: "sale", label: "特惠", color: "#ffc107", minDiscount: 0.6, maxDiscount: 0.7 }
 ]
 
-const SHOP_ITEMS = [
-  { id: "item-outline-lamp", name: "探照灯", description: "揭示4件藏品轮廓", price: 0, icon: "🔦", maxDaily: 999 },
-  {
-    id: "item-quality-needle",
-    name: "鉴定针",
-    description: "优先对铜器揭示3件品质格",
-    price: 0,
-    icon: "🪡",
-    maxDaily: 999
-  },
-  { id: "item-outline-candle", name: "蜡烛", description: "揭示2件藏品轮廓", price: 0, icon: "🕯️", maxDaily: 999 },
-  {
-    id: "item-quality-glass",
-    name: "放大镜",
-    description: "精确揭示1件藏品品质格",
-    price: 0,
-    icon: "🔍",
-    maxDaily: 999
-  },
-  { id: "item-outline-torch", name: "火把", description: "揭示6件藏品轮廓", price: 0, icon: "🔥", maxDaily: 3 },
-  {
-    id: "item-cat-porcelain",
-    name: "瓷器图谱",
-    description: "优先对瓷器揭示3件轮廓",
-    price: 0,
-    icon: "🏺",
-    maxDaily: 5
-  },
-  {
-    id: "item-cat-jade",
-    name: "玉器鉴书",
-    description: "优先对玉器揭示2件品质格",
-    price: 0,
-    icon: "💎",
-    maxDaily: 5
-  },
-  {
-    id: "item-cat-bronze",
-    name: "铜器拓片",
-    description: "优先对铜器揭示4件轮廓",
-    price: 0,
-    icon: "🔔",
-    maxDaily: 5
-  },
-  {
-    id: "item-cat-painting",
-    name: "书画残卷",
-    description: "优先对书画揭示3件品质格",
-    price: 0,
-    icon: "📜",
-    maxDaily: 5
-  },
-  { id: "item-cat-wood", name: "木器图录", description: "优先对木器揭示3件轮廓", price: 0, icon: "🪵", maxDaily: 5 },
-  {
-    id: "item-cat-stone",
-    name: "金石拓本",
-    description: "优先对金石揭示2件品质格",
-    price: 0,
-    icon: "🪨",
-    maxDaily: 5
-  }
-]
+const SHOP_ITEMS = buildShopItems()
 
 function getItemStorageKey(itemId: string): string {
   const map = {
@@ -130,7 +122,28 @@ function getItemStorageKey(itemId: string): string {
     "item-cat-bronze": "catBronze",
     "item-cat-painting": "catPainting",
     "item-cat-wood": "catWood",
-    "item-cat-stone": "catStone"
+    "item-cat-stone": "catStone",
+    "item-reveal-all-1": "revealAll1",
+    "item-reveal-all-2": "revealAll2",
+    "item-reveal-all-4": "revealAll4",
+    "item-reveal-all-10": "revealAll10",
+    "item-reveal-top": "revealTop",
+    "item-by-quality-poor": "revealByPoor",
+    "item-by-quality-normal": "revealByNormal",
+    "item-by-quality-fine": "revealByFine",
+    "item-by-cat-porcelain": "revealByPorcelain",
+    "item-avg-single": "avgSingle",
+    "item-avg-double": "avgDouble",
+    "item-avg-quad": "avgQuad",
+    "item-avg-total": "avgTotal",
+    "item-avg-poor": "avgPoor",
+    "item-avg-normal": "avgNormal",
+    "item-avg-fine": "avgFine",
+    "item-avg-porcelain": "avgPorcelain",
+    "item-bonus-self-up": "bonusSelfUp",
+    "item-bonus-self-down": "bonusSelfDown",
+    "item-bonus-all-up": "bonusAllUp",
+    "item-bonus-all-down": "bonusAllDown"
   }
   return (map as Record<string, string>)[itemId] || itemId
 }
@@ -147,7 +160,28 @@ function getDefaultInventory(): Record<string, number> {
     catBronze: 99,
     catPainting: 99,
     catWood: 99,
-    catStone: 99
+    catStone: 99,
+    revealAll1: 99,
+    revealAll2: 99,
+    revealAll4: 99,
+    revealAll10: 99,
+    revealTop: 99,
+    revealByPoor: 99,
+    revealByNormal: 99,
+    revealByFine: 99,
+    revealByPorcelain: 99,
+    avgSingle: 1,
+    avgDouble: 1,
+    avgQuad: 1,
+    avgTotal: 1,
+    avgPoor: 1,
+    avgNormal: 1,
+    avgFine: 1,
+    avgPorcelain: 1,
+    bonusSelfUp: 1,
+    bonusSelfDown: 1,
+    bonusAllUp: 1,
+    bonusAllDown: 1
   }
 }
 

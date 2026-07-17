@@ -616,3 +616,8 @@
     font-size: 13px;
   }
 }
+
+.shop-content::-webkit-scrollbar { width: var(--scrollbar-width) }
+.shop-content::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.shop-content::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.shop-content::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }

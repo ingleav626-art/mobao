@@ -55,7 +55,7 @@ export function applyUse<T extends DefEntry>(id: string, context: unknown, confi
   return {
     ok: true,
     revealed: revealResult.revealed,
-    message: `${entry.name} 生效，揭示 ${revealResult.revealed} 件目标。`
+    message: revealResult.message || `${entry.name} 生效，揭示 ${revealResult.revealed} 件目标。`
   }
 }
 

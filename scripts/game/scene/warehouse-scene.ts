@@ -1174,7 +1174,9 @@ class WarehouseScene extends _PhaserScene {
         sortStrategy: string
         category: string | null
         allowCategoryFallback: boolean
-      }) => (this as unknown as WarehouseSceneThis).revealArtifactFullyBatch(options),
+      }      ) => (this as unknown as WarehouseSceneThis).revealArtifactFullyBatch(options),
+      revealAllByQuality: (qualityKey: string) => this.warehouseManager.revealAllByQuality(qualityKey),
+      revealAllByCategory: (category: string) => this.warehouseManager.revealAllByCategory(category),
       canUseLlmDecisionForPlayer: (playerId: string) => this.canUseLlmDecisionForPlayer(playerId),
       writeLog: (text: string) => this.writeLog(text),
       requestAiLlmErrorCorrection: (
@@ -1205,6 +1207,14 @@ class WarehouseScene extends _PhaserScene {
       getP2ShopInventory: () =>
         (MobaoShopBridge as unknown as { getFullInventory?: () => Record<string, number> }).getFullInventory?.() ?? {},
       consumeP2ShopItem: (itemId: string) => MobaoShopBridge.consumeItem(itemId),
+      applyProfitModifier: (target: string, percent: number) => {
+        if (target === "self") {
+          scene.state.game.profitModifierSelf = 1 + percent / 100
+        } else if (target === "all") {
+          scene.state.game.profitModifierAll = 1 + percent / 100
+        }
+        return { ok: true, revealed: 0, message: `已应用${target === "self" ? "自身" : "全体"}获利修正${percent > 0 ? "+" : ""}${percent}%。` }
+      },
     })
 
     this.uiOverlayManager = new UiOverlayManager({

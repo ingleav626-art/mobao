@@ -161,6 +161,10 @@ export interface SkillContext {
   revealOutline(opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }): unknown
   revealQuality(opts: { count: number; category: string | null; allowCategoryFallback?: boolean; sortStrategy: string | null }): unknown
   revealAll(opts: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }): unknown
+  revealByQuality?(opts: { qualityKey: string }): unknown
+  revealByCategory?(opts: { category: string }): unknown
+  computeAveragePrice?(opts: { scope: string }): unknown
+  applyProfitModifier?(opts: { target: string; percent: number }): unknown
 }
 
 /** 揭示操作结果 */

@@ -38,6 +38,33 @@
  */
 import { MobaoShopBridge } from "../bridge/shop"
 import { MobaoAnimations } from "../animations"
+import { ITEM_DEFS } from "../data/items"
+
+function getItemCategoryId(itemId: string): string {
+  if (itemId.startsWith("item-outline-") || itemId === "item-cat-porcelain" || itemId === "item-cat-bronze" || itemId === "item-cat-wood") return "outline"
+  if (itemId.startsWith("item-quality-") || itemId === "item-cat-jade" || itemId === "item-cat-painting" || itemId === "item-cat-stone") return "quality"
+  if (itemId.startsWith("item-reveal-") || itemId.startsWith("item-by-")) return "reveal"
+  if (itemId.startsWith("item-avg-")) return "avg"
+  if (itemId.startsWith("item-bonus-")) return "bonus"
+  return "other"
+}
+
+function buildItemCategories(): Record<string, { name: string; items: string[] }> {
+  const cat: Record<string, { name: string; items: string[] }> = {
+    outline: { name: "轮廓", items: [] },
+    quality: { name: "品质", items: [] },
+    reveal: { name: "揭示", items: [] },
+    avg: { name: "均价", items: [] },
+    bonus: { name: "加成", items: [] },
+    online: { name: "联机", items: [] },
+    special: { name: "特殊", items: [] }
+  }
+  for (const def of ITEM_DEFS) {
+    const cid = getItemCategoryId(def.id)
+    if (cat[cid]) cat[cid].items.push(def.id)
+  }
+  return cat
+}
 
 type ShopItem = {
   id: string
@@ -51,43 +78,7 @@ type ShopItem = {
   maxDaily: number
 }
 
-const ITEM_CATEGORIES = {
-  outline: {
-    name: "轮廓",
-    items: [
-      "item-outline-lamp",
-      "item-outline-candle",
-      "item-outline-torch",
-      "item-cat-porcelain",
-      "item-cat-bronze",
-      "item-cat-wood"
-    ]
-  },
-  quality: {
-    name: "品质",
-    items: ["item-quality-needle", "item-quality-glass", "item-cat-jade", "item-cat-painting", "item-cat-stone"]
-  },
-  reveal: {
-    name: "揭示",
-    items: []
-  },
-  avg: {
-    name: "均价",
-    items: []
-  },
-  bonus: {
-    name: "加成",
-    items: []
-  },
-  online: {
-    name: "联机",
-    items: []
-  },
-  special: {
-    name: "特殊",
-    items: []
-  }
-}
+const ITEM_CATEGORIES = buildItemCategories()
 
 let currentTab = "all"
 let searchQuery = ""

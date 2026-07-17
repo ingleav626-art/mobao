@@ -1028,3 +1028,33 @@
     font-size: 16px;
   }
 }
+
+.ai-logic-content::-webkit-scrollbar { width: var(--scrollbar-width) }
+.ai-logic-content::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.ai-logic-content::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.ai-logic-content::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }
+
+.ai-model-config-content::-webkit-scrollbar { width: var(--scrollbar-width) }
+.ai-model-config-content::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.ai-model-config-content::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.ai-model-config-content::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }
+
+.ai-prompt-block pre::-webkit-scrollbar { width: var(--scrollbar-width) }
+.ai-prompt-block pre::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.ai-prompt-block pre::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.ai-prompt-block pre::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }
+
+.ai-memory-section pre::-webkit-scrollbar { width: var(--scrollbar-width) }
+.ai-memory-section pre::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.ai-memory-section pre::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.ai-memory-section pre::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }
+
+.ai-import-textarea::-webkit-scrollbar { width: var(--scrollbar-width) }
+.ai-import-textarea::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.ai-import-textarea::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.ai-import-textarea::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }
+
+.ai-logic-body::-webkit-scrollbar { width: var(--scrollbar-width) }
+.ai-logic-body::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
+.ai-logic-body::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
+.ai-logic-body::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }
