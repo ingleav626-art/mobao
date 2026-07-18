@@ -4,46 +4,21 @@
  * @description AiIntelManager 揭示执行相关函数：私有揭示、信号构建、知识追踪、候选目标选择。
  */
 import type { Artifact } from "../../../../types/game"
-import type { AiIntelSignal, AiItemKnowledge, HighValueTrack, AiSignalStats } from "../../../../types/ai"
+import type { AiIntelSignal, AiItemKnowledge, HighValueTrack } from "../../../../types/ai"
 import type { AiIntelManagerDeps, AiIntelState } from "../intel-manager"
 import { pickRandomItemCell, determineRevealLevel } from "../intel/pure"
 import { toCellKey, shuffle, formatTrackIndex } from "../../core/utils"
 import { QUALITY_CONFIG, toSizeTag } from "../../data/artifacts"
 import { ensureAiPrivateIntel, isHighValueArtifact } from "./init-fns"
 import { buildTrackCandidatePreview } from "./panel-fns"
-
-// ─── 辅助类型 ───
-
-interface RevealBatchResult {
-  ok: boolean
-  revealed: number
-  message?: string
-  signals?: AiIntelSignal[]
-  signalStats?: { aggregate: AiSignalStats; latest: AiSignalStats }
-  trackUpdates?: Array<{
-    trackId: string
-    created?: boolean
-    revealLevel?: string
-    confirmed?: { quality: string; category: string; exactArtifact: string | null }
-    candidates?: { total: number; truncated: boolean }
-  }>
-  bottomCell?: unknown
-}
-
-interface RevealFullyResult {
-  ok: boolean
-  revealed: number
-  message?: string
-  signals?: AiIntelSignal[]
-  signalStats?: { aggregate: AiSignalStats; latest: AiSignalStats }
-  trackUpdates?: Array<{
-    trackId: string
-    created?: boolean
-    revealLevel?: string
-    confirmed?: { quality: string; category: string; exactArtifact: string | null }
-    candidates?: { total: number; truncated: boolean }
-  }>
-}
+import type {
+  ItemResult,
+  BottomCell,
+  TrackUpdate,
+  SignalStatsPair,
+  ArtifactInfo,
+  ItemActionType
+} from "./item-result"
 
 // ─── 函数 ───
 
@@ -70,7 +45,7 @@ export function buildSkillContext(deps: AiIntelManagerDeps): {
   revealByQuality: (opts: { qualityKey: string }) => unknown
   revealByCategory: (opts: { category: string }) => unknown
   computeAveragePrice: (opts: { scope: string }) => { ok: boolean; revealed: number; message: string }
-  applyProfitModifier: (opts: { target: string; percent: number }) => { ok: boolean; revealed: number; message: string }
+  applyBonus: (opts: { id: string; scope: string; condition: string; value: number }) => { ok: boolean; revealed: number; message: string }
 } {
   return {
     revealOutline: ({
@@ -112,8 +87,8 @@ export function buildSkillContext(deps: AiIntelManagerDeps): {
       deps.revealAllByCategory?.(category) ?? { ok: false, revealed: 0, message: "函数不可用。" },
     computeAveragePrice: ({ scope }: { scope: string }) =>
       computeAveragePrice(deps.items, scope),
-    applyProfitModifier: ({ target, percent }: { target: string; percent: number }) =>
-      deps.applyProfitModifier?.(target, percent) ?? { ok: false, revealed: 0, message: "函数不可用。" }
+    applyBonus: (opts: { id: string; scope: string; condition: string; value: number }) =>
+      deps.applyBonus?.(opts.id, opts.scope, opts.condition, opts.value) ?? { ok: false, revealed: 0, message: "函数不可用。" }
   }
 }
 
@@ -144,6 +119,7 @@ export function buildAiPrivateRevealContext(
   revealByQuality: (opts: { qualityKey: string }) => unknown
   revealByCategory: (opts: { category: string }) => unknown
   computeAveragePrice: (opts: { scope: string }) => { ok: boolean; revealed: number; message: string }
+  applyBonus: (opts: { id: string; scope: string; condition: string; value: number }) => { ok: boolean; revealed: number; message: string }
 } {
   return {
     revealOutline: ({
@@ -186,7 +162,9 @@ export function buildAiPrivateRevealContext(
     revealByCategory: ({ category }: { category: string }) =>
       revealPrivateIntelAllByCategory(deps, state, playerId, category),
     computeAveragePrice: ({ scope }: { scope: string }) =>
-      computeAveragePrice(deps.items, scope)
+      computeAveragePrice(deps.items, scope),
+    applyBonus: (opts: { id: string; scope: string; condition: string; value: number }) =>
+      deps.applyBonus?.(opts.id, opts.scope, opts.condition, opts.value) ?? { ok: false, revealed: 0, message: "函数不可用。" }
   }
 }
 
@@ -464,7 +442,7 @@ export function revealPrivateIntelBatch(
   category: string | null,
   allowCategoryFallback = false,
   sortStrategy: string | null
-): RevealBatchResult {
+): ItemResult {
   const targets = pickPrivateRevealTargets(deps, state, {
     playerId,
     mode,
@@ -480,13 +458,7 @@ export function revealPrivateIntelBatch(
 
   const pool = ensureAiPrivateIntel(state, playerId)
   const signals: AiIntelSignal[] = []
-  const trackUpdates: Array<{
-    trackId: string
-    created?: boolean
-    revealLevel?: string
-    confirmed?: { quality: string; category: string; exactArtifact: string | null }
-    candidates?: { total: number; truncated: boolean }
-  }> = []
+  const trackUpdates: TrackUpdate[] = []
 
   targets.forEach((item: Artifact) => {
     const signal = buildAiPrivateSignal(deps, state, playerId, item, mode)
@@ -519,16 +491,107 @@ export function revealPrivateIntelBatch(
   const totalStats = deps.artifactManager.getSignalPriceStats(pool.signalHistory)
   pool.latestSignalStats = signalStats
   pool.aggregateStats = totalStats.aggregate
-  const bottomCell = mode === "outline" ? deps.pickBottomCellFromTargets(targets) : null
+  // 统一返回：所有模式（轮廓/品质）都返回最底部藏品坐标
+  const bottomCell: BottomCell | null = deps.pickBottomCellFromTargets(targets)
+  const actionType: ItemActionType = mode === "outline" ? "outline" : "quality"
 
   return {
     ok: true,
     revealed: targets.length,
+    message: `揭示了${targets.length}件${mode === "outline" ? "轮廓" : "品质"}目标。`,
+    actionType,
+    itemCount: mode === "outline" ? targets.length : undefined,
+    qualityCellCount: mode === "quality" ? targets.length : undefined,
     signals,
     signalStats,
     trackUpdates,
     bottomCell
   }
+}
+
+/**
+ * 对单个藏品应用完整揭示副作用（轮廓+品质 signal、加入 set、触发 track、更新 knowledge）。
+ *
+ * 供 `revealPrivateIntelFully` / `revealPrivateIntelAllByQuality` / `revealPrivateIntelAllByCategory`
+ * 三处复用，确保所有揭示类道具走相同的画布状态更新流程。
+ *
+ * 返回该藏品的 outlineSignal + qualitySignal + 关联的 trackUpdates。
+ */
+function applyFullRevealSideEffects(
+  deps: AiIntelManagerDeps,
+  state: AiIntelState,
+  playerId: string,
+  item: Artifact
+): {
+  outlineSignal: AiIntelSignal
+  qualitySignal: AiIntelSignal
+  trackUpdates: TrackUpdate[]
+} {
+  const pool = ensureAiPrivateIntel(state, playerId)
+  const outlineSignal = buildAiPrivateSignal(deps, state, playerId, item, "outline")
+  const qualitySignal = buildAiPrivateSignal(deps, state, playerId, item, "quality")
+
+  pool.knownOutlineIds.add(item.id)
+  pool.knownQualityIds.add(item.id)
+  pool.outlineSignals.push(outlineSignal)
+  pool.qualitySignals.push(qualitySignal)
+
+  const trackUpdates: TrackUpdate[] = []
+  const trackUpdate = ensureAiHighValueTrack(deps, state, playerId, item)
+  if (trackUpdate) {
+    trackUpdates.push(trackUpdate)
+  }
+
+  const outlineKnowledge = updateAiItemKnowledge(deps, state, playerId, item, outlineSignal, "outline")
+  if (outlineKnowledge.trackUpdate) {
+    trackUpdates.push(outlineKnowledge.trackUpdate)
+  }
+
+  const qualityKnowledge = updateAiItemKnowledge(deps, state, playerId, item, qualitySignal, "quality")
+  if (qualityKnowledge.trackUpdate) {
+    trackUpdates.push(qualityKnowledge.trackUpdate)
+  }
+
+  return { outlineSignal, qualitySignal, trackUpdates }
+}
+
+/** 把 Artifact 转换为精简的 ArtifactInfo（揭示类返回的藏品完整信息） */
+function toArtifactInfo(item: Artifact): ArtifactInfo {
+  const qualityLabel = QUALITY_CONFIG[item.qualityKey]?.label ?? item.qualityKey
+  return {
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    qualityKey: item.qualityKey,
+    quality: qualityLabel,
+    sizeTag: toSizeTag(item.w, item.h),
+    w: item.w,
+    h: item.h,
+    basePrice: item.basePrice,
+    x: item.x,
+    y: item.y
+  }
+}
+
+/** 把信号数组追加到 pool.signalHistory（带 160 截顶） */
+function pushSignalHistory(pool: ReturnType<typeof ensureAiPrivateIntel>, signals: AiIntelSignal[]): void {
+  pool.signalHistory.push(...signals)
+  if (pool.signalHistory.length > 160) {
+    pool.signalHistory = pool.signalHistory.slice(-160)
+  }
+}
+
+/** 计算并刷新最新+累计信号统计 */
+function refreshSignalStats(
+  deps: AiIntelManagerDeps,
+  pool: ReturnType<typeof ensureAiPrivateIntel>,
+  signals: AiIntelSignal[]
+): SignalStatsPair {
+  const signalStats = deps.artifactManager.getSignalPriceStats(signals)
+  const totalStats = deps.artifactManager.getSignalPriceStats(pool.signalHistory)
+  pool.latestSignalStats = signalStats
+  pool.aggregateStats = totalStats.aggregate
+  return signalStats
 }
 
 /** 完全揭示私有情报（轮廓+品质） */
@@ -542,7 +605,7 @@ export function revealPrivateIntelFully(
     category,
     allowCategoryFallback
   }: { count: number; sortStrategy: string; category: string | null; allowCategoryFallback: boolean }
-): RevealFullyResult {
+): ItemResult {
   const pool = ensureAiPrivateIntel(state, playerId)
   const unrevealed = deps.items.filter(
     (item: Artifact) => !pool.knownOutlineIds.has(item.id) || !pool.knownQualityIds.has(item.id)
@@ -582,57 +645,27 @@ export function revealPrivateIntelFully(
   }
 
   const signals: AiIntelSignal[] = []
-  const trackUpdates: Array<{
-    trackId: string
-    created?: boolean
-    revealLevel?: string
-    confirmed?: { quality: string; category: string; exactArtifact: string | null }
-    candidates?: { total: number; truncated: boolean }
-  }> = []
+  const trackUpdates: TrackUpdate[] = []
 
   targets.forEach((item: Artifact) => {
-    const outlineSignal = buildAiPrivateSignal(deps, state, playerId, item, "outline")
-    const qualitySignal = buildAiPrivateSignal(deps, state, playerId, item, "quality")
-
-    pool.knownOutlineIds.add(item.id)
-    pool.knownQualityIds.add(item.id)
-    pool.outlineSignals.push(outlineSignal)
-    pool.qualitySignals.push(qualitySignal)
-
-    const trackUpdate = ensureAiHighValueTrack(deps, state, playerId, item)
-    if (trackUpdate) {
-      trackUpdates.push(trackUpdate)
-    }
-
-    const outlineKnowledge = updateAiItemKnowledge(deps, state, playerId, item, outlineSignal, "outline")
-    if (outlineKnowledge.trackUpdate) {
-      trackUpdates.push(outlineKnowledge.trackUpdate)
-    }
-
-    const qualityKnowledge = updateAiItemKnowledge(deps, state, playerId, item, qualitySignal, "quality")
-    if (qualityKnowledge.trackUpdate) {
-      trackUpdates.push(qualityKnowledge.trackUpdate)
-    }
-
-    signals.push(outlineSignal, qualitySignal)
+    const sideEffects = applyFullRevealSideEffects(deps, state, playerId, item)
+    signals.push(sideEffects.outlineSignal, sideEffects.qualitySignal)
+    trackUpdates.push(...sideEffects.trackUpdates)
   })
 
-  pool.signalHistory.push(...signals)
-  if (pool.signalHistory.length > 160) {
-    pool.signalHistory = pool.signalHistory.slice(-160)
-  }
-
-  const signalStats = deps.artifactManager.getSignalPriceStats(signals)
-  const totalStats = deps.artifactManager.getSignalPriceStats(pool.signalHistory)
-  pool.latestSignalStats = signalStats
-  pool.aggregateStats = totalStats.aggregate
+  pushSignalHistory(pool, signals)
+  refreshSignalStats(deps, pool, signals)  // 更新 AI 内存（不走 LLM 回调）
+  const bottomCell: BottomCell | null = deps.pickBottomCellFromTargets(targets)
 
   return {
     ok: true,
     revealed: targets.length,
+    message: `完全揭示了${targets.length}件藏品。`,
+    actionType: "reveal",
+    artifacts: targets.map(toArtifactInfo),
     signals,
-    signalStats,
-    trackUpdates
+    trackUpdates,
+    bottomCell
   }
 }
 
@@ -642,7 +675,7 @@ export function revealPrivateIntelAllByQuality(
   state: AiIntelState,
   playerId: string,
   qualityKey: string
-): { ok: boolean; revealed: number; message: string } {
+): ItemResult {
   const pool = ensureAiPrivateIntel(state, playerId)
   const targets = deps.items.filter(
     (item: Artifact) =>
@@ -652,11 +685,30 @@ export function revealPrivateIntelAllByQuality(
   if (targets.length === 0) {
     return { ok: false, revealed: 0, message: `没有未揭示的${qualityKey}品质藏品。` }
   }
+
+  const signals: AiIntelSignal[] = []
+  const trackUpdates: TrackUpdate[] = []
+
   targets.forEach((item: Artifact) => {
-    pool.knownOutlineIds.add(item.id)
-    pool.knownQualityIds.add(item.id)
+    const sideEffects = applyFullRevealSideEffects(deps, state, playerId, item)
+    signals.push(sideEffects.outlineSignal, sideEffects.qualitySignal)
+    trackUpdates.push(...sideEffects.trackUpdates)
   })
-  return { ok: true, revealed: targets.length, message: `揭示了${targets.length}件${qualityKey}品质藏品。` }
+
+  pushSignalHistory(pool, signals)
+  refreshSignalStats(deps, pool, signals)
+  const bottomCell: BottomCell | null = deps.pickBottomCellFromTargets(targets)
+
+  return {
+    ok: true,
+    revealed: targets.length,
+    message: `揭示了${targets.length}件${qualityKey}品质藏品。`,
+    actionType: "reveal",
+    artifacts: targets.map(toArtifactInfo),
+    signals,
+    trackUpdates,
+    bottomCell
+  }
 }
 
 /** AI 情报侧：揭示指定品类的所有藏品 */
@@ -665,7 +717,7 @@ export function revealPrivateIntelAllByCategory(
   state: AiIntelState,
   playerId: string,
   category: string
-): { ok: boolean; revealed: number; message: string } {
+): ItemResult {
   const pool = ensureAiPrivateIntel(state, playerId)
   const targets = deps.items.filter(
     (item: Artifact) =>
@@ -675,14 +727,33 @@ export function revealPrivateIntelAllByCategory(
   if (targets.length === 0) {
     return { ok: false, revealed: 0, message: `没有未揭示的${category}藏品。` }
   }
+
+  const signals: AiIntelSignal[] = []
+  const trackUpdates: TrackUpdate[] = []
+
   targets.forEach((item: Artifact) => {
-    pool.knownOutlineIds.add(item.id)
-    pool.knownQualityIds.add(item.id)
+    const sideEffects = applyFullRevealSideEffects(deps, state, playerId, item)
+    signals.push(sideEffects.outlineSignal, sideEffects.qualitySignal)
+    trackUpdates.push(...sideEffects.trackUpdates)
   })
-  return { ok: true, revealed: targets.length, message: `揭示了${targets.length}件${category}藏品。` }
+
+  pushSignalHistory(pool, signals)
+  refreshSignalStats(deps, pool, signals)
+  const bottomCell: BottomCell | null = deps.pickBottomCellFromTargets(targets)
+
+  return {
+    ok: true,
+    revealed: targets.length,
+    message: `揭示了${targets.length}件${category}藏品。`,
+    actionType: "reveal",
+    artifacts: targets.map(toArtifactInfo),
+    signals,
+    trackUpdates,
+    bottomCell
+  }
 }
 
-/** 选择私有揭示目标 */
+
 export function pickPrivateRevealTargets(
   deps: AiIntelManagerDeps,
   state: AiIntelState,
@@ -744,8 +815,10 @@ export function pickPrivateRevealTargets(
 export function computeAveragePrice(
   items: Artifact[],
   scope: string
-): { ok: boolean; revealed: number; message: string } {
-  if (!items || items.length === 0) return { ok: false, revealed: 0, message: "无可计算藏品。" }
+): ItemResult {
+  if (!items || items.length === 0) {
+    return { ok: false, revealed: 0, message: "无可计算藏品。", actionType: "average", scope }
+  }
 
   let targets: Artifact[]
   let label: string
@@ -772,11 +845,21 @@ export function computeAveragePrice(
     targets = items.filter((i) => i.category === category)
     label = category
   } else {
-    return { ok: false, revealed: 0, message: "未知均价范围。" }
+    return { ok: false, revealed: 0, message: "未知均价范围。", actionType: "average", scope }
   }
 
-  if (targets.length === 0) return { ok: false, revealed: 0, message: `${label}无藏品。` }
+  if (targets.length === 0) {
+    return { ok: false, revealed: 0, message: `${label}无藏品。`, actionType: "average", scope: label, itemCount: 0 }
+  }
   const sum = targets.reduce((s, i) => s + (i.basePrice || 0), 0)
   const avg = Math.round(sum / targets.length)
-  return { ok: true, revealed: targets.length, message: `${label}均价：${avg}` }
+  return {
+    ok: true,
+    revealed: 0,
+    message: `${label}均价：${avg}`,
+    actionType: "average",
+    averagePrice: avg,
+    scope: label,
+    itemCount: targets.length
+  }
 }

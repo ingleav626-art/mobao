@@ -164,7 +164,7 @@ export interface SkillContext {
   revealByQuality?(opts: { qualityKey: string }): unknown
   revealByCategory?(opts: { category: string }): unknown
   computeAveragePrice?(opts: { scope: string }): unknown
-  applyProfitModifier?(opts: { target: string; percent: number }): unknown
+  applyBonus?(opts: { id: string; scope: string; condition: string; value: number }): unknown
 }
 
 /** 揭示操作结果 */

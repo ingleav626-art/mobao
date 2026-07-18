@@ -280,6 +280,60 @@
   box-shadow: none;
 }
 
+.shop-card-quality {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  margin: 2px 0 4px;
+  text-align: center;
+}
+
+.shop-quality-common .shop-card-quality {
+  background: #555;
+  color: #ccc
+}
+
+.shop-quality-fine .shop-card-quality {
+  background: #2f78ff;
+  color: #fff
+}
+
+.shop-quality-rare .shop-card-quality {
+  background: #12b46d;
+  color: #fff
+}
+
+.shop-quality-epic .shop-card-quality {
+  background: #8b5cf6;
+  color: #fff
+}
+
+.shop-quality-legendary .shop-card-quality {
+  background: #f0a300;
+  color: #222
+}
+
+.shop-quality-common {
+  background: linear-gradient(to top, rgba(120, 120, 120, 0.15), transparent)
+}
+
+.shop-quality-fine {
+  background: linear-gradient(to top, rgba(47, 120, 255, 0.25), transparent)
+}
+
+.shop-quality-rare {
+  background: linear-gradient(to top, rgba(18, 180, 109, 0.25), transparent)
+}
+
+.shop-quality-epic {
+  background: linear-gradient(to top, rgba(139, 92, 246, 0.25), transparent)
+}
+
+.shop-quality-legendary {
+  background: linear-gradient(to top, rgba(240, 163, 0, 0.30), transparent)
+}
+
 .shop-empty-state {
   display: flex;
   flex-direction: column;
@@ -617,7 +671,20 @@
   }
 }
 
-.shop-content::-webkit-scrollbar { width: var(--scrollbar-width) }
-.shop-content::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 3px }
-.shop-content::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px }
-.shop-content::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) }
+.shop-content::-webkit-scrollbar {
+  width: var(--scrollbar-width)
+}
+
+.shop-content::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 3px
+}
+
+.shop-content::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px
+}
+
+.shop-content::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover)
+}

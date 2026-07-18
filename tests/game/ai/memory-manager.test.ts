@@ -60,7 +60,7 @@ function makeManager(overrides: {
   isAiReflectionEnabled?: () => boolean
   getCurrentPublicEvent?: () => { category: string; text: string } | null
   getPlayerRoundHistory?: () => Record<string, Array<{ round: number; bid: number }>>
-  isP2AutoPlaying?: () => boolean
+  isAutoPlaying?: () => boolean
 } = {}): { manager: AiMemoryManager; data: AiMemoryData; deps: AiMemoryManagerDeps } {
   const data = overrides.data || makeData()
   const dom = new JSDOM('<div id="overlay" class="hidden"></div><div id="content"></div>')
@@ -80,7 +80,7 @@ function makeManager(overrides: {
     getCurrentPublicEvent: overrides.getCurrentPublicEvent || (() => null),
     getPlayerRoundHistory:
       overrides.getPlayerRoundHistory || (() => ({ p1: [{ round: 1, bid: 5000 }], ai1: [{ round: 1, bid: 3000 }] })),
-    isP2AutoPlaying: overrides.isP2AutoPlaying,
+    isAutoPlaying: overrides.isAutoPlaying,
   }
   const manager = new AiMemoryManager(deps)
   return { manager, data, deps }
@@ -800,7 +800,7 @@ describe("AiMemoryManager", () => {
 
   // ════════════ AI托管：p2 结算写入 ════════════
   describe("pushRunSettlementContextToAi with p2 autoplay", () => {
-    it("isP2AutoPlaying=true 时 p2 得到结算总结", () => {
+    it("isAutoPlaying=true 时 p2 得到结算总结", () => {
       const { manager, deps } = makeManager()
       manager.pushRunSettlementContextToAi({ winnerId: "p1", winnerName: "AI1", winnerBid: 5000, totalValue: 20000, winnerProfit: 15000, reasonText: "直接拿下" })
 
@@ -809,12 +809,12 @@ describe("AiMemoryManager", () => {
       expect(p2summary).toBeUndefined()
     })
 
-    it("isP2AutoPlaying=true 时 p2 得到结算总结", () => {
+    it("isAutoPlaying=true 时 p2 得到结算总结", () => {
       const players = [
         { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
         { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
       ] as Player[]
-      const { manager, deps } = makeManager({ players, isP2AutoPlaying: () => true })
+      const { manager, deps } = makeManager({ players, isAutoPlaying: () => true })
       manager.pushRunSettlementContextToAi({ winnerId: "p1", winnerName: "AI1", winnerBid: 5000, totalValue: 20000, winnerProfit: 15000, reasonText: "直接拿下" })
 
       // p2 应该得到总结（托管中）
@@ -823,4 +823,5 @@ describe("AiMemoryManager", () => {
       expect(allKeys).toContain("p2")
       expect(deps.data.pendingNextRunAiSummaryByPlayer["p2"]).toContain("AI1")
     })
+  })
 })

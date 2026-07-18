@@ -407,7 +407,9 @@ export function createSettlementBridge(deps: SettlementDeps) {
         this.dom.settleBackBtn.textContent = label
       }
       if (this.dom.settleSelfProfitRow) {
-        this.dom.settleSelfProfitRow.classList.add("hidden")
+        if (!winnerPlayer.isSelf) {
+          this.dom.settleSelfProfitRow.classList.add("hidden")
+        }
       }
       if (this.dom.settleReplayBtn) {
         if (this.battleRecordReplayActive) {
@@ -509,7 +511,12 @@ export function createSettlementBridge(deps: SettlementDeps) {
       }
     },
 
-    updateSettlementPanelMetrics(revealedValue: number, winnerProfit: number) {
+    updateSettlementPanelMetrics(revealedValue: number, winnerProfit: number, isSelfWinner?: boolean) {
+      // 未显式传参时从 session 自动检测
+      if (isSelfWinner === undefined) {
+        const self = this.players.find((p) => p.isSelf)
+        isSelfWinner = self && this.settlementSession ? self.id === this.settlementSession.winnerId : false
+      }
       this._lastRevealedValue = revealedValue
       const revealedValueEl = this.dom.settleRevealedValue
       if (revealedValueEl) revealedValueEl.textContent = String(revealedValue)
@@ -517,8 +524,9 @@ export function createSettlementBridge(deps: SettlementDeps) {
       let passiveLabel = ""
       if (winnerProfit > 0) {
         const self = this.players.find((p) => p.isSelf)
-        const isSelfWinner = self && this.settlementSession && self.id === this.settlementSession.winnerId
-        if (isSelfWinner) {
+        const selfIsWinner = self && this.settlementSession && self.id === this.settlementSession.winnerId
+        // 自身是拍下者时被动加成滚动到自身利润行；非拍下者时照常走拍下者利润行
+        if (selfIsWinner) {
           const result = applyPassiveEffect({ profit: winnerProfit })
           if (result.bonus > 0 && result.label) {
             passiveLabel = `（+${result.bonus}）`
@@ -527,28 +535,39 @@ export function createSettlementBridge(deps: SettlementDeps) {
         }
       }
       this._lastDisplayProfit = displayProfit
-      const profitEl = this.dom.settleWinnerProfit
-      if (!profitEl) return
+
+      const winnerProfitEl = this.dom.settleWinnerProfit
+      const selfProfitEl = this.dom.settleSelfProfit
+      const targetEl = isSelfWinner ? selfProfitEl : winnerProfitEl
+
+      // 自身拍下者时隐藏拍下者利润行，在自身利润行滚动
+      if (isSelfWinner && winnerProfitEl) {
+        const row = winnerProfitEl.closest(".settle-meta-row")
+        if (row) row.classList.add("hidden")
+        if (this.dom.settleSelfProfitRow) this.dom.settleSelfProfitRow.classList.remove("hidden")
+      }
+
+      if (!targetEl) return
       if (typeof MobaoAnimations !== "undefined") {
-        MobaoAnimations.scrollToNumber(profitEl, displayProfit, {
+        MobaoAnimations.scrollToNumber(targetEl, displayProfit, {
           duration: 250,
           prefix: displayProfit >= 0 ? "+" : "",
           suffix: passiveLabel
         })
       } else {
-        profitEl.textContent = `${displayProfit >= 0 ? "+" : ""}${displayProfit}${passiveLabel}`
+        targetEl.textContent = `${displayProfit >= 0 ? "+" : ""}${displayProfit}${passiveLabel}`
       }
-      profitEl.classList.remove("profit-positive", "profit-negative", "profit-neutral")
+      targetEl.classList.remove("profit-positive", "profit-negative", "profit-neutral")
       if (displayProfit > 0) {
-        profitEl.classList.add("profit-positive")
+        targetEl.classList.add("profit-positive")
       } else if (displayProfit < 0) {
-        profitEl.classList.add("profit-negative")
+        targetEl.classList.add("profit-negative")
       } else {
-        profitEl.classList.add("profit-neutral")
+        targetEl.classList.add("profit-neutral")
       }
     },
 
-    showSelfProfit(selfProfit: number, label: string) {
+    showSelfProfit(selfProfit: number, label: string, adjustedProfit?: number) {
       if (!this.dom.settleSelfProfitRow || !this.dom.settleSelfProfit) {
         return
       }
@@ -557,6 +576,29 @@ export function createSettlementBridge(deps: SettlementDeps) {
       const spanEl = this.dom.settleSelfProfitRow.querySelector("span")
       if (spanEl) spanEl.textContent = displayLabel
       const profitEl = this.dom.settleSelfProfit
+      const useBonus = adjustedProfit !== undefined && adjustedProfit !== selfProfit
+      const finalValue = useBonus ? adjustedProfit : selfProfit
+      const bonusAmount = useBonus ? (adjustedProfit as number) - selfProfit : 0
+
+      // 有加成时：划掉原值，旁边显示加成后值+加成额
+      let suffix = ""
+      if (useBonus) {
+        suffix += ` <span class="settle-profit-raw" style="text-decoration:line-through;color:#999;font-size:0.85em;margin-left:8px">${selfProfit >= 0 ? "+" : ""}${selfProfit}</span>`
+        suffix += ` <span class="settle-profit-bonus" style="color:#f5c842;font-size:0.85em">（${bonusAmount >= 0 ? "+" : ""}${bonusAmount}）</span>`
+      }
+
+      if (typeof MobaoAnimations !== "undefined") {
+        MobaoAnimations.scrollToNumber(profitEl, finalValue, {
+          duration: 400,
+          prefix: finalValue >= 0 ? "+" : ""
+        })
+      } else {
+        profitEl.textContent = `${finalValue >= 0 ? "+" : ""}${finalValue}`
+      }
+      // 追加划掉值和加成额
+      if (useBonus) {
+        profitEl.innerHTML = profitEl.innerHTML + suffix
+      }
       if (typeof MobaoAnimations !== "undefined") {
         MobaoAnimations.scrollToNumber(profitEl, selfProfit, {
           duration: 400,

@@ -10,6 +10,7 @@ import { createEmptyAiPrivateIntelPool, calcHighValuePriceThreshold, checkHighVa
 import { shuffle } from "../../core/utils"
 import { SKILL_DEFS } from "../../data/skills"
 import { ITEM_DEFS } from "../../data/items"
+import { getItemQuality } from "../../data/items"
 import { CHARACTERS } from "../../data/characters"
 import { getActiveCharacter } from "../../data/character-system"
 import { ARTIFACT_LIBRARY } from "../../data/artifacts"
@@ -62,13 +63,34 @@ export function initAiIntelSystems(deps: AiIntelManagerDeps): void {
 
     // 托管 p2 道具从商店库存同步，不走随机分配
     let itemEntries: Record<string, number>
-    if (player.isHuman && deps.isP2AutoPlaying?.() && deps.getP2ShopInventory) {
-      itemEntries = deps.getP2ShopInventory()
+    if (player.isHuman && deps.isAutoPlaying?.() && deps.getShopInventory) {
+      itemEntries = deps.getShopInventory()
     } else {
-      const shuffledItems = shuffle([...allItems])
-      const selectedItems = shuffledItems.slice(0, 4)
+      // 按品质分层随机选取 4 件道具
+      const pools: Record<string, typeof allItems> = { common: [], fine: [], rare: [], epic: [], legendary: [] }
+      for (const item of allItems) {
+        const q = getItemQuality(item.id)
+        if (pools[q]) pools[q].push(item)
+      }
+      const pickOne = (pool: typeof allItems): typeof allItems[number] | null => shuffle(pool)[0] || null
+      const selected: typeof allItems = []
+      const usedIds = new Set<string>()
+      const tryAdd = (item: typeof allItems[number] | null) => {
+        if (item && !usedIds.has(item.id)) { selected.push(item); usedIds.add(item.id) }
+      }
+
+      // 1 件保底 普通/精品，1 件保底 稀有+
+      tryAdd(pickOne([...pools.common, ...pools.fine]))
+      tryAdd(pickOne([...pools.rare, ...pools.epic, ...pools.legendary]))
+      // 补满 4 件
+      const remaining = allItems.filter((i) => !usedIds.has(i.id))
+      for (const item of shuffle(remaining)) {
+        if (selected.length >= 4) break
+        tryAdd(item)
+      }
+
       itemEntries = {}
-      selectedItems.forEach((item) => {
+      selected.forEach((item) => {
         itemEntries[item.id] = item.initialCount
       })
     }
@@ -110,7 +132,7 @@ export function refreshAllPlayerAvatars(deps: AiIntelManagerDeps): void {
           wrap.appendChild(nameTag)
         }
         nameTag.textContent = charName
-        ;(nameTag as HTMLElement).style.display = ""
+          ; (nameTag as HTMLElement).style.display = ""
       }
     }
   })
@@ -119,7 +141,7 @@ export function refreshAllPlayerAvatars(deps: AiIntelManagerDeps): void {
 /** 重置 AI 回合资源（技能次数恢复、效果清空） */
 export function resetAiRoundResources(deps: AiIntelManagerDeps): void {
   const state = deps.state
-  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman || (player.isHuman && deps.isP2AutoPlaying?.()))
+  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman || (player.isHuman && deps.isAutoPlaying?.()))
   aiPlayers.forEach((player: Player) => {
     let resourceState = state.aiResourceState[player.id]
     if (!resourceState) {

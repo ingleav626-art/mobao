@@ -16,7 +16,7 @@ import type { LlmPlanResult } from "../../../types/llm"
 import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 interface LlmPromptDeps {
-  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number; [key: string]: unknown }
+  GAME_SETTINGS: { maxRounds: number; bidStep: number; directTakeRatio: number;[key: string]: unknown }
   SKILL_DEFS: SkillDef[]
   ITEM_DEFS: ItemDef[]
   pickFirstDefined: (...args: unknown[]) => unknown
@@ -52,7 +52,7 @@ interface LlmPayload {
   privateIntel?: unknown
   actionConstraints?: Record<string, unknown>
   lastRoundResult?: Record<string, unknown>
-  round?: { current?: number; total?: number; [key: string]: unknown }
+  round?: { current?: number; total?: number;[key: string]: unknown }
   currentWallet?: number
   currentLeader?: string
   currentBid?: number
@@ -135,11 +135,11 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       const charAssign = this.aiCharacterAssignments?.[playerId]
       const characterInfo = charAssign
         ? {
-            characterId: charAssign.characterId,
-            characterName: charAssign.characterName,
-            skillName: charAssign.skillName,
-            passive: charAssign.passive?.label || null
-          }
+          characterId: charAssign.characterId,
+          characterName: charAssign.characterName,
+          skillName: charAssign.skillName,
+          passive: charAssign.passive?.label || null
+        }
         : null
 
       const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number(resource.skills[entry.id] || 0) > 0).map(
@@ -208,9 +208,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       const resource = this.getAiResourceSnapshot(playerId)
 
       const bidHistory = this.buildBidHistorySnapshot()
-      const lastRoundBid = (
-        bidHistory as Array<{ round: number; bids: Record<string, unknown>; winner: string | null }>
-      ).find((entry) => entry.round === previousRound)
+      const lastRoundBid = bidHistory.find((entry) => entry.round === previousRound)
 
       const availableSkills = SKILL_DEFS.filter((entry: SkillDef) => Number(resource.skills[entry.id] || 0) > 0).map(
         (entry: SkillDef) => ({
@@ -251,11 +249,10 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         },
         lastRoundResult: {
           bids: lastRoundBid?.bids || {},
-          winner: lastRoundBid?.winner || null,
           actions: lastRoundActions
         },
         currentWallet: this.getAiWallet(playerId),
-        currentLeader: this.bidLeader,
+        currentLeader: lastRoundBid?.highestBidder || "none",
         currentBid: this.currentBid,
         selfAvailableTools: {
           skills: availableSkills,
@@ -342,12 +339,12 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       } else if (isFirstRound) {
         base = [
           "【任务】第 " +
-            roundNo +
-            "/" +
-            totalRounds +
-            " 轮（" +
-            roundStateText +
-            "）。给出合法竞拍决策（bid/skill/item/thought）。",
+          roundNo +
+          "/" +
+          totalRounds +
+          " 轮（" +
+          roundStateText +
+          "）。给出合法竞拍决策（bid/skill/item/thought）。",
           finalRoundHint,
           "【当前状态数据】",
           JSON.stringify(payload)
@@ -355,12 +352,12 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       } else {
         base = [
           "【任务】第 " +
-            roundNo +
-            "/" +
-            totalRounds +
-            " 轮（" +
-            roundStateText +
-            "）。给出合法竞拍决策（bid/skill/item/thought）。",
+          roundNo +
+          "/" +
+          totalRounds +
+          " 轮（" +
+          roundStateText +
+          "）。给出合法竞拍决策（bid/skill/item/thought）。",
           finalRoundHint,
           "【上一轮结算信息】",
           JSON.stringify(payload)
@@ -525,12 +522,12 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       } else {
         taskContent = [
           "【任务】第 " +
-            roundNo +
-            "/" +
-            totalRounds +
-            " 轮（" +
-            roundStateText +
-            "）。给出合法竞拍决策（bid/skill/item/thought）。",
+          roundNo +
+          "/" +
+          totalRounds +
+          " 轮（" +
+          roundStateText +
+          "）。给出合法竞拍决策（bid/skill/item/thought）。",
           finalRoundHint
         ].join("\n")
       }
@@ -700,11 +697,8 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
 
       if (result && Array.isArray(result.signals) && result.signals.length > 0) {
         const revealDetails: string[] = []
-        const itemIdSet = new Set<string>()
         result.signals.forEach((signal: SignalData) => {
           if (!signal || !signal.itemId) return
-          if (itemIdSet.has(signal.itemId as string)) return
-          itemIdSet.add(signal.itemId as string)
 
           const item = this.items.find((i) => i.id === (signal.itemId as string))
           if (!item) return

@@ -39,6 +39,14 @@
 import { MobaoShopBridge } from "../bridge/shop"
 import { MobaoAnimations } from "../animations"
 import { ITEM_DEFS } from "../data/items"
+import { getItemQuality } from "../data/items"
+
+const QUALITY_LABELS: Record<string, string> = {
+  common: "普通", fine: "精品", rare: "稀有", epic: "史诗", legendary: "传说"
+}
+const QUALITY_RANK: Record<string, number> = {
+  common: 0, fine: 1, rare: 2, epic: 3, legendary: 4
+}
 
 function getItemCategoryId(itemId: string): string {
   if (itemId.startsWith("item-outline-") || itemId === "item-cat-porcelain" || itemId === "item-cat-bronze" || itemId === "item-cat-wood") return "outline"
@@ -244,6 +252,14 @@ function getFilteredItems(): ShopItem[] {
     filtered.sort(function (a, b) {
       return a.price - b.price
     })
+  } else if (sortFilter === "quality-high") {
+    filtered.sort(function (a, b) {
+      return (QUALITY_RANK[getItemQuality(b.id)] ?? 0) - (QUALITY_RANK[getItemQuality(a.id)] ?? 0)
+    })
+  } else if (sortFilter === "quality-low") {
+    filtered.sort(function (a, b) {
+      return (QUALITY_RANK[getItemQuality(a.id)] ?? 0) - (QUALITY_RANK[getItemQuality(b.id)] ?? 0)
+    })
   }
 
   return filtered
@@ -268,9 +284,10 @@ function renderAllItems(): void {
       const canBuy = remaining > 0 && money >= item.price
 
       return [
-        '<div class="shop-card">',
+        '<div class="shop-card shop-quality-' + getItemQuality(item.id) + '">',
         '<div class="shop-card-icon">' + item.icon + "</div>",
-        '<div class="shop-card-name">' + item.name + "</div>",
+        '<div class="shop-card-name">' + item.name + '</div>',
+        '<div class="shop-card-quality">' + QUALITY_LABELS[getItemQuality(item.id)] + "</div>",
         '<div class="shop-card-desc">' + item.description + "</div>",
         '<div class="shop-card-meta">',
         "<span>今日 " + remaining + "/" + item.maxDaily + "</span>",

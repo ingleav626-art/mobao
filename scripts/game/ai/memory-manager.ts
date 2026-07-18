@@ -71,7 +71,7 @@ export interface AiMemoryManagerDeps {
   getCurrentPublicEvent: () => { category: string; text: string } | null
   /** 获取玩家回合历史（动态值，创建跨局记录用） */
   getPlayerRoundHistory: () => Record<string, Array<{ round: number; bid: number }>>
-  isP2AutoPlaying?: () => boolean
+  isAutoPlaying?: () => boolean
 }
 
 /**
@@ -84,7 +84,7 @@ export class AiMemoryManager {
   /** 触摸滚动已绑定标记（避免重复注册事件监听） */
   private touchBound = false
 
-  constructor(private readonly deps: AiMemoryManagerDeps) {}
+  constructor(private readonly deps: AiMemoryManagerDeps) { }
 
   /** 获取 AI 记忆存储 key（联机模式带 _lan 后缀） */
   getAiMemoryStorageKey(): string {
@@ -103,7 +103,7 @@ export class AiMemoryManager {
     if (!settings || !settings.autoSummarizeEnabled || !settings.multiGameMemoryEnabled) return false
     const contextLength = (settings.contextLength as number) || 5
     if (!MobaoGameHistory) return false
-    const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
+    const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
     if (aiPlayers.length === 0) return false
     const count = MobaoGameHistory.getCount(aiPlayers[0].id, this.deps.getIsLanMode())
     return count > 0 && count >= contextLength
@@ -135,7 +135,7 @@ export class AiMemoryManager {
         savedAt: Date.now()
       }
       window.localStorage.setItem(storageKey, JSON.stringify(payload))
-    } catch (_error) {}
+    } catch (_error) { }
   }
 
   /** 从 localStorage 恢复 AI 记忆 */
@@ -191,7 +191,7 @@ export class AiMemoryManager {
     } else if (typeof stored.pendingSummary === "string" && stored.pendingSummary) {
       const summary = stored.pendingSummary
       this.deps.players
-        .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
+        .filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
         .forEach((p) => {
           data.pendingNextRunAiSummaryByPlayer[p.id] = summary
         })
@@ -329,7 +329,7 @@ export class AiMemoryManager {
     data.runSerial = 0
     try {
       window.localStorage.removeItem(AI_MEMORY_STORAGE_KEY)
-    } catch (_error) {}
+    } catch (_error) { }
   }
 
   /** 导出 AI 记忆为 JSON 字符串 */
@@ -418,9 +418,9 @@ export class AiMemoryManager {
       if (parsed.pendingSummaryByPlayer && typeof parsed.pendingSummaryByPlayer === "object") {
         data.pendingNextRunAiSummaryByPlayer = parsed.pendingSummaryByPlayer
       } else if (typeof parsed.pendingSummary === "string" && parsed.pendingSummary) {
-    this.deps.players
-      .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
-      .forEach((p) => {
+        this.deps.players
+          .filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
+          .forEach((p) => {
             data.pendingNextRunAiSummaryByPlayer[p.id] = parsed.pendingSummary
           })
       }
@@ -438,7 +438,7 @@ export class AiMemoryManager {
   }
 
   /** 推送局开始上下文（空占位，保留接口） */
-  pushRunStartContextToAi(): void {}
+  pushRunStartContextToAi(): void { }
 
   /** 推送结算上下文到 AI 记忆 */
   pushRunSettlementContextToAi(result: Record<string, unknown>): void {
@@ -474,7 +474,7 @@ export class AiMemoryManager {
       .join(" ")
 
     this.deps.players
-      .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
+      .filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
       .forEach((p) => {
         data.pendingNextRunAiSummaryByPlayer[p.id] = summaryText
         const isWinner = p.id === winnerId
@@ -489,7 +489,7 @@ export class AiMemoryManager {
 
     // p2 滑动窗口：未托管时跨局消息超出 contextLength 则丢弃最旧
     const p2Msgs = data.aiCrossGameMessagesByPlayer["p2"]
-    if (p2Msgs && !this.deps.isP2AutoPlaying?.()) {
+    if (p2Msgs && !this.deps.isAutoPlaying?.()) {
       const settings = this.deps.getLlmSettings()
       const contextLength = (settings && (settings.contextLength as number)) || 5
       while (p2Msgs.length > contextLength) {
@@ -502,7 +502,7 @@ export class AiMemoryManager {
       const settings = this.deps.getLlmSettings()
       const maxRecords = (settings && (settings.contextLength as number)) || 5
       this.deps.players
-        .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
+        .filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
         .forEach((p) => {
           const playerDecisions = (data.aiConversationByPlayer[p.id] || []).map((entry) => ({
             round: entry.round || 0,
@@ -538,7 +538,7 @@ export class AiMemoryManager {
       data.aiCrossGameMessagesByPlayer = {}
     }
     this.deps.players
-      .filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
+      .filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
       .forEach((p) => {
         const cached = data.aiConversationCache && data.aiConversationCache[p.id]
         if (Array.isArray(cached) && cached.length > 2) {
@@ -634,7 +634,7 @@ export class AiMemoryManager {
   openAiMemoryPanel(): void {
     const dom = this.deps.dom
     if (!dom.aiMemoryOverlay) return
-    const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
+    const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
     if (aiPlayers.length === 0) {
       if (dom.aiMemoryContent) {
         dom.aiMemoryContent.innerHTML = '<div class="ai-memory-empty">暂无AI玩家</div>'

@@ -21,6 +21,7 @@
 /// <reference types="phaser" />
 import type { Player, Artifact, GameSettings, ItemDef, SkillContext } from "../../../types/game"
 import type { AiPrivateIntel, CrossGameMemory, ConversationMessage, ConversationBucketEntry } from "../../../types/ai"
+import type { BonusEffect } from "../core/bonus"
 import type { LlmPlan, LlmPlanResult, LlmTelemetry, LlmSettings } from "../../../types/llm"
 import type { LanPlayer } from "../../../types/lan"
 import { GameState } from "../core/state"
@@ -476,7 +477,6 @@ class WarehouseScene extends _PhaserScene {
   kickoffAiRoundDecisions!: (...args: any[]) => any
   showLanPauseOverlay!: (...args: any[]) => any
   hideLanPauseOverlay!: (...args: any[]) => any
-  setPlayerBidReady!: (...args: any[]) => any
   captureAiDecisionTelemetry!: (...args: any[]) => any
   recordAiThoughtLogs!: (...args: any[]) => any
   renderAiLogicPanel!: (...args: any[]) => any
@@ -651,11 +651,15 @@ class WarehouseScene extends _PhaserScene {
       get players() {
         return scene.players
       },
-      data: {
-        playerRoundHistory: this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>,
-        playerUsageHistory: this.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>,
-        currentRoundUsage: this.currentRoundUsage as Record<string, string[]>,
-        playerHistoryPanels: this.playerHistoryPanels as Record<string, HTMLElement | null>
+      // 必须用 getter 而非构造时值：resetForNewRun 会替换 state.game.playerRoundHistory 等对象引用，
+      // 构造时捕获的旧引用会导致 HistoryManager 写入旧对象而场景读取新对象（数据分叉）。
+      get data() {
+        return {
+          playerRoundHistory: scene.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>,
+          playerUsageHistory: scene.playerUsageHistory as Record<string, Array<{ round: number; actions: string[] }>>,
+          currentRoundUsage: scene.currentRoundUsage as Record<string, string[]>,
+          playerHistoryPanels: scene.playerHistoryPanels as Record<string, HTMLElement | null>
+        }
       },
       dom: this.dom,
       itemManager: this.itemManager,
@@ -716,7 +720,7 @@ class WarehouseScene extends _PhaserScene {
         }
       },
       recordPlayerSkill: (actionId: string, isItem: boolean) => scene.autoplayManager.recordPlayerSkill(actionId, isItem),
-      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
+      isAutoPlaying: () => scene.autoplayManager.isActive(),
     })
     this.panelsManager = new PanelsManager({
       get privateIntelEntries() {
@@ -800,7 +804,7 @@ class WarehouseScene extends _PhaserScene {
       isAiReflectionEnabled: () => this.aiReflectionManager.isAiReflectionEnabled(),
       getCurrentPublicEvent: () => this.currentPublicEvent,
       getPlayerRoundHistory: () => this.playerRoundHistory as Record<string, Array<{ round: number; bid: number }>>,
-      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
+      isAutoPlaying: () => scene.autoplayManager.isActive(),
     })
 
     this.aiReflectionManager = new AiReflectionManager({
@@ -870,7 +874,7 @@ class WarehouseScene extends _PhaserScene {
       enterLanRoom: () => this.enterLanRoom(),
       openBattleRecordPanel: () => this.openBattleRecordPanel(),
       writeLog: (text: string) => this.writeLog(text),
-      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
+      isAutoPlaying: () => scene.autoplayManager.isActive(),
     })
 
     this.settlementManager = new SettlementManager({
@@ -912,7 +916,8 @@ class WarehouseScene extends _PhaserScene {
       markMoneyAppliedForRun: () => this.markMoneyAppliedForRun(),
       writeLog: (msg) => this.writeLog(msg),
       updateHud: () => this.updateHud(),
-      getAiWallet: (id) => this.walletManager.getAiWallet(id)
+      getAiWallet: (id) => this.walletManager.getAiWallet(id),
+      getBonusEffects: () => this.state.game.bonusEffects
     })
 
     this.characterSelectManager = new CharacterSelectManager({
@@ -1174,7 +1179,7 @@ class WarehouseScene extends _PhaserScene {
         sortStrategy: string
         category: string | null
         allowCategoryFallback: boolean
-      }      ) => (this as unknown as WarehouseSceneThis).revealArtifactFullyBatch(options),
+      }) => (this as unknown as WarehouseSceneThis).revealArtifactFullyBatch(options),
       revealAllByQuality: (qualityKey: string) => this.warehouseManager.revealAllByQuality(qualityKey),
       revealAllByCategory: (category: string) => this.warehouseManager.revealAllByCategory(category),
       canUseLlmDecisionForPlayer: (playerId: string) => this.canUseLlmDecisionForPlayer(playerId),
@@ -1197,23 +1202,34 @@ class WarehouseScene extends _PhaserScene {
       requestAiLlmFollowupBid: (player: Player, plan: LlmPlanResult | null, toolSummary: string) =>
         (this as unknown as WarehouseSceneThis).requestAiLlmFollowupBid(player, plan, toolSummary),
       setPlayerBidReady: (playerId: string, ready: boolean) =>
-        (this as unknown as WarehouseSceneThis).setPlayerBidReady(playerId, ready),
+        (this as unknown as WarehouseSceneThis).biddingManager.setPlayerBidReady(playerId, ready),
       updateHud: () => this.updateHud(),
       areAllPlayersBidReady: () => (this as unknown as WarehouseSceneThis).areAllPlayersBidReady(),
       resolveRoundBids: (reason: string) => this.resolveRoundBids(reason) as unknown as Promise<void>,
       getItemInfo: (itemId: string) => this.getItemInfo(itemId) as { label?: string } | null,
       waitUntilResumed: () => (this as unknown as WarehouseSceneThis).waitUntilResumed(),
-      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
-      getP2ShopInventory: () =>
+      isAutoPlaying: () => scene.autoplayManager.isActive(),
+      getShopInventory: () =>
         (MobaoShopBridge as unknown as { getFullInventory?: () => Record<string, number> }).getFullInventory?.() ?? {},
-      consumeP2ShopItem: (itemId: string) => MobaoShopBridge.consumeItem(itemId),
-      applyProfitModifier: (target: string, percent: number) => {
-        if (target === "self") {
-          scene.state.game.profitModifierSelf = 1 + percent / 100
-        } else if (target === "all") {
-          scene.state.game.profitModifierAll = 1 + percent / 100
+      consumeShopItem: (itemId: string) => MobaoShopBridge.consumeItem(itemId),
+      applyBonus: (id: string, scope: string, condition: string, value: number) => {
+        const effects = scene.state.game.bonusEffects
+        const existing = effects.find((e) => e.id === id)
+        if (existing) {
+          existing.scope = scope as BonusEffect["scope"]
+          existing.condition = condition as BonusEffect["condition"]
+          existing.value = value
+        } else {
+          effects.push({ id, scope: scope as BonusEffect["scope"], condition: condition as BonusEffect["condition"], value })
         }
-        return { ok: true, revealed: 0, message: `已应用${target === "self" ? "自身" : "全体"}获利修正${percent > 0 ? "+" : ""}${percent}%。` }
+        const dir = value >= 0 ? "+" : ""
+        return {
+          ok: true,
+          revealed: 0,
+          message: `已应用加成（${scope} ${dir}${(value * 100).toFixed(0)}%）。`,
+          actionType: "bonus" as const,
+          bonusApplied: true
+        }
       },
     })
 
@@ -1542,7 +1558,7 @@ class WarehouseScene extends _PhaserScene {
       resolveRoundBids: (reason: string) => scene.resolveRoundBids(reason),
       showLanPauseOverlay: () => scene.showLanPauseOverlay(),
       hideLanPauseOverlay: () => scene.hideLanPauseOverlay(),
-      setPlayerBidReady: (slotId: string, ready: boolean) => scene.setPlayerBidReady(slotId, ready)
+      setPlayerBidReady: (slotId: string, ready: boolean) => scene.biddingManager.setPlayerBidReady(slotId, ready)
     })
 
     this.biddingManager = new BiddingManager({
@@ -1636,7 +1652,7 @@ class WarehouseScene extends _PhaserScene {
       normalizeAiBidValue: (playerId: string, bid: number, wallet?: number | null) =>
         scene.normalizeAiBidValue(playerId, bid, wallet),
       recordPlayerBid: (bid: number) => scene.autoplayManager.recordPlayerBid(bid),
-      isP2AutoPlaying: () => scene.autoplayManager.isActive(),
+      isAutoPlaying: () => scene.autoplayManager.isActive(),
     })
 
     // LanIndexManager 状态容器（getter/setter 同步场景属性）
@@ -2033,7 +2049,7 @@ class WarehouseScene extends _PhaserScene {
       recordAiThoughtLogs: (telemetry: unknown) => scene.recordAiThoughtLogs(telemetry),
       renderAiLogicPanel: () => scene.renderAiLogicPanel(),
       waitUntilResumed: () => scene.waitUntilResumed() as Promise<void>,
-      setPlayerBidReady: (playerId: string, ready: boolean) => scene.setPlayerBidReady(playerId, ready),
+      setPlayerBidReady: (playerId: string, ready: boolean) => scene.biddingManager.setPlayerBidReady(playerId, ready),
       syncPauseButton: () => scene.roundManager.syncPauseButton(),
       showLanPauseOverlay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).showLanPauseOverlay(),
       hideLanPauseOverlay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).hideLanPauseOverlay(),

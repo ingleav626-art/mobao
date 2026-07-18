@@ -161,13 +161,16 @@ describe("llm-decision - canUseLlmDecision", () => {
 })
 
 describe("llm-decision - canUseLlmDecisionForPlayer", () => {
+  // 真实链路：实现访问 this.players.some(p => p.id === playerId && p.isHuman) 判断是否人类玩家
+  // mockThis 必须提供 players 字段（空数组表示无人类玩家，走 AI 分支）
   it("两者都为 true 返回 true", () => {
     const mockThis = {
       canUseLlmDecision: methods.canUseLlmDecision,
       isAiLlmEnabledForPlayer: methods.isAiLlmEnabledForPlayer,
       getLlmProvider: () => ({ id: "test" }),
       getLlmSettings: () => ({ enabled: true, apiKey: "sk-test" }),
-      aiLlmPlayerEnabled: { "ai1": true }
+      aiLlmPlayerEnabled: { "ai1": true },
+      players: [] as Array<{ id: string; isHuman: boolean }>
     }
     expect(methods.canUseLlmDecisionForPlayer.call(mockThis, "ai1")).toBe(true)
   })
@@ -177,7 +180,8 @@ describe("llm-decision - canUseLlmDecisionForPlayer", () => {
       isAiLlmEnabledForPlayer: methods.isAiLlmEnabledForPlayer,
       getLlmProvider: () => ({ id: "test" }),
       getLlmSettings: () => ({ enabled: true, apiKey: "sk-test" }),
-      aiLlmPlayerEnabled: { "ai1": false }
+      aiLlmPlayerEnabled: { "ai1": false },
+      players: [] as Array<{ id: string; isHuman: boolean }>
     }
     expect(methods.canUseLlmDecisionForPlayer.call(mockThis, "ai1")).toBe(false)
   })
@@ -187,7 +191,8 @@ describe("llm-decision - canUseLlmDecisionForPlayer", () => {
       isAiLlmEnabledForPlayer: methods.isAiLlmEnabledForPlayer,
       getLlmProvider: () => null,
       getLlmSettings: () => ({ enabled: false }),
-      aiLlmPlayerEnabled: { "ai1": true }
+      aiLlmPlayerEnabled: { "ai1": true },
+      players: [] as Array<{ id: string; isHuman: boolean }>
     }
     expect(methods.canUseLlmDecisionForPlayer.call(mockThis, "ai1")).toBe(false)
   })

@@ -163,7 +163,7 @@ export interface AiReflectionManagerDeps {
   enterLanRoom: () => void
   openBattleRecordPanel: () => void
   writeLog: (text: string) => void
-  isP2AutoPlaying?: () => boolean
+  isAutoPlaying?: () => boolean
 }
 
 /**
@@ -260,7 +260,7 @@ export class AiReflectionManager {
     window.addEventListener("beforeunload", _beforeUnloadHandler)
     const originalCrossGameMemory = this.deps.getAiCrossGameMemory()
     const aiPlayers = this.deps.players.filter((p: Player) =>
-      (!p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.())) && this.deps.canUseLlmDecisionForPlayer(p.id)
+      (!p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.())) && this.deps.canUseLlmDecisionForPlayer(p.id)
     )
     this.deps.setAiReflectionTotal(aiPlayers.length)
     this.deps.updateReflectionStatusUI()
@@ -637,7 +637,7 @@ export class AiReflectionManager {
     const aiCrossGameMessagesByPlayer = this.deps.getAiCrossGameMessagesByPlayer()
     if (pendingSummary && aiCrossGameMessagesByPlayer) {
       this.deps.players
-        .filter((p: Player) => !p.isHuman || (p.isHuman && this.deps.isP2AutoPlaying?.()))
+        .filter((p: Player) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
         .forEach((p: Player) => {
           const messages = aiCrossGameMessagesByPlayer[p.id]
           if (Array.isArray(messages) && messages.length > 0) {

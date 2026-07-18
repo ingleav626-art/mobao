@@ -779,7 +779,7 @@ export interface WarehouseSceneThis {
   processAiDecisions(): void
   pushAiRoundSummary(playerId: string, plan: LlmPlanResult): void
   buildAiActionConstraintBlock(playerId: string): { canBid: boolean; canFold: boolean; availableSkills: string[]; availableItems: string[]; notes: string[]; _internal: { availableSkillIds: string[]; availableItemIds: string[]; availableSkillNames: string[]; availableItemNames: string[] } }
-  buildBidHistorySnapshot(): unknown[]
+  buildBidHistorySnapshot(): Array<{ round: number; bids: Record<string, number>; highestBidder: string | null }>
   buildPublicEventSnapshot(opts: { compact: boolean; viewerId: string }): unknown[]
   buildOtherPlayersPublicInfo(id: string, opts: { compact: boolean }): unknown
   buildCatalogSummary(opts: { compact: boolean }): unknown
@@ -945,7 +945,7 @@ export interface WarehouseSceneThis {
   markRoundRanking(sorted: BidsPerPlayer[]): void
   makeRunToken(): string
   getActionDefById(actionId: string): unknown
-  buildBidHistorySnapshot(): unknown
+  buildBidHistorySnapshot(): Array<{ round: number; bids: Record<string, number>; highestBidder: string | null }>
   buildPublicEventSnapshot(options?: Record<string, unknown>): unknown
   buildRoundPublicStateTable(viewerId: string): unknown
   buildQualityPriceRangeTableCompact(): unknown

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { MobaoShopBridge } from "../../../scripts/game/bridge/shop"
+import { ITEM_DEFS } from "../../../scripts/game/data/items"
 
 const {
   SHOP_ITEMS,
@@ -13,8 +14,10 @@ const {
 
 describe("shop", () => {
   describe("SHOP_ITEMS", () => {
-    it("包含 11 个商品", () => {
-      expect(SHOP_ITEMS).toHaveLength(11)
+    // 真实链路：SHOP_ITEMS 由 buildShopItems() 从 ITEM_DEFS 全量映射生成
+    // 所以长度等于 ITEM_DEFS.length（旧断言 11 是手写列表时的旧值，已过时）
+    it("覆盖所有 ITEM_DEFS", () => {
+      expect(SHOP_ITEMS).toHaveLength(ITEM_DEFS.length)
     })
 
     it("每个商品有完整字段", () => {

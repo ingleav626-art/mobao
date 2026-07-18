@@ -18,7 +18,7 @@ export function setPlayerBidReady(
   ready: boolean
 ): void {
   state.roundBidReadyState[playerId] = Boolean(ready)
-  const cardEl = deps.dom[`playerCard-${playerId}`]
+  const cardEl = document.getElementById(`playerCard-${playerId}`)
   if (cardEl) {
     cardEl.classList.toggle("bid-ready", Boolean(ready))
   }
@@ -41,8 +41,8 @@ export function openBidKeypad(deps: BiddingManagerDeps, state: BiddingManagerSta
     `playerBidSubmitted=${deps.getPlayerBidSubmitted()}, settled=${deps.getSettled()}, ` +
     `roundResolving=${deps.getRoundResolving()}, round=${deps.getRound()}`
   )
-  if (deps.isP2AutoPlaying?.()) {
-    deps.showGameConfirm("AI 托管中，不可手动操作。", () => {})
+  if (deps.isAutoPlaying?.()) {
+    deps.showGameConfirm("AI 托管中，不可手动操作。", () => { })
     return
   }
   if (deps.getSettled() || deps.getRoundResolving()) {
@@ -180,7 +180,7 @@ export function playerBid(deps: BiddingManagerDeps, state: BiddingManagerState):
   )
   deps.closeItemDrawer()
 
-  if (deps.isP2AutoPlaying?.()) {
+  if (deps.isAutoPlaying?.()) {
     deps.writeLog("AI 托管中，不可手动出价。")
     return
   }

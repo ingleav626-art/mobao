@@ -284,6 +284,9 @@ export interface AiSignalStats {
   std: number
   iqr: number
   count: number
+  top2Mean?: number
+  bottom2Mean?: number
+  highValue?: number
 }
 
 /** AI 物品知识 */

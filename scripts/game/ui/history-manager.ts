@@ -34,8 +34,8 @@ export interface DrawerState {
 export interface HistoryManagerDeps {
   /** 玩家列表（引用，用于遍历初始化/记录历史） */
   players: Array<{ id: string }>
-  /** 历史数据（可变引用：playerRoundHistory/playerUsageHistory/currentRoundUsage/playerHistoryPanels） */
-  data: HistoryData
+  /** 历史数据（getter：resetForNewRun 会替换 state 对象引用，必须每次取最新值） */
+  data: HistoryData | { (): HistoryData }
   /** DOM 元素映射（引用，抽屉/面板渲染用） */
   dom: Record<string, HTMLElement | null>
   /** 道具管理器（引用，renderItemDrawer 读取道具状态） */
@@ -68,33 +68,38 @@ export class HistoryManager {
   /** 道具抽屉渲染版本缓存（避免重复渲染相同状态） */
   private drawerVersionRef: { current: string } = { current: "" }
 
-  constructor(private readonly deps: HistoryManagerDeps) {}
+  constructor(private readonly deps: HistoryManagerDeps) { }
+
+  /** 获取最新的历史数据引用（支持 getter，避免 resetForNewRun 后引用分叉） */
+  private getData(): HistoryData {
+    return typeof this.deps.data === "function" ? (this.deps.data as () => HistoryData)() : this.deps.data
+  }
 
   /** 重置所有玩家的回合历史和使用记录 */
   resetPlayerHistoryState(): void {
-    resetPlayerHistoryState(this.deps.players, this.deps.data, () => this.refreshPlayerHistoryUI())
+    resetPlayerHistoryState(this.deps.players, this.getData(), () => this.refreshPlayerHistoryUI())
   }
 
   /** 清空所有玩家当前回合使用记录 */
   clearCurrentRoundUsage(): void {
-    clearCurrentRoundUsage(this.deps.players, this.deps.data)
+    clearCurrentRoundUsage(this.deps.players, this.getData())
   }
 
   /** 记录玩家使用道具 */
   recordPlayerUsage(playerId: string, itemId: string): void {
-    recordPlayerUsage(this.deps.data, playerId, itemId, () => this.refreshPlayerHistoryUI())
+    recordPlayerUsage(this.getData(), playerId, itemId, () => this.refreshPlayerHistoryUI())
   }
 
   /** 记录一轮结束后各玩家的出价和道具使用 */
   recordRoundHistory(roundBids: Array<{ playerId: string; bid: number }>): void {
-    recordRoundHistory(this.deps.players, this.deps.data, this.deps.getRound(), roundBids, () =>
+    recordRoundHistory(this.deps.players, this.getData(), this.deps.getRound(), roundBids, () =>
       this.refreshPlayerHistoryUI()
     )
   }
 
   /** 刷新所有玩家的历史面板 */
   refreshPlayerHistoryUI(): void {
-    refreshPlayerHistoryUI(this.deps.players, this.deps.data, (actions: string[]) => this.renderItemUsageCell(actions))
+    refreshPlayerHistoryUI(this.deps.players, this.getData(), (actions: string[]) => this.renderItemUsageCell(actions))
   }
 
   /** 渲染道具使用单元格 */

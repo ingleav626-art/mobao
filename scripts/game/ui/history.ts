@@ -72,11 +72,11 @@ export function resetPlayerHistoryState(
 export function clearCurrentRoundUsage(players: Array<{ id: string }>, data: HistoryData): void {
   log.debug(
     "clearCurrentRoundUsage: players count=" +
-      players.length +
-      ", playerIds=" +
-      JSON.stringify(players.map((p) => p.id)) +
-      ", before keys=" +
-      JSON.stringify(Object.keys(data.currentRoundUsage))
+    players.length +
+    ", playerIds=" +
+    JSON.stringify(players.map((p) => p.id)) +
+    ", before keys=" +
+    JSON.stringify(Object.keys(data.currentRoundUsage))
   )
   for (const player of players) {
     data.currentRoundUsage[player.id] = []
@@ -128,11 +128,11 @@ export function refreshPlayerHistoryUI(
 ): void {
   log.debug(
     "refreshPlayerHistoryUI: players count=" +
-      players.length +
-      ", playerIds=" +
-      JSON.stringify(players.map((p) => p.id)) +
-      ", currentRoundUsage keys=" +
-      JSON.stringify(Object.keys(data.currentRoundUsage))
+    players.length +
+    ", playerIds=" +
+    JSON.stringify(players.map((p) => p.id)) +
+    ", currentRoundUsage keys=" +
+    JSON.stringify(Object.keys(data.currentRoundUsage))
   )
   for (const player of players) {
     const panel = data.playerHistoryPanels[player.id]
@@ -232,7 +232,7 @@ export function renderItemDrawer(
         const parsed = JSON.parse(raw)
         hasCarryItems = Array.isArray(parsed) && parsed.length > 0
       }
-    } catch (_e) {}
+    } catch (_e) { }
     const msg = hasCarryItems ? "道具已全部使用" : "未携带道具"
     dom.itemDrawerList.innerHTML = `<div class="item-drawer-empty">${msg}</div>`
     return

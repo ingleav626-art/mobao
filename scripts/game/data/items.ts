@@ -44,7 +44,7 @@ interface ItemExecContext {
     revealed: number
     message: string
   }
-  applyProfitModifier: (options: { target: string; percent: number }) => {
+  applyBonus: (options: { id: string; scope: string; condition: string; value: number }) => {
     ok: boolean
     revealed: number
     message: string
@@ -263,7 +263,7 @@ export const ITEM_DEFS = [
   {
     id: "item-avg-single",
     name: "单格均价仪",
-    description: "计算本局所有单格藏品的均价。",
+    description: "获得本局所有单格藏品的均价。",
     initialCount: 1,
     execute(context: unknown) {
       return (context as ItemExecContext).computeAveragePrice({ scope: "singleCell" })
@@ -272,7 +272,7 @@ export const ITEM_DEFS = [
   {
     id: "item-avg-double",
     name: "双格均价仪",
-    description: "计算本局所有双格藏品的均价。",
+    description: "获得本局所有双格藏品的均价。",
     initialCount: 1,
     execute(context: unknown) {
       return (context as ItemExecContext).computeAveragePrice({ scope: "doubleCell" })
@@ -281,7 +281,7 @@ export const ITEM_DEFS = [
   {
     id: "item-avg-quad",
     name: "四格均价仪",
-    description: "计算本局所有四格藏品的均价。",
+    description: "获得本局所有四格藏品的均价。",
     initialCount: 1,
     execute(context: unknown) {
       return (context as ItemExecContext).computeAveragePrice({ scope: "quadCell" })
@@ -290,7 +290,7 @@ export const ITEM_DEFS = [
   {
     id: "item-avg-total",
     name: "全场估价仪",
-    description: "计算本局全仓藏品的均价。",
+    description: "获得本局全仓藏品的均价。",
     initialCount: 1,
     execute(context: unknown) {
       return (context as ItemExecContext).computeAveragePrice({ scope: "total" })
@@ -299,7 +299,7 @@ export const ITEM_DEFS = [
   {
     id: "item-avg-poor",
     name: "粗品估价仪",
-    description: "计算本局所有粗品藏品的均价。",
+    description: "获得本局所有粗品（白色品质）藏品的均价。",
     initialCount: 1,
     execute(context: unknown) {
       return (context as ItemExecContext).computeAveragePrice({ scope: "quality:poor" })
@@ -308,7 +308,7 @@ export const ITEM_DEFS = [
   {
     id: "item-avg-normal",
     name: "良品估价仪",
-    description: "计算本局所有良品藏品的均价。",
+    description: "获得本局所有良品（绿色品质）藏品的均价。",
     initialCount: 1,
     execute(context: unknown) {
       return (context as ItemExecContext).computeAveragePrice({ scope: "quality:normal" })
@@ -317,7 +317,7 @@ export const ITEM_DEFS = [
   {
     id: "item-avg-fine",
     name: "精品估价仪",
-    description: "计算本局所有精品藏品的均价。",
+    description: "获得本局所有精品（蓝色品质）藏品的均价。",
     initialCount: 1,
     execute(context: unknown) {
       return (context as ItemExecContext).computeAveragePrice({ scope: "quality:fine" })
@@ -326,7 +326,7 @@ export const ITEM_DEFS = [
   {
     id: "item-avg-porcelain",
     name: "瓷器估价仪",
-    description: "计算本局瓷器藏品的均价。",
+    description: "获得本局所有瓷器藏品的均价。",
     initialCount: 1,
     execute(context: unknown) {
       return (context as ItemExecContext).computeAveragePrice({ scope: "category:瓷器" })
@@ -335,40 +335,81 @@ export const ITEM_DEFS = [
   {
     id: "item-bonus-self-up",
     name: "幸运护符",
-    description: "本局结算时自身获利加成50%。",
+    description: "本局结算时当自身拍下仓库且获利时其利润增加50%。",
     initialCount: 1,
     execute(context: unknown) {
-      return (context as ItemExecContext).applyProfitModifier({ target: "self", percent: 50 })
+      return (context as ItemExecContext).applyBonus({ id: "bonus-lucky-charm", scope: "self", condition: "onGain", value: 0.5 })
     }
   },
   {
     id: "item-bonus-self-down",
     name: "厄运符咒",
-    description: "本局结算时自身获利减少50%。",
+    description: "本局结算时当自身拍下仓库且亏损时其亏损减少50%。",
     initialCount: 1,
     execute(context: unknown) {
-      return (context as ItemExecContext).applyProfitModifier({ target: "self", percent: -50 })
+      return (context as ItemExecContext).applyBonus({ id: "bonus-unlucky-charm", scope: "self", condition: "onLoss", value: -0.5 })
     }
   },
   {
     id: "item-bonus-all-up",
     name: "群体祝福",
-    description: "本局结算时全体获利加成100%。",
+    description: "在本局结算时使得全体玩家获得的利润增加100%。",
     initialCount: 1,
     execute(context: unknown) {
-      return (context as ItemExecContext).applyProfitModifier({ target: "all", percent: 100 })
+      return (context as ItemExecContext).applyBonus({ id: "bonus-group-bless", scope: "group", condition: "onGain", value: 1 })
     }
   },
   {
     id: "item-bonus-all-down",
     name: "群体诅咒",
-    description: "本局结算时全体获利减少200%。",
+    description: "在本局结算时使得全体玩家受到的亏损增加200%。",
     initialCount: 1,
     execute(context: unknown) {
-      return (context as ItemExecContext).applyProfitModifier({ target: "all", percent: -200 })
+      return (context as ItemExecContext).applyBonus({ id: "bonus-group-curse", scope: "group", condition: "onLoss", value: 2 })
     }
   }
 ]
+
+export type ItemQuality = "common" | "fine" | "rare" | "epic" | "legendary"
+
+const QUALITY_BY_ID: Record<string, ItemQuality> = {
+  "item-outline-lamp": "fine",
+  "item-quality-needle": "fine",
+  "item-outline-candle": "common",
+  "item-quality-glass": "common",
+  "item-outline-torch": "rare",
+  "item-cat-porcelain": "rare",
+  "item-cat-jade": "fine",
+  "item-cat-bronze": "rare",
+  "item-cat-painting": "rare",
+  "item-cat-wood": "fine",
+  "item-cat-stone": "common",
+  "item-reveal-all-1": "common",
+  "item-reveal-all-2": "fine",
+  "item-reveal-all-4": "rare",
+  "item-reveal-all-10": "epic",
+  "item-reveal-top": "legendary",
+  "item-by-quality-poor": "rare",
+  "item-by-quality-normal": "epic",
+  "item-by-quality-fine": "legendary",
+  "item-by-cat-porcelain": "rare",
+  "item-avg-single": "common",
+  "item-avg-double": "common",
+  "item-avg-quad": "fine",
+  "item-avg-total": "rare",
+  "item-avg-poor": "fine",
+  "item-avg-normal": "rare",
+  "item-avg-fine": "epic",
+  "item-avg-porcelain": "epic",
+  "item-bonus-self-up": "rare",
+  "item-bonus-self-down": "fine",
+  "item-bonus-all-up": "legendary",
+  "item-bonus-all-down": "legendary"
+}
+
+export function getItemQuality(itemId: string): ItemQuality {
+  return QUALITY_BY_ID[itemId] || "common"
+}
 
 interface ItemRuntime {
   id: string

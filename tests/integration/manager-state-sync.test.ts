@@ -18,6 +18,8 @@ import type { Player } from "../../types/game"
 import type { RunLog } from "../../scripts/game/ai/decision"
 import { DEFAULT_CROSS_GAME_STATS } from "../../scripts/game/ai/memory"
 import { AI_WALLET_INITIAL } from "../../scripts/game/ai/wallet"
+// 真实链路：加成系统类型（替代 mock bonusEffects）
+import type { BonusEffect } from "../../scripts/game/core/bonus"
 
 const aiPlayers: Player[] = [
   { id: "ai1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
@@ -283,6 +285,8 @@ describe("Manager 状态同步集成测试（对象生命周期）", () => {
         settled: false,
         playerMoney: 10000,
         aiWallets: { ai1: 5000, ai2: 3000 } as Record<string, number>,
+        // 真实链路：bonusEffects 对应 state.game.bonusEffects（game-slice.ts 初始为 []）
+        bonusEffects: [] as BonusEffect[],
       }
     }
 
@@ -301,6 +305,8 @@ describe("Manager 状态同步集成测试（对象生命周期）", () => {
         getWarehouseTrueValue: () => 100000,
         getIsLanMode: () => false,
         getLanIsHost: () => false,
+        // 真实链路：返回场景内的 bonusEffects 引用（与 warehouse-scene.ts:917 一致）
+        getBonusEffects: () => scene.bonusEffects,
         setCurrentBid: (bid) => {
           scene.currentBid = bid
         },

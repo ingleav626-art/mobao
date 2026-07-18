@@ -179,10 +179,10 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
           payload && payload.gameState
             ? (payload.gameState as Record<string, unknown>)
             : {
-                currentWallet: payload && payload.currentWallet,
-                currentLeader: payload && payload.currentLeader,
-                currentBid: payload && payload.currentBid
-              }
+              currentWallet: payload && payload.currentWallet,
+              currentLeader: payload && payload.currentLeader,
+              currentBid: payload && payload.currentBid
+            }
         if (
           gameState &&
           (gameState.currentWallet !== undefined ||
@@ -229,12 +229,12 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
           : "【非最终轮提醒】本轮仍可能触发提前获胜（由 directWinRatio 判定）。"
         const taskContent = [
           "【任务】第 " +
-            roundNo +
-            "/" +
-            totalRounds +
-            " 轮（" +
-            roundStateText +
-            "）。给出合法竞拍决策（bid/skill/item/thought）。",
+          roundNo +
+          "/" +
+          totalRounds +
+          " 轮（" +
+          roundStateText +
+          "）。给出合法竞拍决策（bid/skill/item/thought）。",
           finalRoundHint
         ].join("\n")
         incrementalMessages.push({ role: "user", content: taskContent })
@@ -298,10 +298,10 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
             "[requestAiLlmPlan] aiModelConfig:",
             aiModelConfig
               ? {
-                  apiKey: aiModelConfig.apiKey ? "(已设置)" : "(空)",
-                  endpoint: aiModelConfig.endpoint,
-                  model: aiModelConfig.model
-                }
+                apiKey: aiModelConfig.apiKey ? "(已设置)" : "(空)",
+                endpoint: aiModelConfig.endpoint,
+                model: aiModelConfig.model
+              }
               : null
           )
           if (aiModelConfig) {
@@ -547,9 +547,7 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
           this.writeLog(`${player.name}：模型不一致，请求=${plan.configuredModel} 实际=${plan.model}`)
         }
 
-        if (requestStage === "initial") {
-          this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: responseText }]
-        }
+        this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: responseText }]
         return plan
       } catch (error) {
         const message = error && (error as Error).message ? (error as Error).message : "LLM请求异常"

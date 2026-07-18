@@ -6,6 +6,8 @@ import {
   type SettlementPlayer
 } from "../../../scripts/game/core/settlement-manager-class"
 import { calculateDividendTicket, getSelfProfitInfo } from "../../../scripts/game/core/settlement-manager"
+// 真实数据类型与纯函数（测试原则：用真实数据类型与纯函数替代 mock）
+import type { BonusEffect } from "../../../scripts/game/core/bonus"
 
 /** 构建默认玩家列表：1 人类 + 2 AI */
 function makePlayers(): SettlementPlayer[] {
@@ -31,6 +33,10 @@ function makeDeps(overrides: Partial<SettlementManagerDeps> = {}) {
   const aiWallets: Record<string, number> = { p2: 5000, p3: 3000 }
   const lanHostWallets: Record<string, number> = { "lan-p2": 8000 }
   const players = makePlayers()
+  // 真实链路：bonusEffects 数组对应 state.game.bonusEffects（game-slice.ts 初始为 []）
+  // getBonusEffects 返回该数组引用，与 warehouse-scene.ts:917 真实实现一致
+  // 通过 applyBonusEffect 真实函数写入（测试需要时调用）
+  const bonusEffects: BonusEffect[] = []
 
   const deps: SettlementManagerDeps = {
     getPlayers: () => players,
@@ -43,6 +49,7 @@ function makeDeps(overrides: Partial<SettlementManagerDeps> = {}) {
     getWarehouseTrueValue: () => 100000,
     getIsLanMode: () => false,
     getLanIsHost: () => false,
+    getBonusEffects: () => bonusEffects,
     setCurrentBid: vi.fn(),
     setBidLeader: vi.fn(),
     setSettled: vi.fn(),
@@ -75,6 +82,7 @@ function makeDeps(overrides: Partial<SettlementManagerDeps> = {}) {
     aiWallets,
     lanHostWallets,
     players,
+    bonusEffects,
     setPlayers: (p: SettlementPlayer[]) => {
       players.length = 0
       players.push(...p)
@@ -563,7 +571,11 @@ describe("SettlementManager", () => {
       const state = JSON.parse(raw!)
       expect(state.totalGamesPlayed).toBe(1)
       expect(state.totalWins).toBe(1)
-      expect(state.totalProfit).toBe(20000)
+      // 真实链路：applyPassiveEffect 会读 CHARACTERS[0]（鉴定师）的 passive: profitBonus 0.1
+      // 所以 adjustedSelfProfit = winnerProfit + bonus = 20000 + 2000 = 22000
+      // 旧断言 20000 是循环论证（忽略真实链路的被动效果），按测试原则修正
+      const passiveBonus = Math.round(20000 * 0.1)
+      expect(state.totalProfit).toBe(20000 + passiveBonus)
     })
 
     it("赢家 AI 且玩家亏损时 recordGameFinished playerWon=false", () => {

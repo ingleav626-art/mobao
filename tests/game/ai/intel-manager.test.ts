@@ -8,6 +8,9 @@ import {
 import type { Player, Artifact } from "../../../types/game"
 import type { AiPrivateIntelPool, AiSignalStats } from "../../../types/ai"
 import { createEmptyAiPrivateIntelPool } from "../../../scripts/game/ai/intel/pure"
+// 真实数据源与函数（测试原则：数据来自游戏真实数据源、调用链走真实函数）
+import { ARTIFACT_LIBRARY, ArtifactManager, QUALITY_CONFIG, toSizeTag } from "../../../scripts/game/data/artifacts"
+import { pickBottomCellFromTargets } from "../../../scripts/game/warehouse"
 
 // ─── 测试工具 ───
 
@@ -137,12 +140,100 @@ function makeDeps(overrides: Partial<AiIntelManagerDeps> = {}): { deps: AiIntelM
     setPlayerBidReady: vi.fn(),
     updateHud: vi.fn(),
     areAllPlayersBidReady: () => false,
-    resolveRoundBids: vi.fn(async () => {}),
+    resolveRoundBids: vi.fn(async () => { }),
     getItemInfo: (id: string) => ({ label: `道具-${id}` }),
-    waitUntilResumed: vi.fn(async () => {}),
+    waitUntilResumed: vi.fn(async () => { }),
     ...overrides,
   }
 
+  return { deps, state }
+}
+
+/**
+ * 真实数据帮手：用 ARTIFACT_LIBRARY（73 件）通过 ArtifactManager.buildArtifactFromDef
+ * 生成完整 Artifact 数组，补全运行时字段（与 spawnRandomItems 一致）。
+ *
+ * 不 mock pickBottomCellFromTargets / artifactManager / items，所有调用链走真实函数。
+ */
+function makeRealArtifacts(): Artifact[] {
+  const manager = new ArtifactManager()
+  return ARTIFACT_LIBRARY.map((def) => {
+    const built = manager.buildArtifactFromDef(def as unknown as Record<string, unknown>) as unknown as Artifact
+    // 运行时字段补全（参照 spawnRandomItems 真实代码）
+    built.revealed = { outline: false, qualityCell: null, exact: false }
+    built.trueValue = built.basePrice
+    built.expectedPrice = built.basePrice
+    built.previewSizeTag = toSizeTag(built.w, built.h)
+    // buildArtifactFromDef 默认 x:0, y:0；reveal*ByQuality/Category 不依赖坐标过滤
+    return built
+  })
+}
+
+/** 真实 deps：items/artifactManager/pickBottomCellFromTargets 全部走真实函数 */
+function makeRealDeps(overrides: Partial<AiIntelManagerDeps> = {}): { deps: AiIntelManagerDeps; state: AiIntelState } {
+  const state = makeState()
+  const players: Player[] = [
+    makePlayer({ id: "human", name: "玩家", isHuman: true, isSelf: true }),
+    makePlayer({ id: "ai-1", name: "左上AI", isHuman: false }),
+  ]
+  const realArtifactManager = new ArtifactManager()
+  const deps: AiIntelManagerDeps = {
+    state,
+    players,
+    items: makeRealArtifacts(),
+    currentRoundUsage: {},
+    roundBidReadyState: {},
+    getRound: () => 1,
+    isLanMode: () => false,
+    isLanHost: () => false,
+    getLanBridge: () => null,
+    getLanAiPlayers: () => [],
+    isRoundResolving: () => false,
+    isSettled: () => false,
+    isRoundPaused: () => false,
+    getRoundTimeLeft: () => 30,
+    isPlayerBidSubmitted: () => false,
+    artifactManager: realArtifactManager as unknown as AiIntelManagerDeps["artifactManager"],
+    aiEngine: {
+      planIntelAction: () => ({ actionType: "none", actionId: "none", expectedReveal: 0, score: 0 }),
+      buildToolEffect: () => ({
+        tag: "none",
+        strategyScoreBoost: 0,
+        confidenceBoost: 0,
+        upperCapBoost: 0,
+        followBoost: 0,
+        uncertaintyReduction: 0,
+      }),
+    },
+    updatePlayerAvatar: vi.fn(),
+    isInBoundsCell: (x: number, y: number) => x >= 0 && x < 10 && y >= 0 && y < 10,
+    isWarehouseCellOccupied: () => false,
+    pickBottomCellFromTargets,
+    revealOutlineBatch: vi.fn(() => ({ ok: true, revealed: 1, message: "" })),
+    revealQualityBatch: vi.fn(() => ({ ok: true, revealed: 1, message: "" })),
+    revealArtifactFullyBatch: vi.fn(() => ({ ok: true, revealed: 1, message: "" })),
+    canUseLlmDecisionForPlayer: () => false,
+    writeLog: vi.fn(),
+    requestAiLlmErrorCorrection: vi.fn(async () => null),
+    getAiConversationMessages: () => [],
+    recordPlayerUsage: vi.fn(),
+    buildAiToolResultSummary: () => "工具结果摘要",
+    getActionDefById: (actionId: string) => ({
+      id: actionId,
+      type: "skill",
+      name: "测试技能",
+      description: "测试描述",
+    }),
+    addPublicInfoEntry: vi.fn(),
+    requestAiLlmFollowupBid: vi.fn(async () => null),
+    setPlayerBidReady: vi.fn(),
+    updateHud: vi.fn(),
+    areAllPlayersBidReady: () => false,
+    resolveRoundBids: vi.fn(async () => { }),
+    getItemInfo: (id: string) => ({ label: `道具-${id}` }),
+    waitUntilResumed: vi.fn(async () => { }),
+    ...overrides,
+  }
   return { deps, state }
 }
 
@@ -164,12 +255,45 @@ describe("AiIntelManager", () => {
       expect(state.aiFoldState[aiPlayer.id]).toBe(false)
     })
 
-    it("不为人类玩家创建情报池", () => {
+    // 修复回归：按设计，托管 AI 需要为人类玩家也积累上下文以便随时启用托管
+    // （init-fns.ts:30-34 明确注释"始终为 p2 初始化情报池，为托管做准备"）
+    it("为人类玩家也创建情报池（为随时启用托管积累上下文）", () => {
       const { deps, state } = makeDeps()
       const manager = new AiIntelManager(deps)
       manager.initAiIntelSystems()
 
-      expect(state.aiPrivateIntel["human"]).toBeUndefined()
+      // 修复前：旧测试错误地断言 toBeUndefined()
+      // 修复后：人类玩家也应有空情报池，随时可启用托管
+      const humanPool = state.aiPrivateIntel["human"]
+      expect(humanPool).toBeDefined()
+      expect(humanPool.knownOutlineIds).toBeInstanceOf(Set)
+      expect(humanPool.knownOutlineIds.size).toBe(0)
+      expect(humanPool.knownQualityIds).toBeInstanceOf(Set)
+      expect(humanPool.knownQualityIds.size).toBe(0)
+      expect(humanPool.outlineSignals).toHaveLength(0)
+      expect(humanPool.qualitySignals).toHaveLength(0)
+      expect(humanPool.signalHistory).toHaveLength(0)
+      // 但不应该为人类分配 AI 角色（角色仍由玩家选择）
+      expect(state.aiCharacterAssignments["human"]).toBeDefined()
+      expect(state.aiCharacterAssignments["human"].characterId).toBeDefined()
+    })
+
+    it("人类玩家情报池可被真实揭示函数填充（托管随时启用场景）", () => {
+      const { deps, state } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+      manager.initAiIntelSystems()
+
+      // 启用托管：对人类玩家执行真实揭示操作
+      const ctx = manager.buildAiPrivateRevealContext("human")
+      const result = ctx.revealByQuality({ qualityKey: "rare" })
+
+      // 人类玩家的情报池应能正常积累（验证托管随时启用的设计意图）
+      expect(result.ok).toBe(true)
+      const humanPool = state.aiPrivateIntel["human"]
+      expect(humanPool.knownOutlineIds.size).toBeGreaterThan(0)
+      expect(humanPool.knownQualityIds.size).toBeGreaterThan(0)
+      expect(humanPool.outlineSignals.length).toBeGreaterThan(0)
+      expect(humanPool.signalHistory.length).toBeGreaterThan(0)
     })
 
     it("重置所有状态容器", () => {
@@ -547,6 +671,224 @@ describe("AiIntelManager", () => {
       const result = manager.revealPrivateIntelBatch("ai-1", "outline", 1, null, false, null)
       expect(result.ok).toBe(false)
       expect(result.message).toContain("没有可揭示目标")
+    })
+
+    // ─── 修复回归：品质模式也必须返回 bottomCell（统一返回字段） ───
+    // 测试原则：数据来自真实 ARTIFACT_LIBRARY，pickBottomCellFromTargets 走真实函数
+    it("品质模式也返回 bottomCell 和 actionType=quality（修复回归）", () => {
+      const { deps } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+
+      // 揭示 1 件品质目标（真实数据，count=1）
+      const result = manager.revealPrivateIntelBatch("ai-1", "quality", 1, null, false, null)
+
+      // 修复前：quality 模式不返回 bottomCell；修复后：所有模式都返回
+      expect(result.ok).toBe(true)
+      expect(result.actionType).toBe("quality")
+      expect(result.qualityCellCount).toBe(1)
+      // 真实 pickBottomCellFromTargets 返回 {x,y,col,row}（基于真实藏品 h）
+      expect(result.bottomCell).not.toBeNull()
+      expect(result.bottomCell).toHaveProperty("x")
+      expect(result.bottomCell).toHaveProperty("y")
+      expect(result.bottomCell).toHaveProperty("col")
+      expect(result.bottomCell).toHaveProperty("row")
+    })
+  })
+
+  // ═════════════ 修复回归：revealPrivateIntelAllByQuality/Category 必须走完整画布更新流程 ═════════════
+  // 测试原则：用真实 ARTIFACT_LIBRARY 73 件藏品（rare 品质 15 件），不编造数据
+  describe("revealPrivateIntelAllByQuality（画布状态一致性修复）", () => {
+    it("揭示 rare 品质所有藏品：同步更新 outlineSignals/qualitySignals/signalHistory/stats/bottomCell", () => {
+      const { deps } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+      const ctx = manager.buildAiPrivateRevealContext("ai-1")
+
+      // 真实 ARTIFACT_LIBRARY 中 rare 品质有 15 件
+      const expectedCount = ARTIFACT_LIBRARY.filter((i) => i.qualityKey === "rare").length
+      expect(expectedCount).toBe(15) // 保护：若数据变化，测试明确感知
+
+      const result = ctx.revealByQuality({ qualityKey: "rare" })
+
+      // 修复前：仅更新 knownOutlineIds/knownQualityIds，不更新 signals/stats/bottomCell
+      expect(result.ok).toBe(true)
+      expect(result.revealed).toBe(expectedCount)
+      expect(result.actionType).toBe("reveal")
+      expect(result.artifacts).toHaveLength(expectedCount)
+      // 验证返回的 artifacts 字段完整（来自真实 ARTIFACT_LIBRARY）
+      const firstArt = result.artifacts?.[0]
+      expect(firstArt).toMatchObject({
+        id: expect.any(String),
+        name: expect.any(String),
+        category: expect.any(String),
+        qualityKey: "rare",
+        quality: QUALITY_CONFIG.rare.label, // 真实品质 label
+        sizeTag: expect.any(String),
+        w: expect.any(Number),
+        h: expect.any(Number),
+        basePrice: expect.any(Number),
+        x: expect.any(Number),
+        y: expect.any(Number),
+      })
+      // bottomCell 由真实 pickBottomCellFromTargets 计算（基于真实藏品的 y+h）
+      expect(result.bottomCell).not.toBeNull()
+      expect(result.bottomCell).toHaveProperty("col")
+      expect(result.bottomCell).toHaveProperty("row")
+
+      const pool = manager.ensureAiPrivateIntel("ai-1")
+      expect(pool.knownOutlineIds.size).toBe(expectedCount)
+      expect(pool.knownQualityIds.size).toBe(expectedCount)
+      expect(pool.outlineSignals).toHaveLength(expectedCount)
+      expect(pool.qualitySignals).toHaveLength(expectedCount)
+      // outline + quality 两条信号入历史
+      expect(pool.signalHistory).toHaveLength(expectedCount * 2)
+      expect(pool.latestSignalStats).not.toBeNull()
+      expect(pool.aggregateStats).not.toBeNull()
+    })
+
+    it("无目标时返回 ok=false", () => {
+      const { deps } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+      const ctx = manager.buildAiPrivateRevealContext("ai-1")
+
+      // ARTIFACT_LIBRARY 无此品质
+      const result = ctx.revealByQuality({ qualityKey: "nonexistent" })
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toContain("没有未揭示的")
+    })
+
+    it("已揭示的品质不重复揭示（idempotent 重复调用应失败）", () => {
+      const { deps } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+      const ctx = manager.buildAiPrivateRevealContext("ai-1")
+
+      const first = ctx.revealByQuality({ qualityKey: "rare" })
+      expect(first.ok).toBe(true)
+
+      // 再次揭示：所有 rare 藏品已 known，无未揭示目标
+      const second = ctx.revealByQuality({ qualityKey: "rare" })
+      expect(second.ok).toBe(false)
+      expect(second.revealed).toBe(0)
+    })
+  })
+
+  describe("revealPrivateIntelAllByCategory（画布状态一致性修复）", () => {
+    it("揭示瓷器品类：同步更新所有画布字段", () => {
+      const { deps } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+      const ctx = manager.buildAiPrivateRevealContext("ai-1")
+
+      // 真实 ARTIFACT_LIBRARY 中瓷器 7 件
+      const expectedCount = ARTIFACT_LIBRARY.filter((i) => i.category === "瓷器").length
+      expect(expectedCount).toBe(7) // 保护
+
+      const result = ctx.revealByCategory({ category: "瓷器" })
+
+      // 修复前：仅 knownOutlineIds/knownQualityIds 被填充；修复后：完整副作用
+      expect(result.ok).toBe(true)
+      expect(result.revealed).toBe(expectedCount)
+      expect(result.actionType).toBe("reveal")
+      expect(result.artifacts).toHaveLength(expectedCount)
+      expect(result.bottomCell).not.toBeNull()
+
+      const pool = manager.ensureAiPrivateIntel("ai-1")
+      expect(pool.knownOutlineIds.size).toBe(expectedCount)
+      expect(pool.knownQualityIds.size).toBe(expectedCount)
+      expect(pool.outlineSignals).toHaveLength(expectedCount)
+      expect(pool.qualitySignals).toHaveLength(expectedCount)
+      expect(pool.signalHistory).toHaveLength(expectedCount * 2) // outline + quality
+      expect(pool.latestSignalStats).not.toBeNull()
+      expect(pool.aggregateStats).not.toBeNull()
+    })
+  })
+
+  describe("revealPrivateIntelFully（bottomCell+artifacts 返回修复）", () => {
+    it("完全揭示返回 bottomCell、artifacts 和 actionType=reveal", () => {
+      const { deps } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+
+      const result = manager.revealPrivateIntelFully("ai-1", {
+        count: 5,
+        sortStrategy: "smallestFirst",
+        category: null,
+        allowCategoryFallback: false,
+      })
+
+      // 修复前：revealPrivateIntelFully 不返回 bottomCell/artifacts；修复后：返回
+      expect(result.ok).toBe(true)
+      expect(result.actionType).toBe("reveal")
+      expect(result.artifacts).toHaveLength(5)
+      // 验证字段完整性（来自真实 ARTIFACT_LIBRARY）
+      expect(result.artifacts?.[0]).toMatchObject({
+        id: expect.any(String),
+        name: expect.any(String),
+        category: expect.any(String),
+        quality: expect.any(String),
+        sizeTag: expect.any(String),
+        w: expect.any(Number),
+        h: expect.any(Number),
+        basePrice: expect.any(Number),
+        x: expect.any(Number),
+        y: expect.any(Number),
+      })
+      // bottomCell 来自真实 pickBottomCellFromTargets
+      expect(result.bottomCell).not.toBeNull()
+      expect(result.bottomCell).toHaveProperty("col")
+      expect(result.bottomCell).toHaveProperty("row")
+    })
+
+    it("完全揭示也同步更新 signalHistory/stats/trackUpdates", () => {
+      const { deps } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+
+      // 完全揭示 10 件（用 largestFirst 让前几件是大件，更可能触发高价值追踪）
+      const result = manager.revealPrivateIntelFully("ai-1", {
+        count: 10,
+        sortStrategy: "largestFirst",
+        category: null,
+        allowCategoryFallback: false,
+      })
+
+      expect(result.ok).toBe(true)
+      // 10 件藏品 * 2 信号（outline + quality）= 20 条历史
+      const pool = manager.ensureAiPrivateIntel("ai-1")
+      expect(pool.signalHistory).toHaveLength(20)
+      expect(pool.outlineSignals).toHaveLength(10)
+      expect(pool.qualitySignals).toHaveLength(10)
+      expect(pool.latestSignalStats).not.toBeNull()
+      expect(pool.aggregateStats).not.toBeNull()
+      // trackUpdates 应包含高价值藏品（basePrice >= 12000 触发）的追踪
+      expect(result.trackUpdates).toBeDefined()
+      expect(Array.isArray(result.trackUpdates)).toBe(true)
+    })
+
+    it("highestPrice 揭示返回信号不含 mean 但 signals 包含 outline+quality 双信息", () => {
+      const { deps } = makeRealDeps()
+      const manager = new AiIntelManager(deps)
+
+      const result = manager.revealPrivateIntelFully("ai-1", {
+        count: 1,
+        sortStrategy: "highestPrice",
+        category: null,
+        allowCategoryFallback: false,
+      })
+
+      expect(result.ok).toBe(true)
+      expect(result.artifacts).toHaveLength(1)
+
+      // 揭示的藏品确实是最高价的
+      const allBasePrices = deps.items.map((i) => i.basePrice || 0)
+      const maxPrice = Math.max(...allBasePrices)
+      expect(result.artifacts[0].basePrice).toBe(maxPrice)
+
+      // 不返回 signalStats（不用 mean 误导）
+      expect(result.signalStats).toBeUndefined()
+
+      // signals 包含 2 条（outline + quality），不被去重
+      expect(Array.isArray(result.signals)).toBe(true)
+      expect(result.signals.length).toBe(2)
+      expect(result.signals[0].mode).toBe("outline")
+      expect(result.signals[1].mode).toBe("quality")
     })
   })
 
@@ -1048,8 +1390,6 @@ describe("AiIntelManager", () => {
 
       // 至少有一个 action 记录
       expect(state.lastAiIntelActions.length).toBeGreaterThanOrEqual(0)
-    })
-
     })
   })
 

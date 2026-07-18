@@ -114,7 +114,7 @@ export interface BiddingManagerDeps {
   getAiWallet: (id: string) => number
   normalizeAiBidValue: (playerId: string, bid: number, wallet?: number | null) => number
   recordPlayerBid?: (bid: number) => void
-  isP2AutoPlaying?: () => boolean
+  isAutoPlaying?: () => boolean
 }
 
 /** BiddingManager 私有状态（仅保留 UI 瞬态字段，回合级字段走 deps → gameSlice） */
@@ -130,7 +130,7 @@ export class BiddingManager {
     keypadValue: "0"
   }
 
-  constructor(private readonly deps: BiddingManagerDeps) {}
+  constructor(private readonly deps: BiddingManagerDeps) { }
 
   // ==================== 出价键盘方法 ====================
 

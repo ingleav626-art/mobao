@@ -70,7 +70,7 @@ export interface SkillItemManagerDeps {
   /** 消耗道具（MobaoShopBridge.consumeItem 的回调） */
   consumeItem: (itemId: string) => void
   recordPlayerSkill?: (actionId: string, isItem: boolean) => void
-  isP2AutoPlaying?: () => boolean
+  isAutoPlaying?: () => boolean
   showGameConfirm: (msg: string, onOk: () => void) => void
 }
 
@@ -94,7 +94,7 @@ interface UseActionOptions {
  * （consumeActionState/getPlayerActionId/wrapContextWithCharacterBonus）完成状态判断与上下文包装。
  */
 export class SkillItemManager {
-  constructor(private readonly deps: SkillItemManagerDeps) {}
+  constructor(private readonly deps: SkillItemManagerDeps) { }
 
   /**
    * useSkill/useItem 共享逻辑（有副作用，非纯函数）。
@@ -103,8 +103,8 @@ export class SkillItemManager {
   private useAction(options: UseActionOptions): void {
     const { manager, defs, actionId, actionLabel, lanActionType, fallbackText, closeDrawer, onAfterUse } = options
 
-    if (this.deps.isP2AutoPlaying?.()) {
-      this.deps.showGameConfirm("AI 托管中，不可手动使用技能/道具。", () => {})
+    if (this.deps.isAutoPlaying?.()) {
+      this.deps.showGameConfirm("AI 托管中，不可手动使用技能/道具。", () => { })
       if (closeDrawer) this.deps.closeItemDrawer()
       return
     }

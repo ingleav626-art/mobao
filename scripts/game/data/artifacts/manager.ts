@@ -54,41 +54,56 @@ export class ArtifactManager {
           return acc
         }, {})
 
-    let fitDefs: Record<string, unknown>[] = ARTIFACT_LIBRARY.filter((def) =>
+    const fitDefs: Record<string, unknown>[] = ARTIFACT_LIBRARY.filter((def) =>
       canPlaceRect(col, row, def.w, def.h, gridCols, gridRows, occupancy)
     )
-
-    if (qualityWeights) {
-      const totalQ = (Object.values(qualityWeights) as number[]).reduce((s, v) => s + v, 0) || 1
-      fitDefs = fitDefs.map((def) => ({
-        ...def,
-        _qw: qualityWeights[def.qualityKey as string] || 1
-      }))
-      fitDefs = fitDefs.filter(() => Math.random() < 1)
-      const expanded: Record<string, unknown>[] = []
-      fitDefs.forEach((def) => {
-        const cw = (categoryWeightMap as Record<string, number>)[def.category as string] || 1
-        const qw = (def._qw as number) / totalQ
-        expanded.push({ ...def, weight: cw * qw })
-      })
-      if (expanded.length === 0) {
-        return null
-      }
-      const picked = weightedPick(expanded as Array<{ weight: number; [key: string]: unknown }>)
-      return this.buildArtifactFromDef(picked)
-    }
 
     if (fitDefs.length === 0) {
       return null
     }
 
-    const weightedDefs = fitDefs.map((def) => ({
+    const effectiveQW = qualityWeights || this.defaultQualityWeights()
+
+    // 两级选择：先按品质权重选品质，再从该品质的条目中按品类权重选条目
+    const poolsByQuality: Record<string, Record<string, unknown>[]> = {}
+    for (const def of fitDefs) {
+      const qk = def.qualityKey as string
+      if (!poolsByQuality[qk]) poolsByQuality[qk] = []
+      poolsByQuality[qk].push(def)
+    }
+
+    const availableQualities = Object.keys(effectiveQW).filter((qk) => poolsByQuality[qk]?.length > 0)
+    if (availableQualities.length === 0) {
+      return null
+    }
+
+    const availableTotalQ = availableQualities.reduce((s, k) => s + (effectiveQW[k] || 0), 0) || 1
+    const qualityPool = availableQualities.map((qk) => ({
+      key: qk,
+      weight: (effectiveQW[qk] || 0) / availableTotalQ
+    }))
+
+    const pickedQuality = weightedPick(
+      qualityPool as Array<{ weight: number; [key: string]: unknown }>
+    )
+    const qualityKey = pickedQuality.key as string
+
+    const pool = poolsByQuality[qualityKey]
+    const weightedPool = pool.map((def) => ({
       ...def,
       weight: (categoryWeightMap as Record<string, number>)[def.category as string] || 1
     }))
 
-    const picked = weightedPick(weightedDefs)
+    const picked = weightedPick(weightedPool)
     return this.buildArtifactFromDef(picked)
+  }
+
+  defaultQualityWeights(): Record<string, number> {
+    const result: Record<string, number> = {}
+    for (const [key, val] of Object.entries(QUALITY_CONFIG)) {
+      result[key] = val.weight
+    }
+    return result
   }
 
   buildArtifactFromDef(def: Record<string, unknown>): Record<string, unknown> {

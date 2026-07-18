@@ -21,7 +21,7 @@ npm run test         # Vitest 全量测试
 npm run lint         # eslint scripts/
 npm run format       # prettier --check scripts/
 npm run server       # LAN WebSocket server (lan/server/)
-npx tsc --noEmit     # TypeScript type check
+npx tsc --noEmit 2>&1 | Select-Object -First x     # TypeScript type check
 cd android && ./gradlew.bat assembleDebug  # Android APK 构建
 ```
 

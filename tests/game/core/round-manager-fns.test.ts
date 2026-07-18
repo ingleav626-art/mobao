@@ -238,8 +238,6 @@ describe("round-manager-fns", () => {
         roundTimeLeft: 0,
         playerBidSubmitted: true,
         playerRoundBid: 500,
-        privateIntelEntries: [{ some: "data" }] as unknown[],
-        publicInfoEntries: [{ some: "data" }] as unknown[],
         aiLlmRoundPlans: { plan1: "data" },
         aiRoundDecisionPromise: Promise.resolve(),
       })
@@ -252,8 +250,8 @@ describe("round-manager-fns", () => {
       expect(deps.roundTimeLeft).toBe(GAME_SETTINGS.roundSeconds)
       expect(deps.playerBidSubmitted).toBe(false)
       expect(deps.playerRoundBid).toBe(0)
-      expect(deps.privateIntelEntries.length).toBe(0)
-      expect(deps.publicInfoEntries.length).toBe(0)
+      // 按设计：privateIntelEntries/publicInfoEntries 在每局开始时清空（resetRecordSlice），
+      // 不在每回合 startRoundFn 清空——它们是跨回合累积的记录
       expect(deps.aiLlmRoundPlans).toEqual({})
       expect(deps.aiRoundDecisionPromise).toBeNull()
     })

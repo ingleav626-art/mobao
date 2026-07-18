@@ -44,7 +44,7 @@ export function waitUntilResumed(deps: BiddingManagerDeps, state: BiddingManager
  */
 export async function kickoffAiRoundDecisions(deps: BiddingManagerDeps, state: BiddingManagerState): Promise<void> {
   log.debug(">>> ENTERED")
-  const aiPlayers = deps.players.filter((p) => !p.isHuman || (p.isHuman && deps.isP2AutoPlaying?.()))
+  const aiPlayers = deps.players.filter((p) => !p.isHuman || (p.isHuman && deps.isAutoPlaying?.()))
   log.info(`kickoffAiRoundDecisions: aiPlayers count=${aiPlayers.length}, total players=${deps.players.length}, isLan=${deps.getIsLanMode()}`)
 
   // 联机模式无 AI 玩家时，不显示 AI 思考提示
@@ -128,22 +128,22 @@ export function buildRoundBids(
   const lastRoundBids = getLastRoundBidMap(deps.getPlayerRoundHistory())
   const aiIntelMap = deps.buildAiIntelSnapshot()
 
-  const aiPlayers = deps.players.filter((player) => !player.isHuman || (player.isHuman && deps.isP2AutoPlaying?.()))
+  const aiPlayers = deps.players.filter((player) => !player.isHuman || (player.isHuman && deps.isAutoPlaying?.()))
   const aiEngine = deps.getAiEngine()
   const round = deps.getRound()
   const aiBidMap = aiEngine
     ? aiEngine.buildAIBids({
-        aiPlayers,
-        clueRate,
-        round,
-        maxRounds: GAME_SETTINGS.maxRounds,
-        currentBid: deps.getCurrentBid(),
-        lastRoundBids,
-        bidStep: GAME_SETTINGS.bidStep,
-        aiIntelMap,
-        aiToolEffectMap: deps.getAiRoundEffects(),
-        itemCount: items.length
-      })
+      aiPlayers,
+      clueRate,
+      round,
+      maxRounds: GAME_SETTINGS.maxRounds,
+      currentBid: deps.getCurrentBid(),
+      lastRoundBids,
+      bidStep: GAME_SETTINGS.bidStep,
+      aiIntelMap,
+      aiToolEffectMap: deps.getAiRoundEffects(),
+      itemCount: items.length
+    })
     : {}
 
   aiPlayers.forEach((player) => {
@@ -152,11 +152,11 @@ export function buildRoundBids(
       `${player.id} aiLlmPlan:`,
       plan
         ? {
-            failed: plan.failed,
-            hasBidDecision: plan.hasBidDecision,
-            bid: plan.bid,
-            canUseLlm: deps.canUseLlmDecisionForPlayer(player.id)
-          }
+          failed: plan.failed,
+          hasBidDecision: plan.hasBidDecision,
+          bid: plan.bid,
+          canUseLlm: deps.canUseLlmDecisionForPlayer(player.id)
+        }
         : "null"
     )
     if (!plan || plan.failed || !plan.hasBidDecision || !deps.canUseLlmDecisionForPlayer(player.id)) {
@@ -174,7 +174,7 @@ export function buildRoundBids(
   log.info(`buildRoundBids: players count=${deps.players.length}, round=${round}`)
 
   const roundBids = deps.players.map((player) => {
-    const isAutoPlaying = deps.isP2AutoPlaying?.() && player.isHuman
+    const isAutoPlaying = deps.isAutoPlaying?.() && player.isHuman
     if (player.isSelf && !isAutoPlaying) {
       log.info(
         `buildRoundBids: player ${player.id} (isSelf=true) -> bid=${deps.getPlayerRoundBid()} (source=playerRoundBid)`
@@ -237,13 +237,13 @@ export async function resolveRoundBids(
 
   try {
     // 托管模式：p2 的 AI 出价直接走 buildRoundBids，不需要 playerBidSubmitted
-    if (!deps.getPlayerBidSubmitted() && !deps.isP2AutoPlaying?.()) {
+    if (!deps.getPlayerBidSubmitted() && !deps.isAutoPlaying?.()) {
       deps.setPlayerRoundBid(0)
       deps.writeLog(reason === "timeout" ? "回合超时：玩家本轮出价记为 0。" : "玩家未提交出价，本轮按 0 处理。")
       const myId = deps.getIsLanMode() ? deps.getLanMySlotId() : "p2"
       if (myId) {
         state.roundBidReadyState[myId] = true
-        const cardEl = deps.dom[`playerCard-${myId}`]
+        const cardEl = document.getElementById(`playerCard-${myId}`)
         if (cardEl) {
           cardEl.classList.toggle("bid-ready", true)
         }

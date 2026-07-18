@@ -77,7 +77,7 @@ export function getAiIntelSummary(
 export function buildAiIntelSnapshot(deps: AiIntelManagerDeps): Record<string, IntelSummary> {
   const map: Record<string, IntelSummary> = {}
   deps.players
-    .filter((player) => !player.isHuman || (player.isHuman && deps.isP2AutoPlaying?.()))
+    .filter((player) => !player.isHuman || (player.isHuman && deps.isAutoPlaying?.()))
     .forEach((player) => {
       map[player.id] = getAiIntelSummary(deps, player.id)
     })

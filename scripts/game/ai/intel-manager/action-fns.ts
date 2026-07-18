@@ -30,7 +30,7 @@ export function executeAiIntelAction(
 /** 处理所有 AI 玩家的情报动作（批量） */
 export async function processAiIntelActions(deps: AiIntelManagerDeps): Promise<void> {
   log.debug("[fn-file] processAiIntelActions CALLED, isLanMode={0}", deps.isLanMode())
-  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman || (player.isHuman && deps.isP2AutoPlaying?.()))
+  const aiPlayers = deps.players.filter((player: Player) => !player.isHuman || (player.isHuman && deps.isAutoPlaying?.()))
   const roundProgress = GAME_SETTINGS.maxRounds <= 1 ? 1 : (deps.getRound() - 1) / (GAME_SETTINGS.maxRounds - 1)
 
   const state = deps.state
@@ -120,22 +120,22 @@ export async function processSingleAiIntelAction(
     `${player.id} plan:`,
     plan
       ? {
-          actionType: plan.actionType,
-          actionId: plan.actionId,
-          decisionSource: plan.decisionSource,
-          lockedByLlm: plan.lockedByLlm
-        }
+        actionType: plan.actionType,
+        actionId: plan.actionId,
+        decisionSource: plan.decisionSource,
+        lockedByLlm: plan.lockedByLlm
+      }
       : "null"
   )
   log.debug(
     `${player.id} llmPlan:`,
     llmPlan
       ? {
-          failed: llmPlan.failed,
-          hasBidDecision: llmPlan.hasBidDecision,
-          bid: llmPlan.bid,
-          actionId: llmPlan.actionId
-        }
+        failed: llmPlan.failed,
+        hasBidDecision: llmPlan.hasBidDecision,
+        bid: llmPlan.bid,
+        actionId: llmPlan.actionId
+      }
       : "null"
   )
 
@@ -300,11 +300,11 @@ export async function processSingleAiIntelAction(
               `${player.id} correction followup result:`,
               followup
                 ? {
-                    ok: followup.ok,
-                    failed: followup.failed,
-                    hasBidDecision: followup.hasBidDecision,
-                    bid: followup.bid
-                  }
+                  ok: followup.ok,
+                  failed: followup.failed,
+                  hasBidDecision: followup.hasBidDecision,
+                  bid: followup.bid
+                }
                 : "null"
             )
             if (followup && !followup.failed && followup.hasBidDecision) {
@@ -414,7 +414,7 @@ export async function processSingleAiIntelAction(
   })
 
   // 托管 p2 用道具时写入私人情报
-  if (player.isHuman && deps.isP2AutoPlaying?.() && deps.addPrivateIntelEntry) {
+  if (player.isHuman && deps.isAutoPlaying?.() && deps.addPrivateIntelEntry) {
     deps.addPrivateIntelEntry({
       source: actionDef.name,
       text: result.message || actionDef.description
@@ -536,7 +536,7 @@ function _executeAiIntelActionImpl(
   }
 
   const _player = deps.players.find((p) => p.id === playerId)
-  const isAutoplayHuman = _player?.isHuman && deps.isP2AutoPlaying?.()
+  const isAutoplayHuman = _player?.isHuman && deps.isAutoPlaying?.()
 
   if (plan.actionType === "skill") {
     const remain = Number(resourceState.skills[plan.actionId] || 0)
@@ -577,8 +577,8 @@ function _executeAiIntelActionImpl(
     }
 
     resourceState.items[plan.actionId] = remain - 1
-    if (isAutoplayHuman && deps.consumeP2ShopItem) {
-      deps.consumeP2ShopItem(plan.actionId)
+    if (isAutoplayHuman && deps.consumeShopItem) {
+      deps.consumeShopItem(plan.actionId)
     }
     return result
   }
@@ -606,7 +606,7 @@ function _makeVisualRevealContext(deps: AiIntelManagerDeps) {
       deps.revealAllByCategory?.(opts.category) ?? { ok: false, revealed: 0, message: "函数不可用。" },
     computeAveragePrice: (opts: { scope: string }) =>
       computeAveragePrice(deps.items, opts.scope),
-    applyProfitModifier: (opts: { target: string; percent: number }) =>
-      deps.applyProfitModifier?.(opts.target, opts.percent) ?? { ok: false, revealed: 0, message: "函数不可用。" }
+    applyBonus: (opts: { id: string; scope: string; condition: string; value: number }) =>
+      deps.applyBonus?.(opts.id, opts.scope, opts.condition, opts.value) ?? { ok: false, revealed: 0, message: "函数不可用。" }
   }
 }

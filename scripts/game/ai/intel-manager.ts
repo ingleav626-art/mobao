@@ -180,7 +180,7 @@ export interface AiIntelManagerDeps {
   updatePlayerAvatar: (playerId: string, avatarEl: HTMLElement) => void
   isInBoundsCell: (x: number, y: number) => boolean
   isWarehouseCellOccupied: (x: number, y: number) => boolean
-  pickBottomCellFromTargets: (targets: Artifact[]) => { x: number; y: number } | null
+  pickBottomCellFromTargets: (targets: Artifact[]) => { x: number; y: number; col: number; row: number } | null
   revealOutlineBatch: (
     count: number,
     category: string | null,
@@ -227,10 +227,10 @@ export interface AiIntelManagerDeps {
   resolveRoundBids: (reason: string) => Promise<void>
   getItemInfo: (itemId: string) => { label?: string } | null
   waitUntilResumed: () => Promise<void>
-  isP2AutoPlaying?: () => boolean
-  getP2ShopInventory?: () => Record<string, number>
-  consumeP2ShopItem?: (itemId: string) => void
-  applyProfitModifier?: (target: string, percent: number) => { ok: boolean; revealed: number; message: string }
+  isAutoPlaying?: () => boolean
+  getShopInventory?: () => Record<string, number>
+  consumeShopItem?: (itemId: string) => void
+  applyBonus?: (id: string, scope: string, condition: string, value: number) => { ok: boolean; revealed: number; message: string }
 }
 
 /**
@@ -240,7 +240,7 @@ export interface AiIntelManagerDeps {
  * 类型定义、依赖接口、状态容器保留在此。
  */
 export class AiIntelManager {
-  constructor(private readonly deps: AiIntelManagerDeps) {}
+  constructor(private readonly deps: AiIntelManagerDeps) { }
 
   // ═════════════ 初始化方法（init-fns.ts） ═════════════
 

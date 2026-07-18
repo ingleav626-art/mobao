@@ -14,6 +14,8 @@ import {
 } from "./settlement-manager"
 import { savePlayerMoney } from "./player-money"
 import { recordGameFinished } from "./app-state"
+import { calcIdentityFinal, type BonusEffect } from "./bonus"
+import { applyPassiveEffect } from "../data/character-system"
 import { useSettlementStore } from "../../vue/stores/settlementStore"
 import { createLogger } from "./logger"
 const log = createLogger("Settlement")
@@ -115,9 +117,9 @@ export interface SettlementManagerDeps {
   /** 进入结算页面 */
   enterSettlementPage: (player: { isSelf: boolean; name: string }, bid: number, reason: string) => void
   /** 更新结算面板指标 */
-  updateSettlementPanelMetrics: (totalValue: number, winnerProfit: number) => void
+  updateSettlementPanelMetrics: (totalValue: number, winnerProfit: number, isSelfWinner?: boolean) => void
   /** 显示自身利润 */
-  showSelfProfit: (profit: number, label: string) => void
+  showSelfProfit: (profit: number, label: string, adjustedProfit?: number) => void
   /** 设置结算进度 */
   setSettlementProgress: (step: string, progress: number) => void
   /** 触发结算终局动画 */
@@ -144,6 +146,8 @@ export interface SettlementManagerDeps {
   updateHud: () => void
   /** 获取 AI 钱包余额 */
   getAiWallet: (id: string) => number
+  /** 获取加成效果列表 */
+  getBonusEffects: () => BonusEffect[]
 }
 
 /**
@@ -199,6 +203,8 @@ export class SettlementManager {
       winnerBid
     )
 
+    const bonusEffects = this.deps.getBonusEffects()
+
     const nonWinners = players.filter((p) => p.id !== winnerPlayer.id)
     const humanNonWinner = nonWinners.find((p) => p.isSelf)
     const isWinner = winnerPlayer.isSelf
@@ -207,21 +213,23 @@ export class SettlementManager {
     if (dividendPerPlayer > 0) {
       const aiWallets = this.deps.getAiWallets()
       nonWinners.forEach((p) => {
+        const adjusted = calcIdentityFinal("nonwinner/dividend", winnerProfit, bonusEffects)
         if (p.isSelf) {
-          this.deps.setPlayerMoney(this.deps.getPlayerMoney() + dividendPerPlayer)
+          this.deps.setPlayerMoney(this.deps.getPlayerMoney() + adjusted)
         } else {
           const wallet = this.deps.getAiWallet(p.id)
-          aiWallets[p.id] = wallet + dividendPerPlayer
+          aiWallets[p.id] = wallet + adjusted
         }
       })
     } else if (ticketPerPlayer > 0) {
       const aiWallets = this.deps.getAiWallets()
       nonWinners.forEach((p) => {
+        const adjusted = calcIdentityFinal("nonwinner/ticket", winnerProfit, bonusEffects)
         if (p.isSelf) {
-          this.deps.setPlayerMoney(this.deps.getPlayerMoney() - ticketPerPlayer)
+          this.deps.setPlayerMoney(this.deps.getPlayerMoney() + adjusted)
         } else {
           const wallet = this.deps.getAiWallet(p.id)
-          aiWallets[p.id] = Math.max(0, wallet - ticketPerPlayer)
+          aiWallets[p.id] = Math.max(0, wallet + adjusted)
         }
       })
     }
@@ -356,14 +364,36 @@ export class SettlementManager {
       dividendTicketInfo
     } = ctx
 
+    const bonusEffects = this.deps.getBonusEffects()
+    const isSelfWinner = winnerPlayer.isSelf
+    const identity: "winner/profit" | "winner/loss" = winnerProfit > 0 ? "winner/profit" : "winner/loss"
+    const adjustedWinnerProfit = calcIdentityFinal(identity, winnerProfit, bonusEffects)
+
+    let adjustedSelfProfit: number
+    let selfLabel: string
+    let rawSelfProfit: number
+    if (isSelfWinner) {
+      const passive = winnerProfit > 0 ? applyPassiveEffect({ profit: winnerProfit }) : { bonus: 0, label: "" }
+      adjustedSelfProfit = adjustedWinnerProfit + passive.bonus
+      rawSelfProfit = winnerProfit
+      selfLabel = "自身利润"
+    } else {
+      const nonWinnerIdentity: "nonwinner/ticket" | "nonwinner/dividend" =
+        winnerProfit > 0 ? "nonwinner/ticket" : "nonwinner/dividend"
+      adjustedSelfProfit = calcIdentityFinal(nonWinnerIdentity, winnerProfit, bonusEffects)
+      rawSelfProfit = winnerProfit > 0 ? -(winnerProfit * 0.05) : Math.abs(winnerProfit) * 0.15
+      selfLabel = winnerProfit > 0 ? "自身利润（门票）" : "自身利润（分红）"
+    }
+
     const logMsg = buildDividendTicketLog(winnerProfit, dividendPerPlayer, ticketPerPlayer)
     if (ctx.humanNonWinner && logMsg) {
       this.deps.writeLog(logMsg)
     }
 
-    this.updateSettlementFinalUI(ctx, selfProfitInfo)
+    this.deps.updateSettlementPanelMetrics(ctx.totalValue, adjustedWinnerProfit, isSelfWinner)
+    this.deps.showSelfProfit(adjustedSelfProfit, selfLabel, adjustedSelfProfit !== rawSelfProfit ? adjustedSelfProfit : undefined)
 
-    this.saveSettlementBattleRecord(ctx, winnerPlayer.isSelf ? winnerProfit : selfProfitInfo.profit, reasonText)
+    this.saveSettlementBattleRecord(ctx, adjustedSelfProfit, reasonText)
 
     this.deps.saveAiWalletsToStorage()
 
@@ -377,28 +407,26 @@ export class SettlementManager {
       dividendTicketInfo
     })
 
-    if (winnerPlayer.isSelf) {
+    if (isSelfWinner) {
       if (!this.deps.hasAppliedMoneyForRun()) {
-        this.deps.setPlayerMoney(this.deps.getPlayerMoney() + winnerProfit)
+        this.deps.setPlayerMoney(this.deps.getPlayerMoney() + adjustedWinnerProfit)
         savePlayerMoney(this.deps.getPlayerMoney())
         this.deps.markMoneyAppliedForRun()
       }
       this.deps.writeLog(
-        `结算完成：你以 ${winnerBid} 拿下整仓，${winnerProfit >= 0 ? "盈利" : "亏损"} ${Math.abs(winnerProfit)}。`
+        `结算完成：你以 ${winnerBid} 拿下整仓，${winnerProfit >= 0 ? "盈利" : "亏损"} ${Math.abs(adjustedWinnerProfit)}。`
       )
     } else {
       savePlayerMoney(this.deps.getPlayerMoney())
       this.deps.writeLog(
-        `结算完成：${winnerPlayer.name} 以 ${winnerBid} 拿下整仓，利润 ${winnerProfit >= 0 ? "+" : ""}${winnerProfit}。`
+        `结算完成：${winnerPlayer.name} 以 ${winnerBid} 拿下整仓，利润 ${adjustedWinnerProfit >= 0 ? "+" : ""}${adjustedWinnerProfit}。`
       )
     }
 
     const selfPlayer = this.deps.getPlayers().find((p) => p.isSelf)
     if (selfPlayer && recordGameFinished) {
-      const playerIsWinner = winnerPlayer.isSelf
-      const playerProfit = playerIsWinner ? winnerProfit : selfProfitInfo.profit
-      const playerWon = playerIsWinner && winnerProfit > 0
-      recordGameFinished(playerWon, playerProfit)
+      const playerWon = isSelfWinner && winnerProfit > 0
+      recordGameFinished(playerWon, adjustedSelfProfit)
     }
 
     this.deps.updateHud()

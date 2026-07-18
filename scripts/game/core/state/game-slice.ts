@@ -1,4 +1,5 @@
 import type { Artifact, Player } from "../../../../types/game"
+import type { BonusEffect } from "../bonus"
 
 export interface GameSlice {
   round: number
@@ -42,8 +43,7 @@ export interface GameSlice {
   _gameCancelCallback: (() => void) | null
   runSerial: number
   runLogHistory: unknown[]
-  profitModifierSelf: number
-  profitModifierAll: number
+  bonusEffects: BonusEffect[]
   currentRunLog: {
     runNo: number
     startedAt: number
@@ -103,8 +103,7 @@ export function createGameSlice(): GameSlice {
     _gameCancelCallback: null,
     runSerial: 0,
     runLogHistory: [],
-    profitModifierSelf: 1,
-    profitModifierAll: 1,
+    bonusEffects: [],
     currentRunLog: null,
     _pauseSnapshotTimeLeft: null
   }
@@ -158,8 +157,7 @@ export function resetForNewRun(s: GameSlice): void {
   s._gameCancelCallback = null
   s.runSerial = 0
   s.runLogHistory = []
-  s.profitModifierSelf = 1
-  s.profitModifierAll = 1
+  s.bonusEffects = []
   s.currentRunLog = null
   s._pauseSnapshotTimeLeft = null
 }

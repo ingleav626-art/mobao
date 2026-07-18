@@ -35,7 +35,7 @@ export function buildBidHistorySnapshot(
   round: number,
   players: Player[],
   playerRoundHistory: Record<string, Array<{ round: number; bid: number }>>
-): Array<{ round: number; bids: Record<string, number> }> {
+): Array<{ round: number; bids: Record<string, number>; highestBidder: string | null }> {
   const rounds = Array.from({ length: Math.max(0, round - 1) }, (_v, idx) => idx + 1)
   return rounds.map((roundNo) => {
     const bids: Record<string, number> = {}
@@ -44,9 +44,11 @@ export function buildBidHistorySnapshot(
       const entry = records.find((record) => record.round === roundNo)
       bids[player.id] = entry ? Math.round(Number(entry.bid) || 0) : 0
     })
+    const topBidder = Object.entries(bids).sort((a, b) => b[1] - a[1])[0]
     return {
       round: roundNo,
-      bids
+      bids,
+      highestBidder: topBidder && topBidder[1] > 0 ? topBidder[0] : null
     }
   })
 }
@@ -171,8 +173,8 @@ export function buildRoundPublicStateTable(
       var actionIds = isCurrentRound
         ? currentRoundUsage[player.id] || []
         : (playerUsageHistory[player.id] || []).find(function (entry) {
-            return entry.round === roundNo
-          })?.actions || []
+          return entry.round === roundNo
+        })?.actions || []
       if (!Array.isArray(actionIds) || actionIds.length === 0) {
         return "none"
       }
@@ -224,13 +226,13 @@ export function buildCatalogSummaryInner(options: Record<string, unknown> = {}):
     ...(compact
       ? {}
       : {
-          warehouseDefinition:
-            "仓库是隐藏在 " +
-            GRID_COLS +
-            "x" +
-            GRID_ROWS +
-            " 网格中的藏品堆栈；每件藏品都有固定的品质、品类、基础价格和占格尺寸，玩家只能通过出价、公开事件和私有探查去推断整座仓库的真实价值。"
-        }),
+        warehouseDefinition:
+          "仓库是隐藏在 " +
+          GRID_COLS +
+          "x" +
+          GRID_ROWS +
+          " 网格中的藏品堆栈；每件藏品都有固定的品质、品类、基础价格和占格尺寸，玩家只能通过出价、公开事件和私有探查去推断整座仓库的真实价值。"
+      }),
     specialMechanismHint: "绝品或高价藏品可能为单格高价，也可能为多格组合高价。",
     poolRestrictionHint: "当前对局未设置朝代子集限制。",
     ...(compact
@@ -254,10 +256,10 @@ export function buildQualityPriceGuide(options: Record<string, unknown> = {}): A
       ...(compact
         ? {}
         : {
-            count: entries.length,
-            minPrice,
-            maxPrice
-          }),
+          count: entries.length,
+          minPrice,
+          maxPrice
+        }),
       avgPrice: prices.length > 0 ? Math.round(total / prices.length) : 0
     }
   })
@@ -307,11 +309,11 @@ export function buildOtherPlayersPublicInfo(
       var persona = aiEngine.personalityMap[player.id] || null
       var usageNames: string[] = []
 
-      ;(playerUsageHistory[player.id] || []).forEach((entry) => {
-        ;(entry.actions || []).forEach((actionId) => {
-          usageNames.push(getActionDefById(actionId).name)
+        ; (playerUsageHistory[player.id] || []).forEach((entry) => {
+          ; (entry.actions || []).forEach((actionId) => {
+            usageNames.push(getActionDefById(actionId).name)
+          })
         })
-      })
 
       return {
         playerId: player.id,
@@ -319,18 +321,18 @@ export function buildOtherPlayersPublicInfo(
         roleName: persona ? persona.archetype : "玩家",
         passiveSkillText: persona
           ? "倾向：激进" +
-            persona.aggression.toFixed(2) +
-            "，纪律" +
-            persona.discipline.toFixed(2) +
-            "，跟风" +
-            persona.followRate.toFixed(2)
+          persona.aggression.toFixed(2) +
+          "，纪律" +
+          persona.discipline.toFixed(2) +
+          "，跟风" +
+          persona.followRate.toFixed(2)
           : "未知",
         activeSkillList: compact
           ? SKILL_DEFS.map((entry) => ({ name: entry.name }))
           : SKILL_DEFS.map((entry) => ({
-              name: entry.name,
-              description: entry.description
-            })),
+            name: entry.name,
+            description: entry.description
+          })),
         folded: false,
         publicUsedActions: [...new Set(usageNames)].slice(-10)
       }

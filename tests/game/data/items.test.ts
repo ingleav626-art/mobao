@@ -247,16 +247,16 @@ describe("items", () => {
     }
   })
 
-  describe("加成类道具调 context.applyProfitModifier 传参正确", () => {
+  describe("加成类道具调 context.applyBonus 传参正确", () => {
     function makeContext() {
-      const calls: Array<{ target: string; percent: number }> = []
+      const calls: Array<{ id: string; scope: string; condition: string; value: number }> = []
       return {
         calls,
         ctx: {
           revealOutline: () => ({ ok: false, revealed: 0, message: "" }),
           revealQuality: () => ({ ok: false, revealed: 0, message: "" }),
-          applyProfitModifier: (opts: { target: string; percent: number }) => {
-            calls.push({ target: opts.target, percent: opts.percent })
+          applyBonus: (opts: { id: string; scope: string; condition: string; value: number }) => {
+            calls.push({ id: opts.id, scope: opts.scope, condition: opts.condition, value: opts.value })
             return { ok: true, revealed: 0, message: "" }
           }
         }
@@ -264,21 +264,23 @@ describe("items", () => {
     }
 
     const cases = [
-      { id: "item-bonus-self-up", target: "self", percent: 50 },
-      { id: "item-bonus-self-down", target: "self", percent: -50 },
-      { id: "item-bonus-all-up", target: "all", percent: 100 },
-      { id: "item-bonus-all-down", target: "all", percent: -200 }
+      { id: "item-bonus-self-up", bonusId: "bonus-lucky-charm", scope: "self", condition: "onGain", value: 0.5 },
+      { id: "item-bonus-self-down", bonusId: "bonus-unlucky-charm", scope: "self", condition: "onLoss", value: -0.5 },
+      { id: "item-bonus-all-up", bonusId: "bonus-group-bless", scope: "group", condition: "onGain", value: 1 },
+      { id: "item-bonus-all-down", bonusId: "bonus-group-curse", scope: "group", condition: "onLoss", value: 2 }
     ]
 
     for (const c of cases) {
-      it(`${c.id} → target="${c.target}" percent=${c.percent}`, () => {
+      it(`${c.id} → id="${c.bonusId}" scope="${c.scope}" condition="${c.condition}" value=${c.value}`, () => {
         const def = ITEM_DEFS.find((d) => d.id === c.id)
         expect(def).toBeDefined()
         const { calls, ctx } = makeContext()
         def!.execute(ctx)
         expect(calls).toHaveLength(1)
-        expect(calls[0].target).toBe(c.target)
-        expect(calls[0].percent).toBe(c.percent)
+        expect(calls[0].id).toBe(c.bonusId)
+        expect(calls[0].scope).toBe(c.scope)
+        expect(calls[0].condition).toBe(c.condition)
+        expect(calls[0].value).toBe(c.value)
       })
     }
   })
@@ -418,11 +420,11 @@ describe("items", () => {
       expect(result.message).toMatch(/均价|无藏品/)
     })
 
-    it("item-bonus-self-up → 返回修正信息而非通用文案", () => {
+    it("item-bonus-self-up → 返回加成信息而非通用文案", () => {
       const mgr = new ItemManager()
       const ctx = {
         ...makeFullContext(),
-        applyProfitModifier: () => ({ ok: true, revealed: 0, message: "已应用自身获利修正+50%。" })
+        applyBonus: () => ({ ok: true, revealed: 0, message: "已应用加成（self +50%）。" })
       }
       const result = mgr.use("item-bonus-self-up", ctx)
 
