@@ -19,6 +19,7 @@ export interface LlmSettings {
   reflectionScope: string
   independentReflectionEnabled: boolean
   thinkingParams: string
+  feedbackEnabled: boolean
 }
 
 export interface AiModelConfig {
@@ -46,7 +47,8 @@ export const useSettingsStore = defineStore("settings", {
       autoSummarizeEnabled: true,
       reflectionScope: "current",
       independentReflectionEnabled: true,
-      thinkingParams: ""
+      thinkingParams: "",
+      feedbackEnabled: false
     } as LlmSettings,
     aiModelConfigs: [] as AiModelConfig[],
     dirty: false,

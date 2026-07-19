@@ -644,4 +644,136 @@ describe("AiReflectionManager", () => {
       expect(deps.getAiReflectionState()).toBe("done")
     })
   })
+
+  describe("AI 反馈收集（feedback 集成）", () => {
+    /** 构造带 feedback 字段的 LLM 响应 */
+    function makeFeedbackResponse(feedback: string): ReflectionChatResult {
+      return {
+        ok: true,
+        content: JSON.stringify({
+          praises: { add: [] },
+          strategies: { add: [] },
+          lessons: { add: [] },
+          feedback,
+        }),
+      }
+    }
+
+    it("feedbackEnabled=true 且 feedback 非空时调用 addAiFeedback", async () => {
+      const addSpy = vi.fn()
+      const mockProvider = makeMockProvider(
+        makeFeedbackResponse("提示词中 currentWallet 字段含义不清楚，建议明确说明"),
+      )
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        isFeedbackEnabled: () => true,
+        getRunSerial: () => 5,
+        addAiFeedback: addSpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 行为：addAiFeedback 被调用一次，参数含 playerId/playerName/runSerial/content
+      expect(addSpy).toHaveBeenCalledTimes(1)
+      const arg = addSpy.mock.calls[0][0] as {
+        playerId: string
+        playerName: string
+        runSerial: number
+        content: string
+      }
+      expect(arg.playerId).toBe("ai-1")
+      expect(arg.playerName).toBe("左上AI")
+      expect(arg.runSerial).toBe(5)
+      expect(arg.content).toContain("currentWallet")
+    })
+
+    it("feedbackEnabled=true 但 feedback 为空字符串时不调用 addAiFeedback", async () => {
+      const addSpy = vi.fn()
+      const mockProvider = makeMockProvider(makeFeedbackResponse(""))
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        isFeedbackEnabled: () => true,
+        getRunSerial: () => 1,
+        addAiFeedback: addSpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 空反馈不应保存
+      expect(addSpy).not.toHaveBeenCalled()
+    })
+
+    it("feedbackEnabled=true 但 feedback 字段缺失时不调用 addAiFeedback", async () => {
+      const addSpy = vi.fn()
+      const mockProvider = makeMockProvider({
+        ok: true,
+        content: JSON.stringify({ praises: { add: [] }, strategies: { add: [] }, lessons: { add: [] } }),
+      })
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        isFeedbackEnabled: () => true,
+        getRunSerial: () => 1,
+        addAiFeedback: addSpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      expect(addSpy).not.toHaveBeenCalled()
+    })
+
+    it("feedbackEnabled=false 时即使 LLM 返回 feedback 也不调用 addAiFeedback", async () => {
+      const addSpy = vi.fn()
+      const mockProvider = makeMockProvider(
+        makeFeedbackResponse("虽然返回了 feedback，但开关关闭不应保存"),
+      )
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        isFeedbackEnabled: () => false,
+        getRunSerial: () => 1,
+        addAiFeedback: addSpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 开关关闭时不保存
+      expect(addSpy).not.toHaveBeenCalled()
+    })
+
+    it("LLM 返回非字符串 feedback 时不调用 addAiFeedback", async () => {
+      const addSpy = vi.fn()
+      const mockProvider = makeMockProvider({
+        ok: true,
+        content: JSON.stringify({
+          praises: { add: [] },
+          strategies: { add: [] },
+          lessons: { add: [] },
+          feedback: { invalid: "object instead of string" },
+        }),
+      })
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        isFeedbackEnabled: () => true,
+        getRunSerial: () => 1,
+        addAiFeedback: addSpy,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      expect(addSpy).not.toHaveBeenCalled()
+    })
+
+    it("feedbackEnabled=true 但 deps 未提供 addAiFeedback 时不报错", async () => {
+      const mockProvider = makeMockProvider(makeFeedbackResponse("某种反馈"))
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        isFeedbackEnabled: () => true,
+        getRunSerial: () => 1,
+        // 不提供 addAiFeedback
+      })
+      const manager = new AiReflectionManager(deps)
+      // 不应抛错
+      await manager.triggerAiReflection(makeRecord())
+      expect(deps.getAiReflectionState()).toBe("done")
+    })
+  })
 })

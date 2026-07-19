@@ -48,6 +48,7 @@ import type { CrossGameMemory as ReflectionCrossGameMemory } from "../ai/reflect
 import { AiMemoryManager } from "../ai/memory-manager"
 import { AutoPlayManager } from "../ai/autoplay-manager"
 import type { AiMemoryData } from "../ai/memory-manager"
+import type { AiFeedbackEntry } from "../../../types/ai"
 import { WarehouseManager } from "../warehouse/warehouse-manager"
 import type { WarehouseManagerState } from "../warehouse/warehouse-manager"
 import { AiIntelManager } from "../ai/intel-manager"
@@ -141,6 +142,11 @@ export interface WarehouseMixinMethods {
   closeAiLogicPanel(): void
   openAiMemoryPanel(): void
   closeAiMemoryPanel(): void
+  openAiFeedbackPanel(): void
+  closeAiFeedbackPanel(): void
+  refreshAiFeedbackList(): void
+  removeAiFeedback(id: string): void
+  clearAllAiFeedbacks(): void
   openAiModelConfigOverlay(): void
   closeAiModelConfigOverlay(): void
   saveAiModelConfigFromForm(): void
@@ -352,6 +358,8 @@ class WarehouseScene extends _PhaserScene {
   set aiConversationCache(v: Record<string, unknown>) { this.state.ai.aiConversationCache = v }
   get runSerial(): number { return this.state.game.runSerial }
   set runSerial(v: number) { this.state.game.runSerial = v }
+  get aiFeedbacks(): AiFeedbackEntry[] { return this.state.ai.aiFeedbacks }
+  set aiFeedbacks(v: AiFeedbackEntry[]) { this.state.ai.aiFeedbacks = v }
   get runLogHistory(): unknown[] { return this.state.game.runLogHistory }
   set runLogHistory(v: unknown[]) { this.state.game.runLogHistory = v }
   get currentRunLog(): {
@@ -788,6 +796,12 @@ class WarehouseScene extends _PhaserScene {
       },
       set runSerial(v) {
         scene.runSerial = v
+      },
+      get aiFeedbacks() {
+        return scene.aiFeedbacks
+      },
+      set aiFeedbacks(v) {
+        scene.aiFeedbacks = v
       }
     }
 
@@ -875,6 +889,19 @@ class WarehouseScene extends _PhaserScene {
       openBattleRecordPanel: () => this.openBattleRecordPanel(),
       writeLog: (text: string) => this.writeLog(text),
       isAutoPlaying: () => scene.autoplayManager.isActive(),
+      isFeedbackEnabled: () => {
+        const settings = this.getLlmSettings() as { feedbackEnabled?: boolean } | null
+        return Boolean(settings && settings.feedbackEnabled)
+      },
+      getRunSerial: () => scene.runSerial,
+      addAiFeedback: (entry) => {
+        scene.aiMemoryManager.addAiFeedback({
+          playerId: entry.playerId,
+          playerName: entry.playerName,
+          runSerial: entry.runSerial,
+          content: entry.content
+        })
+      }
     })
 
     this.settlementManager = new SettlementManager({
@@ -1288,7 +1315,11 @@ class WarehouseScene extends _PhaserScene {
       },
       setGameCancelCallback: (v: (() => void) | null) => {
         (scene as unknown as WarehouseSceneThis)._gameCancelCallback = v
-      }
+      },
+      loadAiFeedbacks: () => scene.aiMemoryManager.loadAiFeedbacks(),
+      getAiFeedbacks: () => scene.aiMemoryManager.getAiFeedbacks(),
+      deleteAiFeedback: (id: string) => scene.aiMemoryManager.deleteAiFeedback(id),
+      clearAiFeedbacks: () => scene.aiMemoryManager.clearAiFeedbacks()
     })
 
     const lobbyIndexState: LobbyIndexState = {
@@ -2370,6 +2401,11 @@ class WarehouseScene extends _PhaserScene {
   closeAiLogicPanel!: WarehouseMixinMethods["closeAiLogicPanel"]
   openAiMemoryPanel!: WarehouseMixinMethods["openAiMemoryPanel"]
   closeAiMemoryPanel!: WarehouseMixinMethods["closeAiMemoryPanel"]
+  openAiFeedbackPanel!: WarehouseMixinMethods["openAiFeedbackPanel"]
+  closeAiFeedbackPanel!: WarehouseMixinMethods["closeAiFeedbackPanel"]
+  refreshAiFeedbackList!: WarehouseMixinMethods["refreshAiFeedbackList"]
+  removeAiFeedback!: WarehouseMixinMethods["removeAiFeedback"]
+  clearAllAiFeedbacks!: WarehouseMixinMethods["clearAllAiFeedbacks"]
   openAiModelConfigOverlay!: WarehouseMixinMethods["openAiModelConfigOverlay"]
   closeAiModelConfigOverlay!: WarehouseMixinMethods["closeAiModelConfigOverlay"]
   saveAiModelConfigFromForm!: WarehouseMixinMethods["saveAiModelConfigFromForm"]

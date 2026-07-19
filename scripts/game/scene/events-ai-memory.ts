@@ -80,6 +80,50 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
       this.openAiMemoryPanel()
     })
   }
+  if (this.dom.viewAiFeedbackBtn) {
+    this.dom.viewAiFeedbackBtn?.addEventListener("click", () => {
+      this.openAiFeedbackPanel()
+    })
+  }
+  if (this.dom.aiFeedbackCloseBtn) {
+    this.dom.aiFeedbackCloseBtn?.addEventListener("click", (event) => {
+      event.stopPropagation()
+      this.closeAiFeedbackPanel()
+    })
+  }
+  if (this.dom.aiFeedbackClearBtn) {
+    this.dom.aiFeedbackClearBtn?.addEventListener("click", () => {
+      this.showGameConfirm("确定要清空所有 AI 反馈吗？此操作不可恢复。", () => {
+        this.clearAllAiFeedbacks()
+        this.writeLog("AI 反馈已清空。")
+      })
+    })
+  }
+  if (this.dom.aiFeedbackOverlay) {
+    this.dom.aiFeedbackOverlay?.addEventListener("click", (event) => {
+      event.stopPropagation()
+      if (event.target === this.dom.aiFeedbackOverlay) {
+        this.closeAiFeedbackPanel()
+      }
+    })
+  }
+  if (this.dom.aiFeedbackPanel) {
+    this.dom.aiFeedbackPanel?.addEventListener("click", (event) => {
+      event.stopPropagation()
+    })
+  }
+  if (this.dom.aiFeedbackContent) {
+    this.dom.aiFeedbackContent?.addEventListener("click", (event) => {
+      const target = event.target as HTMLElement
+      if (target && target.classList.contains("ai-feedback-delete-btn")) {
+        const id = target.getAttribute("data-feedback-id")
+        if (!id) return
+        this.showGameConfirm("确定要删除这条反馈吗？", () => {
+          this.removeAiFeedback(id)
+        })
+      }
+    })
+  }
   if (this.dom.exportAiMemoryBtn) {
     this.dom.exportAiMemoryBtn?.addEventListener("click", () => {
       this.showAiMemoryExportDialog()

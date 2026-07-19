@@ -58,6 +58,7 @@ interface LlmGlobalSettings {
   contextLength: number
   autoSummarizeEnabled: boolean
   reflectionScope: string
+  feedbackEnabled: boolean
 }
 
 const DEFAULT_GLOBAL_SETTINGS: LlmGlobalSettings = {
@@ -69,7 +70,8 @@ const DEFAULT_GLOBAL_SETTINGS: LlmGlobalSettings = {
   independentReflectionEnabled: true,
   contextLength: 5,
   autoSummarizeEnabled: true,
-  reflectionScope: "current"
+  reflectionScope: "current",
+  feedbackEnabled: false
 }
 
 function loadGlobalSettings(): LlmGlobalSettings {
@@ -79,7 +81,7 @@ function loadGlobalSettings(): LlmGlobalSettings {
       const parsed = JSON.parse(raw)
       return { ...DEFAULT_GLOBAL_SETTINGS, ...parsed }
     }
-  } catch (_e) {}
+  } catch (_e) { }
   return { ...DEFAULT_GLOBAL_SETTINGS }
 }
 
@@ -88,7 +90,7 @@ function saveGlobalSettings(settings: Partial<LlmGlobalSettings>): void {
     const current = loadGlobalSettings()
     const merged = { ...current, ...settings }
     window.localStorage.setItem(LLM_GLOBAL_SETTINGS_KEY, JSON.stringify(merged))
-  } catch (_e) {}
+  } catch (_e) { }
 }
 
 interface ProviderConfig {
@@ -166,6 +168,8 @@ interface UiElements {
   reflectionCheckbox: HTMLElement | null
   thinkingCheckbox: HTMLElement | null
   independentModelCheckbox: HTMLElement | null
+  feedbackCheckbox: HTMLElement | null
+  viewAiFeedbackBtn: HTMLElement | null
   contextLengthInline: HTMLElement | null
   contextLengthInput: HTMLInputElement | null
   summaryConfig: HTMLElement | null
@@ -201,6 +205,8 @@ function getElements(): UiElements {
     reflectionCheckbox: document.getElementById("setting-llmReflectionEnabled"),
     thinkingCheckbox: document.getElementById("setting-llmThinkingEnabled"),
     independentModelCheckbox: document.getElementById("setting-llmIndependentModelEnabled"),
+    feedbackCheckbox: document.getElementById("setting-llmFeedbackEnabled"),
+    viewAiFeedbackBtn: document.getElementById("viewAiFeedbackBtn"),
     contextLengthInline: document.getElementById("contextLengthInline"),
     contextLengthInput: document.getElementById("setting-contextLength") as HTMLInputElement | null,
     summaryConfig: document.getElementById("summaryConfig"),
@@ -265,15 +271,15 @@ function updateUiForProvider(providerId: string): void {
   }
 
   if (els.apiKeyInput) {
-    ;(els.apiKeyInput as HTMLInputElement).placeholder = config.placeholder
+    ; (els.apiKeyInput as HTMLInputElement).placeholder = config.placeholder
   }
 
   if (els.endpointInput) {
-    ;(els.endpointInput as HTMLInputElement).placeholder = config.endpointPlaceholder
+    ; (els.endpointInput as HTMLInputElement).placeholder = config.endpointPlaceholder
   }
 
   if (els.modelInput && !(els.modelInput as HTMLInputElement).value) {
-    ;(els.modelInput as HTMLInputElement).placeholder = config.defaultModel || "model-name"
+    ; (els.modelInput as HTMLInputElement).placeholder = config.defaultModel || "model-name"
   }
 
   if (els.deleteProviderBtn) {
@@ -364,6 +370,7 @@ function loadProviderSettings(providerId: string): void {
     if (els.thinkingCheckbox) (els.thinkingCheckbox as HTMLInputElement).checked = globalSettings.thinkingEnabled
     if (els.independentModelCheckbox)
       (els.independentModelCheckbox as HTMLInputElement).checked = globalSettings.independentModelEnabled
+    if (els.feedbackCheckbox) (els.feedbackCheckbox as HTMLInputElement).checked = globalSettings.feedbackEnabled
   } else {
     console.log("[loadProviderSettings] provider not found, using defaults")
     const config = getProviderConfig(providerId)
@@ -380,6 +387,7 @@ function loadProviderSettings(providerId: string): void {
     if (els.thinkingCheckbox) (els.thinkingCheckbox as HTMLInputElement).checked = globalSettings.thinkingEnabled
     if (els.independentModelCheckbox)
       (els.independentModelCheckbox as HTMLInputElement).checked = globalSettings.independentModelEnabled
+    if (els.feedbackCheckbox) (els.feedbackCheckbox as HTMLInputElement).checked = globalSettings.feedbackEnabled
   }
 
   updateThinkingParamsVisibility(els)
@@ -447,7 +455,8 @@ function saveProviderSettings(providerId: string): {
     thinkingEnabled: els.thinkingCheckbox ? (els.thinkingCheckbox as HTMLInputElement).checked : false,
     independentModelEnabled: els.independentModelCheckbox
       ? (els.independentModelCheckbox as HTMLInputElement).checked
-      : false
+      : false,
+    feedbackEnabled: els.feedbackCheckbox ? (els.feedbackCheckbox as HTMLInputElement).checked : false
   })
 
   const providerSettings = {
@@ -686,7 +695,7 @@ function deleteCurrentProvider(): void {
           refreshProviderSelect("deepseek")
 
           if (els.providerSelect) {
-            ;(els.providerSelect as HTMLSelectElement).value = "deepseek"
+            ; (els.providerSelect as HTMLSelectElement).value = "deepseek"
             loadProviderSettings("deepseek")
           }
 
@@ -720,7 +729,7 @@ function deleteCurrentProvider(): void {
       refreshProviderSelect("deepseek")
 
       if (els.providerSelect) {
-        ;(els.providerSelect as HTMLSelectElement).value = "deepseek"
+        ; (els.providerSelect as HTMLSelectElement).value = "deepseek"
         loadProviderSettings("deepseek")
       }
     }
@@ -789,6 +798,7 @@ function initialize(): void {
     els.enabledCheckbox,
     els.multiGameMemoryCheckbox,
     els.reflectionCheckbox,
+    els.feedbackCheckbox,
     els.thinkingCheckbox,
     els.independentModelCheckbox,
     els.apiKeyInput,

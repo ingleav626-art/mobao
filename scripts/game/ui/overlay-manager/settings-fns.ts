@@ -177,7 +177,7 @@ export function fillSettingsForm(values: Record<string, unknown>): void {
     if (!input) {
       return
     }
-    ;(input as HTMLInputElement).value = String(values[field])
+    ; (input as HTMLInputElement).value = String(values[field])
   })
   const roundSecondsInput = document.getElementById("setting-roundSeconds") as HTMLInputElement | null
   const roundSecondsDecrease = document.getElementById("roundSecondsDecrease") as HTMLButtonElement | null
@@ -259,6 +259,7 @@ export function saveSettingsFromOverlay(deps: UiOverlayManagerDeps, state: UiOve
     console.log("[saveSettingsFromOverlay] llmNext:", {
       independentModelEnabled: llmNext.independentModelEnabled,
       enabled: llmNext.enabled,
+      feedbackEnabled: llmNext.feedbackEnabled,
       apiKey: llmNext.apiKey ? "(已设置)" : "(空)"
     })
 
@@ -271,7 +272,8 @@ export function saveSettingsFromOverlay(deps: UiOverlayManagerDeps, state: UiOve
       independentReflectionEnabled: llmNext.independentReflectionEnabled,
       contextLength: llmNext.contextLength,
       autoSummarizeEnabled: llmNext.autoSummarizeEnabled,
-      reflectionScope: llmNext.reflectionScope
+      reflectionScope: llmNext.reflectionScope,
+      feedbackEnabled: llmNext.feedbackEnabled
     }
     try {
       window.localStorage.setItem(LLM_GLOBAL_SETTINGS_KEY, JSON.stringify(globalSettings))

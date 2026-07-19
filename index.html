@@ -622,6 +622,10 @@
               </label>
               <p class="settings-group-sub">仅本局：反思时只看当前对局表现。全部上下文：反思时同时参考历史记录。</p>
             </div>
+            <label>AI 反馈收集
+              <input type="checkbox" id="setting-llmFeedbackEnabled" />
+            </label>
+            <p class="settings-group-sub">开启后，每局 AI 反思时会额外输出对游戏的反馈意见（如提示词不清晰、数值不合理等），收集到的反馈可在下方"查看AI反馈"中查看/删除/清空。</p>
             <label>启用思考模式
               <input type="checkbox" id="setting-llmThinkingEnabled" />
             </label>
@@ -654,6 +658,7 @@
             <div class="settings-inline-actions">
               <button id="clearAiMemoryBtn" type="button">清空AI记忆</button>
               <button id="viewAiMemoryBtn" type="button">查看AI记忆</button>
+              <button id="viewAiFeedbackBtn" type="button">查看AI反馈</button>
               <button id="exportAiMemoryBtn" type="button">导出记忆</button>
               <button id="importAiMemoryBtn" type="button">导入记忆</button>
               <button id="resetAiWalletBtn" type="button">重置AI钱包</button>
@@ -784,6 +789,19 @@
             class="btn-icon"></button>
       </div>
       <div class="ai-memory-content" id="aiMemoryContent">暂无记忆数据</div>
+    </section>
+  </div>
+  <div class="ai-feedback-overlay hidden" id="aiFeedbackOverlay">
+    <section class="ai-feedback-panel" id="aiFeedbackPanel">
+      <div class="ai-feedback-head">
+        <h2>AI 反馈列表</h2>
+        <div class="ai-feedback-head-actions">
+          <button id="aiFeedbackClearBtn" type="button" class="ai-feedback-danger-btn">清空全部</button>
+          <button id="aiFeedbackCloseBtn" type="button"><img src="./assets/images/icons/ui/close.svg" alt=""
+              class="btn-icon"></button>
+        </div>
+      </div>
+      <div class="ai-feedback-content" id="aiFeedbackContent">暂无反馈</div>
     </section>
   </div>
   <div class="ai-model-config-overlay hidden" id="aiModelConfigOverlay">

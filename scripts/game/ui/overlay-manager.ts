@@ -6,7 +6,7 @@
  *              构造函数注入依赖，私有状态由 Manager 内部持有。
  */
 import type { RunLog } from "../ai/decision"
-import type { CrossGameMemory } from "../../../types/ai"
+import type { AiFeedbackEntry, CrossGameMemory } from "../../../types/ai"
 
 import {
   hideSettleOverlay,
@@ -59,6 +59,13 @@ import {
   getAiModelConfig
 } from "./overlay-manager/ai-config-fns"
 import { openAiMemoryPanel, setupAiMemoryTouchScroll, closeAiMemoryPanel } from "./overlay-manager/ai-memory-fns"
+import {
+  openAiFeedbackPanel,
+  closeAiFeedbackPanel,
+  renderAiFeedbackList,
+  deleteAiFeedback,
+  clearAllAiFeedbacks
+} from "./overlay-manager/ai-feedback-fns"
 import {
   updateReflectionStatusUI,
   showReflectionPendingDialog,
@@ -140,6 +147,11 @@ export interface UiOverlayManagerDeps {
   proceedToBack: () => void
   setGameConfirmCallback: (v: (() => void) | null) => void
   setGameCancelCallback: (v: (() => void) | null) => void
+  // AI 反馈（数据来自 AiMemoryManager）
+  loadAiFeedbacks: () => AiFeedbackEntry[]
+  getAiFeedbacks: () => AiFeedbackEntry[]
+  deleteAiFeedback: (id: string) => void
+  clearAiFeedbacks: () => void
 }
 
 /** UiOverlayManager 私有状态（由 Manager 内部持有，供函数文件读写） */
@@ -148,6 +160,7 @@ export interface UiOverlayManagerState {
   gameCancelCallback: (() => void) | null
   settingsInitialValues: string | null
   aiMemoryTouchBound: boolean
+  aiFeedbackTouchBound: boolean
 }
 
 /**
@@ -159,10 +172,11 @@ export class UiOverlayManager {
     gameConfirmCallback: null,
     gameCancelCallback: null,
     settingsInitialValues: null,
-    aiMemoryTouchBound: false
+    aiMemoryTouchBound: false,
+    aiFeedbackTouchBound: false
   }
 
-  constructor(private readonly deps: UiOverlayManagerDeps) {}
+  constructor(private readonly deps: UiOverlayManagerDeps) { }
 
   // ==================== CoreOverlayMixin ====================
   hideSettleOverlay(): void {
@@ -311,6 +325,23 @@ export class UiOverlayManager {
   }
   closeAiMemoryPanel(): void {
     closeAiMemoryPanel(this.deps)
+  }
+
+  // ==================== AiFeedbackPanel ====================
+  openAiFeedbackPanel(): void {
+    openAiFeedbackPanel(this.deps, this.state)
+  }
+  closeAiFeedbackPanel(): void {
+    closeAiFeedbackPanel(this.deps)
+  }
+  refreshAiFeedbackList(): void {
+    renderAiFeedbackList(this.deps)
+  }
+  removeAiFeedback(id: string): void {
+    deleteAiFeedback(this.deps, id)
+  }
+  clearAllAiFeedbacks(): void {
+    clearAllAiFeedbacks(this.deps)
   }
 
   // ==================== AiReflectionDialogMixin ====================

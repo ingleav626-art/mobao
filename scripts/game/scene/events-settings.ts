@@ -15,7 +15,7 @@ export function bindSettingsEvents(this: WarehouseSceneThis): void {
   const updateVolumeIcon = (value: string | number, imgEl: HTMLImageElement | null) => {
     if (!imgEl) return
     const isMuted = Number(value) === 0
-    imgEl.src = isMuted ? "./assets/images/icons/ui/mute-fill.svg" : "./assets/images/icons/ui/soundon.svg"
+    imgEl.src = isMuted ? "./assets/images/icons/ui/mute-fill.svg" : "./assets/images/icons/ui/sound-on.svg"
     imgEl.classList.toggle("muted", isMuted)
   }
 

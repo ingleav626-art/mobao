@@ -204,6 +204,13 @@ export interface WarehouseSceneThis {
     aiMemoryPanel: HTMLElement | null
     aiMemoryCloseBtn: HTMLElement | null
     aiMemoryContent: HTMLElement | null
+    settingLlmFeedbackEnabled: HTMLElement | null
+    viewAiFeedbackBtn: HTMLElement | null
+    aiFeedbackOverlay: HTMLElement | null
+    aiFeedbackPanel: HTMLElement | null
+    aiFeedbackCloseBtn: HTMLElement | null
+    aiFeedbackClearBtn: HTMLElement | null
+    aiFeedbackContent: HTMLElement | null
     settingLlmReflectionEnabled: HTMLElement | null
     settingLlmThinkingEnabled: HTMLElement | null
     settingLlmIndependentModelEnabled: HTMLElement | null
@@ -1006,6 +1013,10 @@ export interface WarehouseSceneThis {
   closeAiLogicPanel(): void
   openAiMemoryPanel(): void
   closeAiMemoryPanel(): void
+  openAiFeedbackPanel(): void
+  closeAiFeedbackPanel(): void
+  clearAllAiFeedbacks(): void
+  removeAiFeedback(id: string): void
   openAiModelConfigOverlay(): void
   closeAiModelConfigOverlay(): void
   saveAiModelConfigFromForm(): void

@@ -20,11 +20,11 @@ export function createLlmSettingsModule(deps: Record<string, unknown>) {
 
   function loadAiLlmPlayerSwitches(players: Array<{ id: string; isHuman?: boolean }>): Record<string, boolean> {
     const defaults: Record<string, boolean> = {}
-    ;(players || []).forEach((player) => {
-      if (!player.isHuman) {
-        defaults[player.id] = true
-      }
-    })
+      ; (players || []).forEach((player) => {
+        if (!player.isHuman) {
+          defaults[player.id] = true
+        }
+      })
 
     const raw = window.localStorage.getItem(AI_LLM_SWITCH_STORAGE_KEY)
     if (!raw) {
@@ -73,18 +73,18 @@ export function createLlmSettingsModule(deps: Record<string, unknown>) {
       const self = this as unknown as LlmSettingsModuleThis
       const source = values || (typeof self.getLlmSettings === "function" ? self.getLlmSettings() : LLM_SETTINGS)
       if (self.dom.settingLlmEnabled) {
-        ;(self.dom.settingLlmEnabled as HTMLInputElement).checked = Boolean(source.enabled)
+        ; (self.dom.settingLlmEnabled as HTMLInputElement).checked = Boolean(source.enabled)
       }
       if (self.dom.settingLlmMultiGameMemoryEnabled) {
-        ;(self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked = Boolean(
+        ; (self.dom.settingLlmMultiGameMemoryEnabled as HTMLInputElement).checked = Boolean(
           source.multiGameMemoryEnabled
         )
       }
       if (self.dom.settingLlmReflectionEnabled) {
-        ;(self.dom.settingLlmReflectionEnabled as HTMLInputElement).checked = Boolean(source.reflectionEnabled)
+        ; (self.dom.settingLlmReflectionEnabled as HTMLInputElement).checked = Boolean(source.reflectionEnabled)
       }
       if (self.dom.settingLlmThinkingEnabled) {
-        ;(self.dom.settingLlmThinkingEnabled as HTMLInputElement).checked = Boolean(source.thinkingEnabled || false)
+        ; (self.dom.settingLlmThinkingEnabled as HTMLInputElement).checked = Boolean(source.thinkingEnabled || false)
       }
       const thinkingParamsInput = document.getElementById("setting-thinkingParams") as HTMLInputElement | null
       if (thinkingParamsInput) {
@@ -166,6 +166,10 @@ export function createLlmSettingsModule(deps: Record<string, unknown>) {
         independentReflectionCheckbox.checked =
           source.independentReflectionEnabled !== undefined ? Boolean(source.independentReflectionEnabled) : true
       }
+      const feedbackCheckbox = document.getElementById("setting-llmFeedbackEnabled") as HTMLInputElement | null
+      if (feedbackCheckbox) {
+        feedbackCheckbox.checked = Boolean(source.feedbackEnabled)
+      }
       const apiKeyInput =
         (self.dom.settingDeepseekApiKey as HTMLInputElement | null) ||
         (document.getElementById("setting-llmApiKey") as HTMLInputElement | null)
@@ -183,7 +187,7 @@ export function createLlmSettingsModule(deps: Record<string, unknown>) {
         endpointInput.value = String(source.endpoint || "")
       }
       if (self.dom.settingMaxTokens) {
-        ;(self.dom.settingMaxTokens as HTMLInputElement).value = String(Number(source.maxTokens) || 2048)
+        ; (self.dom.settingMaxTokens as HTMLInputElement).value = String(Number(source.maxTokens) || 2048)
       }
 
       if (!source.apiKey) {
@@ -212,6 +216,7 @@ export function createLlmSettingsModule(deps: Record<string, unknown>) {
       const contextLengthInput = document.getElementById("setting-contextLength") as HTMLInputElement | null
       const autoSummarizeCheckbox = document.getElementById("setting-autoSummarizeEnabled") as HTMLInputElement | null
       const scopeRadio = document.querySelector('input[name="reflectionScope"]:checked') as HTMLInputElement | null
+      const feedbackCheckbox = document.getElementById("setting-llmFeedbackEnabled") as HTMLInputElement | null
 
       return {
         enabled: self.dom.settingLlmEnabled
@@ -252,7 +257,12 @@ export function createLlmSettingsModule(deps: Record<string, unknown>) {
         autoSummarizeEnabled: autoSummarizeCheckbox
           ? autoSummarizeCheckbox.checked
           : currentSettings.autoSummarizeEnabled !== false,
-        reflectionScope: scopeRadio ? scopeRadio.value : currentSettings.reflectionScope || "current"
+        reflectionScope: scopeRadio ? scopeRadio.value : currentSettings.reflectionScope || "current",
+        feedbackEnabled: feedbackCheckbox
+          ? feedbackCheckbox.checked
+          : currentSettings.feedbackEnabled !== undefined
+            ? currentSettings.feedbackEnabled
+            : false
       }
     },
 

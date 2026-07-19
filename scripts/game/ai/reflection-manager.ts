@@ -164,6 +164,16 @@ export interface AiReflectionManagerDeps {
   openBattleRecordPanel: () => void
   writeLog: (text: string) => void
   isAutoPlaying?: () => boolean
+
+  // ── AI 反馈收集（局后反思时触发，由 AiMemoryManager 实现） ──
+  isFeedbackEnabled?: () => boolean
+  getRunSerial?: () => number
+  addAiFeedback?: (entry: {
+    playerId: string
+    playerName: string
+    runSerial: number
+    content: string
+  }) => void
 }
 
 /**
@@ -326,6 +336,10 @@ export class AiReflectionManager {
       const needsSummary =
         this.deps.isAiMultiGameMemoryEnabled() && this.deps.shouldGenerateSummary && this.deps.shouldGenerateSummary()
 
+      const feedbackEnabled = Boolean(
+        this.deps.isFeedbackEnabled && this.deps.isFeedbackEnabled() && this.deps.getRunSerial && this.deps.addAiFeedback
+      )
+
       const reflectionPrompt = [
         "请根据本局表现更新经验本，返回JSON格式：",
         "{",
@@ -333,6 +347,7 @@ export class AiReflectionManager {
         '  "strategies": { "add": [...], "delete": [...], "modify": [...] },',
         '  "lessons": { "add": [...], "delete": [...], "modify": [...] },',
         needsSummary ? '  "summary": "将最近几局的关键经验压缩为一段500字以内的摘要"' : "",
+        feedbackEnabled ? '  "feedback": "你对本次游戏体验的反馈或建议（≤500字，没意见则返回空字符串）"' : "",
         "}",
         "",
         "要求：",
@@ -341,6 +356,9 @@ export class AiReflectionManager {
         "- 不要写本局，本次等一些很限定的词，同时不要写违反游戏规定的条例",
         "- 每一个条目的字数限制在50字",
         needsSummary ? "- summary：将最近几局的胜率、关键教训、出价规律压缩为一段话，用于下局开局时快速回忆" : "",
+        feedbackEnabled
+          ? "- feedback：亲爱的测试AI玩家，开发者想知道你作为AI玩家在游玩过程中的疑惑或对游戏的不满甚至是批评。比如：你对提示词中哪个字段不理解，哪句话比较模糊，或者对工具返回值觉得不好。请具体指出：哪一条规则描述让你困惑？哪个字段的含义你不确定？哪个道具的效果你理解不了？哪个数值你觉得不合理？请引用原文或描述具体场景。总之一切你觉得不好的地方可以向开发者反馈，开发者会收到你的反馈并进一步优化提示词游戏的数值或者其他。请你告诉开发者你想要什么。一切合理的反馈都会让你的游戏体验更好，让你更好的游玩。（不要无理取闹也不要泛泛而谈）"
+          : "",
         "操作说明：",
         "- add: 添加新条目，数组形式",
         "- delete: 删除条目，索引号数组（如 [0, 2] 删除第0和第2条）",
@@ -492,7 +510,7 @@ export class AiReflectionManager {
             `${player.id} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`
           )
 
-          let parsedReflection: { lessons: unknown[]; strategies: unknown[]; summary?: string } = {
+          let parsedReflection: { lessons: unknown[]; strategies: unknown[]; summary?: string; feedback?: string } = {
             lessons: [],
             strategies: []
           }
@@ -503,6 +521,25 @@ export class AiReflectionManager {
             }
           } catch (e) {
             log.warn("failed to parse reflection JSON:", e)
+          }
+
+          // 收集 AI 反馈（仅当 feedbackEnabled 且 deps 提供了 addAiFeedback 时）
+          if (feedbackEnabled && this.deps.addAiFeedback && this.deps.getRunSerial) {
+            const rawFeedback = parsedReflection.feedback
+            const feedbackText = typeof rawFeedback === "string" ? rawFeedback.trim() : ""
+            if (feedbackText.length > 0) {
+              try {
+                this.deps.addAiFeedback({
+                  playerId: player.id,
+                  playerName: player.name,
+                  runSerial: this.deps.getRunSerial(),
+                  content: feedbackText
+                })
+                log.info(`[AI Feedback] saved: playerId=${player.id}, runSerial=${this.deps.getRunSerial()}, len=${feedbackText.length}`)
+              } catch (e) {
+                log.warn("[AI Feedback] failed to save:", e)
+              }
+            }
           }
 
           if (this.deps.isAiMultiGameMemoryEnabled()) {

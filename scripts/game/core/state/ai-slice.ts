@@ -1,4 +1,4 @@
-import type { AiPrivateIntel, ConversationMessage, CrossGameMemory } from "../../../../types/ai"
+import type { AiFeedbackEntry, AiPrivateIntel, ConversationMessage, CrossGameMemory } from "../../../../types/ai"
 import type { LlmPlan, LlmTelemetry } from "../../../../types/llm"
 
 export interface AiSlice {
@@ -31,6 +31,7 @@ export interface AiSlice {
   aiCrossGameMessagesByPlayer: Record<string, Array<Array<Record<string, string>>>>
   aiReflectionPending: Record<string, unknown>
   aiConversationCache: Record<string, unknown>
+  aiFeedbacks: AiFeedbackEntry[]
 }
 
 export function createAiSlice(): AiSlice {
@@ -53,7 +54,8 @@ export function createAiSlice(): AiSlice {
     aiCrossGameMemory: {},
     aiCrossGameMessagesByPlayer: {},
     aiReflectionPending: {},
-    aiConversationCache: {}
+    aiConversationCache: {},
+    aiFeedbacks: []
   }
 }
 
@@ -63,6 +65,7 @@ export function resetForNewRun(s: AiSlice): void {
   // - aiConversationByPlayer（AI 记忆系统跨局对话，saveAiMemoryToStorage 持久化）
   // - aiCrossGameMemory（AI 跨局记忆，mobao_ai_memory_v1 持久化）
   // - aiCrossGameMessagesByPlayer（AI 跨局消息，随记忆系统持久化）
+  // - aiFeedbacks（AI 反馈，mobao_ai_feedbacks_v1 持久化）
   s.aiPrivateIntel = {}
   s.aiResourceState = {}
   s.aiRoundEffects = {}

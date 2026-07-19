@@ -15,6 +15,9 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
     if (this.dom.aiMemoryOverlay && !this.dom.aiMemoryOverlay.classList.contains("hidden")) {
       return
     }
+    if (this.dom.aiFeedbackOverlay && !this.dom.aiFeedbackOverlay.classList.contains("hidden")) {
+      return
+    }
     if (this.dom.aiModelConfigOverlay && !this.dom.aiModelConfigOverlay.classList.contains("hidden")) {
       return
     }
@@ -142,7 +145,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
     this.settlementRevealSkipRequested = true
     event.preventDefault()
   })
-  ;(this.dom.bidInput as HTMLInputElement).readOnly = true
+    ; (this.dom.bidInput as HTMLInputElement).readOnly = true
   this.dom.bidInput?.addEventListener("keydown", (event) => event.preventDefault())
   this.dom.bidInput?.addEventListener("click", () => this.openBidKeypad())
   this.dom.bidInput?.addEventListener("focus", () => this.openBidKeypad())
@@ -165,31 +168,31 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
 
     this.handleBidKeyInput(key)
   })
-  ;(this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
-    "keydown-R",
-    () => {
-      if (this.isLanMode) return
-      this.startNewRun()
-    }
-  )
-  ;(this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
-    "keydown-N",
-    () => {
-      if (this.isLanMode && !this.lanIsHost) return
-      this.resolveRoundBids("manual")
-    }
-  )
-  ;(this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
-    "keydown-B",
-    () => this.openBidKeypad()
-  )
-  ;(this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
-    "keydown-P",
-    () => {
-      if (this.isLanMode && !this.lanIsHost) return
-      this.roundManager.toggleRoundPause()
-    }
-  )
+    ; (this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
+      "keydown-R",
+      () => {
+        if (this.isLanMode) return
+        this.startNewRun()
+      }
+    )
+    ; (this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
+      "keydown-N",
+      () => {
+        if (this.isLanMode && !this.lanIsHost) return
+        this.resolveRoundBids("manual")
+      }
+    )
+    ; (this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
+      "keydown-B",
+      () => this.openBidKeypad()
+    )
+    ; (this.input as Phaser.Input.InputPlugin & { keyboard: { on: (event: string, cb: () => void) => void } }).keyboard.on(
+      "keydown-P",
+      () => {
+        if (this.isLanMode && !this.lanIsHost) return
+        this.roundManager.toggleRoundPause()
+      }
+    )
 
   this.dom.gameConfirmCancelBtn?.addEventListener("click", (event) => {
     event.stopPropagation()
@@ -284,7 +287,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
     publicPanel.addEventListener("click", () => this.showInfoPopup("公共信息区", this.dom.publicInfoScroll))
   }
 
-  ;(
+  ; (
     this.input as Phaser.Input.InputPlugin & {
       on: (event: string, cb: (pointer: { x: number; y: number }) => void) => void
     }
@@ -321,6 +324,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
       targetEl !== this.dom.openSettingsBtn
     ) {
       const isAiMemoryOpen = this.dom.aiMemoryOverlay && !this.dom.aiMemoryOverlay.classList.contains("hidden")
+      const isAiFeedbackOpen = this.dom.aiFeedbackOverlay && !this.dom.aiFeedbackOverlay.classList.contains("hidden")
       const isAiModelConfigOpen =
         this.dom.aiModelConfigOverlay && !this.dom.aiModelConfigOverlay.classList.contains("hidden")
       const customProviderModal = document.getElementById("customProviderModal")
@@ -337,6 +341,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
       const isAiMemoryCopyOpen = aiMemoryCopyFallback && !aiMemoryCopyFallback.classList.contains("hidden")
       if (
         !isAiMemoryOpen &&
+        !isAiFeedbackOpen &&
         !isAiModelConfigOpen &&
         !isCustomProviderOpen &&
         !isGameConfirmOpen &&

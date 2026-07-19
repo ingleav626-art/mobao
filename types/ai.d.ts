@@ -336,6 +336,18 @@ export interface ActionDef {
   description: string // 动作描述
 }
 
+// ==================== AI 反馈 ====================
+
+/** AI 反馈条目（局后反思时收集 LLM 玩家对游戏的反馈意见） */
+export interface AiFeedbackEntry {
+  id: string            // 唯一 ID，格式：`{playerId}-{timestamp}`
+  playerId: string
+  playerName: string
+  runSerial: number     // 第几局
+  timestamp: number
+  content: string       // 反馈原文（≤ 500 字截断）
+}
+
 /** AI 出价引擎 */
 export interface AuctionAiEngine {
   // 属性

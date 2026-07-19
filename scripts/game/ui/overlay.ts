@@ -159,6 +159,23 @@ export const UiOverlayMixin: ThisType<WarehouseSceneThis> = {
     return this.uiOverlayManager.closeAiMemoryPanel()
   },
 
+  // ─── AiFeedbackPanel ───
+  openAiFeedbackPanel() {
+    return this.uiOverlayManager.openAiFeedbackPanel()
+  },
+  closeAiFeedbackPanel() {
+    return this.uiOverlayManager.closeAiFeedbackPanel()
+  },
+  refreshAiFeedbackList() {
+    return this.uiOverlayManager.refreshAiFeedbackList()
+  },
+  removeAiFeedback(id: string) {
+    return this.uiOverlayManager.removeAiFeedback(id)
+  },
+  clearAllAiFeedbacks() {
+    return this.uiOverlayManager.clearAllAiFeedbacks()
+  },
+
   // ─── AiReflectionDialogMixin ───
   updateReflectionStatusUI() {
     return this.uiOverlayManager.updateReflectionStatusUI()

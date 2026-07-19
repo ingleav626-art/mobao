@@ -16,6 +16,7 @@ function makeData(): AiMemoryData {
     aiConversationCache: {},
     pendingSettlementSummary: null,
     runSerial: 0,
+    aiFeedbacks: [],
   }
 }
 
@@ -822,6 +823,119 @@ describe("AiMemoryManager", () => {
       // p1 (AI) 和 p2 (托管中的玩家) 都应该有总结
       expect(allKeys).toContain("p2")
       expect(deps.data.pendingNextRunAiSummaryByPlayer["p2"]).toContain("AI1")
+    })
+  })
+
+  // ==================== AI 反馈（生命周期三问） ====================
+  describe("AI 反馈生命周期", () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it("【谁产生】addAiFeedback 写入内存 + 持久化到 localStorage", () => {
+      const { manager, data } = makeManager({ data: makeData() })
+      const before = data.aiFeedbacks.length
+      manager.addAiFeedback({
+        playerId: "ai1",
+        playerName: "左上AI",
+        runSerial: 3,
+        content: "提示词中 currentWallet 和 currentBid 关系不清楚"
+      })
+      // 内存：新增一条
+      expect(data.aiFeedbacks.length).toBe(before + 1)
+      expect(data.aiFeedbacks[0].playerId).toBe("ai1")
+      expect(data.aiFeedbacks[0].playerName).toBe("左上AI")
+      expect(data.aiFeedbacks[0].runSerial).toBe(3)
+      expect(data.aiFeedbacks[0].content).toContain("currentWallet")
+      // localStorage 持久化
+      const raw = localStorage.getItem("mobao_ai_feedbacks_v1")
+      expect(raw).toBeTruthy()
+      const list = JSON.parse(raw as string)
+      expect(list.length).toBe(1)
+      expect(list[0].id).toBe(data.aiFeedbacks[0].id)
+    })
+
+    it("【谁消费】getAiFeedbacks / loadAiFeedbacks 读取内存或 localStorage", () => {
+      const { manager, data } = makeManager({ data: makeData() })
+      // 写一条到 localStorage（模拟其它会话写入）
+      const stored = [
+        {
+          id: "ai2-1700000000000",
+          playerId: "ai2",
+          playerName: "右上AI",
+          runSerial: 1,
+          timestamp: 1700000000000,
+          content: "测试反馈"
+        }
+      ]
+      localStorage.setItem("mobao_ai_feedbacks_v1", JSON.stringify(stored))
+      // 加载应进入内存
+      const loaded = manager.loadAiFeedbacks()
+      expect(loaded.length).toBe(1)
+      expect(loaded[0].playerId).toBe("ai2")
+      expect(data.aiFeedbacks.length).toBe(1)
+      // getAiFeedbacks 应返回内存
+      expect(manager.getAiFeedbacks().length).toBe(1)
+    })
+
+    it("【谁清理】deleteAiFeedback 删单条 + clearAiFeedbacks 全清", () => {
+      const { manager, data } = makeManager({ data: makeData() })
+      manager.addAiFeedback({ playerId: "ai1", playerName: "AI1", runSerial: 1, content: "反馈 A" })
+      manager.addAiFeedback({ playerId: "ai2", playerName: "AI2", runSerial: 1, content: "反馈 B" })
+      expect(data.aiFeedbacks.length).toBe(2)
+      const idToDelete = data.aiFeedbacks[1].id
+      manager.deleteAiFeedback(idToDelete)
+      expect(data.aiFeedbacks.length).toBe(1)
+      expect(data.aiFeedbacks.find((f) => f.id === idToDelete)).toBeUndefined()
+      // localStorage 同步
+      const rawAfterDelete = JSON.parse(localStorage.getItem("mobao_ai_feedbacks_v1") as string)
+      expect(rawAfterDelete.length).toBe(1)
+      // 清空
+      manager.clearAiFeedbacks()
+      expect(data.aiFeedbacks.length).toBe(0)
+      const rawAfterClear = localStorage.getItem("mobao_ai_feedbacks_v1")
+      expect(JSON.parse(rawAfterClear as string)).toEqual([])
+    })
+
+    it("反馈内容超过 500 字时自动截断", () => {
+      const { manager, data } = makeManager({ data: makeData() })
+      const longText = "x".repeat(800)
+      manager.addAiFeedback({ playerId: "ai1", playerName: "AI1", runSerial: 1, content: longText })
+      expect(data.aiFeedbacks[0].content.length).toBe(500)
+    })
+
+    it("同 playerId + 同 runSerial + 同 content 去重（替换而非新增）", () => {
+      const { manager, data } = makeManager({ data: makeData() })
+      manager.addAiFeedback({ playerId: "ai1", playerName: "AI1", runSerial: 1, content: "完全一样的反馈" })
+      manager.addAiFeedback({ playerId: "ai1", playerName: "AI1", runSerial: 1, content: "完全一样的反馈" })
+      // 同内容去重，应该只有 1 条
+      expect(data.aiFeedbacks.length).toBe(1)
+    })
+
+    it("反馈总数超过 100 时自动删最旧", () => {
+      const { manager, data } = makeManager({ data: makeData() })
+      for (let i = 0; i < 105; i++) {
+        manager.addAiFeedback({
+          playerId: "ai1",
+          playerName: "AI1",
+          runSerial: i,
+          content: `反馈 ${i}`,
+          timestamp: 1700000000000 + i
+        })
+      }
+      // 限制 100 条
+      expect(data.aiFeedbacks.length).toBe(100)
+      // 时间倒序，最旧的 i=0 已删除，i=104 在最前
+      expect(data.aiFeedbacks[0].runSerial).toBe(104)
+      expect(data.aiFeedbacks.find((f) => f.runSerial === 0)).toBeUndefined()
+    })
+
+    it("loadAiFeedbacks 解析失败时不抛错，回退为空数组", () => {
+      localStorage.setItem("mobao_ai_feedbacks_v1", "not-json-{{")
+      const { manager, data } = makeManager({ data: makeData() })
+      const result = manager.loadAiFeedbacks()
+      expect(result).toEqual([])
+      expect(data.aiFeedbacks).toEqual([])
     })
   })
 })

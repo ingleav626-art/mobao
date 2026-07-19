@@ -47,13 +47,13 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
         llmGroup.classList.add("settings-group-disabled")
         const inputs = llmGroup.querySelectorAll("input, button")
         inputs.forEach((el: Element) => {
-          ;(el as HTMLInputElement).disabled = true
+          ; (el as HTMLInputElement).disabled = true
         })
       } else {
         llmGroup.classList.remove("settings-group-disabled")
         const inputs = llmGroup.querySelectorAll("input, button")
         inputs.forEach((el: Element) => {
-          ;(el as HTMLInputElement).disabled = false
+          ; (el as HTMLInputElement).disabled = false
         })
       }
     }
@@ -153,7 +153,7 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
       if (!input) {
         return
       }
-      ;(input as HTMLInputElement).value = String(values[field])
+      ; (input as HTMLInputElement).value = String(values[field])
     })
     const roundSecondsInput = document.getElementById("setting-roundSeconds") as HTMLInputElement | null
     const roundSecondsDecrease = document.getElementById("roundSecondsDecrease") as HTMLButtonElement | null
@@ -235,6 +235,7 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
       console.log("[saveSettingsFromOverlay] llmNext:", {
         independentModelEnabled: llmNext.independentModelEnabled,
         enabled: llmNext.enabled,
+        feedbackEnabled: llmNext.feedbackEnabled,
         apiKey: llmNext.apiKey ? "(已设置)" : "(空)"
       })
 
@@ -247,11 +248,12 @@ export const SettingsMixin: ThisType<WarehouseSceneThis> = {
         independentReflectionEnabled: llmNext.independentReflectionEnabled,
         contextLength: llmNext.contextLength,
         autoSummarizeEnabled: llmNext.autoSummarizeEnabled,
-        reflectionScope: llmNext.reflectionScope
+        reflectionScope: llmNext.reflectionScope,
+        feedbackEnabled: llmNext.feedbackEnabled
       }
       try {
         window.localStorage.setItem(LLM_GLOBAL_SETTINGS_KEY, JSON.stringify(globalSettings))
-      } catch (_e) {}
+      } catch (_e) { }
 
       const llmProvider = this.getLlmProvider()
       console.log("[saveSettingsFromOverlay] llmProvider:", llmProvider ? llmProvider.id : null)

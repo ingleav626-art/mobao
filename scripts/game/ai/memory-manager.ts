@@ -8,6 +8,7 @@
  */
 import type { Player } from "../../../types/game"
 import type {
+  AiFeedbackEntry,
   AiMemoryStorage,
   CrossGameMemory,
   CrossGameStats,
@@ -15,7 +16,7 @@ import type {
   ConversationBucketEntry
 } from "../../../types/ai"
 import type { LlmSettings } from "../../../types/llm"
-import { AI_MEMORY_STORAGE_KEY } from "../core/constants"
+import { AI_FEEDBACK_STORAGE_KEY, AI_MEMORY_STORAGE_KEY } from "../core/constants"
 import { MobaoGameHistory } from "./game-history"
 import {
   DEFAULT_CROSS_GAME_STATS,
@@ -36,6 +37,7 @@ export interface AiMemoryData {
   aiConversationCache: Record<string, unknown>
   pendingSettlementSummary: string | null
   runSerial: number
+  aiFeedbacks: AiFeedbackEntry[]
 }
 
 /** localStorage 中 AI 记忆的运行时 shape（crossGameMemory 为对象而非数组，与 AiMemoryStorage 类型声明不同） */
@@ -758,5 +760,73 @@ export class AiMemoryManager {
     if (this.deps.dom.aiMemoryOverlay) {
       this.deps.dom.aiMemoryOverlay.classList.add("hidden")
     }
+  }
+
+  // ==================== AI 反馈（局后反思收集） ====================
+
+  /** 从 localStorage 加载 AI 反馈到内存（保留内存现有引用） */
+  loadAiFeedbacks(): AiFeedbackEntry[] {
+    try {
+      const raw = window.localStorage.getItem(AI_FEEDBACK_STORAGE_KEY)
+      const list: AiFeedbackEntry[] = raw ? (JSON.parse(raw) as AiFeedbackEntry[]) : []
+      this.deps.data.aiFeedbacks = list
+      return list
+    } catch (_e) {
+      this.deps.data.aiFeedbacks = []
+      return []
+    }
+  }
+
+  /** 读取内存中 aiFeedbacks（不访问 localStorage） */
+  getAiFeedbacks(): AiFeedbackEntry[] {
+    return this.deps.data.aiFeedbacks
+  }
+
+  /** 将内存中 aiFeedbacks 持久化到 localStorage */
+  saveAiFeedbacks(): void {
+    try {
+      window.localStorage.setItem(AI_FEEDBACK_STORAGE_KEY, JSON.stringify(this.deps.data.aiFeedbacks))
+    } catch (_e) {
+      // 忽略写入失败（隐私模式 / 容量超限）
+    }
+  }
+
+  /** 新增一条 AI 反馈，自动截断到 500 字、去重、按时间倒序保留最近 100 条 */
+  addAiFeedback(entry: Omit<AiFeedbackEntry, "id" | "timestamp"> & Partial<Pick<AiFeedbackEntry, "timestamp">>): AiFeedbackEntry {
+    const now = Date.now()
+    const content = (entry.content || "").slice(0, 500)
+    const full: AiFeedbackEntry = {
+      id: `${entry.playerId}-${now}`,
+      playerId: entry.playerId,
+      playerName: entry.playerName,
+      runSerial: entry.runSerial,
+      timestamp: entry.timestamp ?? now,
+      content
+    }
+    const list = this.deps.data.aiFeedbacks.slice()
+    // 同一玩家同一时间戳去重（防反思重试产生重复）
+    const dupIdx = list.findIndex((f) => f.playerId === full.playerId && f.runSerial === full.runSerial && f.content === full.content)
+    if (dupIdx >= 0) {
+      list[dupIdx] = full
+    } else {
+      list.unshift(full)
+    }
+    // 按时间倒序，保留最近 100 条
+    list.sort((a, b) => b.timestamp - a.timestamp)
+    this.deps.data.aiFeedbacks = list.slice(0, 100)
+    this.saveAiFeedbacks()
+    return full
+  }
+
+  /** 删除单条 AI 反馈 */
+  deleteAiFeedback(id: string): void {
+    this.deps.data.aiFeedbacks = this.deps.data.aiFeedbacks.filter((f) => f.id !== id)
+    this.saveAiFeedbacks()
+  }
+
+  /** 清空所有 AI 反馈 */
+  clearAiFeedbacks(): void {
+    this.deps.data.aiFeedbacks = []
+    this.saveAiFeedbacks()
   }
 }
