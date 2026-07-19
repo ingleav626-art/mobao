@@ -81,9 +81,9 @@ export function formatIntelActionPublicLine(
 }
 
 export function buildNeighborStateLabel(isInBounds: boolean, rawState: string | undefined): string {
-  if (!isInBounds) return "越界"
-  if (rawState === "occupied") return "已被占用"
-  if (rawState === "empty") return "确认空闲"
+  if (!isInBounds) return "仓库边界外（无藏品）"
+  if (rawState === "occupied") return "有其他藏品占据"
+  if (rawState === "empty") return "确认空闲（无藏品）"
   return "尚未探明"
 }
 

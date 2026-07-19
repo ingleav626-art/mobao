@@ -213,17 +213,17 @@ describe("intel", () => {
   })
 
   describe("buildNeighborStateLabel", () => {
-    it("越界返回越界", () => {
-      expect(buildNeighborStateLabel(false, undefined)).toBe("越界")
-      expect(buildNeighborStateLabel(false, "occupied")).toBe("越界")
+    it("越界返回仓库边界外", () => {
+      expect(buildNeighborStateLabel(false, undefined)).toBe("仓库边界外（无藏品）")
+      expect(buildNeighborStateLabel(false, "occupied")).toBe("仓库边界外（无藏品）")
     })
 
-    it("occupied 返回已被占用", () => {
-      expect(buildNeighborStateLabel(true, "occupied")).toBe("已被占用")
+    it("occupied 返回有其他藏品占据", () => {
+      expect(buildNeighborStateLabel(true, "occupied")).toBe("有其他藏品占据")
     })
 
     it("empty 返回确认空闲", () => {
-      expect(buildNeighborStateLabel(true, "empty")).toBe("确认空闲")
+      expect(buildNeighborStateLabel(true, "empty")).toBe("确认空闲（无藏品）")
     })
 
     it("undefined 返回尚未探明", () => {

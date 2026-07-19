@@ -733,6 +733,9 @@ describe("AiIntelManager", () => {
       expect(result.bottomCell).not.toBeNull()
       expect(result.bottomCell).toHaveProperty("col")
       expect(result.bottomCell).toHaveProperty("row")
+      // totalBasePrice 等于揭示藏品基价之和
+      const expectedTotal = result.artifacts!.reduce((sum, a) => sum + a.basePrice, 0)
+      expect(result.totalBasePrice).toBe(expectedTotal)
 
       const pool = manager.ensureAiPrivateIntel("ai-1")
       expect(pool.knownOutlineIds.size).toBe(expectedCount)
@@ -790,6 +793,9 @@ describe("AiIntelManager", () => {
       expect(result.actionType).toBe("reveal")
       expect(result.artifacts).toHaveLength(expectedCount)
       expect(result.bottomCell).not.toBeNull()
+      // totalBasePrice 等于揭示藏品基价之和
+      const expectedTotal = result.artifacts!.reduce((sum, a) => sum + a.basePrice, 0)
+      expect(result.totalBasePrice).toBe(expectedTotal)
 
       const pool = manager.ensureAiPrivateIntel("ai-1")
       expect(pool.knownOutlineIds.size).toBe(expectedCount)
@@ -831,6 +837,9 @@ describe("AiIntelManager", () => {
         x: expect.any(Number),
         y: expect.any(Number),
       })
+      // totalBasePrice 等于揭示藏品基价之和
+      const expectedTotal = result.artifacts!.reduce((sum, a) => sum + a.basePrice, 0)
+      expect(result.totalBasePrice).toBe(expectedTotal)
       // bottomCell 来自真实 pickBottomCellFromTargets
       expect(result.bottomCell).not.toBeNull()
       expect(result.bottomCell).toHaveProperty("col")
@@ -916,10 +925,10 @@ describe("AiIntelManager", () => {
   // ═════════════ 面板方法 ═════════════
 
   describe("getAiNeighborStateLabel", () => {
-    it("越界返回越界标签", () => {
+    it("越界返回仓库边界外标签", () => {
       const { deps } = makeDeps()
       const manager = new AiIntelManager(deps)
-      expect(manager.getAiNeighborStateLabel("ai-1", -1, -1)).toBe("越界")
+      expect(manager.getAiNeighborStateLabel("ai-1", -1, -1)).toBe("仓库边界外（无藏品）")
     })
 
     it("未知格子返回尚未探明", () => {
@@ -928,11 +937,11 @@ describe("AiIntelManager", () => {
       expect(manager.getAiNeighborStateLabel("ai-1", 5, 5)).toBe("尚未探明")
     })
 
-    it("已标记占用返回已被占用", () => {
+    it("已标记占用返回有其他藏品占据", () => {
       const { deps } = makeDeps()
       const manager = new AiIntelManager(deps)
       manager.markAiKnownCellState("ai-1", 3, 3, "occupied")
-      expect(manager.getAiNeighborStateLabel("ai-1", 3, 3)).toBe("已被占用")
+      expect(manager.getAiNeighborStateLabel("ai-1", 3, 3)).toBe("有其他藏品占据")
     })
   })
 

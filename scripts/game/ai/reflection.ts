@@ -65,7 +65,7 @@ export function applyMemoryOperations(array: string[], operations: Record<string
   }
 
   if (Array.isArray(operations.modify)) {
-    ;(operations.modify as unknown[][]).forEach((item) => {
+    ; (operations.modify as unknown[][]).forEach((item) => {
       if (Array.isArray(item) && item.length >= 2) {
         const idx = item[0] as number
         const newContent = item[1] as string
@@ -77,7 +77,7 @@ export function applyMemoryOperations(array: string[], operations: Record<string
   }
 
   if (Array.isArray(operations.add)) {
-    ;(operations.add as string[]).forEach((content) => {
+    ; (operations.add as string[]).forEach((content) => {
       if (typeof content === "string" && content.trim() && !array.includes(content.trim())) {
         array.push(content.trim())
       }

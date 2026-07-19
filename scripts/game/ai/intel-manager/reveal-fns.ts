@@ -663,6 +663,7 @@ export function revealPrivateIntelFully(
     message: `完全揭示了${targets.length}件藏品。`,
     actionType: "reveal",
     artifacts: targets.map(toArtifactInfo),
+    totalBasePrice: targets.reduce((sum, item) => sum + item.basePrice, 0),
     signals,
     trackUpdates,
     bottomCell
@@ -705,6 +706,7 @@ export function revealPrivateIntelAllByQuality(
     message: `揭示了${targets.length}件${qualityKey}品质藏品。`,
     actionType: "reveal",
     artifacts: targets.map(toArtifactInfo),
+    totalBasePrice: targets.reduce((sum, item) => sum + item.basePrice, 0),
     signals,
     trackUpdates,
     bottomCell
@@ -747,6 +749,7 @@ export function revealPrivateIntelAllByCategory(
     message: `揭示了${targets.length}件${category}藏品。`,
     actionType: "reveal",
     artifacts: targets.map(toArtifactInfo),
+    totalBasePrice: targets.reduce((sum, item) => sum + item.basePrice, 0),
     signals,
     trackUpdates,
     bottomCell

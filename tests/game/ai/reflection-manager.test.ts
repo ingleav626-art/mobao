@@ -126,16 +126,16 @@ function makeDeps(overrides: Partial<AiReflectionManagerDeps> = {}): AiReflectio
       }
       return crossGameMemory[pid]
     },
-    saveAiMemoryToStorage: () => {},
-    updateReflectionStatusUI: () => {},
-    renderAiThoughtLog: () => {},
+    saveAiMemoryToStorage: () => { },
+    updateReflectionStatusUI: () => { },
+    renderAiThoughtLog: () => { },
     isAiMultiGameMemoryEnabled: () => true,
-    exitSettlementPage: () => {},
-    startNewRun: () => {},
-    enterLobby: () => {},
-    enterLanRoom: () => {},
-    openBattleRecordPanel: () => {},
-    writeLog: (_text: string) => {},
+    exitSettlementPage: () => { },
+    startNewRun: () => { },
+    enterLobby: () => { },
+    enterLanRoom: () => { },
+    openBattleRecordPanel: () => { },
+    writeLog: (_text: string) => { },
     ...overrides,
   }
 }

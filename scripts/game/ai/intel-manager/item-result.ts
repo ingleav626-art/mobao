@@ -53,7 +53,7 @@ export interface ArtifactInfo {
  *
  * - outline:  itemCount, bottomCell, signals, signalStats, trackUpdates
  * - quality:   qualityCellCount, bottomCell, signals, signalStats, trackUpdates
- * - reveal:    artifacts, bottomCell, signals, signalStats, trackUpdates
+ * - reveal:    artifacts, totalBasePrice, bottomCell, signals, signalStats, trackUpdates
  * - average:   averagePrice, scope, itemCount
  * - bonus:     bonusApplied
  */
@@ -76,6 +76,8 @@ export interface ItemResult {
 
   // 揭示类：藏品完整信息数组
   artifacts?: ArtifactInfo[]
+  // 揭示类：揭示藏品的基价总和
+  totalBasePrice?: number
 
   // 均价类
   averagePrice?: number

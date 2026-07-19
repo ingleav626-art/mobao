@@ -87,6 +87,7 @@ interface ToolResult {
   signalStats?: { aggregate?: Record<string, unknown>; qualitySignalRate?: number; outlineSignalRate?: number }
   trackUpdates?: Array<{ trackId?: string }>
   bottomCell?: { row?: number; col?: number }
+  totalBasePrice?: number
 }
 
 export function createLlmPromptModule(deps: LlmPromptDeps) {
@@ -697,11 +698,18 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
 
       if (result && Array.isArray(result.signals) && result.signals.length > 0) {
         const revealDetails: string[] = []
+        let omittedCount = 0
         result.signals.forEach((signal: SignalData) => {
           if (!signal || !signal.itemId) return
 
           const item = this.items.find((i) => i.id === (signal.itemId as string))
           if (!item) return
+
+          // 只展示高价值藏品的 details，非高价值省略（quality 模式才判断，outline 模式无法判断品质）
+          if (signal.mode === "quality" && !this.isHighValueArtifact(item)) {
+            omittedCount++
+            return
+          }
 
           const detailParts: string[] = []
           if (signal.mode === "outline") {
@@ -725,10 +733,16 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         if (revealDetails.length > 0) {
           parts.push(`details=[${revealDetails.join("; ")}]`)
         }
+        if (omittedCount > 0) {
+          parts.push(`omitted=${omittedCount}件非高价值`)
+        }
       }
 
       if (stats && Number(stats.count) > 0) {
         parts.push(`mean=${Number(stats.mean).toFixed(2)}`)
+      }
+      if (result && result.totalBasePrice !== undefined && result.totalBasePrice !== null) {
+        parts.push(`totalBasePrice=${result.totalBasePrice}`)
       }
       if (result && result.message) {
         parts.push(`message=${compactOneLine(result.message, 120)}`)
