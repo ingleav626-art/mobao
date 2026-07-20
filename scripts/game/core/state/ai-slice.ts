@@ -32,6 +32,7 @@ export interface AiSlice {
   aiReflectionPending: Record<string, unknown>
   aiConversationCache: Record<string, unknown>
   aiFeedbacks: AiFeedbackEntry[]
+  aiExperienceBookInContext: Record<string, { lessons: string[]; strategies: string[]; praises: string[] }>
 }
 
 export function createAiSlice(): AiSlice {
@@ -55,7 +56,8 @@ export function createAiSlice(): AiSlice {
     aiCrossGameMessagesByPlayer: {},
     aiReflectionPending: {},
     aiConversationCache: {},
-    aiFeedbacks: []
+    aiFeedbacks: [],
+    aiExperienceBookInContext: {}
   }
 }
 

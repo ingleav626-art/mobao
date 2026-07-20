@@ -140,42 +140,46 @@ describe('decision', () => {
   })
 
   describe('beginRunTracking', () => {
-    it('创建新的 RunLog', () => {
+    it('创建新的 RunLog，runNo = currentRunSerial + 1', () => {
       const history: RunLog[] = []
-      const log = beginRunTracking(history, () => { }, () => { })
+      const log = beginRunTracking(history, () => { }, () => { }, 0)
       expect(log.runNo).toBe(1)
       expect(log.actionLogs).toEqual([])
       expect(log.aiThoughtLogs).toEqual([])
       expect(history).toHaveLength(1)
     })
 
-    it('runNo 递增', () => {
+    it('runNo 基于传入的 currentRunSerial 递增（跨局持久化语义）', () => {
+      // 真实契约：runNo 来自持久化的 runSerial，不依赖 history（history 会话内可能被清空）
       const history: RunLog[] = []
-      beginRunTracking(history, () => { }, () => { })
-      const log2 = beginRunTracking(history, () => { }, () => { })
-      expect(log2.runNo).toBe(2)
+      const log5 = beginRunTracking(history, () => { }, () => { }, 5)
+      expect(log5.runNo).toBe(6)
+      // 即便 history 被清空（模拟 resetForNewRun），传入正确的 currentRunSerial 仍递增
+      history.length = 0
+      const log6 = beginRunTracking(history, () => { }, () => { }, 6)
+      expect(log6.runNo).toBe(7)
     })
 
     it('历史超过 12 局时截断', () => {
       const history: RunLog[] = []
       for (let i = 0; i < 15; i++) {
-        beginRunTracking(history, () => { }, () => { })
+        beginRunTracking(history, () => { }, () => { }, i)
       }
       expect(history).toHaveLength(12)
-      expect(history[0].runNo).toBe(4) // 15-12+1
+      expect(history[0].runNo).toBe(4) // 第4~15局，15-12+1=4
     })
 
     it('调用 saveAiMemory 回调', () => {
       const history: RunLog[] = []
       const saveFn = vi.fn()
-      beginRunTracking(history, saveFn, () => { })
+      beginRunTracking(history, saveFn, () => { }, 0)
       expect(saveFn).toHaveBeenCalledOnce()
     })
 
     it('调用 render 回调', () => {
       const history: RunLog[] = []
       const renderFn = vi.fn()
-      beginRunTracking(history, () => { }, renderFn)
+      beginRunTracking(history, () => { }, renderFn, 0)
       expect(renderFn).toHaveBeenCalledOnce()
     })
   })

@@ -360,6 +360,8 @@ class WarehouseScene extends _PhaserScene {
   set runSerial(v: number) { this.state.game.runSerial = v }
   get aiFeedbacks(): AiFeedbackEntry[] { return this.state.ai.aiFeedbacks }
   set aiFeedbacks(v: AiFeedbackEntry[]) { this.state.ai.aiFeedbacks = v }
+  get aiExperienceBookInContext(): Record<string, { lessons: string[]; strategies: string[]; praises: string[] }> { return this.state.ai.aiExperienceBookInContext }
+  set aiExperienceBookInContext(v: Record<string, { lessons: string[]; strategies: string[]; praises: string[] }>) { this.state.ai.aiExperienceBookInContext = v }
   get runLogHistory(): unknown[] { return this.state.game.runLogHistory }
   set runLogHistory(v: unknown[]) { this.state.game.runLogHistory = v }
   get currentRunLog(): {
@@ -695,6 +697,7 @@ class WarehouseScene extends _PhaserScene {
       setRunSerial: (n: number) => {
         this.runSerial = n
       },
+      getRunSerial: () => this.runSerial,
       saveAiMemoryToStorage: () => this.saveAiMemoryToStorage(),
       renderAiThoughtLog: () => this.renderAiThoughtLog(),
       renderAiLogicPanelForLlm: (t) => this.renderAiLogicPanelForLlm(t)
@@ -802,6 +805,12 @@ class WarehouseScene extends _PhaserScene {
       },
       set aiFeedbacks(v) {
         scene.aiFeedbacks = v
+      },
+      get aiExperienceBookInContext() {
+        return scene.aiExperienceBookInContext
+      },
+      set aiExperienceBookInContext(v) {
+        scene.aiExperienceBookInContext = v
       }
     }
 
@@ -881,7 +890,9 @@ class WarehouseScene extends _PhaserScene {
       renderAiThoughtLog: () => this.renderAiThoughtLog(),
       isAiMultiGameMemoryEnabled: () => this.aiMemoryManager.isAiMultiGameMemoryEnabled(),
       shouldGenerateSummary: () => this.aiMemoryManager.shouldGenerateSummary(),
+      isAtContextLimit: () => this.aiMemoryManager.isAtContextLimit(),
       clearGameHistoryForPlayer: (playerId: string) => this.aiMemoryManager.clearGameHistoryForPlayer(playerId),
+      refreshAiExperienceBookInContext: (playerId: string) => this.aiMemoryManager.refreshAiExperienceBookInContext(playerId),
       exitSettlementPage: () => this.exitSettlementPage(),
       startNewRun: () => this.startNewRun(),
       enterLobby: () => this.enterLobby(),

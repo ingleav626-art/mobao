@@ -446,7 +446,7 @@ describe("AiReflectionManager", () => {
       expect(deps.setAiReflectionStateDetail).toHaveBeenLastCalledWith(expect.stringContaining("网络异常"))
     })
 
-    it("pendingSettlementSummary 非空时追加到跨局消息", async () => {
+    it("triggerAiReflection 不再追加 Layer⑪（已移到 pushRunSettlementContextToAi）", async () => {
       const mockProvider = makeMockProvider({ ok: true, content: '{"lessons":[]}' })
       const aiCrossGameMessagesByPlayer: Record<string, unknown[][]> = {
         "ai-1": [[{ role: "system", content: "msg" }]],
@@ -465,11 +465,9 @@ describe("AiReflectionManager", () => {
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
 
-      expect(pendingSummary).toBe("")
-      const lastGame = aiCrossGameMessagesByPlayer["ai-1"][0]
-      expect(lastGame).toHaveLength(2)
-      const lastMsg = lastGame[1] as { role: string; content: string }
-      expect(lastMsg.content).toBe("结算总结内容")
+      // Layer⑪ 追加已移到 push，反思不触碰 pendingSettlementSummary 和跨局消息末尾
+      expect(pendingSummary).toBe("结算总结内容")
+      expect(aiCrossGameMessagesByPlayer["ai-1"][0]).toHaveLength(1)
     })
 
     it("多 AI 玩家时全部完成后状态为 done", async () => {
@@ -490,19 +488,30 @@ describe("AiReflectionManager", () => {
       expect(mockProvider.requestChat).toHaveBeenCalledTimes(2)
     })
 
-    it("isAiMultiGameMemoryEnabled 为 false 时将反思追加到 summary", async () => {
-      const mockProvider = makeMockProvider({ ok: true, content: "反思内容" })
+    it("多局关+反思开时更新经验本B，不写上期总结（B才产上期总结）", async () => {
+      const mockProvider = makeMockProvider({
+        ok: true,
+        content: JSON.stringify({ praises: { add: ["果断出价"] } }),
+      })
       const pendingNextRunAiSummaryByPlayer: Record<string, string> = {}
+      const crossGameMemory: Record<string, CrossGameMemory> = { "ai-1": makeCrossGameMemory() }
       const deps = makeDeps({
         getLlmProvider: () => mockProvider,
         isAiMultiGameMemoryEnabled: () => false,
         getPendingNextRunAiSummaryByPlayer: () => pendingNextRunAiSummaryByPlayer,
+        getAiCrossGameMemory: () => crossGameMemory,
+        ensureAiCrossGameMemory: (pid: string) => {
+          if (!crossGameMemory[pid]) crossGameMemory[pid] = makeCrossGameMemory()
+          return crossGameMemory[pid]
+        },
       })
       const manager = new AiReflectionManager(deps)
       await manager.triggerAiReflection(makeRecord())
 
-      expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toContain("反思内容")
-      expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toContain("左上AI")
+      // B 被反思更新（praises 新增）
+      expect(crossGameMemory["ai-1"].praises).toContain("果断出价")
+      // 上期总结不由反思写（总结B的职责，多局关不产总结）
+      expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toBeUndefined()
     })
 
     it("needsSummary 为 true 时总结完成后清空对话桶", async () => {
@@ -532,6 +541,7 @@ describe("AiReflectionManager", () => {
         getAiConversationCache: () => aiConversationCache,
         getPendingNextRunAiSummaryByPlayer: () => pendingNextRunAiSummaryByPlayer,
         shouldGenerateSummary: () => true,
+        isAtContextLimit: () => true,
         clearGameHistoryForPlayer: clearHistoryFn,
       })
       const manager = new AiReflectionManager(deps)
@@ -548,6 +558,95 @@ describe("AiReflectionManager", () => {
       expect(aiConversationByPlayer["ai-1"]).toHaveLength(0)
       // 对话缓存已清：下局结算不会再读旧数据推进跨局消息
       expect(aiConversationCache["ai-1"]).toBeUndefined()
+    })
+  })
+
+  describe("总结/反思抽离（四象限）", () => {
+    it("反思关+总结需要：B standalone 调总结，不更新经验本", async () => {
+      const mockProvider = makeMockProvider({
+        ok: true,
+        content: JSON.stringify({ summary: "最近胜率60%，宜果断" }),
+      })
+      const pendingNextRunAiSummaryByPlayer: Record<string, string> = {}
+      const crossGameMemory: Record<string, CrossGameMemory> = { "ai-1": makeCrossGameMemory() }
+      const runLog = makeRunLog()
+      const deps = makeDeps({
+        getLlmSettings: () => ({ reflectionEnabled: false }),
+        getLlmProvider: () => mockProvider,
+        isAiMultiGameMemoryEnabled: () => true,
+        shouldGenerateSummary: () => true,
+        isAtContextLimit: () => true,
+        getPendingNextRunAiSummaryByPlayer: () => pendingNextRunAiSummaryByPlayer,
+        getAiCrossGameMemory: () => crossGameMemory,
+        ensureAiCrossGameMemory: (pid: string) => crossGameMemory[pid],
+        getCurrentRunLog: () => runLog,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 上期总结已由 B 产出
+      expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toBe("最近胜率60%，宜果断")
+      // 经验本 B 未被更新（B standalone 不更新经验本）
+      expect(crossGameMemory["ai-1"].praises).toEqual([])
+      // 遥测标记为总结
+      const logEntry = runLog.aiThoughtLogs[0] as Record<string, unknown>
+      expect(logEntry.decisionSource).toBe("summary")
+      expect(logEntry.llmActionName).toBe("总结")
+    })
+
+    it("反思关+总结需要：达上限清空仍执行（不依赖反思/总结成功）", async () => {
+      // 总结 LLM 失败，但清空(达上限)仍应执行
+      const mockProvider = makeMockProvider({ ok: false, code: "API_ERROR", error: "失败" })
+      const aiConversationByPlayer: Record<string, unknown[]> = {
+        "ai-1": [{ round: 1, bid: 1, skill: "无", item: "无", thought: "", result: "" }],
+      }
+      const aiConversationCache: Record<string, unknown[]> = { "ai-1": [{ role: "system", content: "s" }] }
+      const clearHistoryFn = vi.fn()
+      const deps = makeDeps({
+        getLlmSettings: () => ({ reflectionEnabled: false }),
+        getLlmProvider: () => mockProvider,
+        isAiMultiGameMemoryEnabled: () => true,
+        shouldGenerateSummary: () => true,
+        isAtContextLimit: () => true,
+        getAiConversationByPlayer: () => aiConversationByPlayer,
+        getAiConversationCache: () => aiConversationCache,
+        clearGameHistoryForPlayer: clearHistoryFn,
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 总结失败，但达上限仍清空
+      expect(clearHistoryFn).toHaveBeenCalledWith("ai-1")
+      expect(aiConversationByPlayer["ai-1"]).toHaveLength(0)
+      expect(aiConversationCache["ai-1"]).toBeUndefined()
+    })
+
+    it("反思开+总结需要：A+B 合并一次调用，同时更新经验本和上期总结", async () => {
+      const mockProvider = makeMockProvider({
+        ok: true,
+        content: JSON.stringify({
+          praises: { add: ["合并反思经验"] },
+          summary: "合并总结文本",
+        }),
+      })
+      const pendingNextRunAiSummaryByPlayer: Record<string, string> = {}
+      const crossGameMemory: Record<string, CrossGameMemory> = { "ai-1": makeCrossGameMemory() }
+      const deps = makeDeps({
+        getLlmProvider: () => mockProvider,
+        isAiMultiGameMemoryEnabled: () => true,
+        shouldGenerateSummary: () => true,
+        isAtContextLimit: () => true,
+        getPendingNextRunAiSummaryByPlayer: () => pendingNextRunAiSummaryByPlayer,
+        getAiCrossGameMemory: () => crossGameMemory,
+        ensureAiCrossGameMemory: (pid: string) => crossGameMemory[pid],
+      })
+      const manager = new AiReflectionManager(deps)
+      await manager.triggerAiReflection(makeRecord())
+
+      // 一次调用同时产出经验本更新和上期总结
+      expect(mockProvider.requestChat).toHaveBeenCalledOnce()
+      expect(crossGameMemory["ai-1"].praises).toContain("合并反思经验")
+      expect(pendingNextRunAiSummaryByPlayer["ai-1"]).toBe("合并总结文本")
     })
   })
 

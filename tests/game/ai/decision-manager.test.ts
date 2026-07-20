@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest"
 import { AiDecisionManager } from "../../../scripts/game/ai/decision-manager"
 import type { RunLog } from "../../../scripts/game/ai/decision"
+import { createGameSlice, resetForNewRun } from "../../../scripts/game/core/state/game-slice"
 
 function makeDeps(overrides: Partial<ConstructorParameters<typeof AiDecisionManager>[0]> = {}) {
   let currentRunLog: RunLog | null = null
@@ -21,6 +22,7 @@ function makeDeps(overrides: Partial<ConstructorParameters<typeof AiDecisionMana
       setRunSerial: (n: number) => {
         runSerial = n
       },
+      getRunSerial: () => runSerial,
       saveAiMemoryToStorage: saveFn,
       renderAiThoughtLog: renderFn,
       ...overrides,
@@ -144,6 +146,45 @@ describe("AiDecisionManager", () => {
       manager.beginRunTracking()
       manager.beginRunTracking()
       expect(getRunSerial()).toBe(2)
+    })
+
+    it("resetForNewRun 不清零 runSerial（回归：之前每局清零导致结算一直显示第0局）", () => {
+      // 真实 game-slice：runSerial 跨局持久化，resetForNewRun 不应清零
+      const state = createGameSlice()
+      state.runSerial = 5
+      resetForNewRun(state)
+      // 旧代码：resetForNewRun 里 s.runSerial = 0 -> 此断言会红
+      expect(state.runSerial).toBe(5)
+    })
+
+    it("startNewRun 顺序（beginRunTracking + resetForNewRun）跨局 runSerial 持续递增", () => {
+      // 模拟真实 startNewRun 顺序：先 beginRunTracking 再 resetForNewRun
+      const state = createGameSlice()
+      const deps = {
+        runLogHistory: state.runLogHistory,
+        dom: { actionLog: null, aiLogicContent: null },
+        aiEngine: null,
+        getRound: () => 1,
+        getCurrentRunLog: () => state.currentRunLog as RunLog | null,
+        setCurrentRunLog: (log: RunLog) => {
+          state.currentRunLog = log as never
+        },
+        setRunSerial: (n: number) => {
+          state.runSerial = n
+        },
+        getRunSerial: () => state.runSerial,
+        saveAiMemoryToStorage: () => {},
+        renderAiThoughtLog: () => {},
+      }
+      const manager = new AiDecisionManager(deps)
+      // 局1
+      manager.beginRunTracking()
+      resetForNewRun(state)
+      expect(state.runSerial).toBe(1) // 旧代码：resetForNewRun 清零 -> 0 -> 红
+      // 局2
+      manager.beginRunTracking()
+      resetForNewRun(state)
+      expect(state.runSerial).toBe(2) // 旧代码：0 -> 红
     })
   })
 

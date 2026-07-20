@@ -133,6 +133,14 @@ export const AiMemoryMixin: ThisType<WarehouseSceneThis> = {
     return this.aiMemoryManager.ensureAiCrossGameMemory(playerId)
   },
 
+  getAiExperienceBookInContext(playerId: string): { lessons: string[]; strategies: string[]; praises: string[] } | null {
+    return this.aiMemoryManager.getAiExperienceBookInContext(playerId)
+  },
+
+  refreshAiExperienceBookInContext(playerId: string): void {
+    return this.aiMemoryManager.refreshAiExperienceBookInContext(playerId)
+  },
+
   getAiCrossGameMemoryCount(playerId: string): number {
     return this.aiMemoryManager.getAiCrossGameMemoryCount(playerId)
   },

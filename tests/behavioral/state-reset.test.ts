@@ -256,7 +256,9 @@ describe("resetForNewRun 隔离测试", () => {
     expect(state.game.playerBidSubmitted).toBe(defaultGame.playerBidSubmitted)
     expect(state.game._activeSkillId).toBe(defaultGame._activeSkillId)
     expect(state.game.players).toEqual(defaultGame.players)
-    expect(state.game.runSerial).toBe(defaultGame.runSerial)
+    // runSerial 跨局/跨会话持久化（memory 存储），resetForNewRun 不应清零；beginRunTracking 负责递增。
+    // 之前 resetForNewRun 清零导致结算一直显示"第0局"。
+    expect(state.game.runSerial).toBe(5)
     expect(state.game.runLogHistory).toEqual(defaultGame.runLogHistory)
     expect(state.game.currentRunLog).toEqual(defaultGame.currentRunLog)
     expect(state.game._pauseSnapshotTimeLeft).toBe(defaultGame._pauseSnapshotTimeLeft)

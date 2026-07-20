@@ -155,7 +155,7 @@ export function resetForNewRun(s: GameSlice): void {
   s._activeSkillId = null
   s._gameConfirmCallback = null
   s._gameCancelCallback = null
-  s.runSerial = 0
+  // runSerial 跨局/跨会话持久化（memory 存储），不由新局重置清零；beginRunTracking 负责递增。
   s.runLogHistory = []
   s.bonusEffects = []
   s.currentRunLog = null

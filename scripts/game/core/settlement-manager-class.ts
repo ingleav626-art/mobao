@@ -245,6 +245,17 @@ export class SettlementManager {
       reasonText: reasonTextMap[mode] || "结算",
       dividendTicketInfo
     }
+    // 先推送结算上下文（含 Layer⑪ 追加、跨局消息归档），再触发反思/总结。
+    // 顺序很重要：反思/总结的清空与 Layer⑪ 追加依赖 push 已写入的 crossGameMessages/pendingSummary。
+    this.deps.pushRunSettlementContextToAi({
+      winnerId: winnerPlayer.id,
+      winnerName: winnerPlayer.name,
+      winnerBid,
+      totalValue,
+      winnerProfit,
+      reasonText: reasonTextMap[mode] || "结算",
+      dividendTicketInfo
+    })
     const crossGameRecord = this.deps.createCrossGameRecord(settlementResult)
     this.deps.triggerAiReflection(crossGameRecord).catch(() => {})
 
@@ -300,6 +311,16 @@ export class SettlementManager {
     const lanSelfNonWinner = ctx.humanNonWinner
     const lanSelfProfitInfo = getSelfProfitInfo(winnerProfit, dividendPerPlayer, ticketPerPlayer, false)
 
+    // 联机 AI 赢家钱包：主机应用盈亏（含加成道具），与单机一致。之前联机 AI 赢家钱包不更新。
+    if (this.deps.getLanIsHost() && !winnerPlayer.isSelf && winnerPlayer.isAI) {
+      const bonusEffects = this.deps.getBonusEffects()
+      const identity: "winner/profit" | "winner/loss" = winnerProfit > 0 ? "winner/profit" : "winner/loss"
+      const adjustedWinnerProfit = calcIdentityFinal(identity, winnerProfit, bonusEffects)
+      const aiWallets = this.deps.getAiWallets()
+      const winnerWallet = this.deps.getAiWallet(winnerPlayer.id)
+      aiWallets[winnerPlayer.id] = Math.max(0, winnerWallet + adjustedWinnerProfit)
+    }
+
     if (dividendPerPlayer > 0) {
       if (lanSelfNonWinner) {
         if (this.deps.getLanIsHost()) {
@@ -348,6 +369,11 @@ export class SettlementManager {
     )
 
     this.saveSettlementBattleRecord(ctx, winnerPlayer.isSelf ? winnerProfit : lanSelfProfitInfo.profit, "联机结算")
+
+    // 主机持久化 AI 钱包（含赢家盈亏加成与非赢家分红/门票）。之前联机结算未保存 AI 钱包。
+    if (this.deps.getLanIsHost()) {
+      this.deps.saveAiWalletsToStorage()
+    }
   }
 
   /** 单机结算：战绩保存，AI 钱包持久化，结算上下文推送，赢家利润入账，recordGameFinished */
@@ -368,6 +394,14 @@ export class SettlementManager {
     const isSelfWinner = winnerPlayer.isSelf
     const identity: "winner/profit" | "winner/loss" = winnerProfit > 0 ? "winner/profit" : "winner/loss"
     const adjustedWinnerProfit = calcIdentityFinal(identity, winnerProfit, bonusEffects)
+
+    // AI 赢家钱包：应用盈亏（含加成道具效果，如厄运符咒/群体祝福）。人类赢家在下方 isSelfWinner 分支更新。
+    // 之前 AI 赢家钱包不更新，导致 AI 盈亏与加成道具对 AI 赢家无效。
+    if (!isSelfWinner && winnerPlayer.isAI) {
+      const aiWallets = this.deps.getAiWallets()
+      const winnerWallet = this.deps.getAiWallet(winnerPlayer.id)
+      aiWallets[winnerPlayer.id] = Math.max(0, winnerWallet + adjustedWinnerProfit)
+    }
 
     let adjustedSelfProfit: number
     let selfLabel: string
@@ -396,16 +430,6 @@ export class SettlementManager {
     this.saveSettlementBattleRecord(ctx, adjustedSelfProfit, reasonText)
 
     this.deps.saveAiWalletsToStorage()
-
-    this.deps.pushRunSettlementContextToAi({
-      winnerId: winnerPlayer.id,
-      winnerName: winnerPlayer.name,
-      winnerBid,
-      totalValue,
-      winnerProfit,
-      reasonText,
-      dividendTicketInfo
-    })
 
     if (isSelfWinner) {
       if (!this.deps.hasAppliedMoneyForRun()) {

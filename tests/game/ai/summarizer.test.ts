@@ -33,7 +33,7 @@ describe('ai/summarizer', () => {
     })
   })
 
-  describe('buildSummaryPrompt', () => {
+  describe('buildSummaryPrompt (B: 纯上期总结文本)', () => {
     it('包含对局记录', () => {
       const records = [
         { run: 1, result: 'AI-1 以 5000 中标', winnerProfit: 2000, qualityCounts: { poor: 1 }, reflection: null },
@@ -46,7 +46,7 @@ describe('ai/summarizer', () => {
       expect(prompt).toContain('反思内容')
     })
 
-    it('包含当前经验本', () => {
+    it('包含当前经验本（仅供参考）', () => {
       const records = [{ run: 1, result: 'test', winnerProfit: 0, qualityCounts: {}, reflection: null }]
       const memory = { praises: ['经验A'], strategies: ['策略B', '策略C'], lessons: ['教训D'] }
       const prompt = MobaoSummarizer.buildSummaryPrompt(records, memory, 1)
@@ -71,23 +71,32 @@ describe('ai/summarizer', () => {
       const prompt = MobaoSummarizer.buildSummaryPrompt(records, memory, 1)
       expect(prompt).toContain('无')
     })
+
+    it('只要求返回 summary 字段，不要求经验本增删改', () => {
+      const records = [{ run: 1, result: 'test', winnerProfit: 0, qualityCounts: {}, reflection: null }]
+      const memory = { praises: [], strategies: [], lessons: [] }
+      const prompt = MobaoSummarizer.buildSummaryPrompt(records, memory, 1)
+      // 要求 JSON schema 只含 summary
+      expect(prompt).toContain('"summary"')
+      // 不应包含经验本 ops 的 add/delete/modify 指令
+      expect(prompt).not.toContain('praises": { "add"')
+      expect(prompt).not.toContain('"modify"')
+    })
   })
 
   describe('parseSummaryResponse', () => {
-    it('解析有效 JSON', () => {
-      const text = '{"praises": ["经验1"], "strategies": ["策略1"], "lessons": ["教训1"]}'
+    it('解析有效 summary JSON', () => {
+      const text = '{"summary": "最近胜率60%，高价值藏品宜果断出价"}'
       const result = MobaoSummarizer.parseSummaryResponse(text)
       expect(result).not.toBeNull()
-      expect(result!.praises).toEqual(['经验1'])
-      expect(result!.strategies).toEqual(['策略1'])
-      expect(result!.lessons).toEqual(['教训1'])
+      expect(result!.summary).toBe('最近胜率60%，高价值藏品宜果断出价')
     })
 
-    it('从文本中提取 JSON', () => {
-      const text = '这是我的总结：\n{"praises": ["A"], "strategies": [], "lessons": []}\n结束'
+    it('从文本中提取 summary JSON', () => {
+      const text = '这是我的总结：\n{"summary": "出价规律：首轮大胆"}\n结束'
       const result = MobaoSummarizer.parseSummaryResponse(text)
       expect(result).not.toBeNull()
-      expect(result!.praises).toEqual(['A'])
+      expect(result!.summary).toBe('出价规律：首轮大胆')
     })
 
     it('无效 JSON 返回 null', () => {
@@ -98,18 +107,21 @@ describe('ai/summarizer', () => {
       expect(MobaoSummarizer.parseSummaryResponse('完全没有大括号')).toBeNull()
     })
 
-    it('缺失字段用空数组填充', () => {
+    it('缺失 summary 字段返回 null', () => {
       const text = '{"praises": ["A"]}'
-      const result = MobaoSummarizer.parseSummaryResponse(text)
-      expect(result!.strategies).toEqual([])
-      expect(result!.lessons).toEqual([])
+      expect(MobaoSummarizer.parseSummaryResponse(text)).toBeNull()
     })
 
-    it('summaryText 截取前 500 字', () => {
-      const longText = 'x'.repeat(600)
-      const text = `{"praises":[]}\n${longText}`
+    it('空 summary 返回 null', () => {
+      const text = '{"summary": ""}'
+      expect(MobaoSummarizer.parseSummaryResponse(text)).toBeNull()
+    })
+
+    it('summary 截取前 500 字', () => {
+      const longSummary = 'x'.repeat(600)
+      const text = `{"summary": "${longSummary}"}`
       const result = MobaoSummarizer.parseSummaryResponse(text)
-      expect(result!.summaryText.length).toBeLessThanOrEqual(500)
+      expect(result!.summary.length).toBe(500)
     })
   })
 })

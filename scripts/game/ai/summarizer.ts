@@ -1,11 +1,15 @@
 /**
  * @file ai/summarizer.ts
  * @module ai/summarizer
- * @description AI 定期总结系统。当对局数达到设定间隔时，触发 LLM 生成跨局总结，
- *              替代或补充原有的反思条目（praises/strategies/lessons）。
+ * @description AI 上期总结生成器（B 提示词）。在上下文清空/总结时机，基于最近 N 局历史
+ *              生成"上期总结"文本（胜率、关键教训、出价规律摘要），注入下局决策上下文
+ *              的 Layer ④。
  *
- * 触发条件：multiGameMemoryEnabled + 总结间隔到达
- * 总结内容：基于最近 N 局的历史记录，生成精炼的经验总结
+ * 设计要点：
+ *   - B 只产出上期总结文本，**不更新经验本**（经验本更新是反思 A 的职责）。
+ *   - 与反思独立：反思关闭时，总结仍可单独调用 B。
+ *   - 反思开启且到总结时机时，B 的请求可 piggyback 进反思 prompt（A+B 合并），
+ *     由 reflection-manager 拼接，本模块只负责 B standalone 的 prompt 构造与解析。
  *
  * @exports window.MobaoSummarizer
  *
@@ -13,10 +17,7 @@
  */
 
 export interface SummaryResult {
-  praises: string[]
-  strategies: string[]
-  lessons: string[]
-  summaryText: string
+  summary: string
 }
 
 export const MobaoSummarizer = {
@@ -25,6 +26,10 @@ export const MobaoSummarizer = {
     return totalGamesPlayed > 0 && totalGamesPlayed >= contextLength && totalGamesPlayed % contextLength === 0
   },
 
+  /**
+   * 构建 B（上期总结）standalone prompt。只要求返回 {summary:"..."}，不涉及经验本增删改。
+   * recentRecords: 最近 N 局记录；currentMemory: 当前经验本（仅作参考，不可修改）。
+   */
   buildSummaryPrompt(
     recentRecords: Array<{
       run: number
@@ -47,42 +52,36 @@ export const MobaoSummarizer = {
     const lessonList = currentMemory.lessons.map((l, i) => `${i}. ${l}`).join("; ")
 
     return [
-      "请根据最近几局的表现生成一份精炼的跨局经验总结，返回JSON格式：",
-      "{",
-      '  "praises": { "add": ["新内容"], "delete": [索引号], "modify": [[索引号, "新内容"]] },',
-      '  "strategies": { "add": [...], "delete": [...], "modify": [...] },',
-      '  "lessons": { "add": [...], "delete": [...], "modify": [...] }',
-      "}",
+      "请根据最近几局的表现生成一份上期总结，用于下局开局时快速回忆，返回JSON格式：",
+      '{ "summary": "..." }',
       "",
       "要求：",
-      "- 总结应提炼出跨局的规律性经验，而非重复单局细节",
-      "- 每个条目不超过50字",
-      "- 如果条数已满，优先合并或优化现有条目",
-      "- 只返回JSON",
+      "- summary 涵盖最近几局的胜率、关键教训、出价规律等摘要",
+      "- 提炼跨局的规律性经验，而非重复单局细节",
+      "- 不超过500字",
+      "- 只返回JSON，不要其他文字",
       "",
       `当前共${totalGames}局历史。`,
       "",
       "【最近对局记录】",
       recordLines.join("\n"),
       "",
-      "【当前经验本】",
+      "【当前经验本】（仅供参考，不要修改）",
       `- 成功经验(${currentMemory.praises.length}/10): ${praiseList || "无"}`,
       `- 策略建议(${currentMemory.strategies.length}/10): ${strategyList || "无"}`,
       `- 经验教训(${currentMemory.lessons.length}/10): ${lessonList || "无"}`
     ].join("\n")
   },
 
+  /** 解析 B 的响应，提取 summary 文本。无效返回 null。 */
   parseSummaryResponse(responseText: string): SummaryResult | null {
     try {
       const jsonMatch = responseText.match(/\{[\s\S]*\}/)
       if (!jsonMatch) return null
       const parsed = JSON.parse(jsonMatch[0])
-      return {
-        praises: Array.isArray(parsed.praises) ? parsed.praises : [],
-        strategies: Array.isArray(parsed.strategies) ? parsed.strategies : [],
-        lessons: Array.isArray(parsed.lessons) ? parsed.lessons : [],
-        summaryText: responseText.slice(0, 500)
-      }
+      const summary = typeof parsed.summary === "string" ? parsed.summary.trim() : ""
+      if (!summary) return null
+      return { summary: summary.slice(0, 500) }
     } catch {
       return null
     }

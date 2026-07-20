@@ -403,6 +403,7 @@ describe("Manager 状态同步集成测试（对象生命周期）", () => {
         setRunSerial: (n) => {
           scene.runSerial = n
         },
+        getRunSerial: () => scene.runSerial,
         saveAiMemoryToStorage: vi.fn(),
         renderAiThoughtLog: vi.fn(),
       }

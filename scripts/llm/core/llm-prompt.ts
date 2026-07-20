@@ -46,6 +46,7 @@ interface LlmPayload {
   selfRoleAndTools?: Record<string, unknown>
   otherPlayersPublic?: unknown
   catalogSummary?: unknown
+  experienceBook?: unknown
   bidHistory?: unknown[]
   publicEvents?: Array<Record<string, unknown>>
   roundPublicStateTable?: unknown
@@ -188,6 +189,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         },
         otherPlayersPublic: this.buildOtherPlayersPublicInfo(playerId, { compact }),
         catalogSummary: this.buildCatalogSummary({ compact }),
+        experienceBook: this.getAiExperienceBookInContext(playerId),
         ...(compact
           ? { roundPublicStateTable: this.buildRoundPublicStateTable(playerId) }
           : { bidHistory, publicEvents }),
@@ -399,6 +401,13 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         messages.push({
           role: "user",
           content: "【图鉴摘要】\n" + JSON.stringify(payload.catalogSummary, null, 2)
+        })
+      }
+
+      if (payload && payload.experienceBook) {
+        messages.push({
+          role: "user",
+          content: "【经验本】\n" + JSON.stringify(payload.experienceBook, null, 2)
         })
       }
 

@@ -33,6 +33,8 @@ export interface AiDecisionManagerDeps {
   setCurrentRunLog: (log: RunLog) => void
   /** 设置局序号（beginRunTracking 创建新日志后回调） */
   setRunSerial: (n: number) => void
+  /** 获取当前局序号（beginRunTracking 据此递增，跨局/跨会话持久化） */
+  getRunSerial: () => number
   /** 保存 AI 记忆到存储（beginRunTracking 回调） */
   saveAiMemoryToStorage: () => void
   /** 渲染 AI 思考日志面板（beginRunTracking/writeLog/recordAiThoughtLogs 回调） */
@@ -69,7 +71,8 @@ export class AiDecisionManager {
     const newLog = beginRunTracking(
       this.deps.runLogHistory,
       () => this.deps.saveAiMemoryToStorage(),
-      () => this.deps.renderAiThoughtLog()
+      () => this.deps.renderAiThoughtLog(),
+      this.deps.getRunSerial()
     )
     this.deps.setRunSerial(newLog.runNo)
     this.deps.setCurrentRunLog(newLog)

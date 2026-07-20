@@ -17,6 +17,7 @@ function makeData(): AiMemoryData {
     pendingSettlementSummary: null,
     runSerial: 0,
     aiFeedbacks: [],
+    aiExperienceBookInContext: {},
   }
 }
 
@@ -307,6 +308,105 @@ describe("AiMemoryManager", () => {
     })
   })
 
+  describe("经验本 A（上下文冻结副本）", () => {
+    it("无数据时 getAiExperienceBookInContext 返回 null", () => {
+      const { manager } = makeManager()
+      expect(manager.getAiExperienceBookInContext("ai1")).toBeNull()
+    })
+
+    it("refreshAiExperienceBookInContext 把 B 深拷贝到 A", () => {
+      const { manager, data } = makeManager()
+      data.aiCrossGameMemory.ai1 = {
+        stats: { ...DEFAULT_CROSS_GAME_STATS },
+        lessons: ["l1", "l2"],
+        strategies: ["s1"],
+        praises: [],
+      }
+      manager.refreshAiExperienceBookInContext("ai1")
+      const a = manager.getAiExperienceBookInContext("ai1")
+      expect(a).not.toBeNull()
+      expect(a!.lessons).toEqual(["l1", "l2"])
+      expect(a!.strategies).toEqual(["s1"])
+      // 深拷贝：改 B 不影响 A
+      data.aiCrossGameMemory.ai1.lessons.push("l3")
+      expect(a!.lessons).toEqual(["l1", "l2"])
+    })
+
+    it("refresh 后 B 全空时清除 A", () => {
+      const { manager, data } = makeManager()
+      data.aiCrossGameMemory.ai1 = { stats: { ...DEFAULT_CROSS_GAME_STATS }, lessons: ["l1"], strategies: [], praises: [] }
+      manager.refreshAiExperienceBookInContext("ai1")
+      expect(manager.getAiExperienceBookInContext("ai1")).not.toBeNull()
+      // B 清空后再 refresh
+      data.aiCrossGameMemory.ai1.lessons = []
+      manager.refreshAiExperienceBookInContext("ai1")
+      expect(manager.getAiExperienceBookInContext("ai1")).toBeNull()
+    })
+
+    it("A 持久化：save 后 restore 能读回", () => {
+      const { manager: m1, data: d1 } = makeManager()
+      d1.aiCrossGameMemory.ai1 = { stats: { ...DEFAULT_CROSS_GAME_STATS }, lessons: ["持久l"], strategies: [], praises: [] }
+      m1.refreshAiExperienceBookInContext("ai1")
+      m1.saveAiMemoryToStorage()
+
+      const { manager: m2, data: d2 } = makeManager()
+      m2.restoreAiMemoryFromStorage()
+      const a = m2.getAiExperienceBookInContext("ai1")
+      expect(a).not.toBeNull()
+      expect(a!.lessons).toEqual(["持久l"])
+      expect(d2.aiExperienceBookInContext.ai1.lessons).toEqual(["持久l"])
+    })
+
+    it("旧存档无 A 时从 B 回填", () => {
+      const { manager: m1, data: d1 } = makeManager()
+      d1.aiCrossGameMemory.ai1 = { stats: { ...DEFAULT_CROSS_GAME_STATS }, lessons: ["回填l"], strategies: [], praises: [] }
+      // 模拟旧存档：只存 B 不存 A
+      localStorage.setItem(
+        m1.getAiMemoryStorageKey(),
+        JSON.stringify({
+          conversations: {},
+          crossGameMemory: d1.aiCrossGameMemory,
+          crossGameMessages: {},
+          pendingSummaryByPlayer: {},
+          runSerial: 0,
+          savedAt: Date.now(),
+        })
+      )
+      const { manager: m2 } = makeManager()
+      m2.restoreAiMemoryFromStorage()
+      const a = m2.getAiExperienceBookInContext("ai1")
+      expect(a).not.toBeNull()
+      expect(a!.lessons).toEqual(["回填l"])
+    })
+
+    it("clearAiMemoryStorage 清空 A", () => {
+      const { manager, data } = makeManager()
+      data.aiCrossGameMemory.ai1 = { stats: { ...DEFAULT_CROSS_GAME_STATS }, lessons: ["l"], strategies: [], praises: [] }
+      manager.refreshAiExperienceBookInContext("ai1")
+      expect(manager.getAiExperienceBookInContext("ai1")).not.toBeNull()
+      manager.clearAiMemoryStorage()
+      expect(manager.getAiExperienceBookInContext("ai1")).toBeNull()
+      expect(data.aiExperienceBookInContext).toEqual({})
+    })
+  })
+
+  describe("isAtContextLimit", () => {
+    it("多局关时返回 false", () => {
+      const { manager } = makeManager({
+        getLlmSettings: () => makeLlmSettings({ multiGameMemoryEnabled: false }),
+      })
+      expect(manager.isAtContextLimit()).toBe(false)
+    })
+
+    it("多局开但未达 contextLength 返回 false", () => {
+      const { manager } = makeManager({
+        getLlmSettings: () => makeLlmSettings({ multiGameMemoryEnabled: true, contextLength: 5 }),
+      })
+      // MobaoGameHistory 无记录，count=0
+      expect(manager.isAtContextLimit()).toBe(false)
+    })
+  })
+
   describe("getAiInGameHistoryCount", () => {
     it("无桶时返回 0", () => {
       const { manager } = makeManager()
@@ -573,8 +673,28 @@ describe("AiMemoryManager", () => {
   })
 
   describe("pushRunSettlementContextToAi", () => {
-    it("为每个 AI 玩家设置 pendingNextRunAiSummary", () => {
+    it("多局开时不设 pendingNextRunAiSummary（上期总结由B产出），但设 pendingSettlementSummary（Layer⑪）", () => {
       const { manager, data } = makeManager()
+      data.runSerial = 3
+      manager.pushRunSettlementContextToAi({
+        winnerId: "ai1",
+        winnerName: "左上AI",
+        winnerBid: 5000,
+        totalValue: 10000,
+        winnerProfit: 2000,
+        reasonText: "最高价",
+      })
+      // 多局开：上期总结不在此设置（保留B的总结）
+      expect(data.pendingNextRunAiSummaryByPlayer.ai1).toBeUndefined()
+      expect(data.pendingNextRunAiSummaryByPlayer.ai2).toBeUndefined()
+      // Layer⑪ 对局结算文本仍设置
+      expect(data.pendingSettlementSummary).toContain("第 3 局已结算")
+    })
+
+    it("多局关时设置 pendingNextRunAiSummary 作Layer⑤stand-in", () => {
+      const { manager, data } = makeManager({
+        getLlmSettings: () => makeLlmSettings({ multiGameMemoryEnabled: false }),
+      })
       data.runSerial = 3
       manager.pushRunSettlementContextToAi({
         winnerId: "ai1",
@@ -586,7 +706,6 @@ describe("AiMemoryManager", () => {
       })
       expect(data.pendingNextRunAiSummaryByPlayer.ai1).toContain("第 3 局已结算")
       expect(data.pendingNextRunAiSummaryByPlayer.ai2).toContain("第 3 局已结算")
-      expect(data.pendingSettlementSummary).toContain("第 3 局已结算")
     })
 
     it("分红机制生成正确文本", () => {
@@ -601,7 +720,6 @@ describe("AiMemoryManager", () => {
         dividendTicketInfo: { mechanism: "dividend", dividendPerPlayer: 150, ticketPerPlayer: 0 },
       })
       expect(data.pendingSettlementSummary).toContain("分红触发")
-      expect(data.pendingNextRunAiSummaryByPlayer.ai2).toContain("分红触发")
     })
 
     it("门票机制生成正确文本", () => {
@@ -616,10 +734,9 @@ describe("AiMemoryManager", () => {
         dividendTicketInfo: { mechanism: "ticket", dividendPerPlayer: 0, ticketPerPlayer: 50 },
       })
       expect(data.pendingSettlementSummary).toContain("门票触发")
-      expect(data.pendingNextRunAiSummaryByPlayer.ai2).toContain("门票触发")
     })
 
-    it("缓存对话超 2 条时存入跨局消息", () => {
+    it("多局开未达上限时，Layer⑪结算追加到本局跨局消息末尾", () => {
       const { manager, data } = makeManager()
       data.aiConversationCache = {
         ai1: [
@@ -638,7 +755,10 @@ describe("AiMemoryManager", () => {
         reasonText: "最高价",
       })
       expect(data.aiCrossGameMessagesByPlayer.ai1).toHaveLength(1)
-      expect(data.aiCrossGameMessagesByPlayer.ai1[0]).toHaveLength(2)
+      // slice(2) 去掉 system+u1 -> [a1, u2]，再追加 Layer⑪ 结算 -> 3 条
+      expect(data.aiCrossGameMessagesByPlayer.ai1[0]).toHaveLength(3)
+      const last = data.aiCrossGameMessagesByPlayer.ai1[0][2]
+      expect(last.content).toContain("已结算")
     })
   })
 
@@ -693,11 +813,13 @@ describe("AiMemoryManager", () => {
   })
 
   describe("getAiFirstRoundExtraBlocks", () => {
-    it("未启用跨局记忆时返回空", () => {
+    it("多局关首轮也返回系统事件块（不再返回空）", () => {
       const { manager } = makeManager({
         getLlmSettings: () => makeLlmSettings({ multiGameMemoryEnabled: false }),
       })
-      expect(manager.getAiFirstRoundExtraBlocks()).toEqual([])
+      const blocks = manager.getAiFirstRoundExtraBlocks()
+      expect(blocks).toHaveLength(1)
+      expect(blocks[0]).toContain("局开始")
     })
 
     it("非第一回合返回空", () => {
@@ -705,20 +827,24 @@ describe("AiMemoryManager", () => {
       expect(manager.getAiFirstRoundExtraBlocks()).toEqual([])
     })
 
-    it("第一回合且启用时返回系统事件块", () => {
+    it("多局开首轮返回系统事件块（不含上期总结，④由historyMessages注入）", () => {
       const { manager, data } = makeManager({ getRound: () => 1 })
       data.runSerial = 5
-      const blocks = manager.getAiFirstRoundExtraBlocks()
+      data.pendingNextRunAiSummaryByPlayer.ai1 = "上期总结内容"
+      const blocks = manager.getAiFirstRoundExtraBlocks("ai1")
       expect(blocks).toHaveLength(1)
       expect(blocks[0]).toContain("第 5 局开始")
     })
 
-    it("有上期总结时包含总结块", () => {
-      const { manager, data } = makeManager({ getRound: () => 1 })
-      data.pendingNextRunAiSummaryByPlayer.ai1 = "上期总结内容"
+    it("多局关首轮有上期总结时作Layer⑤stand-in包含", () => {
+      const { manager, data } = makeManager({
+        getRound: () => 1,
+        getLlmSettings: () => makeLlmSettings({ multiGameMemoryEnabled: false }),
+      })
+      data.pendingNextRunAiSummaryByPlayer.ai1 = "上局结算内容"
       const blocks = manager.getAiFirstRoundExtraBlocks("ai1")
       expect(blocks).toHaveLength(2)
-      expect(blocks[1]).toBe("上期总结内容")
+      expect(blocks[1]).toBe("上局结算内容")
     })
 
     it("有公共事件时包含事件块", () => {
@@ -726,11 +852,10 @@ describe("AiMemoryManager", () => {
         getRound: () => 1,
         getCurrentPublicEvent: () => ({ category: "市场", text: "物价波动" }),
       })
-      data.pendingNextRunAiSummaryByPlayer.ai1 = "总结"
       const blocks = manager.getAiFirstRoundExtraBlocks("ai1")
-      expect(blocks).toHaveLength(3)
-      expect(blocks[2]).toContain("公共事件")
-      expect(blocks[2]).toContain("物价波动")
+      expect(blocks).toHaveLength(2)
+      expect(blocks[1]).toContain("公共事件")
+      expect(blocks[1]).toContain("物价波动")
     })
   })
 
@@ -810,17 +935,20 @@ describe("AiMemoryManager", () => {
       expect(p2summary).toBeUndefined()
     })
 
-    it("isAutoPlaying=true 时 p2 得到结算总结", () => {
+    it("isAutoPlaying=true 时 p2 得到结算总结（多局关作Layer⑤stand-in）", () => {
       const players = [
         { id: "p1", name: "左上AI", avatar: "A1", isHuman: false, isAI: true, isSelf: false },
         { id: "p2", name: "玩家", avatar: "你", isHuman: true, isAI: false, isSelf: true },
       ] as Player[]
-      const { manager, deps } = makeManager({ players, isAutoPlaying: () => true })
+      const { manager, deps } = makeManager({
+        players,
+        isAutoPlaying: () => true,
+        getLlmSettings: () => makeLlmSettings({ multiGameMemoryEnabled: false }),
+      })
       manager.pushRunSettlementContextToAi({ winnerId: "p1", winnerName: "AI1", winnerBid: 5000, totalValue: 20000, winnerProfit: 15000, reasonText: "直接拿下" })
 
-      // p2 应该得到总结（托管中）
+      // 多局关时 p2（托管中）作Layer⑤stand-in 写入 pendingNextRunAiSummaryByPlayer
       const allKeys = Object.keys(deps.data.pendingNextRunAiSummaryByPlayer)
-      // p1 (AI) 和 p2 (托管中的玩家) 都应该有总结
       expect(allKeys).toContain("p2")
       expect(deps.data.pendingNextRunAiSummaryByPlayer["p2"]).toContain("AI1")
     })

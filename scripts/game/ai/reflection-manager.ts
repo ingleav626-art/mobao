@@ -11,6 +11,7 @@ import type { RunLog } from "./decision"
 import { AudioManager } from "../../audio/audio-manager"
 import { MobaoGameHistory } from "./game-history"
 import { applyMemoryOperations, updateCrossGameMemory, type CrossGameMemory } from "./reflection"
+import { MobaoSummarizer } from "./summarizer"
 import { createLogger } from "../core/logger"
 const log = createLogger("AI.Reflection")
 
@@ -154,7 +155,9 @@ export interface AiReflectionManagerDeps {
   renderAiThoughtLog: () => void
   isAiMultiGameMemoryEnabled: () => boolean
   shouldGenerateSummary?: () => boolean
+  isAtContextLimit?: () => boolean
   clearGameHistoryForPlayer?: (playerId: string) => void
+  refreshAiExperienceBookInContext?: (playerId: string) => void
 
   // ── proceedTo* 流程回调 ──
   exitSettlementPage: () => void
@@ -246,46 +249,61 @@ export class AiReflectionManager {
   /** 局结算后触发所有 AI 玩家的反思 */
   async triggerAiReflection(record: ReflectionRecord): Promise<void> {
     let _beforeUnloadHandler: (() => void) | null = null
-    log.debug("called, checking conditions...")
+    // 反思与总结独立判定：同在结算节点调用，但不一定同时需要。
+    const reflectionNeeded =
+      this.isAiReflectionEnabled() && this.deps.canUseLlmDecision() && this.deps.llmEverUsedThisRun()
+    const multiGame = this.deps.isAiMultiGameMemoryEnabled()
+    const summaryNeeded =
+      Boolean(this.deps.shouldGenerateSummary && this.deps.shouldGenerateSummary()) && this.deps.canUseLlmDecision()
+    const atLimit = Boolean(this.deps.isAtContextLimit && this.deps.isAtContextLimit())
+    // 清空时机：多局关每局清；多局开达 contextLength 清。不依赖总结是否成功。
+    const clearNeeded = !multiGame || atLimit
+    const llmNeeded = reflectionNeeded || summaryNeeded
+
     log.debug(
-      "isAiReflectionEnabled:",
-      this.isAiReflectionEnabled(),
-      "canUseLlmDecision:",
-      this.deps.canUseLlmDecision(),
-      "llmEverUsedThisRun:",
-      this.deps.llmEverUsedThisRun()
+      "triggerSettlement: reflectionNeeded=",
+      reflectionNeeded,
+      "summaryNeeded=",
+      summaryNeeded,
+      "clearNeeded=",
+      clearNeeded
     )
-    if (!this.isAiReflectionEnabled() || !this.deps.canUseLlmDecision() || !this.deps.llmEverUsedThisRun()) {
-      log.debug("EARLY RETURN: conditions not met")
+    if (!reflectionNeeded && !summaryNeeded && !clearNeeded) {
+      log.debug("EARLY RETURN: nothing to do")
       return
     }
-    this.deps.setAiReflectionState("pending")
-    this.deps.setAiReflectionStateDetail("")
-    this.deps.setAiReflectionCompleted(0)
-    this.deps.updateReflectionStatusUI()
+    if (llmNeeded) {
+      this.deps.setAiReflectionState("pending")
+      this.deps.setAiReflectionStateDetail("")
+      this.deps.setAiReflectionCompleted(0)
+      this.deps.updateReflectionStatusUI()
+    }
 
     _beforeUnloadHandler = () => {
       this.deps.saveAiMemoryToStorage()
     }
     window.addEventListener("beforeunload", _beforeUnloadHandler)
     const originalCrossGameMemory = this.deps.getAiCrossGameMemory()
-    const aiPlayers = this.deps.players.filter((p: Player) =>
-      (!p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.())) && this.deps.canUseLlmDecisionForPlayer(p.id)
-    )
-    this.deps.setAiReflectionTotal(aiPlayers.length)
-    this.deps.updateReflectionStatusUI()
-    log.debug("aiPlayers count:", aiPlayers.length)
-    if (aiPlayers.length === 0) {
-      this.deps.setAiReflectionState("done")
+    const aiPlayers = llmNeeded
+      ? this.deps.players.filter((p: Player) =>
+        (!p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.())) && this.deps.canUseLlmDecisionForPlayer(p.id)
+      )
+      : []
+    if (llmNeeded) {
+      this.deps.setAiReflectionTotal(aiPlayers.length)
       this.deps.updateReflectionStatusUI()
-      return
+      log.debug("aiPlayers count:", aiPlayers.length)
     }
     const failedPlayers: FailedPlayerInfo[] = []
     const timeoutPlayers: TimeoutPlayerInfo[] = []
     const reflectionPromises = aiPlayers.map(async (player: Player) => {
       const playerName = player.name
       const playerId = player.id
-      log.debug("starting reflection for player:", playerId, playerName)
+      // 本玩家走反思(A)/总结(B)/A+B 哪种
+      const doReflection = reflectionNeeded
+      const doSummary = summaryNeeded
+      const standaloneSummary = !doReflection && doSummary
+      log.debug("starting settlement ai for player:", playerId, playerName, { doReflection, doSummary, standaloneSummary })
       const isWinner = record.winnerId === player.id
       let dividendTicketText = "无分红/门票"
       if (record.dividendTicket) {
@@ -333,90 +351,105 @@ export class AiReflectionManager {
           .join("\n")
       }
 
-      const needsSummary =
-        this.deps.isAiMultiGameMemoryEnabled() && this.deps.shouldGenerateSummary && this.deps.shouldGenerateSummary()
-
       const feedbackEnabled = Boolean(
-        this.deps.isFeedbackEnabled && this.deps.isFeedbackEnabled() && this.deps.getRunSerial && this.deps.addAiFeedback
+        doReflection &&
+          this.deps.isFeedbackEnabled &&
+          this.deps.isFeedbackEnabled() &&
+          this.deps.getRunSerial &&
+          this.deps.addAiFeedback
       )
-
-      const reflectionPrompt = [
-        "请根据本局表现更新经验本，返回JSON格式：",
-        "{",
-        '  "praises": { "add": ["新内容"], "delete": [索引号], "modify": [[索引号, "新内容"]] },',
-        '  "strategies": { "add": [...], "delete": [...], "modify": [...] },',
-        '  "lessons": { "add": [...], "delete": [...], "modify": [...] },',
-        needsSummary ? '  "summary": "将最近几局的关键经验压缩为一段500字以内的摘要"' : "",
-        feedbackEnabled ? '  "feedback": "你对本次游戏体验的反馈或建议（≤500字，没意见则返回空字符串）"' : "",
-        "}",
-        "",
-        "要求：",
-        "- 尽量用最少的字给自己留下最有用的内容",
-        "- 如果条数已满，但又必须增加条目时思考如何优化现有经验书",
-        "- 不要写本局，本次等一些很限定的词，同时不要写违反游戏规定的条例",
-        "- 每一个条目的字数限制在50字",
-        needsSummary ? "- summary：将最近几局的胜率、关键教训、出价规律压缩为一段话，用于下局开局时快速回忆" : "",
-        feedbackEnabled
-          ? "- feedback：亲爱的测试AI玩家，开发者想知道你作为AI玩家在游玩过程中的疑惑或对游戏的不满甚至是批评。比如：你对提示词中哪个字段不理解，哪句话比较模糊，或者对工具返回值觉得不好。请具体指出：哪一条规则描述让你困惑？哪个字段的含义你不确定？哪个道具的效果你理解不了？哪个数值你觉得不合理？请引用原文或描述具体场景。总之一切你觉得不好的地方可以向开发者反馈，开发者会收到你的反馈并进一步优化提示词游戏的数值或者其他。请你告诉开发者你想要什么。一切合理的反馈都会让你的游戏体验更好，让你更好的游玩。（不要无理取闹也不要泛泛而谈） 目前已知：不能扩充不属于道具效果的功能，如：单格均价仪设计上就是不返回单格藏品的件数。后续会出类似功能的道具"
-          : "",
-        "操作说明：",
-        "- add: 添加新条目，数组形式",
-        "- delete: 删除条目，索引号数组（如 [0, 2] 删除第0和第2条）",
-        '- modify: 修改条目，二维数组（如 [[1, "新内容"]] 修改第1条）',
-        "- 如果某类无需操作，返回空对象 {}",
-        "- 只返回JSON，不要其他文字",
-        "【本局结束，请总结经验】",
-        `结果：${record.result}`,
-        `${dividendTicketText}。`,
-        `品质分布：粗${record.qualityCounts?.poor || 0} 良${record.qualityCounts?.normal || 0} 精${record.qualityCounts?.fine || 0} 珍${record.qualityCounts?.rare || 0} 绝${record.qualityCounts?.legendary || 0} | 总藏品${record.totalItems || 0}格数${record.totalCells || 0}`,
-        "",
-        `当前经验书（每类最多${MAX_ENTRIES}条）：`,
-        `- 成功经验(${praises.length}/${MAX_ENTRIES}): ${praiseList || "无"}`,
-        `- 策略建议(${strategies.length}/${MAX_ENTRIES}): ${strategyList || "无"}`,
-        `- 经验教训(${lessons.length}/${MAX_ENTRIES}): ${lessonList || "无"}`,
-        statsInfo ? `\n${statsInfo}` : ""
-      ]
 
       try {
         const llmProvider = this.deps.getLlmProvider()
-        log.debug("llmProvider:", llmProvider ? llmProvider.id : "null")
         if (!llmProvider) {
           failedPlayers.push({ playerId: player.id, playerName: player.name, reason: "无LLM Provider" })
           log.warn("FAILED: no llmProvider for player:", player.id)
           return { playerId: player.id, reflection: null, error: "无LLM Provider" }
         }
         let settings: ReflectionLlmSettings | null = this.deps.getLlmSettings()
-        const reflectionScope = (settings && settings.reflectionScope) || "current"
-        if (reflectionScope === "full" && MobaoGameHistory) {
-          const historyContext = MobaoGameHistory.buildReflectionContext(player.id, "full", null, this.deps.isLanMode())
-          if (historyContext) {
-            reflectionPrompt.push("", historyContext)
+
+        // ── 构建提示词：A（反思）/ B（总结）/ A+B 合并 ──
+        let promptText: string
+        let systemContent: string
+        if (standaloneSummary) {
+          // B standalone：只产上期总结文本，不更新经验本
+          const settingsNow = this.deps.getLlmSettings()
+          const contextLength = (settingsNow && (settingsNow.contextLength as number)) || 5
+          const recentRecords = MobaoGameHistory
+            ? MobaoGameHistory.load(player.id, this.deps.isLanMode())
+              .slice(-contextLength)
+              .map((r) => {
+                const rr = r as unknown as Record<string, unknown>
+                return {
+                  run: Number(rr.run) || 0,
+                  result: String(rr.result || rr.reasonText || ""),
+                  winnerProfit: Number(rr.winnerProfit) || 0,
+                  qualityCounts: (rr.qualityCounts as Record<string, number>) || {},
+                  reflection: (rr.reflection as string | null) || null
+                }
+              })
+            : []
+          promptText = MobaoSummarizer.buildSummaryPrompt(
+            recentRecords,
+            { praises: praises as string[], strategies: strategies as string[], lessons: lessons as string[] },
+            stats.totalGames
+          )
+          systemContent = `你是仓库摸宝竞拍AI玩家${player.name}(${player.id})，正在生成跨局上期总结。`
+        } else {
+          // A 或 A+B：反思更新经验本；若 doSummary 则顺带要 summary 字段（piggyback）
+          const reflectionPrompt = [
+            "请根据本局表现更新经验本，返回JSON格式：",
+            "{",
+            '  "praises": { "add": ["新内容"], "delete": [索引号], "modify": [[索引号, "新内容"]] },',
+            '  "strategies": { "add": [...], "delete": [...], "modify": [...] },',
+            '  "lessons": { "add": [...], "delete": [...], "modify": [...] },',
+            doSummary ? '  "summary": "将最近几局的关键经验压缩为一段500字以内的摘要"' : "",
+            feedbackEnabled ? '  "feedback": "你对本次游戏体验的反馈或建议（≤500字，没意见则返回空字符串）"' : "",
+            "}",
+            "",
+            "要求：",
+            "- 尽量用最少的字给自己留下最有用的内容",
+            "- 如果条数已满，但又必须增加条目时思考如何优化现有经验书",
+            "- 不要写本局，本次等一些很限定的词，同时不要写违反游戏规定的条例",
+            "- 每一个条目的字数限制在50字",
+            doSummary ? "- summary：将最近几局的胜率、关键教训、出价规律压缩为一段话，用于下局开局时快速回忆" : "",
+            feedbackEnabled
+              ? "- feedback：亲爱的测试AI玩家，开发者想知道你作为AI玩家在游玩过程中的疑惑或对游戏的不满甚至是批评。请具体指出：哪一条规则描述让你困惑？哪个字段的含义你不确定？哪个道具的效果你理解不了？哪个数值你觉得不合理？请引用原文或描述具体场景。目前已知：不能扩充不属于道具效果的功能，如：单格均价仪设计上就是不返回单格藏品的件数。后续会出类似功能的道具"
+              : "",
+            "操作说明：",
+            "- add: 添加新条目，数组形式",
+            "- delete: 删除条目，索引号数组（如 [0, 2] 删除第0和第2条）",
+            '- modify: 修改条目，二维数组（如 [[1, "新内容"]] 修改第1条）',
+            "- 如果某类无需操作，返回空对象 {}",
+            "- 只返回JSON，不要其他文字",
+            "【本局结束，请总结经验】",
+            `结果：${record.result}`,
+            `${dividendTicketText}。`,
+            `品质分布：粗${record.qualityCounts?.poor || 0} 良${record.qualityCounts?.normal || 0} 精${record.qualityCounts?.fine || 0} 珍${record.qualityCounts?.rare || 0} 绝${record.qualityCounts?.legendary || 0} | 总藏品${record.totalItems || 0}格数${record.totalCells || 0}`,
+            "",
+            `当前经验书（每类最多${MAX_ENTRIES}条）：`,
+            `- 成功经验(${praises.length}/${MAX_ENTRIES}): ${praiseList || "无"}`,
+            `- 策略建议(${strategies.length}/${MAX_ENTRIES}): ${strategyList || "无"}`,
+            `- 经验教训(${lessons.length}/${MAX_ENTRIES}): ${lessonList || "无"}`,
+            statsInfo ? `\n${statsInfo}` : ""
+          ]
+          const reflectionScope = (settings && settings.reflectionScope) || "current"
+          if (reflectionScope === "full" && MobaoGameHistory) {
+            const historyContext = MobaoGameHistory.buildReflectionContext(player.id, "full", null, this.deps.isLanMode())
+            if (historyContext) reflectionPrompt.push("", historyContext)
           }
-        }
-        if (needsSummary && reflectionScope !== "full" && MobaoGameHistory) {
-          const historyContext = MobaoGameHistory.buildReflectionContext(player.id, "full", null, this.deps.isLanMode())
-          if (historyContext) {
-            reflectionPrompt.push("", "【多局历史（用于总结）】", historyContext)
+          if (doSummary && reflectionScope !== "full" && MobaoGameHistory) {
+            const historyContext = MobaoGameHistory.buildReflectionContext(player.id, "full", null, this.deps.isLanMode())
+            if (historyContext) reflectionPrompt.push("", "【多局历史（用于总结）】", historyContext)
           }
+          promptText = reflectionPrompt.join("\n")
+          systemContent = `你是仓库摸宝竞拍AI玩家${player.name}(${player.id})，正在对本局自己的表现进行反思总结。只反思你自己的出价和决策，不要混淆其他玩家的行为。`
         }
-        const reflectionPromptText = reflectionPrompt.join("\n")
+
         const independentReflectionEnabled =
           settings && settings.independentReflectionEnabled !== undefined ? settings.independentReflectionEnabled : true
-        log.debug("independentReflectionEnabled:", independentReflectionEnabled)
         if (independentReflectionEnabled && this.deps.getAiModelConfigForPlayer) {
           const aiModelConfig = this.deps.getAiModelConfigForPlayer(player.id)
-          log.debug(
-            "aiModelConfig for player:",
-            player.id,
-            aiModelConfig
-              ? {
-                apiKey: aiModelConfig.apiKey ? "(已设置)" : "(空)",
-                endpoint: aiModelConfig.endpoint,
-                model: aiModelConfig.model,
-                thinkingEnabled: aiModelConfig.thinkingEnabled
-              }
-              : null
-          )
           if (aiModelConfig) {
             settings = {
               ...settings,
@@ -428,13 +461,6 @@ export class AiReflectionManager {
               thinkingEnabled:
                 aiModelConfig.thinkingEnabled !== undefined ? aiModelConfig.thinkingEnabled : settings?.thinkingEnabled
             }
-            log.debug("merged settings for player:", player.id, {
-              apiKey: settings.apiKey ? "(已设置)" : "(空)",
-              endpoint: settings.endpoint,
-              model: settings.model,
-              thinkingEnabled: settings.thinkingEnabled,
-              timeoutMs: settings.timeoutMs
-            })
           }
         }
         const thinkingEnabled = settings && settings.thinkingEnabled
@@ -442,33 +468,26 @@ export class AiReflectionManager {
         const maxTokens = settings && settings.maxTokens ? settings.maxTokens : thinkingEnabled ? 4000 : 800
         const timeoutMs = thinkingEnabled ? Math.max(userTimeoutMs, 90000) : userTimeoutMs
 
-        const aiConversationCache = this.deps.getAiConversationCache()
-        const playerCache = aiConversationCache && aiConversationCache[player.id]
+        // 反思复用决策对话缓存（A/A+B）；B standalone 用独立消息，不动决策缓存
         let messages: unknown[]
-        if (playerCache && Array.isArray(playerCache) && playerCache.length > 0) {
-          messages = [...playerCache, { role: "user", content: reflectionPromptText }]
-          log.debug("using cached conversation, messages count:", messages.length)
+        if (!standaloneSummary) {
+          const aiConversationCache = this.deps.getAiConversationCache()
+          const playerCache = aiConversationCache && aiConversationCache[player.id]
+          if (playerCache && Array.isArray(playerCache) && playerCache.length > 0) {
+            messages = [...playerCache, { role: "user", content: promptText }]
+          } else {
+            messages = [
+              { role: "system", content: systemContent },
+              { role: "user", content: promptText }
+            ]
+          }
         } else {
           messages = [
-            {
-              role: "system",
-              content: `你是仓库摸宝竞拍AI玩家${player.name}(${player.id})，正在对本局自己的表现进行反思总结。只反思你自己的出价和决策，不要混淆其他玩家的行为。`
-            },
-            { role: "user", content: reflectionPromptText }
+            { role: "system", content: systemContent },
+            { role: "user", content: promptText }
           ]
-          log.debug("no cache, using simple prompt")
         }
 
-        log.debug(
-          "requesting chat for player:",
-          player.id,
-          "thinkingEnabled:",
-          thinkingEnabled,
-          "maxTokens:",
-          maxTokens,
-          "timeoutMs:",
-          timeoutMs
-        )
         const result = await llmProvider.requestChat({
           temperature: 0.3,
           maxTokens,
@@ -477,130 +496,92 @@ export class AiReflectionManager {
           messages,
           settings
         })
-        log.debug(
-          "result for player:",
-          player.id,
-          "ok:",
-          result.ok,
-          "code:",
-          result.code,
-          "error:",
-          result.error,
-          "contentLength:",
-          result.content ? result.content.length : 0,
-          "reasoningContentLength:",
-          result.reasoningContent ? result.reasoningContent.length : 0
-        )
         if (result.ok && (result.content || result.reasoningContent)) {
           const rawContent = result.content || result.reasoningContent || ""
-          const reflectionText = String(rawContent).trim()
-          log.debug(
-            "SUCCESS for player:",
-            player.id,
-            "reflection length:",
-            reflectionText.length
-          )
-
+          const responseText = String(rawContent).trim()
           const usage = result && result.usage ? result.usage : null
           const cacheHitTokens = usage && usage.prompt_cache_hit_tokens ? usage.prompt_cache_hit_tokens : 0
           const cacheMissTokens = usage && usage.prompt_cache_miss_tokens ? usage.prompt_cache_miss_tokens : 0
           const totalPromptTokens = cacheHitTokens + cacheMissTokens
           const cacheHitRate = totalPromptTokens > 0 ? Math.round((cacheHitTokens / totalPromptTokens) * 100) : 0
-          log.debug(
-            `${player.id} cache: hit=${cacheHitTokens}, miss=${cacheMissTokens}, rate=${cacheHitRate}%`
-          )
 
-          let parsedReflection: { lessons: unknown[]; strategies: unknown[]; summary?: string; feedback?: string } = {
-            lessons: [],
-            strategies: []
-          }
+          let parsed: { praises?: unknown; strategies?: unknown; lessons?: unknown; summary?: string; feedback?: string } = {}
           try {
-            const jsonMatch = reflectionText.match(/\{[\s\S]*\}/)
-            if (jsonMatch) {
-              parsedReflection = JSON.parse(jsonMatch[0])
-            }
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+            if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
           } catch (e) {
-            log.warn("failed to parse reflection JSON:", e)
+            log.warn("failed to parse response JSON:", e)
           }
 
-          // 收集 AI 反馈（仅当 feedbackEnabled 且 deps 提供了 addAiFeedback 时）
-          if (feedbackEnabled && this.deps.addAiFeedback && this.deps.getRunSerial) {
-            const rawFeedback = parsedReflection.feedback
-            const feedbackText = typeof rawFeedback === "string" ? rawFeedback.trim() : ""
-            if (feedbackText.length > 0) {
-              try {
-                this.deps.addAiFeedback({
-                  playerId: player.id,
-                  playerName: player.name,
-                  runSerial: this.deps.getRunSerial(),
-                  content: feedbackText
-                })
-                log.info(`[AI Feedback] saved: playerId=${player.id}, runSerial=${this.deps.getRunSerial()}, len=${feedbackText.length}`)
-              } catch (e) {
-                log.warn("[AI Feedback] failed to save:", e)
-              }
-            }
-          }
-
-          if (this.deps.isAiMultiGameMemoryEnabled()) {
-            this.updateCrossGameMemory(player.id, record, parsedReflection)
-            if (needsSummary && parsedReflection.summary) {
-              const pendingNextRunAiSummaryByPlayer = this.deps.getPendingNextRunAiSummaryByPlayer()
-              pendingNextRunAiSummaryByPlayer[player.id] = parsedReflection.summary
-              if (this.deps.clearGameHistoryForPlayer) {
-                this.deps.clearGameHistoryForPlayer(player.id)
-              }
-              const aiCrossGameMessagesByPlayer = this.deps.getAiCrossGameMessagesByPlayer()
-              if (aiCrossGameMessagesByPlayer) {
-                aiCrossGameMessagesByPlayer[player.id] = []
-              }
-              const aiConversationByPlayer = this.deps.getAiConversationByPlayer?.()
-              if (aiConversationByPlayer) {
-                aiConversationByPlayer[player.id] = []
-              }
-              const aiConversationCache = this.deps.getAiConversationCache()
-              if (aiConversationCache?.[player.id]) {
-                delete aiConversationCache[player.id]
-              }
-            }
-            const aiCrossGameMemory = this.deps.getAiCrossGameMemory()
-            if (aiCrossGameMemory !== originalCrossGameMemory) {
-              Object.keys(originalCrossGameMemory).forEach((pid) => {
-                if (!aiCrossGameMemory[pid]) {
-                  aiCrossGameMemory[pid] = originalCrossGameMemory[pid]
+          // A：反思更新经验本 B-copy（反思开就更新，不再受多局开关门控）
+          if (doReflection) {
+            this.updateCrossGameMemory(player.id, record, parsed as Record<string, unknown>)
+            if (feedbackEnabled && this.deps.addAiFeedback && this.deps.getRunSerial) {
+              const feedbackText = typeof parsed.feedback === "string" ? parsed.feedback.trim() : ""
+              if (feedbackText.length > 0) {
+                try {
+                  this.deps.addAiFeedback({
+                    playerId: player.id,
+                    playerName: player.name,
+                    runSerial: this.deps.getRunSerial(),
+                    content: feedbackText
+                  })
+                  log.info(`[AI Feedback] saved: playerId=${player.id}, runSerial=${this.deps.getRunSerial()}, len=${feedbackText.length}`)
+                } catch (e) {
+                  log.warn("[AI Feedback] failed to save:", e)
                 }
-              })
-              aiCrossGameMemory[player.id] = originalCrossGameMemory[player.id] || aiCrossGameMemory[player.id]
+              }
             }
-            this.deps.saveAiMemoryToStorage()
-          } else {
-            const pendingNextRunAiSummaryByPlayer = this.deps.getPendingNextRunAiSummaryByPlayer()
-            const existing = pendingNextRunAiSummaryByPlayer[player.id] || ""
-            pendingNextRunAiSummaryByPlayer[player.id] =
-              existing + ` 【${player.name}反思】${reflectionText.slice(0, 200)}`
-            this.deps.saveAiMemoryToStorage()
           }
+
+          // B：总结产出上期总结文本（A+B 取 summary 字段；B standalone 用 parseSummaryResponse）
+          if (doSummary) {
+            const summary = standaloneSummary
+              ? MobaoSummarizer.parseSummaryResponse(responseText)?.summary
+              : typeof parsed.summary === "string"
+                ? parsed.summary.trim()
+                : ""
+            if (summary) {
+              const pendingNextRunAiSummaryByPlayer = this.deps.getPendingNextRunAiSummaryByPlayer()
+              pendingNextRunAiSummaryByPlayer[player.id] = summary
+            } else {
+              log.warn("summary needed but not extracted for player:", player.id)
+            }
+          }
+
+          // originalCrossGameMemory 引用保护
+          const aiCrossGameMemory = this.deps.getAiCrossGameMemory()
+          if (aiCrossGameMemory !== originalCrossGameMemory) {
+            Object.keys(originalCrossGameMemory).forEach((pid) => {
+              if (!aiCrossGameMemory[pid]) {
+                aiCrossGameMemory[pid] = originalCrossGameMemory[pid]
+              }
+            })
+            aiCrossGameMemory[player.id] = originalCrossGameMemory[player.id] || aiCrossGameMemory[player.id]
+          }
+          this.deps.saveAiMemoryToStorage()
 
           const currentRunLog = this.deps.getCurrentRunLog()
           if (currentRunLog && Array.isArray(currentRunLog.aiThoughtLogs)) {
+            const tag = standaloneSummary ? "[局后总结]" : "[局后反思]"
             currentRunLog.aiThoughtLogs.push({
               round: "结算",
               playerName: player.name,
-              thought: `[局后反思] ${reflectionText.slice(0, 300)}`,
-              reasoningContent: reflectionText,
+              thought: `${tag} ${responseText.slice(0, 300)}`,
+              reasoningContent: responseText,
               crossGameMemoryCount: 0,
               controlMode: "llm",
               finalBid: 0,
-              decisionSource: "reflection",
-              llmActionName: "反思",
+              decisionSource: standaloneSummary ? "summary" : "reflection",
+              llmActionName: standaloneSummary ? "总结" : "反思",
               ruleActionName: "",
               actionExecuted: true,
               error: "",
               correctionAttempt: 0,
               originalError: "",
-              cacheHitTokens: cacheHitTokens,
-              cacheMissTokens: cacheMissTokens,
-              cacheHitRate: cacheHitRate,
+              cacheHitTokens,
+              cacheMissTokens,
+              cacheHitRate,
               at: Date.now()
             })
             if (currentRunLog.aiThoughtLogs.length > 80) {
@@ -609,16 +590,10 @@ export class AiReflectionManager {
             this.deps.renderAiThoughtLog()
           }
 
-          return {
-            playerId: player.id,
-            reflection: reflectionText,
-            cacheHitTokens,
-            cacheMissTokens,
-            cacheHitRate
-          }
+          this.deps.setAiReflectionCompleted(this.deps.getAiReflectionCompleted() + 1)
+          this.deps.updateReflectionStatusUI()
+          return { playerId: player.id, reflection: responseText, cacheHitTokens, cacheMissTokens, cacheHitRate }
         }
-        this.deps.setAiReflectionCompleted(this.deps.getAiReflectionCompleted() + 1)
-        this.deps.updateReflectionStatusUI()
         if (result.code === "TIMEOUT") {
           timeoutPlayers.push({
             playerId: player.id,
@@ -626,14 +601,6 @@ export class AiReflectionManager {
             reason: `超时(${timeoutMs}ms)`,
             thinkingEnabled: thinkingEnabled || undefined
           })
-          log.debug(
-            "TIMEOUT for player:",
-            player.id,
-            "timeoutMs:",
-            timeoutMs,
-            "thinkingEnabled:",
-            thinkingEnabled
-          )
         } else {
           const errorDetail = result.error || result.code || "未知错误"
           const statusCode = result.status != null ? String(result.status) : ""
@@ -645,18 +612,6 @@ export class AiReflectionManager {
             status: statusCode,
             thinkingEnabled: thinkingEnabled || undefined
           })
-          log.debug(
-            "FAILED for player:",
-            player.id,
-            "code:",
-            result.code,
-            "error:",
-            result.error,
-            "status:",
-            statusCode,
-            "thinkingEnabled:",
-            thinkingEnabled
-          )
         }
         this.deps.setAiReflectionCompleted(this.deps.getAiReflectionCompleted() + 1)
         this.deps.updateReflectionStatusUI()
@@ -670,41 +625,55 @@ export class AiReflectionManager {
         return { playerId: player.id, reflection: null, error: errMsg }
       }
     })
-    const pendingSummary = this.deps.getPendingSettlementSummary()
-    const aiCrossGameMessagesByPlayer = this.deps.getAiCrossGameMessagesByPlayer()
-    if (pendingSummary && aiCrossGameMessagesByPlayer) {
+
+    await Promise.all(reflectionPromises)
+
+    // ── 清空（独立于总结/反思是否成功）──
+    // 多局关每局清；多局开达 contextLength 清。清空时刷新经验本 A<-B，清动态部分。
+    if (clearNeeded) {
       this.deps.players
         .filter((p: Player) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
         .forEach((p: Player) => {
-          const messages = aiCrossGameMessagesByPlayer[p.id]
-          if (Array.isArray(messages) && messages.length > 0) {
-            const lastGame = messages[messages.length - 1]
-            if (Array.isArray(lastGame)) {
-              lastGame.push({ role: "user", content: pendingSummary })
-            }
+          this.deps.refreshAiExperienceBookInContext?.(p.id)
+          const aiCrossGameMessagesByPlayer = this.deps.getAiCrossGameMessagesByPlayer()
+          if (aiCrossGameMessagesByPlayer) {
+            aiCrossGameMessagesByPlayer[p.id] = []
+          }
+          const aiConversationByPlayer = this.deps.getAiConversationByPlayer?.()
+          if (aiConversationByPlayer) {
+            aiConversationByPlayer[p.id] = []
+          }
+          const aiConversationCache = this.deps.getAiConversationCache()
+          if (aiConversationCache?.[p.id]) {
+            delete aiConversationCache[p.id]
+          }
+          if (multiGame && this.deps.clearGameHistoryForPlayer) {
+            this.deps.clearGameHistoryForPlayer(p.id)
           }
         })
-      this.deps.setPendingSettlementSummary("")
       this.deps.saveAiMemoryToStorage()
+      log.debug("clear done: A refreshed, dynamic wiped")
     }
-    await Promise.all(reflectionPromises)
-    if (timeoutPlayers.length > 0) {
-      this.deps.setAiReflectionState("timeout")
-      const timeoutInfo = timeoutPlayers
-        .map((p) => `${p.playerName}(${p.reason}${p.thinkingEnabled ? ",思考模式" : ""})`)
-        .join("; ")
-      this.deps.setAiReflectionStateDetail(timeoutInfo)
-      log.warn("TIMEOUT players:", timeoutInfo)
-    } else if (failedPlayers.length > 0) {
-      this.deps.setAiReflectionState("error")
-      const failedInfo = failedPlayers
-        .map((p) => `${p.playerName}(${p.reason}${p.code ? `,${p.code}` : ""}${p.thinkingEnabled ? ",思考模式" : ""})`)
-        .join("; ")
-      this.deps.setAiReflectionStateDetail(failedInfo)
-      log.warn("FAILED players:", failedInfo)
-    } else {
-      this.deps.setAiReflectionState("done")
-      this.deps.setAiReflectionStateDetail("")
+
+    if (llmNeeded) {
+      if (timeoutPlayers.length > 0) {
+        this.deps.setAiReflectionState("timeout")
+        const timeoutInfo = timeoutPlayers
+          .map((p) => `${p.playerName}(${p.reason}${p.thinkingEnabled ? ",思考模式" : ""})`)
+          .join("; ")
+        this.deps.setAiReflectionStateDetail(timeoutInfo)
+        log.warn("TIMEOUT players:", timeoutInfo)
+      } else if (failedPlayers.length > 0) {
+        this.deps.setAiReflectionState("error")
+        const failedInfo = failedPlayers
+          .map((p) => `${p.playerName}(${p.reason}${p.code ? `,${p.code}` : ""}${p.thinkingEnabled ? ",思考模式" : ""})`)
+          .join("; ")
+        this.deps.setAiReflectionStateDetail(failedInfo)
+        log.warn("FAILED players:", failedInfo)
+      } else {
+        this.deps.setAiReflectionState("done")
+        this.deps.setAiReflectionStateDetail("")
+      }
     }
     if (_beforeUnloadHandler) {
       window.removeEventListener("beforeunload", _beforeUnloadHandler)

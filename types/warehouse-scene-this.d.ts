@@ -812,6 +812,8 @@ export interface WarehouseSceneThis {
   loadAiMemoryFromStorage(): AiMemoryStorage | null
   setupAiMemoryTouchScroll(): void
   ensureAiCrossGameMemory(playerId: string): CrossGameMemory
+  getAiExperienceBookInContext(playerId: string): { lessons: string[]; strategies: string[]; praises: string[] } | null
+  refreshAiExperienceBookInContext(playerId: string): void
   isAiReflectionEnabled(): boolean
   updateLastAiRoundResult(playerId: string, result: unknown): void
   updateReflectionStatusUI(): void

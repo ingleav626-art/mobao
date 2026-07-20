@@ -267,8 +267,14 @@ export function renderAiThoughtLog(aiThoughtContent: HTMLElement | null, runLogH
   aiThoughtContent.textContent = lines.length > 0 ? lines.join("\n") : "暂无AI思考记录。"
 }
 
-export function beginRunTracking(runLogHistory: RunLog[], saveAiMemory: () => void, render: () => void): RunLog {
-  const runNo = (runLogHistory.length > 0 ? runLogHistory[runLogHistory.length - 1].runNo : 0) + 1
+export function beginRunTracking(
+  runLogHistory: RunLog[],
+  saveAiMemory: () => void,
+  render: () => void,
+  currentRunSerial = 0
+): RunLog {
+  // runNo 基于持久化的 runSerial 递增（跨局/跨会话），不再依赖 runLogHistory（会话内可能被清空）
+  const runNo = (currentRunSerial || 0) + 1
   saveAiMemory()
   const runLog: RunLog = {
     runNo,

@@ -392,6 +392,36 @@ describe("SettlementManager", () => {
       expect(ctx.lanHostWallets["lan-p2"]).toBe(8000 - 1000)
     })
 
+    it("主机 AI 赢家钱包按盈亏+加成更新并持久化（回归：之前联机 AI 赢家钱包不更新也不保存）", () => {
+      const ctx = makeDeps({
+        getIsLanMode: () => true,
+        getLanIsHost: () => true,
+        getPlayers: () => makeLanPlayers()
+      })
+      ctx.aiWallets.p3 = 3000
+      // 群体祝福：全体利润+100%（onGain, group, value 1.0 -> group 乘区 ×2）
+      ctx.bonusEffects.push({ id: "group-bless", scope: "group", condition: "onGain", value: 1.0 })
+      const manager = new SettlementManager(ctx.deps)
+      manager.finishAuctionLan(
+        makeContext({
+          winnerPlayer: { id: "p3", isSelf: false, name: "AI玩家", isAI: true },
+          winnerBid: 80000,
+          totalValue: 100000,
+          winnerProfit: 20000,
+          dividendPerPlayer: 0,
+          ticketPerPlayer: 1000,
+          dividendTicketInfo: { dividendPerPlayer: 0, ticketPerPlayer: 1000, mechanism: "ticket" },
+          nonWinners: makeLanPlayers().filter((p) => p.id !== "p3"),
+          humanNonWinner: makeLanPlayers().find((p) => p.isSelf)
+        })
+      )
+      // adjustedWinnerProfit = 20000 × 2(群体祝福) = 40000；AI 钱包 3000+40000=43000
+      // 旧代码：联机 AI 赢家钱包不更新，仍 3000 -> 红
+      expect(ctx.aiWallets.p3).toBe(43000)
+      // 旧代码：联机不保存 AI 钱包 -> saveAiWalletsToStorage 未调用 -> 红
+      expect(ctx.deps.saveAiWalletsToStorage).toHaveBeenCalled()
+    })
+
     it("非主机不更新钱包但仍写日志和 UI", () => {
       const ctx = makeDeps({
         getIsLanMode: () => true,
@@ -511,10 +541,10 @@ describe("SettlementManager", () => {
       expect(ctx.deps.saveAiWalletsToStorage).toHaveBeenCalledOnce()
     })
 
-    it("推送结算上下文到 AI", () => {
+    it("推送结算上下文到 AI（push 已移至 prepareFinishAuction，先于反思）", async () => {
       const ctx = makeDeps()
       const manager = new SettlementManager(ctx.deps)
-      manager.finishAuctionSingle(makeContext())
+      await manager.prepareFinishAuction({ playerId: "p2", bid: 80000 }, "final")
       expect(ctx.deps.pushRunSettlementContextToAi).toHaveBeenCalledOnce()
       const payload = ctx.deps.pushRunSettlementContextToAi.mock.calls[0][0]
       expect(payload).toMatchObject({
@@ -600,6 +630,43 @@ describe("SettlementManager", () => {
       const manager = new SettlementManager(ctx.deps)
       manager.finishAuctionSingle(makeContext())
       expect(ctx.deps.updateHud).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe("AI 赢家钱包结算（回归：之前 AI 赢家钱包不更新，加成道具对 AI 无效）", () => {
+    it("AI 赢家盈利时钱包按 盈亏+加成 更新（群体祝福+100%）", async () => {
+      const ctx = makeDeps()
+      ctx.aiWallets.p2 = 5000
+      // 群体祝福：全体利润+100%（onGain, group, value 1.0 -> group 乘区 ×2）
+      ctx.bonusEffects.push({ id: "group-bless", scope: "group", condition: "onGain", value: 1.0 })
+      const manager = new SettlementManager(ctx.deps)
+      // getWarehouseTrueValue=100000, bid=80000 -> winnerProfit=20000（盈利）
+      await manager.finishAuction({ playerId: "p2", bid: 80000 }, "final")
+      // adjustedWinnerProfit = 20000 × 2(群体祝福) = 40000；AI 钱包 5000+40000=45000
+      // 旧代码：AI 赢家钱包不更新，仍为 5000 -> 此断言会红
+      expect(ctx.aiWallets.p2).toBe(45000)
+    })
+
+    it("AI 赢家亏损时钱包扣减并受厄运符咒（亏损减半）影响，兜底 0", async () => {
+      const ctx = makeDeps()
+      ctx.aiWallets.p2 = 5000
+      // 厄运符咒：自身亏损减少50%（onLoss, self, value -0.5 -> self 乘区 ×0.5）
+      ctx.bonusEffects.push({ id: "curse", scope: "self", condition: "onLoss", value: -0.5 })
+      const manager = new SettlementManager(ctx.deps)
+      // bid=120000 > totalValue=100000 -> winnerProfit=-20000（亏损）
+      await manager.finishAuction({ playerId: "p2", bid: 120000 }, "final")
+      // adjustedWinnerProfit = -20000 × 0.5 = -10000；钱包 max(0, 5000-10000)=0
+      // 旧代码：AI 赢家钱包不更新，仍为 5000 -> 此断言会红
+      expect(ctx.aiWallets.p2).toBe(0)
+    })
+
+    it("AI 赢家无加成时钱包按原始盈亏更新", async () => {
+      const ctx = makeDeps()
+      ctx.aiWallets.p2 = 5000
+      const manager = new SettlementManager(ctx.deps)
+      await manager.finishAuction({ playerId: "p2", bid: 80000 }, "final")
+      // 无加成：adjustedWinnerProfit = 20000；AI 钱包 5000+20000=25000
+      expect(ctx.aiWallets.p2).toBe(25000)
     })
   })
 

@@ -27,6 +27,13 @@ import {
   ensureCrossGameMemory
 } from "./memory"
 
+/** 经验本快照（冻结在上下文中的 A 副本，仅经验本三数组，不含 stats） */
+export interface ExperienceBookSnapshot {
+  lessons: string[]
+  strategies: string[]
+  praises: string[]
+}
+
 /** AI 记忆可变状态（引用共享：Manager 内部读写均作用于同一对象） */
 export interface AiMemoryData {
   aiConversationByPlayer: Record<string, ConversationBucketEntry[]>
@@ -38,6 +45,8 @@ export interface AiMemoryData {
   pendingSettlementSummary: string | null
   runSerial: number
   aiFeedbacks: AiFeedbackEntry[]
+  /** 经验本 A 副本：已插入决策上下文的冻结快照，仅在上下文清空时由 B 刷新 */
+  aiExperienceBookInContext: Record<string, ExperienceBookSnapshot>
 }
 
 /** localStorage 中 AI 记忆的运行时 shape（crossGameMemory 为对象而非数组，与 AiMemoryStorage 类型声明不同） */
@@ -47,6 +56,7 @@ interface RuntimeAiMemoryStorage {
   crossGameMessages?: Record<string, ConversationMessage[][]>
   pendingSummaryByPlayer?: Record<string, unknown>
   pendingSummary?: string
+  experienceBookInContext?: Record<string, ExperienceBookSnapshot>
   runSerial?: number
   savedAt?: number
 }
@@ -99,16 +109,23 @@ export class AiMemoryManager {
     return Boolean(settings && settings.multiGameMemoryEnabled)
   }
 
-  /** 是否应该生成对局总结（达到上下文长度阈值） */
-  shouldGenerateSummary(): boolean {
+  /** 是否达到上下文长度上限（多局开 && 对局数 >= contextLength）。不含 autoSummarize 判定，用于清空时机。 */
+  isAtContextLimit(): boolean {
     const settings = this.deps.getLlmSettings()
-    if (!settings || !settings.autoSummarizeEnabled || !settings.multiGameMemoryEnabled) return false
+    if (!settings || !settings.multiGameMemoryEnabled) return false
     const contextLength = (settings.contextLength as number) || 5
     if (!MobaoGameHistory) return false
     const aiPlayers = this.deps.players.filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
     if (aiPlayers.length === 0) return false
     const count = MobaoGameHistory.getCount(aiPlayers[0].id, this.deps.getIsLanMode())
     return count > 0 && count >= contextLength
+  }
+
+  /** 是否应该生成对局总结（达到上下文长度阈值 + 自动总结开启） */
+  shouldGenerateSummary(): boolean {
+    const settings = this.deps.getLlmSettings()
+    if (!settings || !settings.autoSummarizeEnabled) return false
+    return this.isAtContextLimit()
   }
 
   /** 清除指定玩家的对局历史 */
@@ -133,6 +150,7 @@ export class AiMemoryManager {
         crossGameMemory: data.aiCrossGameMemory,
         crossGameMessages: data.aiCrossGameMessagesByPlayer || {},
         pendingSummaryByPlayer: data.pendingNextRunAiSummaryByPlayer || {},
+        experienceBookInContext: data.aiExperienceBookInContext || {},
         runSerial: data.runSerial || 0,
         savedAt: Date.now()
       }
@@ -198,13 +216,35 @@ export class AiMemoryManager {
           data.pendingNextRunAiSummaryByPlayer[p.id] = summary
         })
     }
+    // 恢复经验本 A（冻结副本）。旧存档无此字段时，从已恢复的 B 回填，保持冻结语义。
+    data.aiExperienceBookInContext = {}
+    if (stored.experienceBookInContext && typeof stored.experienceBookInContext === "object") {
+      Object.keys(stored.experienceBookInContext).forEach((playerId) => {
+        const snap = stored.experienceBookInContext![playerId]
+        if (snap && typeof snap === "object") {
+          data.aiExperienceBookInContext[playerId] = {
+            lessons: Array.isArray(snap.lessons) ? (snap.lessons as string[]).slice(-10) : [],
+            strategies: Array.isArray(snap.strategies) ? (snap.strategies as string[]).slice(-10) : [],
+            praises: Array.isArray(snap.praises) ? (snap.praises as string[]).slice(-10) : []
+          }
+        }
+      })
+    }
+    // 回填：存档无 A 但有 B 的玩家，用 B 初始化 A
+    Object.keys(data.aiCrossGameMemory).forEach((playerId) => {
+      if (!data.aiExperienceBookInContext[playerId]) {
+        this.refreshAiExperienceBookInContext(playerId)
+      }
+    })
     if (stored.crossGameMessages && typeof stored.crossGameMessages === "object") {
       const crossGameMessages = stored.crossGameMessages
+      const settings = this.deps.getLlmSettings()
+      const contextLength = (settings && (settings.contextLength as number)) || 5
       data.aiCrossGameMessagesByPlayer = {}
       Object.keys(crossGameMessages).forEach((playerId) => {
         const arr = crossGameMessages[playerId]
         if (Array.isArray(arr)) {
-          data.aiCrossGameMessagesByPlayer[playerId] = arr.slice(-5)
+          data.aiCrossGameMessagesByPlayer[playerId] = arr.slice(-contextLength)
         }
       })
     }
@@ -224,6 +264,33 @@ export class AiMemoryManager {
   /** 确保跨局记忆存在并返回 */
   ensureAiCrossGameMemory(playerId: string): CrossGameMemory {
     return ensureCrossGameMemory(this.deps.data.aiCrossGameMemory, playerId)
+  }
+
+  /** 读取经验本 A（冻结在上下文中的快照）。无数据返回 null。 */
+  getAiExperienceBookInContext(playerId: string): ExperienceBookSnapshot | null {
+    const snap = this.deps.data.aiExperienceBookInContext?.[playerId]
+    if (!snap) return null
+    const hasData =
+      (Array.isArray(snap.lessons) && snap.lessons.length > 0) ||
+      (Array.isArray(snap.strategies) && snap.strategies.length > 0) ||
+      (Array.isArray(snap.praises) && snap.praises.length > 0)
+    return hasData ? { lessons: snap.lessons, strategies: snap.strategies, praises: snap.praises } : null
+  }
+
+  /** 刷新经验本 A <- B（深拷贝本地经验本到上下文冻结副本）。在上下文清空时调用。 */
+  refreshAiExperienceBookInContext(playerId: string): void {
+    const mem = this.deps.data.aiCrossGameMemory?.[playerId]
+    if (!this.deps.data.aiExperienceBookInContext) {
+      this.deps.data.aiExperienceBookInContext = {}
+    }
+    const lessons = Array.isArray(mem?.lessons) ? (mem!.lessons as string[]).slice() : []
+    const strategies = Array.isArray(mem?.strategies) ? (mem!.strategies as string[]).slice() : []
+    const praises = Array.isArray(mem?.praises) ? (mem!.praises as string[]).slice() : []
+    if (lessons.length === 0 && strategies.length === 0 && praises.length === 0) {
+      delete this.deps.data.aiExperienceBookInContext[playerId]
+    } else {
+      this.deps.data.aiExperienceBookInContext[playerId] = { lessons, strategies, praises }
+    }
   }
 
   /** 获取 AI 跨局历史记录数 */
@@ -318,6 +385,7 @@ export class AiMemoryManager {
     data.aiCrossGameMessagesByPlayer = {}
     data.aiReflectionPending = {}
     data.pendingNextRunAiSummaryByPlayer = {}
+    data.aiExperienceBookInContext = {}
   }
 
   /** 清除 AI 记忆存储（内存 + localStorage） */
@@ -328,6 +396,7 @@ export class AiMemoryManager {
     data.aiCrossGameMessagesByPlayer = {}
     data.aiReflectionPending = {}
     data.pendingNextRunAiSummaryByPlayer = {}
+    data.aiExperienceBookInContext = {}
     data.runSerial = 0
     try {
       window.localStorage.removeItem(AI_MEMORY_STORAGE_KEY)
@@ -341,6 +410,7 @@ export class AiMemoryManager {
       conversations: data.aiConversationByPlayer || {},
       crossGameMemory: data.aiCrossGameMemory || {},
       pendingSummaryByPlayer: data.pendingNextRunAiSummaryByPlayer || {},
+      experienceBookInContext: data.aiExperienceBookInContext || {},
       runSerial: data.runSerial || 0,
       exportedAt: Date.now(),
       version: "v1"
@@ -426,6 +496,25 @@ export class AiMemoryManager {
             data.pendingNextRunAiSummaryByPlayer[p.id] = parsed.pendingSummary
           })
       }
+      // 恢复经验本 A，缺失则从已恢复的 B 回填
+      data.aiExperienceBookInContext = {}
+      if (parsed.experienceBookInContext && typeof parsed.experienceBookInContext === "object") {
+        Object.keys(parsed.experienceBookInContext).forEach((playerId) => {
+          const snap = (parsed.experienceBookInContext as Record<string, ExperienceBookSnapshot>)[playerId]
+          if (snap && typeof snap === "object") {
+            data.aiExperienceBookInContext[playerId] = {
+              lessons: Array.isArray(snap.lessons) ? snap.lessons.slice(-10) : [],
+              strategies: Array.isArray(snap.strategies) ? snap.strategies.slice(-10) : [],
+              praises: Array.isArray(snap.praises) ? snap.praises.slice(-10) : []
+            }
+          }
+        })
+      }
+      Object.keys(data.aiCrossGameMemory).forEach((playerId) => {
+        if (!data.aiExperienceBookInContext[playerId]) {
+          this.refreshAiExperienceBookInContext(playerId)
+        }
+      })
       if (typeof parsed.runSerial === "number" && parsed.runSerial >= 0) {
         data.runSerial = parsed.runSerial
       }
@@ -475,10 +564,15 @@ export class AiMemoryManager {
       .filter(Boolean)
       .join(" ")
 
+    const multiGame = this.isAiMultiGameMemoryEnabled()
     this.deps.players
       .filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
       .forEach((p) => {
-        data.pendingNextRunAiSummaryByPlayer[p.id] = summaryText
+        // 上期总结(④)仅由总结B产出。多局关时无B，用系统事件文本作Layer⑤(上局结算)stand-in，
+        // 经 getAiFirstRoundExtraBlocks 下局开头注入。多局开时不在此设置（保留B的总结）。
+        if (!multiGame) {
+          data.pendingNextRunAiSummaryByPlayer[p.id] = summaryText
+        }
         const isWinner = p.id === winnerId
         let resultText = `${winnerName}以${winnerBid}中标,总值${totalValue},利润${winnerProfit >= 0 ? "+" : ""}${winnerProfit}`
         if (!isWinner && mechanism === "dividend") {
@@ -488,16 +582,6 @@ export class AiMemoryManager {
         }
         this.updateLastAiRoundResult(p.id, resultText)
       })
-
-    // p2 滑动窗口：未托管时跨局消息超出 contextLength 则丢弃最旧
-    const p2Msgs = data.aiCrossGameMessagesByPlayer["p2"]
-    if (p2Msgs && !this.deps.isAutoPlaying?.()) {
-      const settings = this.deps.getLlmSettings()
-      const contextLength = (settings && (settings.contextLength as number)) || 5
-      while (p2Msgs.length > contextLength) {
-        p2Msgs.shift()
-      }
-    }
 
     if (MobaoGameHistory) {
       const qualityCounts = this.getQualityCounts()
@@ -539,19 +623,42 @@ export class AiMemoryManager {
     if (!data.aiCrossGameMessagesByPlayer) {
       data.aiCrossGameMessagesByPlayer = {}
     }
+    const settings = this.deps.getLlmSettings()
+    const contextLength = (settings && (settings.contextLength as number)) || 5
+    const atLimit = this.isAtContextLimit()
     this.deps.players
       .filter((p) => !p.isHuman || (p.isHuman && this.deps.isAutoPlaying?.()))
       .forEach((p) => {
         const cached = data.aiConversationCache && data.aiConversationCache[p.id]
-        if (Array.isArray(cached) && cached.length > 2) {
-          const gameMessages = cached.slice(2) as ConversationMessage[]
-          if (!data.aiCrossGameMessagesByPlayer[p.id]) {
-            data.aiCrossGameMessagesByPlayer[p.id] = []
-          }
-          data.aiCrossGameMessagesByPlayer[p.id].push(gameMessages)
-          if (data.aiCrossGameMessagesByPlayer[p.id].length > 5) {
-            data.aiCrossGameMessagesByPlayer[p.id] = data.aiCrossGameMessagesByPlayer[p.id].slice(-5)
-          }
+        if (!(Array.isArray(cached) && cached.length > 2)) return
+        // 归档只保留本局自有消息，剥离前缀（system/图鉴/经验本/上期总结/跨局消息）。
+        // 否则下局重新注入前缀时，旧前缀残留在归档里会导致经验本/上期总结重复拼接。
+        const existingArchives = data.aiCrossGameMessagesByPlayer[p.id] || []
+        const crossGameMsgsCount = existingArchives.reduce(
+          (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0),
+          0
+        )
+        const contentAt = (i: number): string => {
+          const m = cached[i] as { content?: unknown } | undefined
+          return m && typeof m.content === "string" ? m.content : ""
+        }
+        let prefixCount = 2 // system + 图鉴摘要
+        if (contentAt(prefixCount).startsWith("【经验本】")) prefixCount++
+        if (contentAt(prefixCount).startsWith("【上期总结】")) prefixCount++
+        prefixCount += crossGameMsgsCount
+        if (prefixCount > cached.length) prefixCount = cached.length
+        const gameMessages = cached.slice(prefixCount) as ConversationMessage[]
+        if (!data.aiCrossGameMessagesByPlayer[p.id]) {
+          data.aiCrossGameMessagesByPlayer[p.id] = []
+        }
+          // Layer⑪ 对局结算：多局开且未达上限(情况B)时，把结算提示追加到本局末尾。
+          // 达上限(情况A)不追加——triggerAiReflection 的清空会丢弃本局，下局开头由上期总结携带。
+        if (multiGame && !atLimit) {
+          gameMessages.push({ role: "user", content: summaryText })
+        }
+        data.aiCrossGameMessagesByPlayer[p.id].push(gameMessages)
+        if (data.aiCrossGameMessagesByPlayer[p.id].length > contextLength) {
+          data.aiCrossGameMessagesByPlayer[p.id] = data.aiCrossGameMessagesByPlayer[p.id].slice(-contextLength)
         }
       })
     data.pendingSettlementSummary = summaryText
@@ -612,16 +719,21 @@ export class AiMemoryManager {
 
   /** 获取 AI 第一回合额外上下文块 */
   getAiFirstRoundExtraBlocks(playerId?: string): string[] {
-    if (!this.isAiMultiGameMemoryEnabled() || this.deps.getRound() !== 1) {
+    if (this.deps.getRound() !== 1) {
       return []
     }
+    const multiGame = this.isAiMultiGameMemoryEnabled()
 
     const blocks = [`【系统事件】第 ${this.deps.data.runSerial} 局开始。本局仓库随机生成，技能与道具已重置。`]
 
-    const targetId = playerId || this.deps.players.find((p) => !p.isHuman)?.id || ""
-    const playerSummary = this.deps.data.pendingNextRunAiSummaryByPlayer?.[targetId]
-    if (playerSummary) {
-      blocks.push(String(playerSummary))
+    if (!multiGame) {
+      // 多局关(context_length=1)：无上期总结(④)，用系统事件文本作Layer⑤(上局结算)stand-in，
+      // 放动态部分开头。多局开时上期总结由 historyMessages 的 ④ 注入，此处不重复。
+      const targetId = playerId || this.deps.players.find((p) => !p.isHuman)?.id || ""
+      const playerSummary = this.deps.data.pendingNextRunAiSummaryByPlayer?.[targetId]
+      if (playerSummary) {
+        blocks.push(String(playerSummary))
+      }
     }
 
     const publicEvent = this.deps.getCurrentPublicEvent()
