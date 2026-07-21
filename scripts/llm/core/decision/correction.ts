@@ -104,7 +104,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
           },
           selfId: player.id,
           selfName: player.name,
-          wallet: this.getAiWallet(player.id),
+          wallet: this.walletManager.getAiWallet(player.id),
           directWinRatio: Number((1 + Number(GAME_SETTINGS.directTakeRatio || 0)).toFixed(2)),
           folded: false,
           Previousbid: this.round === 1 ? null : this.currentBid,
@@ -113,8 +113,8 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
         selfRoleAndTools: {
           roleName: currentPlan && currentPlan.roleName ? currentPlan.roleName : "规则型",
           passive: currentPlan && currentPlan.passive ? currentPlan.passive : "默认规则人格",
-          activeSkills: this.getAiResourceSnapshot(player.id).skills
-            ? Object.entries(this.getAiResourceSnapshot(player.id).skills).map(([id, remain]) => {
+          activeSkills: this.aiIntelManager.getAiResourceSnapshot(player.id).skills
+            ? Object.entries(this.aiIntelManager.getAiResourceSnapshot(player.id).skills).map(([id, remain]) => {
                 const def = this.getActionDefById(id)
                 return {
                   name: def ? def.name : id,
@@ -123,8 +123,8 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
                 }
               })
             : [],
-          items: this.getAiResourceSnapshot(player.id).items
-            ? Object.entries(this.getAiResourceSnapshot(player.id).items).map(([id, remain]) => {
+          items: this.aiIntelManager.getAiResourceSnapshot(player.id).items
+            ? Object.entries(this.aiIntelManager.getAiResourceSnapshot(player.id).items).map(([id, remain]) => {
                 const def = this.getActionDefById(id)
                 return {
                   name: def ? def.name : id,
@@ -134,7 +134,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
               })
             : []
         },
-        actionConstraints: this.buildAiActionConstraintBlock(player.id)
+        actionConstraints: this.aiIntelManager.buildAiActionConstraintBlock(player.id)
       }
 
       const userPrompt = this.buildAiDecisionUserPrompt(payload, errorCorrectionBlock)
@@ -295,7 +295,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
             "EMPTY_RESPONSE",
             "warning"
           )
-          this.writeLog(`${player.name}：输出Token不足（纠错），已尝试从思维链提取。`)
+          this.aiDecisionManager.writeLog(`${player.name}：输出Token不足（纠错），已尝试从思维链提取。`)
         }
         let decision = this.extractAiDecisionObject(responseText)
         const hasValidBid = decision && Number.isFinite(Number(decision.bid)) && Number(decision.bid) > 0
@@ -304,8 +304,8 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
           const fallbackDecision = this.extractAiDecisionObject(reasoningContent)
           if (fallbackDecision && Number.isFinite(Number(fallbackDecision.bid)) && Number(fallbackDecision.bid) > 0) {
             decision = fallbackDecision
-            if (typeof this.writeLog === "function") {
-              this.writeLog(`${player.name}：从思维链中提取到纠错决策，出价${fallbackDecision.bid}`)
+            if (typeof this.aiDecisionManager.writeLog === "function") {
+              this.aiDecisionManager.writeLog(`${player.name}：从思维链中提取到纠错决策，出价${fallbackDecision.bid}`)
             }
           }
         }
@@ -321,7 +321,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
             "EMPTY_RESPONSE",
             "warning"
           )
-          this.writeLog(`${player.name}：输出被截断（纠错），决策可能不完整。`)
+          this.aiDecisionManager.writeLog(`${player.name}：输出被截断（纠错），决策可能不完整。`)
         }
 
         plan.elapsedMs = result.elapsedMs
@@ -369,7 +369,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
       const activePlayers = aiPlayers.filter((player: Player) => this.canUseLlmDecisionForPlayer(player.id))
       const disabledPlayers = aiPlayers.filter((player: Player) => !this.canUseLlmDecisionForPlayer(player.id))
       if (activePlayers.length === 0) {
-        this.writeLog("大模型总开关已开，但所有AI位开关均关闭，使用规则AI。")
+        this.aiDecisionManager.writeLog("大模型总开关已开，但所有AI位开关均关闭，使用规则AI。")
         return
       }
 
@@ -426,7 +426,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
         })
         const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
         const modelName = actualModel || (settings && settings.model) || "大模型"
-        this.writeLog(`${modelName}决策：${summary.join("；")}`)
+        this.aiDecisionManager.writeLog(`${modelName}决策：${summary.join("；")}`)
       }
     },
 
@@ -515,7 +515,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
               }
             }
 
-            await this.processSingleAiIntelAction(
+            await this.aiIntelManager.processSingleAiIntelAction(
               player,
               plan as unknown as IntelActionPlan | undefined,
               llmPlan,
@@ -567,8 +567,8 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
           delete indicator.dataset.aiThinking
         }
         if (this.lastAiIntelActions.length > 0) {
-          const text = this.lastAiIntelActions.map((entry) => this.formatAiIntelActionPublicLine(entry)).join("；")
-          this.writeLog(`他人情报行动：${text}`)
+          const text = this.lastAiIntelActions.map((entry) => this.aiIntelManager.formatAiIntelActionPublicLine(entry)).join("；")
+          this.aiDecisionManager.writeLog(`他人情报行动：${text}`)
         }
 
         const summary: string[] = []
@@ -602,7 +602,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
         if (summary.length > 0) {
           const settings = typeof this.getLlmSettings === "function" ? this.getLlmSettings() : LLM_SETTINGS
           const modelName = actualModel2 || (settings && settings.model) || "大模型"
-          this.writeLog(`${modelName}决策：${summary.join("；")}`)
+          this.aiDecisionManager.writeLog(`${modelName}决策：${summary.join("；")}`)
         }
       })
     },
@@ -612,8 +612,8 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
       this._aiDecisionSummaryWaiting = false
 
       if (this.lastAiIntelActions.length > 0) {
-        const text = this.lastAiIntelActions.map((entry) => this.formatAiIntelActionPublicLine(entry)).join("；")
-        this.writeLog(`他人情报行动：${text}`)
+        const text = this.lastAiIntelActions.map((entry) => this.aiIntelManager.formatAiIntelActionPublicLine(entry)).join("；")
+        this.aiDecisionManager.writeLog(`他人情报行动：${text}`)
       }
 
       const summary: string[] = []
@@ -648,7 +648,7 @@ export function createLlmCorrectionMethods(deps: LlmDecisionDeps) {
           }
         })
         const modelName = actualModels.size > 0 ? [...actualModels].join("/") : "大模型"
-        this.writeLog(`${modelName}决策：${summary.join("；")}`)
+        this.aiDecisionManager.writeLog(`${modelName}决策：${summary.join("；")}`)
       }
     }
   }

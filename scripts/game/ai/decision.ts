@@ -16,7 +16,6 @@
 import { createLogger } from "../core/logger"
 const log = createLogger("AI.Decision")
 import { formatBidRevealNumber } from "../core/utils"
-import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 
 // ─── 类型定义 ───
 
@@ -418,26 +417,3 @@ export function writeLog(
   render()
 }
 
-// ─── Mixin 薄代理（Phase 2：代理到 AiDecisionManager，向后兼容 Object.assign 混入）───
-
-export const AiDecisionMixin: ThisType<WarehouseSceneThis> = {
-  compactPanelTextForSnapshot(text: string): string {
-    return this.aiDecisionManager.compactPanelTextForSnapshot(text)
-  },
-
-  buildAiDecisionPanelSnapshot(telemetry: Record<string, unknown>): string | null {
-    return this.aiDecisionManager.buildAiDecisionPanelSnapshot(telemetry)
-  },
-
-  beginRunTracking(): void {
-    this.aiDecisionManager.beginRunTracking()
-  },
-
-  recordAiThoughtLogs(telemetry: Record<string, unknown>): void {
-    this.aiDecisionManager.recordAiThoughtLogs(telemetry)
-  },
-
-  writeLog(text: string): void {
-    this.aiDecisionManager.writeLog(text)
-  }
-}

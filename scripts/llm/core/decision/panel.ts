@@ -177,7 +177,7 @@ export function createLlmPanelMethods(deps: LlmDecisionDeps) {
 
     showAiConversationMessages(): void {
       if (!this.aiConversationCache || Object.keys(this.aiConversationCache).length === 0) {
-        this.writeLog("当前无Messages数据。")
+        this.aiDecisionManager.writeLog("当前无Messages数据。")
         return
       }
 

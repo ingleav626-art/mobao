@@ -128,8 +128,8 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
       const isInitialRound = this.round <= 1
       const compact = !isInitialRound
       const persona = this.aiEngine?.personalityMap[playerId] || null
-      const actionConstraint = this.buildAiActionConstraintBlock(playerId)
-      const resource = this.getAiResourceSnapshot(playerId)
+      const actionConstraint = this.aiIntelManager.buildAiActionConstraintBlock(playerId)
+      const resource = this.aiIntelManager.getAiResourceSnapshot(playerId)
 
       const bidHistory = this.buildBidHistorySnapshot()
       const publicEvents = this.buildPublicEventSnapshot({ compact, viewerId: playerId })
@@ -172,7 +172,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
           },
           selfId: playerId,
           selfName: player.name,
-          wallet: this.getAiWallet(playerId),
+          wallet: this.walletManager.getAiWallet(playerId),
           directWinRatio: Number((1 + GAME_SETTINGS.directTakeRatio).toFixed(2)),
           folded: false,
           Previousbid: this.round === 1 ? null : this.currentBid,
@@ -189,11 +189,11 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         },
         otherPlayersPublic: this.buildOtherPlayersPublicInfo(playerId, { compact }),
         catalogSummary: this.buildCatalogSummary({ compact }),
-        experienceBook: this.getAiExperienceBookInContext(playerId),
+        experienceBook: this.aiMemoryManager.getAiExperienceBookInContext(playerId),
         ...(compact
           ? { roundPublicStateTable: this.buildRoundPublicStateTable(playerId) }
           : { bidHistory, publicEvents }),
-        privateIntel: this.buildAiPrivateIntelBlock(playerId),
+        privateIntel: this.aiIntelManager.buildAiPrivateIntelBlock(playerId),
         actionConstraints: {
           canBid: actionConstraint.canBid,
           canFold: actionConstraint.canFold,
@@ -207,8 +207,8 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
     buildAiIncrementalPayload(this: WarehouseSceneThis, player: Player) {
       const playerId = player.id
       const previousRound = this.round - 1
-      const actionConstraint = this.buildAiActionConstraintBlock(playerId)
-      const resource = this.getAiResourceSnapshot(playerId)
+      const actionConstraint = this.aiIntelManager.buildAiActionConstraintBlock(playerId)
+      const resource = this.aiIntelManager.getAiResourceSnapshot(playerId)
 
       const bidHistory = this.buildBidHistorySnapshot()
       const lastRoundBid = bidHistory.find((entry) => entry.round === previousRound)
@@ -254,7 +254,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
           bids: lastRoundBid?.bids || {},
           actions: lastRoundActions
         },
-        currentWallet: this.getAiWallet(playerId),
+        currentWallet: this.walletManager.getAiWallet(playerId),
         currentLeader: lastRoundBid?.highestBidder || "none",
         currentBid: this.currentBid,
         selfAvailableTools: {
@@ -267,7 +267,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
           availableSkills: actionConstraint.availableSkills,
           availableItems: actionConstraint.availableItems
         },
-        privateIntel: this.buildAiPrivateIntelBlock(playerId)
+        privateIntel: this.aiIntelManager.buildAiPrivateIntelBlock(playerId)
       }
     },
 
@@ -284,7 +284,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         gameState: {
           selfId: player.id,
           selfName: player.name,
-          wallet: this.getAiWallet(player.id),
+          wallet: this.walletManager.getAiWallet(player.id),
           directWinRatio: Number((1 + GAME_SETTINGS.directTakeRatio).toFixed(2)),
           Previousbid: this.round === 1 ? null : this.currentBid,
           currentLeader: this.bidLeader
@@ -639,14 +639,14 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
         decision && decision.reason
       )
 
-      const actionState = this.getAiAvailableActionState(playerId)
+      const actionState = this.aiIntelManager.getAiAvailableActionState(playerId)
       const allowAction = options.allowAction !== false
       const bidParsed = Number(bidRaw)
       const hasBidDecision = Number.isFinite(bidParsed)
       let bid = hasBidDecision ? Math.round(bidParsed) : 0
       if (hasBidDecision) {
-        const wallet = this.getAiWallet(playerId)
-        bid = this.normalizeAiBidValue(playerId, bid, wallet)
+        const wallet = this.walletManager.getAiWallet(playerId)
+        bid = this.walletManager.normalizeAiBidValue(playerId, bid, wallet)
       }
 
       const skillPick = allowAction
@@ -715,7 +715,7 @@ export function createLlmPromptModule(deps: LlmPromptDeps) {
           if (!item) return
 
           // 只展示高价值藏品的 details，非高价值省略（quality 模式才判断，outline 模式无法判断品质）
-          if (signal.mode === "quality" && !this.isHighValueArtifact(item)) {
+          if (signal.mode === "quality" && !this.aiIntelManager.isHighValueArtifact(item)) {
             omittedCount++
             return
           }

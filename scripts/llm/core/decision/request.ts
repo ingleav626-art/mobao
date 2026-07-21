@@ -122,8 +122,8 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
       }
 
       const firstRoundBlocks =
-        isFirstRound && typeof this.getAiFirstRoundExtraBlocks === "function"
-          ? this.getAiFirstRoundExtraBlocks(player.id)
+        isFirstRound && typeof this.aiMemoryManager.getAiFirstRoundExtraBlocks === "function"
+          ? this.aiMemoryManager.getAiFirstRoundExtraBlocks(player.id)
           : []
       const mergedExtraBlocks = [
         ...(Array.isArray(firstRoundBlocks) ? firstRoundBlocks : []),
@@ -136,19 +136,19 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
       })
       const systemPrompt = LLM_DECISION_SYSTEM_PROMPT
       const useMultiGameMemory =
-        typeof this.isAiMultiGameMemoryEnabled === "function" ? this.isAiMultiGameMemoryEnabled() : false
+        typeof this.aiMemoryManager.isAiMultiGameMemoryEnabled === "function" ? this.aiMemoryManager.isAiMultiGameMemoryEnabled() : false
       const historyMessages: Array<Record<string, unknown>> =
-        useMultiGameMemory && typeof this.getAiConversationMessages === "function"
-          ? (this.getAiConversationMessages(player.id) as unknown as Array<Record<string, unknown>>)
+        useMultiGameMemory && typeof this.aiMemoryManager.getAiConversationMessages === "function"
+          ? (this.aiMemoryManager.getAiConversationMessages(player.id) as unknown as Array<Record<string, unknown>>)
           : []
       let crossGameMemoryCount = 0
       let inGameHistoryCount = 0
       if (useMultiGameMemory) {
-        if (typeof this.getAiCrossGameMemoryCount === "function") {
-          crossGameMemoryCount = this.getAiCrossGameMemoryCount(player.id)
+        if (typeof this.aiMemoryManager.getAiCrossGameMemoryCount === "function") {
+          crossGameMemoryCount = this.aiMemoryManager.getAiCrossGameMemoryCount(player.id)
         }
-        if (typeof this.getAiInGameHistoryCount === "function") {
-          inGameHistoryCount = this.getAiInGameHistoryCount(player.id)
+        if (typeof this.aiMemoryManager.getAiInGameHistoryCount === "function") {
+          inGameHistoryCount = this.aiMemoryManager.getAiInGameHistoryCount(player.id)
         }
       }
 
@@ -473,7 +473,7 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
             "EMPTY_RESPONSE",
             "warning"
           )
-          this.writeLog(`${player.name}：输出Token不足，已尝试从思维链提取决策。`)
+          this.aiDecisionManager.writeLog(`${player.name}：输出Token不足，已尝试从思维链提取决策。`)
         }
         let decision = this.extractAiDecisionObject(responseText)
         const hasValidBid = decision && Number.isFinite(Number(decision.bid)) && Number(decision.bid) > 0
@@ -487,8 +487,8 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
           const fallbackDecision = this.extractAiDecisionObject(reasoningContent)
           if (fallbackDecision && Number.isFinite(Number(fallbackDecision.bid)) && Number(fallbackDecision.bid) > 0) {
             decision = fallbackDecision
-            if (typeof this.writeLog === "function") {
-              this.writeLog(`${player.name}：从思维链中提取到决策，出价${fallbackDecision.bid}`)
+            if (typeof this.aiDecisionManager.writeLog === "function") {
+              this.aiDecisionManager.writeLog(`${player.name}：从思维链中提取到决策，出价${fallbackDecision.bid}`)
             }
           }
         }
@@ -503,10 +503,10 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
             "EMPTY_RESPONSE",
             "warning"
           )
-          this.writeLog(`${player.name}：输出被截断，决策可能不完整。`)
+          this.aiDecisionManager.writeLog(`${player.name}：输出被截断，决策可能不完整。`)
         }
-        if (useMultiGameMemory && requestStage === "initial" && typeof this.pushAiRoundSummary === "function") {
-          this.pushAiRoundSummary(player.id, plan as unknown as import("../../../../types/llm").LlmPlanResult)
+        if (useMultiGameMemory && requestStage === "initial" && typeof this.aiMemoryManager.pushAiRoundSummary === "function") {
+          this.aiMemoryManager.pushAiRoundSummary(player.id, plan as unknown as Record<string, unknown>)
         }
         plan.elapsedMs = result.elapsedMs
         plan.model = result.model || ""
@@ -544,7 +544,7 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
             "MODEL_MISMATCH",
             "warning"
           )
-          this.writeLog(`${player.name}：模型不一致，请求=${plan.configuredModel} 实际=${plan.model}`)
+          this.aiDecisionManager.writeLog(`${player.name}：模型不一致，请求=${plan.configuredModel} 实际=${plan.model}`)
         }
 
         this.aiConversationCache[player.id] = [...messages, { role: "assistant", content: responseText }]

@@ -113,6 +113,13 @@ beforeAll(async () => {
 
   // ---- 构造场景 ----
   scene = new WarehouseScene()
+
+  // Mixin 清理后，startNewRun/playerBid 直调 aiDecisionManager（writeLog/beginRunTracking
+  // 不再走 scene Mixin 代理）。stub 这些 manager 方法为 no-op，避免真实逻辑依赖未 mock 的
+  // 下游（renderAiThoughtLog/saveAiMemoryToStorage 等）。
+  scene.aiDecisionManager.writeLog = vi.fn()
+  scene.aiDecisionManager.beginRunTracking = vi.fn()
+  scene.aiIntelManager.initAiIntelSystems = vi.fn()
 })
 
 // =============================================================================

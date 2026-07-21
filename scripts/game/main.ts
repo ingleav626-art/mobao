@@ -67,7 +67,6 @@ import * as SceneUtils from "./scene/scene-utils"
 import * as SceneBattleRecord from "./scene/scene-battle-record"
 
 // 原有 Mixin
-import { AiWalletMixin, AiIntelMixin, AiMemoryMixin, AiReflectionMixin, AiDecisionMixin } from "./ai/index"
 import { BiddingMixin } from "./bidding/index"
 import { OverlayMixin, PanelsMixin, HistoryMixin } from "./ui/index"
 import { LanIndexMixin } from "./lan/index"
@@ -141,11 +140,6 @@ Object.assign(
   SETTLEMENT_BRIDGE.methods,
   LLM_BRIDGE.methods,
   // 原有 Mixin
-  AiWalletMixin,
-  AiIntelMixin,
-  AiMemoryMixin,
-  AiReflectionMixin,
-  AiDecisionMixin,
   BiddingMixin,
   OverlayMixin,
   PanelsMixin,

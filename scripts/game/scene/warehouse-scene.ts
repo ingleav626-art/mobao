@@ -88,16 +88,6 @@ export interface WarehouseMixinMethods {
   isPointOnSettlementLockedItem(x: number, y: number): boolean
 
   // AI Mixin
-  initAiWallets(): void
-  initAiIntelSystems(): void
-  resetAiWallets(): void
-  isAiMultiGameMemoryEnabled(): boolean
-  resetAiConversations(): void
-  pushRunStartContextToAi(): void
-  restoreAiMemoryFromStorage(): void
-  clearAiMemoryStorage(): void
-  exportAiMemoryToJson(): string
-  importAiMemoryFromJson(json: string): { ok: boolean; error?: string }
   showAiMemoryExportDialog(): void
   removeAiMemoryExportDialog(): void
   showAiMemoryImportDialog(): void
@@ -109,7 +99,6 @@ export interface WarehouseMixinMethods {
   stopRoundTimer(): void
   toggleRoundPause(): void
   resolveRoundBids(reason: string): void
-  beginRunTracking(): void
 
   // Skill/Item Manager Mixin
   useItem(itemId: string): void
@@ -125,8 +114,6 @@ export interface WarehouseMixinMethods {
 
   // Settlement Manager Mixin
   settleCurrentRun(): void
-  proceedToNewRun(): void
-  shouldShowReflectionUI(): boolean
   showReflectionPendingDialog(): void
   showReflectionPendingDialogForBack(): void
 
@@ -140,8 +127,6 @@ export interface WarehouseMixinMethods {
   openShopOverlay(): void
   openAiLogicPanel(): void
   closeAiLogicPanel(): void
-  openAiMemoryPanel(): void
-  closeAiMemoryPanel(): void
   openAiFeedbackPanel(): void
   closeAiFeedbackPanel(): void
   refreshAiFeedbackList(): void
@@ -180,8 +165,6 @@ export interface WarehouseMixinMethods {
 
   // History
   resetPlayerHistoryState(): void
-  writeLog(msg: string): void
-  proceedToBack(): void
 }
 
 // Phaser.Scene 类型桥接：extends 子句不支持 as，用中间类绕过
@@ -448,11 +431,8 @@ class WarehouseScene extends _PhaserScene {
   autoplayManager!: AutoPlayManager
   // Phase 2: Manager 依赖的跨 Mixin 方法（运行时由 Object.assign 提供）
   isSettlementPageActive!: () => boolean
-  saveAiMemoryToStorage!: () => void
   renderAiThoughtLog!: () => void
   renderAiLogicPanelForLlm!: (telemetry: { round: number; entries?: Array<Record<string, unknown>> }) => void
-  canUseIntelActions!: () => boolean
-  buildSkillContext!: () => SkillContext
   updateHud!: () => void
   recordPlayerUsage!: (playerId: string, actionId: string) => void
   addPrivateIntelEntry!: (entry: { source: string; text: string }) => void
@@ -488,15 +468,11 @@ class WarehouseScene extends _PhaserScene {
   showLanPauseOverlay!: (...args: any[]) => any
   hideLanPauseOverlay!: (...args: any[]) => any
   captureAiDecisionTelemetry!: (...args: any[]) => any
-  recordAiThoughtLogs!: (...args: any[]) => any
   renderAiLogicPanel!: (...args: any[]) => any
   recordRoundHistory!: (...args: any[]) => any
   markRoundRanking!: (...args: any[]) => any
   finishAuction!: (...args: any[]) => any
   processAiDecisions!: (...args: any[]) => any
-  buildAiIntelSnapshot!: (...args: any[]) => any
-  getAiWallet!: (...args: any[]) => any
-  normalizeAiBidValue!: (...args: any[]) => any
   cancelSettlementReveal!: (...args: any[]) => any
   buildWarehouseSnapshotForSync!: (...args: any[]) => any
   applyCharacterToPlayer!: (...args: any[]) => any
@@ -698,7 +674,7 @@ class WarehouseScene extends _PhaserScene {
         this.runSerial = n
       },
       getRunSerial: () => this.runSerial,
-      saveAiMemoryToStorage: () => this.saveAiMemoryToStorage(),
+      saveAiMemoryToStorage: () => this.aiMemoryManager.saveAiMemoryToStorage(),
       renderAiThoughtLog: () => this.renderAiThoughtLog(),
       renderAiLogicPanelForLlm: (t) => this.renderAiLogicPanelForLlm(t)
     })
@@ -710,11 +686,11 @@ class WarehouseScene extends _PhaserScene {
       },
       skillManager: this.skillManager,
       itemManager: this.itemManager,
-      canUseIntelActions: () => this.canUseIntelActions(),
+      canUseIntelActions: () => this.aiIntelManager.canUseIntelActions(),
       closeItemDrawer: () => this.closeItemDrawer(),
-      writeLog: (msg: string) => this.writeLog(msg),
+      writeLog: (msg: string) => this.aiDecisionManager.writeLog(msg),
       showGameConfirm: (msg: string, onOk: () => void) => this.showGameConfirm(msg, onOk),
-      buildSkillContext: () => this.buildSkillContext(),
+      buildSkillContext: () => this.aiIntelManager.buildSkillContext(),
       updateHud: () => this.updateHud(),
       recordPlayerUsage: (playerId: string, actionId: string) => this.recordPlayerUsage(playerId, actionId),
       addPrivateIntelEntry: (entry: { source: string; text: string }) => this.addPrivateIntelEntry(entry),
@@ -898,7 +874,7 @@ class WarehouseScene extends _PhaserScene {
       enterLobby: () => this.enterLobby(),
       enterLanRoom: () => this.enterLanRoom(),
       openBattleRecordPanel: () => this.openBattleRecordPanel(),
-      writeLog: (text: string) => this.writeLog(text),
+      writeLog: (text: string) => this.aiDecisionManager.writeLog(text),
       isAutoPlaying: () => scene.autoplayManager.isActive(),
       isFeedbackEnabled: () => {
         const settings = this.getLlmSettings() as { feedbackEnabled?: boolean } | null
@@ -952,7 +928,7 @@ class WarehouseScene extends _PhaserScene {
       triggerAiReflection: (record) => this.aiReflectionManager.triggerAiReflection(record as Record<string, unknown>),
       hasAppliedMoneyForRun: () => this.hasAppliedMoneyForRun(),
       markMoneyAppliedForRun: () => this.markMoneyAppliedForRun(),
-      writeLog: (msg) => this.writeLog(msg),
+      writeLog: (msg) => this.aiDecisionManager.writeLog(msg),
       updateHud: () => this.updateHud(),
       getAiWallet: (id) => this.walletManager.getAiWallet(id),
       getBonusEffects: () => this.state.game.bonusEffects
@@ -1083,7 +1059,7 @@ class WarehouseScene extends _PhaserScene {
       getMapCategoryWeights: () => (scene as unknown as WarehouseSceneThis)._mapCategoryWeights,
       getMapQualityWeights: () => (scene as unknown as WarehouseSceneThis)._mapQualityWeights,
       isSettlementPageActive: () => this.isSettlementPageActive(),
-      writeLog: (msg: string) => this.writeLog(msg),
+      writeLog: (msg: string) => this.aiDecisionManager.writeLog(msg),
       updateHud: () => this.updateHud()
     })
 
@@ -1221,7 +1197,7 @@ class WarehouseScene extends _PhaserScene {
       revealAllByQuality: (qualityKey: string) => this.warehouseManager.revealAllByQuality(qualityKey),
       revealAllByCategory: (category: string) => this.warehouseManager.revealAllByCategory(category),
       canUseLlmDecisionForPlayer: (playerId: string) => this.canUseLlmDecisionForPlayer(playerId),
-      writeLog: (text: string) => this.writeLog(text),
+      writeLog: (text: string) => this.aiDecisionManager.writeLog(text),
       requestAiLlmErrorCorrection: (
         player: Player,
         plan: LlmPlan,
@@ -1230,7 +1206,7 @@ class WarehouseScene extends _PhaserScene {
         messages: ConversationMessage[]
       ) => (this as unknown as WarehouseSceneThis).requestAiLlmErrorCorrection(player, plan, error, history, messages),
       getAiConversationMessages: (playerId: string) =>
-        (this as unknown as WarehouseSceneThis).getAiConversationMessages(playerId),
+        this.aiMemoryManager.getAiConversationMessages(playerId),
       recordPlayerUsage: (playerId: string, actionId: string) => this.recordPlayerUsage(playerId, actionId),
       buildAiToolResultSummary: (result: unknown, actionType: string, actionId: string) =>
         (this as unknown as WarehouseSceneThis).buildAiToolResultSummary(result, actionType, actionId),
@@ -1311,16 +1287,16 @@ class WarehouseScene extends _PhaserScene {
       setLlmSettingsStatus: (text: string, state: string) =>
         (this as unknown as WarehouseSceneThis).setLlmSettingsStatus(text, state),
       getLlmProvider: () => this.getLlmProvider() as unknown as OverlayLlmProvider | null,
-      writeLog: (msg: string) => this.writeLog(msg),
-      pushRunStartContextToAi: () => this.pushRunStartContextToAi(),
+      writeLog: (msg: string) => this.aiDecisionManager.writeLog(msg),
+      pushRunStartContextToAi: () => this.aiMemoryManager.pushRunStartContextToAi(),
       toggleRoundPause: () => this.roundManager.toggleRoundPause(),
       ensureAiCrossGameMemory: (playerId: string) =>
         this.aiMemoryManager.ensureAiCrossGameMemory(playerId) as unknown as CrossGameMemory,
-      shouldShowReflectionUI: () => this.shouldShowReflectionUI(),
+      shouldShowReflectionUI: () => this.aiReflectionManager.shouldShowReflectionUI(),
       shouldGenerateSummary: () => this.aiMemoryManager.shouldGenerateSummary(),
-      isAiMultiGameMemoryEnabled: () => this.isAiMultiGameMemoryEnabled(),
-      proceedToNewRun: () => this.proceedToNewRun(),
-      proceedToBack: () => this.proceedToBack(),
+      isAiMultiGameMemoryEnabled: () => this.aiMemoryManager.isAiMultiGameMemoryEnabled(),
+      proceedToNewRun: () => this.aiReflectionManager.proceedToNewRun(),
+      proceedToBack: () => this.aiReflectionManager.proceedToBack(),
       setGameConfirmCallback: (v: (() => void) | null) => {
         (scene as unknown as WarehouseSceneThis)._gameConfirmCallback = v
       },
@@ -1502,7 +1478,7 @@ class WarehouseScene extends _PhaserScene {
       exitSettlementPage: () => this.exitSettlementPage(),
       startNewRun: () => this.startNewRun(),
       stopLive2dLoop: () => (this as unknown as WarehouseSceneThis)._stopLive2dLoop(),
-      writeLog: (msg: string) => this.writeLog(msg),
+      writeLog: (msg: string) => this.aiDecisionManager.writeLog(msg),
       refreshPlayerHistoryUI: () => (this as unknown as WarehouseSceneThis).refreshPlayerHistoryUI()
     })
 
@@ -1596,7 +1572,7 @@ class WarehouseScene extends _PhaserScene {
       closeBidKeypad: () => scene.biddingManager.closeBidKeypad(),
       kickoffAiRoundDecisions: () => scene.biddingManager.kickoffAiRoundDecisions(),
       updateHud: () => scene.updateHud(),
-      writeLog: (msg: string) => scene.writeLog(msg),
+      writeLog: (msg: string) => scene.aiDecisionManager.writeLog(msg),
       resolveRoundBids: (reason: string) => scene.resolveRoundBids(reason),
       showLanPauseOverlay: () => scene.showLanPauseOverlay(),
       hideLanPauseOverlay: () => scene.hideLanPauseOverlay(),
@@ -1653,7 +1629,7 @@ class WarehouseScene extends _PhaserScene {
       showGameConfirm: (msg: string, onOk: () => void, onCancel?: () => void) =>
         scene.showGameConfirm(msg, onOk, onCancel),
       updateHud: () => scene.updateHud(),
-      writeLog: (msg: string) => scene.writeLog(msg),
+      writeLog: (msg: string) => scene.aiDecisionManager.writeLog(msg),
       setPlayerBidSubmitted: (v: boolean) => {
         scene.playerBidSubmitted = v
       },
@@ -1680,7 +1656,7 @@ class WarehouseScene extends _PhaserScene {
       },
       stopRoundTimer: () => scene.roundManager.stopRoundTimer(),
       captureAiDecisionTelemetry: (bids: unknown[]) => scene.captureAiDecisionTelemetry(bids),
-      recordAiThoughtLogs: (telemetry: unknown) => scene.recordAiThoughtLogs(telemetry),
+      recordAiThoughtLogs: (telemetry: unknown) => scene.aiDecisionManager.recordAiThoughtLogs(telemetry as Record<string, unknown>),
       renderAiLogicPanel: () => scene.renderAiLogicPanel(),
       recordRoundHistory: (roundBids: Array<{ playerId: string; bid: number }>) => scene.recordRoundHistory(roundBids),
       markRoundRanking: (sorted: Array<{ playerId: string; bid: number }>) => scene.markRoundRanking(sorted),
@@ -1688,11 +1664,11 @@ class WarehouseScene extends _PhaserScene {
       startRound: () => scene.roundManager.startRound(),
       processAiDecisions: () => scene.processAiDecisions() as Promise<void>,
       hasAnyInfo: (item: Artifact) => scene.hasAnyInfo(item),
-      buildAiIntelSnapshot: () => scene.buildAiIntelSnapshot(),
+      buildAiIntelSnapshot: () => scene.aiIntelManager.buildAiIntelSnapshot(),
       canUseLlmDecisionForPlayer: (playerId: string) => scene.canUseLlmDecisionForPlayer(playerId),
-      getAiWallet: (id: string) => scene.getAiWallet(id),
+      getAiWallet: (id: string) => scene.walletManager.getAiWallet(id),
       normalizeAiBidValue: (playerId: string, bid: number, wallet?: number | null) =>
-        scene.normalizeAiBidValue(playerId, bid, wallet),
+        scene.walletManager.normalizeAiBidValue(playerId, bid, wallet),
       recordPlayerBid: (bid: number) => scene.autoplayManager.recordPlayerBid(bid),
       isAutoPlaying: () => scene.autoplayManager.isActive(),
     })
@@ -2054,14 +2030,14 @@ class WarehouseScene extends _PhaserScene {
       setLanBridge: (bridge) => {
         scene.lanBridge = bridge as unknown as typeof scene.lanBridge
       },
-      writeLog: (text: string) => scene.writeLog(text),
+      writeLog: (text: string) => scene.aiDecisionManager.writeLog(text),
       setOnlineStatus: (text: string, cls: string) =>
         (scene as unknown as Record<string, (...args: unknown[]) => unknown>).setOnlineStatus(text, cls),
       showGameConfirm: (msg: string, onConfirm: () => void) => scene.showGameConfirm(msg, onConfirm),
       stopRoundTimer: () => scene.roundManager.stopRoundTimer(),
       startRound: () => scene.roundManager.startRound(),
       updateHud: () => scene.updateHud(),
-      beginRunTracking: () => scene.beginRunTracking(),
+      beginRunTracking: () => scene.aiDecisionManager.beginRunTracking(),
       cancelSettlementReveal: () => scene.cancelSettlementReveal(),
       exitSettlementPage: () => scene.exitSettlementPage(),
       guardWarehouseCapacity: () => scene.guardWarehouseCapacity(),
@@ -2078,8 +2054,8 @@ class WarehouseScene extends _PhaserScene {
       buildWarehouseSnapshotForSync: () => scene.buildWarehouseSnapshotForSync(),
       initPlayersUI: () => scene.initPlayersUI(),
       applyCharacterToPlayer: () => scene.applyCharacterToPlayer(),
-      initAiWallets: () => scene.initAiWallets(),
-      initAiIntelSystems: () => scene.initAiIntelSystems(),
+      initAiWallets: () => scene.walletManager.initAiWallets(),
+      initAiIntelSystems: () => scene.aiIntelManager.initAiIntelSystems(),
       makeRunToken: () => scene.makeRunToken(),
       syncItemManagerFromShop: () => scene.syncItemManagerFromShop(),
       revealRoundBidsSequential: (bids: Array<{ playerId: string; bid: number }>) =>
@@ -2088,7 +2064,7 @@ class WarehouseScene extends _PhaserScene {
       finishAuction: (winner: { playerId: string; bid: number }, mode: string) => scene.finishAuction(winner, mode),
       captureAiDecisionTelemetry: (slotBids: Array<{ playerId: string; bid: number }>) =>
         scene.captureAiDecisionTelemetry(slotBids),
-      recordAiThoughtLogs: (telemetry: unknown) => scene.recordAiThoughtLogs(telemetry),
+      recordAiThoughtLogs: (telemetry: unknown) => scene.aiDecisionManager.recordAiThoughtLogs(telemetry as Record<string, unknown>),
       renderAiLogicPanel: () => scene.renderAiLogicPanel(),
       waitUntilResumed: () => scene.waitUntilResumed() as Promise<void>,
       setPlayerBidReady: (playerId: string, ready: boolean) => scene.biddingManager.setPlayerBidReady(playerId, ready),
@@ -2111,10 +2087,10 @@ class WarehouseScene extends _PhaserScene {
       isAiLlmEnabledForPlayer: (playerId: string) => scene.isAiLlmEnabledForPlayer(playerId),
       canUseLlmDecisionForPlayer: (playerId: string) => scene.canUseLlmDecisionForPlayer(playerId),
       normalizeAiBidValue: (playerId: string, bid: number, wallet: number) =>
-        scene.normalizeAiBidValue(playerId, bid, wallet),
+        scene.walletManager.normalizeAiBidValue(playerId, bid, wallet),
       updateLobbyMoneyDisplay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).updateLobbyMoneyDisplay(),
       getLastRoundBidMap: () => scene.getLastRoundBidMap(),
-      buildAiIntelSnapshot: () => scene.buildAiIntelSnapshot(),
+      buildAiIntelSnapshot: () => scene.aiIntelManager.buildAiIntelSnapshot(),
       hasAnyInfo: (item: Artifact) => scene.hasAnyInfo(item),
       renderItem: (item: Artifact) => scene.renderItem(item),
       addContainer: () => scene.add.container(0, 0),
@@ -2147,7 +2123,7 @@ class WarehouseScene extends _PhaserScene {
     })
 
     this.syncItemManagerFromShop()
-    this.restoreAiMemoryFromStorage()
+    this.aiMemoryManager.restoreAiMemoryFromStorage()
     this.resetPlayerHistoryState()
   }
 
@@ -2367,16 +2343,6 @@ class WarehouseScene extends _PhaserScene {
   revealCell(col: number, row: number): void {
     return this.warehouseManager.revealCell(col, row)
   }
-  initAiWallets!: WarehouseMixinMethods["initAiWallets"]
-  initAiIntelSystems!: WarehouseMixinMethods["initAiIntelSystems"]
-  resetAiWallets!: WarehouseMixinMethods["resetAiWallets"]
-  isAiMultiGameMemoryEnabled!: WarehouseMixinMethods["isAiMultiGameMemoryEnabled"]
-  resetAiConversations!: WarehouseMixinMethods["resetAiConversations"]
-  pushRunStartContextToAi!: WarehouseMixinMethods["pushRunStartContextToAi"]
-  restoreAiMemoryFromStorage!: WarehouseMixinMethods["restoreAiMemoryFromStorage"]
-  clearAiMemoryStorage!: WarehouseMixinMethods["clearAiMemoryStorage"]
-  exportAiMemoryToJson!: WarehouseMixinMethods["exportAiMemoryToJson"]
-  importAiMemoryFromJson!: WarehouseMixinMethods["importAiMemoryFromJson"]
   showAiMemoryExportDialog!: WarehouseMixinMethods["showAiMemoryExportDialog"]
   removeAiMemoryExportDialog!: WarehouseMixinMethods["removeAiMemoryExportDialog"]
   showAiMemoryImportDialog!: WarehouseMixinMethods["showAiMemoryImportDialog"]
@@ -2386,7 +2352,6 @@ class WarehouseScene extends _PhaserScene {
   stopRoundTimer!: WarehouseMixinMethods["stopRoundTimer"]
   toggleRoundPause!: WarehouseMixinMethods["toggleRoundPause"]
   resolveRoundBids!: WarehouseMixinMethods["resolveRoundBids"]
-  beginRunTracking!: WarehouseMixinMethods["beginRunTracking"]
   useItem!: WarehouseMixinMethods["useItem"]
   useSkill!: WarehouseMixinMethods["useSkill"]
   handleBidKeyInput!: WarehouseMixinMethods["handleBidKeyInput"]
@@ -2397,8 +2362,6 @@ class WarehouseScene extends _PhaserScene {
   closeItemDrawer!: WarehouseMixinMethods["closeItemDrawer"]
   getItemInfo!: WarehouseMixinMethods["getItemInfo"]
   settleCurrentRun!: WarehouseMixinMethods["settleCurrentRun"]
-  proceedToNewRun!: WarehouseMixinMethods["proceedToNewRun"]
-  shouldShowReflectionUI!: WarehouseMixinMethods["shouldShowReflectionUI"]
   showReflectionPendingDialog!: WarehouseMixinMethods["showReflectionPendingDialog"]
   showReflectionPendingDialogForBack!: WarehouseMixinMethods["showReflectionPendingDialogForBack"]
   openSettingsOverlay!: WarehouseMixinMethods["openSettingsOverlay"]
@@ -2410,8 +2373,6 @@ class WarehouseScene extends _PhaserScene {
   openShopOverlay!: WarehouseMixinMethods["openShopOverlay"]
   openAiLogicPanel!: WarehouseMixinMethods["openAiLogicPanel"]
   closeAiLogicPanel!: WarehouseMixinMethods["closeAiLogicPanel"]
-  openAiMemoryPanel!: WarehouseMixinMethods["openAiMemoryPanel"]
-  closeAiMemoryPanel!: WarehouseMixinMethods["closeAiMemoryPanel"]
   openAiFeedbackPanel!: WarehouseMixinMethods["openAiFeedbackPanel"]
   closeAiFeedbackPanel!: WarehouseMixinMethods["closeAiFeedbackPanel"]
   refreshAiFeedbackList!: WarehouseMixinMethods["refreshAiFeedbackList"]
@@ -2437,8 +2398,6 @@ class WarehouseScene extends _PhaserScene {
   onLanBackground!: WarehouseMixinMethods["onLanBackground"]
   onLanForeground!: WarehouseMixinMethods["onLanForeground"]
   resetPlayerHistoryState!: WarehouseMixinMethods["resetPlayerHistoryState"]
-  writeLog!: WarehouseMixinMethods["writeLog"]
-  proceedToBack!: WarehouseMixinMethods["proceedToBack"]
 }
 
 export { WarehouseScene }

@@ -40,7 +40,7 @@ export function createLogViewSlice(deps: BattleRecordDeps): {
       const records = Array.isArray(this.battleRecords) ? this.battleRecords : []
       const record = records.find((entry) => entry && entry.id === recordId)
       if (!record) {
-        this.writeLog("未找到该条战绩日志。请刷新后重试。")
+        this.aiDecisionManager.writeLog("未找到该条战绩日志。请刷新后重试。")
         return
       }
 

@@ -1,4 +1,3 @@
-import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import { createLogger } from "../core/logger"
 const log = createLogger("AI.Reflection")
 
@@ -186,38 +185,3 @@ export function updateCrossGameMemory(
   )
 }
 
-// ─── Mixin 薄代理（Phase 2：代理到 AiReflectionManager，向后兼容 Object.assign 混入）───
-
-export const AiReflectionMixin: ThisType<WarehouseSceneThis> = {
-  isAiReflectionEnabled(): boolean {
-    return this.aiReflectionManager.isAiReflectionEnabled()
-  },
-
-  async triggerAiReflection(record: Record<string, unknown>): Promise<void> {
-    return this.aiReflectionManager.triggerAiReflection(record)
-  },
-
-  applyMemoryOperations(array: string[], operations: Record<string, unknown>, maxLength: number): void {
-    return this.aiReflectionManager.applyMemoryOperations(array, operations, maxLength)
-  },
-
-  updateCrossGameMemory(
-    playerId: string,
-    record: Record<string, unknown>,
-    parsedReflection: Record<string, unknown>
-  ): void {
-    return this.aiReflectionManager.updateCrossGameMemory(playerId, record, parsedReflection)
-  },
-
-  shouldShowReflectionUI(): boolean {
-    return this.aiReflectionManager.shouldShowReflectionUI()
-  },
-
-  proceedToBack() {
-    return this.aiReflectionManager.proceedToBack()
-  },
-
-  proceedToNewRun(): void {
-    return this.aiReflectionManager.proceedToNewRun()
-  }
-}

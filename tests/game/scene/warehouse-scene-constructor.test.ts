@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from "vitest"
 import { initDeps, Deps } from "../../../scripts/game/core/deps"
+import { AiMemoryManager } from "../../../scripts/game/ai/memory-manager"
 
 let WarehouseScene: any
 let scene: any
@@ -54,13 +55,13 @@ beforeAll(async () => {
 
   const syncItemSpy = vi.fn()
   const restoreSpy = vi.fn(function (this: any) {
-    restoreCallSnapshots.push({ aiMemoryManager: this.aiMemoryManager })
+    restoreCallSnapshots.push({ aiMemoryManager: this })
   })
   const resetHistorySpy = vi.fn(function (this: any) {
     resetHistoryCallSnapshots.push({ historyManager: this.historyManager })
   })
   WarehouseScene.prototype.syncItemManagerFromShop = syncItemSpy
-  WarehouseScene.prototype.restoreAiMemoryFromStorage = restoreSpy
+  vi.spyOn(AiMemoryManager.prototype, "restoreAiMemoryFromStorage").mockImplementation(restoreSpy)
   WarehouseScene.prototype.resetPlayerHistoryState = resetHistorySpy
 
   scene = new WarehouseScene()

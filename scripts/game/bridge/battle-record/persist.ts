@@ -100,7 +100,7 @@ export function createPersistSlice(deps: BattleRecordDeps): {
         this.lastAiDecisionTelemetry &&
         (this.lastAiDecisionTelemetry as unknown as Record<string, unknown>).mode === "llm"
       ) {
-        aiDecisionPanelText = this.buildAiDecisionPanelSnapshot(
+        aiDecisionPanelText = this.aiDecisionManager.buildAiDecisionPanelSnapshot(
           this.lastAiDecisionTelemetry as unknown as Record<string, unknown>
         ) as string | null
       }
@@ -161,7 +161,7 @@ export function createPersistSlice(deps: BattleRecordDeps): {
       const records = Array.isArray(this.battleRecords) ? this.battleRecords : []
       const record = records.find((entry) => entry && entry.id === recordId)
       if (!record) {
-        this.writeLog("未找到可删除的战绩。")
+        this.aiDecisionManager.writeLog("未找到可删除的战绩。")
         return
       }
 
@@ -184,7 +184,7 @@ export function createPersistSlice(deps: BattleRecordDeps): {
         this.renderBattleRecordPanel()
       }
 
-      this.writeLog("战绩已删除。")
+      this.aiDecisionManager.writeLog("战绩已删除。")
     }
   }
 

@@ -18,13 +18,13 @@ export function createReplaySlice(_deps: BattleRecordDeps): {
       const records = Array.isArray(this.battleRecords) ? this.battleRecords : []
       const record = records.find((entry) => entry && entry.id === recordId)
       if (!record) {
-        this.writeLog("未找到该条战绩，可能已被清理。请刷新后重试。")
+        this.aiDecisionManager.writeLog("未找到该条战绩，可能已被清理。请刷新后重试。")
         return
       }
 
       const replayItems = record.warehouse && Array.isArray(record.warehouse.items) ? record.warehouse.items : []
       if (replayItems.length === 0) {
-        this.writeLog("该条战绩缺少仓库快照，暂时无法复现结算页。")
+        this.aiDecisionManager.writeLog("该条战绩缺少仓库快照，暂时无法复现结算页。")
         return
       }
 
@@ -78,7 +78,7 @@ export function createReplaySlice(_deps: BattleRecordDeps): {
       }
 
       this.setSettlementProgress(`战绩回放：${replayWinner.name} 利润 ${winnerProfit >= 0 ? "+" : ""}${winnerProfit}`)
-      this.writeLog(`已加载战绩回放：${replayWinner.name} 以 ${winnerBid} 拿下整仓。`)
+      this.aiDecisionManager.writeLog(`已加载战绩回放：${replayWinner.name} 以 ${winnerBid} 拿下整仓。`)
       this.updateHud()
     }
   }

@@ -43,11 +43,11 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
   if (this.dom.clearAiMemoryBtn) {
     this.dom.clearAiMemoryBtn?.addEventListener("click", () => {
       this.showGameConfirm("确定要清空所有AI的持久化记忆吗？此操作不可恢复。", () => {
-        this.clearAiMemoryStorage()
+        this.aiMemoryManager.clearAiMemoryStorage()
         if (this.dom.aiMemoryStatusText) {
           this.dom.aiMemoryStatusText.textContent = "已清空"
         }
-        this.writeLog("AI持久化记忆已清空。")
+        this.aiDecisionManager.writeLog("AI持久化记忆已清空。")
       })
     })
   }
@@ -70,14 +70,14 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
           })
         }
         this.pendingSettlementSummary = ""
-        this.saveAiMemoryToStorage()
-        this.writeLog("AI跨局上下文已清空。")
+        this.aiMemoryManager.saveAiMemoryToStorage()
+        this.aiDecisionManager.writeLog("AI跨局上下文已清空。")
       })
     })
   }
   if (this.dom.viewAiMemoryBtn) {
     this.dom.viewAiMemoryBtn?.addEventListener("click", () => {
-      this.openAiMemoryPanel()
+      this.aiMemoryManager.openAiMemoryPanel()
     })
   }
   if (this.dom.viewAiFeedbackBtn) {
@@ -95,7 +95,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
     this.dom.aiFeedbackClearBtn?.addEventListener("click", () => {
       this.showGameConfirm("确定要清空所有 AI 反馈吗？此操作不可恢复。", () => {
         this.clearAllAiFeedbacks()
-        this.writeLog("AI 反馈已清空。")
+        this.aiDecisionManager.writeLog("AI 反馈已清空。")
       })
     })
   }
@@ -131,7 +131,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
   }
   this.showAiMemoryExportDialog = () => {
     this.removeAiMemoryExportDialog()
-    const jsonData = this.exportAiMemoryToJson()
+    const jsonData = this.aiMemoryManager.exportAiMemoryToJson()
     const overlay = document.createElement("div")
     overlay.id = "aiMemoryExportDialog"
     overlay.style.cssText =
@@ -165,10 +165,10 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
             if (this.dom.aiMemoryStatusText) {
               this.dom.aiMemoryStatusText.textContent = "已导出"
             }
-            this.writeLog("AI记忆已通过分享导出。")
+            this.aiDecisionManager.writeLog("AI记忆已通过分享导出。")
             this.removeAiMemoryExportDialog()
           } else {
-            this.writeLog("分享导出失败。")
+            this.aiDecisionManager.writeLog("分享导出失败。")
           }
         } else {
           const blob = new Blob([jsonData], { type: "application/json" })
@@ -184,14 +184,14 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
                 if (this.dom.aiMemoryStatusText) {
                   this.dom.aiMemoryStatusText.textContent = "已导出"
                 }
-                this.writeLog("AI记忆已通过分享导出。")
+                this.aiDecisionManager.writeLog("AI记忆已通过分享导出。")
                 this.removeAiMemoryExportDialog()
               })
               .catch((err) => {
-                this.writeLog("分享导出失败: " + (err.message || "未知错误"))
+                this.aiDecisionManager.writeLog("分享导出失败: " + (err.message || "未知错误"))
               })
           } else {
-            this.writeLog("当前环境不支持分享文件功能。")
+            this.aiDecisionManager.writeLog("当前环境不支持分享文件功能。")
           }
         }
       })
@@ -205,14 +205,14 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
               if (this.dom.aiMemoryStatusText) {
                 this.dom.aiMemoryStatusText.textContent = "已复制"
               }
-              this.writeLog("AI记忆JSON已复制到剪贴板。")
+              this.aiDecisionManager.writeLog("AI记忆JSON已复制到剪贴板。")
               this.removeAiMemoryExportDialog()
             })
             .catch((err) => {
-              this.writeLog("复制失败: " + (err.message || "未知错误"))
+              this.aiDecisionManager.writeLog("复制失败: " + (err.message || "未知错误"))
             })
         } else {
-          this.writeLog("当前环境不支持剪贴板功能。")
+          this.aiDecisionManager.writeLog("当前环境不支持剪贴板功能。")
         }
       })
     overlay.addEventListener("click", (e) => {
@@ -234,21 +234,21 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
     const statusEl = document.getElementById("importStatus")
     try {
       const jsonText = decodeURIComponent(escape(atob(base64Data)))
-      const result = this.importAiMemoryFromJson(jsonText)
+      const result = this.aiMemoryManager.importAiMemoryFromJson(jsonText)
       if (result.ok) {
         if (statusEl) {
           statusEl.textContent = "导入成功！"
           statusEl.className = "ai-import-status success"
         }
         if (this.dom.aiMemoryStatusText) this.dom.aiMemoryStatusText.textContent = "已导入"
-        this.writeLog("AI记忆已从文件导入。")
+        this.aiDecisionManager.writeLog("AI记忆已从文件导入。")
         setTimeout(() => this.removeAiMemoryImportDialog(), 800)
       } else {
         if (statusEl) {
           statusEl.textContent = "导入失败: " + result.error
           statusEl.className = "ai-import-status error"
         }
-        this.writeLog("导入失败: " + result.error)
+        this.aiDecisionManager.writeLog("导入失败: " + result.error)
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -256,7 +256,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
         statusEl.textContent = "文件解析失败: " + msg
         statusEl.className = "ai-import-status error"
       }
-      this.writeLog("文件解析失败: " + msg)
+      this.aiDecisionManager.writeLog("文件解析失败: " + msg)
     }
   }
   window.__onFileImportError = (errorMsg) => {
@@ -265,7 +265,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
       statusEl.textContent = "导入错误: " + errorMsg
       statusEl.className = "ai-import-status error"
     }
-    this.writeLog("文件导入错误: " + errorMsg)
+    this.aiDecisionManager.writeLog("文件导入错误: " + errorMsg)
   }
   this.showAiMemoryImportDialog = () => {
     this.removeAiMemoryImportDialog()
@@ -324,11 +324,11 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
         reader.onload = (ev) => {
           try {
             const jsonText = (ev.target as FileReader).result as string
-            const result = this.importAiMemoryFromJson(jsonText)
+            const result = this.aiMemoryManager.importAiMemoryFromJson(jsonText)
             if (result.ok) {
               showStatus("导入成功！", "success")
               if (this.dom.aiMemoryStatusText) this.dom.aiMemoryStatusText.textContent = "已导入"
-              this.writeLog("AI记忆已从文件导入。")
+              this.aiDecisionManager.writeLog("AI记忆已从文件导入。")
               setTimeout(() => this.removeAiMemoryImportDialog(), 800)
             } else {
               showStatus("导入失败: " + result.error, "error")
@@ -367,11 +367,11 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
           return
         }
         showStatus("正在导入...", "loading")
-        const result = this.importAiMemoryFromJson(jsonText)
+        const result = this.aiMemoryManager.importAiMemoryFromJson(jsonText)
         if (result.ok) {
           showStatus("导入成功！", "success")
           if (this.dom.aiMemoryStatusText) this.dom.aiMemoryStatusText.textContent = "已导入"
-          this.writeLog("AI记忆已成功导入。")
+          this.aiDecisionManager.writeLog("AI记忆已成功导入。")
           setTimeout(() => this.removeAiMemoryImportDialog(), 800)
         } else {
           showStatus("导入失败: " + result.error, "error")
@@ -399,7 +399,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
     if (this.dom.aiMemoryStatusText) {
       this.dom.aiMemoryStatusText.textContent = "已导出"
     }
-    this.writeLog("AI记忆已导出到文件。")
+    this.aiDecisionManager.writeLog("AI记忆已导出到文件。")
   }
   if (this.dom.resetAiWalletBtn) {
     this.dom.resetAiWalletBtn?.addEventListener("click", () => {
@@ -416,11 +416,11 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
           if (okBtn) okBtn.textContent = originalOkText
           if (cancelBtn) cancelBtn.textContent = originalCancelText
 
-          this.resetAiWallets()
+          this.walletManager.resetAiWallets()
           if (this.dom.aiMemoryStatusText) {
             this.dom.aiMemoryStatusText.textContent = "已重置AI钱包"
           }
-          this.writeLog("AI钱包已重置为100万。")
+          this.aiDecisionManager.writeLog("AI钱包已重置为100万。")
         },
         () => {
           if (okBtn) okBtn.textContent = originalOkText
@@ -432,7 +432,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
   if (this.dom.aiMemoryCloseBtn) {
     this.dom.aiMemoryCloseBtn?.addEventListener("click", (event) => {
       event.stopPropagation()
-      this.closeAiMemoryPanel()
+      this.aiMemoryManager.closeAiMemoryPanel()
     })
   }
   if (this.dom.settingLlmIndependentModelEnabled) {
@@ -478,7 +478,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
     this.dom.aiMemoryOverlay?.addEventListener("click", (event) => {
       event.stopPropagation()
       if (event.target === this.dom.aiMemoryOverlay) {
-        this.closeAiMemoryPanel()
+        this.aiMemoryManager.closeAiMemoryPanel()
       }
     })
   }

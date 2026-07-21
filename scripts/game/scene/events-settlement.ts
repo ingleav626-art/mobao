@@ -12,7 +12,7 @@ export function bindSettlementEvents(this: WarehouseSceneThis): void {
   this.bindCharacterSkillButton()
   this.dom.settleBtn?.addEventListener("click", () => this.settleCurrentRun())
   this.dom.settleBackBtn?.addEventListener("click", () => {
-    if (this.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
+    if (this.aiReflectionManager.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
       this.showReflectionPendingDialogForBack()
       return
     }
@@ -23,7 +23,7 @@ export function bindSettlementEvents(this: WarehouseSceneThis): void {
       this.enterLobby()
       setTimeout(() => {
         this.openBattleRecordPanel()
-        this.writeLog("已返回战绩列表，可继续选择其他战绩回放。")
+        this.aiDecisionManager.writeLog("已返回战绩列表，可继续选择其他战绩回放。")
       }, 100)
       return
     }
@@ -34,7 +34,7 @@ export function bindSettlementEvents(this: WarehouseSceneThis): void {
     }
   })
   this.dom.settleReplayBtn?.addEventListener("click", () => {
-    if (this.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
+    if (this.aiReflectionManager.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
       this.showReflectionPendingDialog()
       return
     }
@@ -51,10 +51,10 @@ export function bindSettlementEvents(this: WarehouseSceneThis): void {
         this.lanBridge?.send({ type: "game:restart-request", aiCount, aiLlmEnabled: this.lanAiLlmEnabled, aiPlayers })
         this.showLanRestartWaitingDialog()
       } else {
-        this.writeLog("等待主机发起重开请求...")
+        this.aiDecisionManager.writeLog("等待主机发起重开请求...")
       }
     } else {
-      this.proceedToNewRun()
+      this.aiReflectionManager.proceedToNewRun()
     }
   })
 

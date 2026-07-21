@@ -23,7 +23,7 @@ const log = createLogger("LAN")
  */
 export function startNewRun(this: WarehouseSceneThis): void {
   log.debug("[fn-file] startNewRun CALLED")
-  this.beginRunTracking()
+  this.aiDecisionManager.beginRunTracking()
   this.cancelSettlementReveal()
   this.roundManager.stopRoundTimer()
   this.exitSettlementPage()
@@ -76,14 +76,14 @@ export function startNewRun(this: WarehouseSceneThis): void {
 
   this.setupWarehouseAuction()
   this.rebuildWarehouseCellIndex()
-  this.initAiWallets()
-  this.initAiIntelSystems()
+  this.walletManager.initAiWallets()
+  this.aiIntelManager.initAiIntelSystems()
   this.aiEngine.resetForNewRun({
     startingBid: this.currentBid,
     itemCount: this.items.length
   })
-  this.pushRunStartContextToAi()
+  this.aiMemoryManager.pushRunStartContextToAi()
   this.roundManager.startRound()
   this.updateHud()
-  this.writeLog("新仓库已生成：回合限时开始，可先用道具/技能再提交整仓出价。")
+  this.aiDecisionManager.writeLog("新仓库已生成：回合限时开始，可先用道具/技能再提交整仓出价。")
 }

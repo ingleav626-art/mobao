@@ -17,7 +17,6 @@
  * @exports getAiWallet / getAiMinimumBid / normalizeAiBidValue
  * @exports AiWalletMixin - 向后兼容的 Mixin 薄包装
  */
-import type { WarehouseSceneThis } from "../../../types/warehouse-scene-this"
 import type { Player } from "../../../types/game"
 import { GAME_SETTINGS } from "../core/settings"
 import { clamp, roundToStep } from "../core/utils"
@@ -123,28 +122,3 @@ export function normalizeAiBidValue(
   return Math.max(minBid, roundToStep(safe, step))
 }
 
-// ─── Mixin 薄代理（Phase 2：代理到 AiWalletManager，向后兼容 Object.assign 混入）───
-
-export const AiWalletMixin: ThisType<WarehouseSceneThis> = {
-  loadAiWalletsFromStorage() {
-    return this.walletManager.loadAiWalletsFromStorage()
-  },
-  saveAiWalletsToStorage() {
-    return this.walletManager.saveAiWalletsToStorage()
-  },
-  resetAiWallets() {
-    return this.walletManager.resetAiWallets()
-  },
-  initAiWallets() {
-    return this.walletManager.initAiWallets()
-  },
-  getAiWallet(playerId: string) {
-    return this.walletManager.getAiWallet(playerId)
-  },
-  getAiMinimumBid(playerId: string, wallet: number | null = null) {
-    return this.walletManager.getAiMinimumBid(playerId, wallet)
-  },
-  normalizeAiBidValue(playerId: string, bid: number, wallet: number | null = null) {
-    return this.walletManager.normalizeAiBidValue(playerId, bid, wallet)
-  }
-}
