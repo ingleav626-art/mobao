@@ -30,7 +30,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
       return
     }
     if (event.target === this.dom.settingsOverlay) {
-      this.closeSettingsOverlay(false)
+      this.uiOverlayManager.closeSettingsOverlay(false)
     }
   })
 
@@ -41,7 +41,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
         return
       }
 
-      if (this.isSettingsOverlayOpen()) {
+      if (this.uiOverlayManager.isSettingsOverlayOpen()) {
         if (this.scrollElementByWheel(this.dom.settingsScroll, event.deltaY)) {
           event.preventDefault()
         } else {
@@ -197,7 +197,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
   this.dom.gameConfirmCancelBtn?.addEventListener("click", (event) => {
     event.stopPropagation()
     const cb = this.uiOverlayManager.getGameCancelCallback()
-    this.hideGameConfirm()
+    this.uiOverlayManager.hideGameConfirm()
     if (cb) {
       cb()
     }
@@ -205,7 +205,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
   this.dom.gameConfirmOkBtn?.addEventListener("click", (event) => {
     event.stopPropagation()
     const cb = this.uiOverlayManager.getGameConfirmCallback()
-    this.hideGameConfirm()
+    this.uiOverlayManager.hideGameConfirm()
     if (cb) {
       cb()
     }
@@ -221,17 +221,17 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
     })
   }
 
-  this.dom.infoPopupCloseBtn?.addEventListener("click", () => this.hideInfoPopup())
+  this.dom.infoPopupCloseBtn?.addEventListener("click", () => this.uiOverlayManager.hideInfoPopup())
   this.dom.infoPopupOverlay?.addEventListener("click", (event) => {
     if (event.target === this.dom.infoPopupOverlay) {
-      this.hideInfoPopup()
+      this.uiOverlayManager.hideInfoPopup()
     }
   })
 
   const playerInfoPopover = document.getElementById("playerInfoPopover")
   const playerInfoPopoverCloseBtn = document.getElementById("playerInfoPopoverCloseBtn")
   if (playerInfoPopoverCloseBtn) {
-    playerInfoPopoverCloseBtn.addEventListener("click", () => this.hidePlayerInfoPopover())
+    playerInfoPopoverCloseBtn.addEventListener("click", () => this.uiOverlayManager.hidePlayerInfoPopover())
   }
 
   document.addEventListener("click", (event) => {
@@ -260,7 +260,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
       const itemId = historyChip.getAttribute("data-item-id")
       if (itemId) {
         const info = this.getItemInfo(itemId)
-        this.showItemDetailPopup(itemId, info.label, event.clientX, event.clientY)
+        this.uiOverlayManager.showItemDetailPopup(itemId, info.label, event.clientX, event.clientY)
       }
       return
     }
@@ -269,22 +269,22 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
     if (playerCard) {
       const playerId = playerCard.id.replace("playerCard-", "")
       if (playerId) {
-        this.showCharacterInfoPopup(playerId, event.clientX, event.clientY)
+        this.uiOverlayManager.showCharacterInfoPopup(playerId, event.clientX, event.clientY)
       }
     } else {
-      this.hidePlayerInfoPopover()
+      this.uiOverlayManager.hidePlayerInfoPopover()
     }
   })
 
   const personalPanel = document.getElementById("personalPanel")
   if (personalPanel) {
     personalPanel.style.cursor = "pointer"
-    personalPanel.addEventListener("click", () => this.showInfoPopup("个人情报区", this.dom.personalPanelScroll))
+    personalPanel.addEventListener("click", () => this.uiOverlayManager.showInfoPopup("个人情报区", this.dom.personalPanelScroll))
   }
   const publicPanel = document.getElementById("publicPanel")
   if (publicPanel) {
     publicPanel.style.cursor = "pointer"
-    publicPanel.addEventListener("click", () => this.showInfoPopup("公共信息区", this.dom.publicInfoScroll))
+    publicPanel.addEventListener("click", () => this.uiOverlayManager.showInfoPopup("公共信息区", this.dom.publicInfoScroll))
   }
 
   ; (
@@ -318,7 +318,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
 
     if (
       targetEl &&
-      this.isSettingsOverlayOpen() &&
+      this.uiOverlayManager.isSettingsOverlayOpen() &&
       this.dom.settingsPanel &&
       !this.dom.settingsPanel.contains(targetEl) &&
       targetEl !== this.dom.openSettingsBtn
@@ -350,7 +350,7 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
         !isAiMemoryExportOpen &&
         !isAiMemoryCopyOpen
       ) {
-        this.closeSettingsOverlay(false)
+        this.uiOverlayManager.closeSettingsOverlay(false)
       }
     }
 
@@ -388,9 +388,9 @@ export function bindOverlayEvents(this: WarehouseSceneThis): void {
   document.addEventListener("visibilitychange", () => {
     if (!this.isLanMode) return
     if (document.hidden) {
-      this.onLanBackground()
+      this.lanIndexManager.onLanBackground()
     } else {
-      this.onLanForeground()
+      this.lanIndexManager.onLanForeground()
     }
   })
 }

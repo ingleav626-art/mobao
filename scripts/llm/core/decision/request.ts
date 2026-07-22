@@ -72,8 +72,8 @@ export function createLlmRequestMethods(deps: LlmDecisionDeps) {
         console.log("[getAiModelConfigForPlayer] invalid aiIndex:", aiIndex, "returning null")
         return null
       }
-      if (typeof this.getAiModelConfig === "function") {
-        const config = this.getAiModelConfig(aiIndex)
+      if (typeof this.uiOverlayManager.getAiModelConfig === "function") {
+        const config = this.uiOverlayManager.getAiModelConfig(aiIndex) as unknown as AiModelConfig | null
         console.log(
           "[getAiModelConfigForPlayer] got config for aiIndex",
           aiIndex,

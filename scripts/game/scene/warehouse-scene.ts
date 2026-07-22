@@ -80,7 +80,6 @@ export interface WarehouseMixinMethods {
   rebuildWarehouseCellIndex(): void
   hidePreview(): void
   hideRevealScrollHints(): void
-  hideSettleOverlay(): void
   refreshRevealScrollHints(): void
   hasAnyInfo(item: Artifact): boolean
   renderPreviewCandidates(item: Artifact): void
@@ -114,34 +113,6 @@ export interface WarehouseMixinMethods {
 
   // Settlement Manager Mixin
   settleCurrentRun(): void
-  showReflectionPendingDialog(): void
-  showReflectionPendingDialogForBack(): void
-
-  // UI Mixin
-  openSettingsOverlay(): void
-  closeSettingsOverlay(restore: boolean): void
-  isSettingsOverlayOpen(): boolean
-  fillSettingsForm(settings: GameSettings): void
-  saveSettingsFromOverlay(): void
-  setSettingsStatus(text: string, state: "ok" | "error" | "loading" | ""): void
-  openShopOverlay(): void
-  openAiLogicPanel(): void
-  closeAiLogicPanel(): void
-  openAiFeedbackPanel(): void
-  closeAiFeedbackPanel(): void
-  refreshAiFeedbackList(): void
-  removeAiFeedback(id: string): void
-  clearAllAiFeedbacks(): void
-  openAiModelConfigOverlay(): void
-  closeAiModelConfigOverlay(): void
-  saveAiModelConfigFromForm(): void
-  showGameConfirm(msg: string, onOk: () => void, onCancel?: () => void): void
-  hideGameConfirm(): void
-  showInfoPopup(title: string, scrollEl: HTMLElement | null): void
-  hideInfoPopup(): void
-  showItemDetailPopup(itemId: string, label: string, x: number, y: number): void
-  showCharacterInfoPopup(playerId: string, x: number, y: number): void
-  hidePlayerInfoPopover(): void
   updateSidePanels(
     skillState: Record<string, unknown>,
     itemState: Record<string, unknown>,
@@ -157,11 +128,6 @@ export interface WarehouseMixinMethods {
   bindLobbyEvents(): void
   initPlayersUI(): void
   initPreviewFilterOptions(): void
-  showLanRestartWaitingDialog(): void
-
-  // Lan Mixin
-  onLanBackground(): void
-  onLanForeground(): void
 
   // History
   resetPlayerHistoryState(): void
@@ -431,7 +397,6 @@ class WarehouseScene extends _PhaserScene {
   autoplayManager!: AutoPlayManager
   // Phase 2: Manager 依赖的跨 Mixin 方法（运行时由 Object.assign 提供）
   isSettlementPageActive!: () => boolean
-  renderAiThoughtLog!: () => void
   renderAiLogicPanelForLlm!: (telemetry: { round: number; entries?: Array<Record<string, unknown>> }) => void
   updateHud!: () => void
   recordPlayerUsage!: (playerId: string, actionId: string) => void
@@ -456,7 +421,6 @@ class WarehouseScene extends _PhaserScene {
   getAiModelConfigForPlayer!: (playerId: string) => Record<string, unknown> | null
   startNewRun!: () => void
   openBattleRecordPanel!: () => void
-  updateReflectionStatusUI!: () => void
   showLobbySubPage!: (page: string) => void
   updatePlayerAvatar!: (playerId: string, avatarEl: HTMLElement) => void
   startSoloGame!: () => void
@@ -465,8 +429,6 @@ class WarehouseScene extends _PhaserScene {
   addPublicInfoEntry!: (...args: any[]) => any
   clearCurrentRoundUsage!: (...args: any[]) => any
   kickoffAiRoundDecisions!: (...args: any[]) => any
-  showLanPauseOverlay!: (...args: any[]) => any
-  hideLanPauseOverlay!: (...args: any[]) => any
   captureAiDecisionTelemetry!: (...args: any[]) => any
   renderAiLogicPanel!: (...args: any[]) => any
   recordRoundHistory!: (...args: any[]) => any
@@ -657,7 +619,7 @@ class WarehouseScene extends _PhaserScene {
         roundTimeLeft: this.roundTimeLeft
       }),
       closeBidKeypad: () => this.closeBidKeypad(),
-      isSettingsOverlayOpen: () => this.isSettingsOverlayOpen(),
+      isSettingsOverlayOpen: () => this.uiOverlayManager.isSettingsOverlayOpen(),
       isSettlementPageActive: () => this.isSettlementPageActive(),
       getItemInfo: (itemId: string) => this.getItemInfo(itemId)!
     })
@@ -675,7 +637,7 @@ class WarehouseScene extends _PhaserScene {
       },
       getRunSerial: () => this.runSerial,
       saveAiMemoryToStorage: () => this.aiMemoryManager.saveAiMemoryToStorage(),
-      renderAiThoughtLog: () => this.renderAiThoughtLog(),
+      renderAiThoughtLog: () => this.uiOverlayManager.renderAiThoughtLog(),
       renderAiLogicPanelForLlm: (t) => this.renderAiLogicPanelForLlm(t)
     })
     this.skillItemManager = new SkillItemManager({
@@ -689,7 +651,7 @@ class WarehouseScene extends _PhaserScene {
       canUseIntelActions: () => this.aiIntelManager.canUseIntelActions(),
       closeItemDrawer: () => this.closeItemDrawer(),
       writeLog: (msg: string) => this.aiDecisionManager.writeLog(msg),
-      showGameConfirm: (msg: string, onOk: () => void) => this.showGameConfirm(msg, onOk),
+      showGameConfirm: (msg: string, onOk: () => void) => this.uiOverlayManager.showGameConfirm(msg, onOk),
       buildSkillContext: () => this.aiIntelManager.buildSkillContext(),
       updateHud: () => this.updateHud(),
       recordPlayerUsage: (playerId: string, actionId: string) => this.recordPlayerUsage(playerId, actionId),
@@ -861,9 +823,9 @@ class WarehouseScene extends _PhaserScene {
         this.aiMemoryManager.ensureAiCrossGameMemory(playerId) as unknown as ReflectionCrossGameMemory,
       saveAiMemoryToStorage: () => this.aiMemoryManager.saveAiMemoryToStorage(),
       updateReflectionStatusUI: () => {
-        scene.updateReflectionStatusUI()
+        scene.uiOverlayManager.updateReflectionStatusUI()
       },
-      renderAiThoughtLog: () => this.renderAiThoughtLog(),
+      renderAiThoughtLog: () => this.uiOverlayManager.renderAiThoughtLog(),
       isAiMultiGameMemoryEnabled: () => this.aiMemoryManager.isAiMultiGameMemoryEnabled(),
       shouldGenerateSummary: () => this.aiMemoryManager.shouldGenerateSummary(),
       isAtContextLimit: () => this.aiMemoryManager.isAtContextLimit(),
@@ -1463,15 +1425,15 @@ class WarehouseScene extends _PhaserScene {
       getTweens: () => (this as unknown as WarehouseSceneThis).tweens as unknown as { killAll(): void },
       getTime: () => (this as unknown as WarehouseSceneThis).time as unknown as { removeAllEvents(): void },
       itemManager: this.itemManager as unknown as { items: Array<{ id: string; count?: number }> },
-      openSettingsOverlay: () => this.openSettingsOverlay(),
+      openSettingsOverlay: () => this.uiOverlayManager.openSettingsOverlay(),
       openCollectionOverlay: () => (this as unknown as WarehouseSceneThis).openCollectionOverlay(),
       openBattleRecordPanel: () => this.openBattleRecordPanel(),
-      openShopOverlay: () => this.openShopOverlay(),
-      showGameConfirm: (msg: string, onConfirm: () => void) => this.showGameConfirm(msg, onConfirm),
+      openShopOverlay: () => this.uiOverlayManager.openShopOverlay(),
+      showGameConfirm: (msg: string, onConfirm: () => void) => this.uiOverlayManager.showGameConfirm(msg, onConfirm),
       carouselScroll: (dir: number) => (this as unknown as WarehouseSceneThis).carouselScroll(dir),
       renderCarousel: () => (this as unknown as WarehouseSceneThis).renderCarousel(),
       renderMapDetail: () => (this as unknown as WarehouseSceneThis).renderMapDetail(),
-      initLanLobby: () => (this as unknown as WarehouseSceneThis).initLanLobby(),
+      initLanLobby: () => this.lanIndexManager.initLanLobby(),
       showCharacterSelectPage: (mapProfile: { name?: string; params?: Record<string, unknown> } | null) =>
         (this as unknown as WarehouseSceneThis).showCharacterSelectPage(mapProfile),
       stopRoundTimer: () => this.roundManager.stopRoundTimer(),
@@ -1574,8 +1536,8 @@ class WarehouseScene extends _PhaserScene {
       updateHud: () => scene.updateHud(),
       writeLog: (msg: string) => scene.aiDecisionManager.writeLog(msg),
       resolveRoundBids: (reason: string) => scene.resolveRoundBids(reason),
-      showLanPauseOverlay: () => scene.showLanPauseOverlay(),
-      hideLanPauseOverlay: () => scene.hideLanPauseOverlay(),
+      showLanPauseOverlay: () => scene.uiOverlayManager.showLanPauseOverlay(),
+      hideLanPauseOverlay: () => scene.uiOverlayManager.hideLanPauseOverlay(),
       setPlayerBidReady: (slotId: string, ready: boolean) => scene.biddingManager.setPlayerBidReady(slotId, ready)
     })
 
@@ -1625,9 +1587,9 @@ class WarehouseScene extends _PhaserScene {
         await (scene as unknown as Record<string, (...args: unknown[]) => unknown>).resolveRoundBids(reason, forceSettle)
       },
       closeItemDrawer: () => scene.closeItemDrawer(),
-      hideInfoPopup: () => scene.hideInfoPopup(),
+      hideInfoPopup: () => scene.uiOverlayManager.hideInfoPopup(),
       showGameConfirm: (msg: string, onOk: () => void, onCancel?: () => void) =>
-        scene.showGameConfirm(msg, onOk, onCancel),
+        scene.uiOverlayManager.showGameConfirm(msg, onOk, onCancel),
       updateHud: () => scene.updateHud(),
       writeLog: (msg: string) => scene.aiDecisionManager.writeLog(msg),
       setPlayerBidSubmitted: (v: boolean) => {
@@ -2033,7 +1995,7 @@ class WarehouseScene extends _PhaserScene {
       writeLog: (text: string) => scene.aiDecisionManager.writeLog(text),
       setOnlineStatus: (text: string, cls: string) =>
         (scene as unknown as Record<string, (...args: unknown[]) => unknown>).setOnlineStatus(text, cls),
-      showGameConfirm: (msg: string, onConfirm: () => void) => scene.showGameConfirm(msg, onConfirm),
+      showGameConfirm: (msg: string, onConfirm: () => void) => scene.uiOverlayManager.showGameConfirm(msg, onConfirm),
       stopRoundTimer: () => scene.roundManager.stopRoundTimer(),
       startRound: () => scene.roundManager.startRound(),
       updateHud: () => scene.updateHud(),
@@ -2045,7 +2007,7 @@ class WarehouseScene extends _PhaserScene {
       hidePreview: () => scene.hidePreview(),
       closeBidKeypad: () => scene.closeBidKeypad(),
       closeItemDrawer: () => scene.closeItemDrawer(),
-      hideSettleOverlay: () => scene.hideSettleOverlay(),
+      hideSettleOverlay: () => scene.uiOverlayManager.hideSettleOverlay(),
       hideRevealScrollHints: () => scene.hideRevealScrollHints(),
       drawUnknownWarehouse: () => scene.drawUnknownWarehouse(),
       spawnRandomItems: () => scene.spawnRandomItems(),
@@ -2069,16 +2031,16 @@ class WarehouseScene extends _PhaserScene {
       waitUntilResumed: () => scene.waitUntilResumed() as Promise<void>,
       setPlayerBidReady: (playerId: string, ready: boolean) => scene.biddingManager.setPlayerBidReady(playerId, ready),
       syncPauseButton: () => scene.roundManager.syncPauseButton(),
-      showLanPauseOverlay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).showLanPauseOverlay(),
-      hideLanPauseOverlay: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).hideLanPauseOverlay(),
+      showLanPauseOverlay: () => scene.uiOverlayManager.showLanPauseOverlay(),
+      hideLanPauseOverlay: () => scene.uiOverlayManager.hideLanPauseOverlay(),
       enterLanRoom: () => scene.enterLanRoom(),
       exitLanRoom: () => scene.exitLanRoom(),
       exitLobby: () => scene.exitLobby(),
       showLanRestartVoteDialog: (hostName: string) =>
-        (scene as unknown as Record<string, (...args: unknown[]) => unknown>).showLanRestartVoteDialog(hostName),
-      removeLanRestartDialog: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).removeLanRestartDialog(),
+        scene.uiOverlayManager.showLanRestartVoteDialog(hostName),
+      removeLanRestartDialog: () => scene.uiOverlayManager.removeLanRestartDialog(),
       showLanRestartDeclinedDialog: (decliner: string) =>
-        (scene as unknown as Record<string, (...args: unknown[]) => unknown>).showLanRestartDeclinedDialog(decliner),
+        scene.uiOverlayManager.showLanRestartDeclinedDialog(decliner),
       refreshRevealScrollHints: () => scene.refreshRevealScrollHints(),
       refreshPlayerHistoryUI: () => (scene as unknown as Record<string, (...args: unknown[]) => unknown>).refreshPlayerHistoryUI(),
       renderPublicInfoPanel: () => scene.renderPublicInfoPanel(),
@@ -2141,7 +2103,6 @@ class WarehouseScene extends _PhaserScene {
 
   // Mixin 方法声明（运行时由 Object.assign 提供）
   syncItemManagerFromShop!: WarehouseMixinMethods["syncItemManagerFromShop"]
-  hideSettleOverlay!: WarehouseMixinMethods["hideSettleOverlay"]
 
   // ===== Warehouse 方法（原 Mixin 代理，现为类方法）=====
 
@@ -2362,41 +2323,12 @@ class WarehouseScene extends _PhaserScene {
   closeItemDrawer!: WarehouseMixinMethods["closeItemDrawer"]
   getItemInfo!: WarehouseMixinMethods["getItemInfo"]
   settleCurrentRun!: WarehouseMixinMethods["settleCurrentRun"]
-  showReflectionPendingDialog!: WarehouseMixinMethods["showReflectionPendingDialog"]
-  showReflectionPendingDialogForBack!: WarehouseMixinMethods["showReflectionPendingDialogForBack"]
-  openSettingsOverlay!: WarehouseMixinMethods["openSettingsOverlay"]
-  closeSettingsOverlay!: WarehouseMixinMethods["closeSettingsOverlay"]
-  isSettingsOverlayOpen!: WarehouseMixinMethods["isSettingsOverlayOpen"]
-  fillSettingsForm!: WarehouseMixinMethods["fillSettingsForm"]
-  saveSettingsFromOverlay!: WarehouseMixinMethods["saveSettingsFromOverlay"]
-  setSettingsStatus!: WarehouseMixinMethods["setSettingsStatus"]
-  openShopOverlay!: WarehouseMixinMethods["openShopOverlay"]
-  openAiLogicPanel!: WarehouseMixinMethods["openAiLogicPanel"]
-  closeAiLogicPanel!: WarehouseMixinMethods["closeAiLogicPanel"]
-  openAiFeedbackPanel!: WarehouseMixinMethods["openAiFeedbackPanel"]
-  closeAiFeedbackPanel!: WarehouseMixinMethods["closeAiFeedbackPanel"]
-  refreshAiFeedbackList!: WarehouseMixinMethods["refreshAiFeedbackList"]
-  removeAiFeedback!: WarehouseMixinMethods["removeAiFeedback"]
-  clearAllAiFeedbacks!: WarehouseMixinMethods["clearAllAiFeedbacks"]
-  openAiModelConfigOverlay!: WarehouseMixinMethods["openAiModelConfigOverlay"]
-  closeAiModelConfigOverlay!: WarehouseMixinMethods["closeAiModelConfigOverlay"]
-  saveAiModelConfigFromForm!: WarehouseMixinMethods["saveAiModelConfigFromForm"]
-  showGameConfirm!: WarehouseMixinMethods["showGameConfirm"]
-  hideGameConfirm!: WarehouseMixinMethods["hideGameConfirm"]
-  showInfoPopup!: WarehouseMixinMethods["showInfoPopup"]
-  hideInfoPopup!: WarehouseMixinMethods["hideInfoPopup"]
-  showItemDetailPopup!: WarehouseMixinMethods["showItemDetailPopup"]
-  showCharacterInfoPopup!: WarehouseMixinMethods["showCharacterInfoPopup"]
-  hidePlayerInfoPopover!: WarehouseMixinMethods["hidePlayerInfoPopover"]
   updateSidePanels!: WarehouseMixinMethods["updateSidePanels"]
   enterLobby!: WarehouseMixinMethods["enterLobby"]
   enterLanRoom!: WarehouseMixinMethods["enterLanRoom"]
   bindLobbyEvents!: WarehouseMixinMethods["bindLobbyEvents"]
   initPlayersUI!: WarehouseMixinMethods["initPlayersUI"]
   initPreviewFilterOptions!: WarehouseMixinMethods["initPreviewFilterOptions"]
-  showLanRestartWaitingDialog!: WarehouseMixinMethods["showLanRestartWaitingDialog"]
-  onLanBackground!: WarehouseMixinMethods["onLanBackground"]
-  onLanForeground!: WarehouseMixinMethods["onLanForeground"]
   resetPlayerHistoryState!: WarehouseMixinMethods["resetPlayerHistoryState"]
 }
 

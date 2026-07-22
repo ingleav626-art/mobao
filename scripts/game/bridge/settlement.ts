@@ -423,8 +423,8 @@ export function createSettlementBridge(deps: SettlementDeps) {
       this.hidePreview()
       this.closeBidKeypad()
       this.closeItemDrawer()
-      if (typeof this.updateReflectionStatusUI === "function") {
-        this.updateReflectionStatusUI()
+      if (typeof this.uiOverlayManager.updateReflectionStatusUI === "function") {
+        this.uiOverlayManager.updateReflectionStatusUI()
       }
       if (typeof AudioManager !== "undefined") {
         AudioManager.pauseBgm()

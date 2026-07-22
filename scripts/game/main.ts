@@ -68,8 +68,7 @@ import * as SceneBattleRecord from "./scene/scene-battle-record"
 
 // 原有 Mixin
 import { BiddingMixin } from "./bidding/index"
-import { OverlayMixin, PanelsMixin, HistoryMixin } from "./ui/index"
-import { LanIndexMixin } from "./lan/index"
+import { PanelsMixin, HistoryMixin } from "./ui/index"
 import { LobbyIndexMixin, CarouselMixin, CharacterSelectMixin } from "./lobby/index"
 import { SkillItemManagerMixin } from "./core/skill-item-manager"
 import { SettlementManagerMixin } from "./core/settlement-manager"
@@ -141,13 +140,11 @@ Object.assign(
   LLM_BRIDGE.methods,
   // 原有 Mixin
   BiddingMixin,
-  OverlayMixin,
   PanelsMixin,
   HistoryMixin,
   LobbyIndexMixin,
   CarouselMixin,
   CharacterSelectMixin,
-  LanIndexMixin,
   SkillItemManagerMixin,
   SettlementManagerMixin
 )

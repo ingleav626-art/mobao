@@ -13,7 +13,7 @@ export function bindSettlementEvents(this: WarehouseSceneThis): void {
   this.dom.settleBtn?.addEventListener("click", () => this.settleCurrentRun())
   this.dom.settleBackBtn?.addEventListener("click", () => {
     if (this.aiReflectionManager.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
-      this.showReflectionPendingDialogForBack()
+      this.uiOverlayManager.showReflectionPendingDialogForBack()
       return
     }
     this.exitSettlementPage()
@@ -35,7 +35,7 @@ export function bindSettlementEvents(this: WarehouseSceneThis): void {
   })
   this.dom.settleReplayBtn?.addEventListener("click", () => {
     if (this.aiReflectionManager.shouldShowReflectionUI() && this.aiReflectionState === "pending") {
-      this.showReflectionPendingDialog()
+      this.uiOverlayManager.showReflectionPendingDialog()
       return
     }
     if (this.isLanMode) {
@@ -49,7 +49,7 @@ export function bindSettlementEvents(this: WarehouseSceneThis): void {
           llm: !!ai.llm
         }))
         this.lanBridge?.send({ type: "game:restart-request", aiCount, aiLlmEnabled: this.lanAiLlmEnabled, aiPlayers })
-        this.showLanRestartWaitingDialog()
+        this.uiOverlayManager.showLanRestartWaitingDialog()
       } else {
         this.aiDecisionManager.writeLog("等待主机发起重开请求...")
       }

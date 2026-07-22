@@ -24,7 +24,7 @@ export function bindSettingsEvents(this: WarehouseSceneThis): void {
     this.startNewRun()
   })
   this.dom.openSettingsBtn?.addEventListener("click", () => {
-    this.openSettingsOverlay()
+    this.uiOverlayManager.openSettingsOverlay()
   })
   const roundSecondsInput = document.getElementById("setting-roundSeconds") as HTMLInputElement | null
   const roundSecondsDecrease = document.getElementById("roundSecondsDecrease") as HTMLButtonElement | null
@@ -190,7 +190,7 @@ export function bindSettingsEvents(this: WarehouseSceneThis): void {
   }
   const gameShopBtn = document.getElementById("gameShopBtn")
   if (gameShopBtn) {
-    gameShopBtn.addEventListener("click", () => this.openShopOverlay())
+    gameShopBtn.addEventListener("click", () => this.uiOverlayManager.openShopOverlay())
   }
   const backToLobbyBtn = document.getElementById("backToLobbyBtn")
   if (backToLobbyBtn) {

@@ -9,6 +9,5 @@
  * @exports HistoryMixin - 出价历史、道具使用记录、道具抽屉 Mixin
  */
 
-export { UiOverlayMixin as OverlayMixin } from "./overlay"
 export { UiPanelsMixin as PanelsMixin } from "./panels"
 export { UiHistoryMixin as HistoryMixin } from "./history"

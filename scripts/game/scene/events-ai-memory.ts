@@ -13,28 +13,28 @@ import { defaultGameSettings } from "../core/settings"
 import { DeepSeekProvider } from "../../llm/providers/deepseek-provider"
 
 export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
-  this.dom.settingsCloseBtn?.addEventListener("click", () => this.closeSettingsOverlay(false))
+  this.dom.settingsCloseBtn?.addEventListener("click", () => this.uiOverlayManager.closeSettingsOverlay(false))
   this.dom.settingsResetBtn?.addEventListener("click", () => {
-    this.fillSettingsForm(defaultGameSettings())
+    this.uiOverlayManager.fillSettingsForm(defaultGameSettings() as unknown as Record<string, unknown>)
     const provider = this.getLlmProvider()
     this.fillLlmSettingsForm(
       provider && typeof provider.defaultSettings === "function"
         ? provider.defaultSettings()
         : DeepSeekProvider.defaultDeepSeekSettings()
     )
-    this.setSettingsStatus("已恢复默认，点击保存后生效。", false)
+    this.uiOverlayManager.setSettingsStatus("已恢复默认，点击保存后生效。", false)
   })
-  this.dom.settingsSaveBtn?.addEventListener("click", () => this.saveSettingsFromOverlay())
+  this.dom.settingsSaveBtn?.addEventListener("click", () => this.uiOverlayManager.saveSettingsFromOverlay())
   if (this.dom.settingsReturnLobbyBtn) {
     this.dom.settingsReturnLobbyBtn?.addEventListener("click", () => {
       if (this.isLanMode) {
-        this.showGameConfirm("确定要返回房间吗？当前游戏进度将丢失。", () => {
-          this.closeSettingsOverlay(false)
+        this.uiOverlayManager.showGameConfirm("确定要返回房间吗？当前游戏进度将丢失。", () => {
+          this.uiOverlayManager.closeSettingsOverlay(false)
           this.enterLanRoom()
         })
       } else {
-        this.showGameConfirm("确定要返回大厅吗？当前游戏进度将丢失。", () => {
-          this.closeSettingsOverlay(false)
+        this.uiOverlayManager.showGameConfirm("确定要返回大厅吗？当前游戏进度将丢失。", () => {
+          this.uiOverlayManager.closeSettingsOverlay(false)
           this.enterLobby()
         })
       }
@@ -42,7 +42,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
   }
   if (this.dom.clearAiMemoryBtn) {
     this.dom.clearAiMemoryBtn?.addEventListener("click", () => {
-      this.showGameConfirm("确定要清空所有AI的持久化记忆吗？此操作不可恢复。", () => {
+      this.uiOverlayManager.showGameConfirm("确定要清空所有AI的持久化记忆吗？此操作不可恢复。", () => {
         this.aiMemoryManager.clearAiMemoryStorage()
         if (this.dom.aiMemoryStatusText) {
           this.dom.aiMemoryStatusText.textContent = "已清空"
@@ -53,7 +53,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
   }
   if (this.dom.clearAiContextBtn) {
     this.dom.clearAiContextBtn?.addEventListener("click", () => {
-      this.showGameConfirm("确定要清空AI跨局上下文吗？这将清除所有AI的跨局记忆和对话缓存。", () => {
+      this.uiOverlayManager.showGameConfirm("确定要清空AI跨局上下文吗？这将清除所有AI的跨局记忆和对话缓存。", () => {
         if (this.aiCrossGameMessagesByPlayer) {
           Object.keys(this.aiCrossGameMessagesByPlayer).forEach((pid) => {
             this.aiCrossGameMessagesByPlayer[pid] = []
@@ -82,19 +82,19 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
   }
   if (this.dom.viewAiFeedbackBtn) {
     this.dom.viewAiFeedbackBtn?.addEventListener("click", () => {
-      this.openAiFeedbackPanel()
+      this.uiOverlayManager.openAiFeedbackPanel()
     })
   }
   if (this.dom.aiFeedbackCloseBtn) {
     this.dom.aiFeedbackCloseBtn?.addEventListener("click", (event) => {
       event.stopPropagation()
-      this.closeAiFeedbackPanel()
+      this.uiOverlayManager.closeAiFeedbackPanel()
     })
   }
   if (this.dom.aiFeedbackClearBtn) {
     this.dom.aiFeedbackClearBtn?.addEventListener("click", () => {
-      this.showGameConfirm("确定要清空所有 AI 反馈吗？此操作不可恢复。", () => {
-        this.clearAllAiFeedbacks()
+      this.uiOverlayManager.showGameConfirm("确定要清空所有 AI 反馈吗？此操作不可恢复。", () => {
+        this.uiOverlayManager.clearAllAiFeedbacks()
         this.aiDecisionManager.writeLog("AI 反馈已清空。")
       })
     })
@@ -103,7 +103,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
     this.dom.aiFeedbackOverlay?.addEventListener("click", (event) => {
       event.stopPropagation()
       if (event.target === this.dom.aiFeedbackOverlay) {
-        this.closeAiFeedbackPanel()
+        this.uiOverlayManager.closeAiFeedbackPanel()
       }
     })
   }
@@ -118,8 +118,8 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
       if (target && target.classList.contains("ai-feedback-delete-btn")) {
         const id = target.getAttribute("data-feedback-id")
         if (!id) return
-        this.showGameConfirm("确定要删除这条反馈吗？", () => {
-          this.removeAiFeedback(id)
+        this.uiOverlayManager.showGameConfirm("确定要删除这条反馈吗？", () => {
+          this.uiOverlayManager.removeAiFeedback(id)
         })
       }
     })
@@ -410,7 +410,7 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
       if (okBtn) okBtn.textContent = "确认重置"
       if (cancelBtn) cancelBtn.textContent = "取消"
 
-      this.showGameConfirm(
+      this.uiOverlayManager.showGameConfirm(
         "确定要重置所有AI钱包到初始100万吗？此操作不可撤销。",
         () => {
           if (okBtn) okBtn.textContent = originalOkText
@@ -445,26 +445,26 @@ export function bindAiMemoryEvents(this: WarehouseSceneThis): void {
   }
   if (this.dom.configIndependentModelBtn) {
     this.dom.configIndependentModelBtn?.addEventListener("click", () => {
-      this.openAiModelConfigOverlay()
+      this.uiOverlayManager.openAiModelConfigOverlay()
     })
   }
   if (this.dom.aiModelConfigCloseBtn) {
     this.dom.aiModelConfigCloseBtn?.addEventListener("click", (event) => {
       event.stopPropagation()
-      this.closeAiModelConfigOverlay()
+      this.uiOverlayManager.closeAiModelConfigOverlay()
     })
   }
   if (this.dom.aiModelConfigSaveBtn) {
     this.dom.aiModelConfigSaveBtn?.addEventListener("click", (event) => {
       event.stopPropagation()
-      this.saveAiModelConfigFromForm()
+      this.uiOverlayManager.saveAiModelConfigFromForm()
     })
   }
   if (this.dom.aiModelConfigOverlay) {
     this.dom.aiModelConfigOverlay?.addEventListener("click", (event) => {
       event.stopPropagation()
       if (event.target === this.dom.aiModelConfigOverlay) {
-        this.closeAiModelConfigOverlay()
+        this.uiOverlayManager.closeAiModelConfigOverlay()
       }
     })
   }

@@ -117,7 +117,7 @@ describe("结算 bridge 链条", () => {
       hidePreview: vi.fn(),
       closeBidKeypad: vi.fn(),
       closeItemDrawer: vi.fn(),
-      updateReflectionStatusUI: vi.fn(),
+      uiOverlayManager: { updateReflectionStatusUI: vi.fn() },
       cancelSettlementReveal: vi.fn(),
       // 动画
       tweens: { add: vi.fn() },

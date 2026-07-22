@@ -61,7 +61,7 @@ export function startNewRun(this: WarehouseSceneThis): void {
   this.hidePreview()
   this.closeBidKeypad()
   this.closeItemDrawer()
-  this.hideSettleOverlay()
+  this.uiOverlayManager.hideSettleOverlay()
   this.hideRevealScrollHints()
   this.drawUnknownWarehouse()
   this.spawnRandomItems()

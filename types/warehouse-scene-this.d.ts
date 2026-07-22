@@ -532,15 +532,11 @@ export interface WarehouseSceneThis {
   updateSidePanels(skillState: Record<string, unknown>, itemState: Record<string, unknown>, clueCount: number, occupiedCells: number, capacity: number, bidState: string): void
   hidePreview(): void
   hideRevealScrollHints(): void
-  hideSettleOverlay(): void
   refreshRevealScrollHints(): void
   hasAnyInfo(item: Artifact): boolean
   renderPreviewCandidates(item: Artifact): void
   setupPreviewTouchScroll(): void
   isPointOnSettlementLockedItem(x: number, y: number): boolean
-  showGameConfirm(msg: string, onOk: () => void, onCancel?: () => void): void
-  showItemDetailPopup(itemId: string, label: string, x: number, y: number): void
-  showInfoPopup(title: string, scrollEl: HTMLElement | null): void
   openBidKeypad(): void
   closeBidKeypad(): void
 
@@ -572,7 +568,6 @@ export interface WarehouseSceneThis {
   clearBids(): void
 
   // 联机方法（来自 LanIndexMixin）
-  bindLanEvents(bridge: LanBridge, ctx: Record<string, unknown>): void
   lanStartGame(): void
   lanBroadcastBid(bid: number): void
   lanHandleBidSubmit(msg: BidSubmitMessage): void
@@ -581,37 +576,11 @@ export interface WarehouseSceneThis {
   setPlayerBidReady(slotId: string, ready: boolean): void
   updateLobbyMoneyDisplay(): void
   areAllPlayersBidReady(): boolean
-  tryAutoReconnect(savedPlayerId: string | null, savedRoomCode: string | null, savedPlayerName: string | null, savedIsHost: boolean): void
   addPublicInfoEntry(entry: unknown): void
   refreshPlayerHistoryUI(): void
   syncPauseButton(): void
-  hideLanPauseOverlay(): void
-  showLanPauseOverlay(): void
-  showLanRestartVoteDialog(hostName: string): void
-  showLanRestartDeclinedDialog(declinerName: string): void
-  removeLanRestartDialog(): void
   enterLanRoom(): void
   exitLanRoom(): void
-  onLanForeground(): void
-  lanBuildFullSyncData(targetPlayerId: string): unknown
-  lanRestoreWarehouseFromSync(syncData: unknown): void
-  lanResolveRound(reason: string): void
-  lanComputeAiBids(): Record<string, number>
-  lanOnRoundStart(msg: { round: number; currentBid?: number; ts?: number; roundSeconds?: number }): void
-  lanBroadcastRoundStart(): void
-  startLanRun(): void
-  lanOnAllBidsIn(msg: unknown): Promise<void>
-  lanOnRoundTimeout(): Promise<void>
-  lanOnRoundResult(msg: { bids?: Array<{ playerId: string; bid: number }> }): void
-  lanDoFinishAuction(winner: { playerId: string; bid: number }, mode: string): void
-  lanOnSettle(msg: unknown): void
-  lanOnSettleFinal(msg: unknown): void
-  lanOnRestartGo(msg: RoomMessage): void
-  lanOnFullSync(syncData: unknown): void
-  lanAttemptReconnect(): void
-  startLanLive2dLoop(src: string, videoA: HTMLVideoElement, videoB: HTMLVideoElement): void
-  stopLanLive2dLoop(): void
-  toggleLanPause(pause: boolean): void
 
   // 结算方法（来自 SettlementManagerMixin）
   enterSettlementPage(winnerPlayer: Player, winnerBid: number, reasonText: string): void
@@ -664,9 +633,6 @@ export interface WarehouseSceneThis {
   exitLobby(): void
   renderCollectionGrid(): void
   renderCarryItems(): void
-  showPlayerInfoPopover(title: string, htmlContent: string, x: number, y: number): void
-  positionPlayerInfoPopover(x: number, y: number): void
-  hideInfoPopup(): void
   updateKeypadDirectHint(): void
   waitUntilResumed(): Promise<void>
   extractAiDecisionObject(response: string): { bid?: number | string; skill?: string; item?: string; thought?: string } | null
@@ -674,7 +640,6 @@ export interface WarehouseSceneThis {
   recordPlayerUsage(playerId: string, actionId: string): void
     syncBidKeypadScreen(): void
   _stopLive2dLoop(): void
-  closeSettingsOverlay(keepStatus?: boolean, keepInitial?: boolean): void
     _rebuildCustomSelect(el: HTMLSelectElement): void
   closeCarryItemPicker(): void
   recordRoundHistory(roundBids: Array<{ playerId: string; bid: number }>): void
@@ -708,10 +673,6 @@ export interface WarehouseSceneThis {
 
   // AI 决策方法（来自 LlmDecision）
   renderAiLogicPanelForLlm(telemetry: unknown): string
-  loadAiModelConfigs(): Record<string, string>
-  saveAiModelConfigs(configs: unknown): void
-  closeAiModelConfigOverlay(): void
-  renderAiModelConfigContent(): void
   canUseLlmDecision(): boolean
   isAiLlmEnabledForPlayer(playerId: string): boolean
   getAiModelConfigForPlayer(playerId: string): AiModelConfig | null
@@ -735,23 +696,17 @@ export interface WarehouseSceneThis {
   buildRoundPublicStateTable(id: string): unknown
     resolveActionPick(text: string, type: string, ids: string[]): { actionId: string | null; target: string }
   requestChat(messages: unknown[], options?: unknown): Promise<unknown>
-  getAiModelConfig(aiIndex?: number): AiModelConfig | null
         
   // AI 情报方法
     buildToolEffect(args: { playerId: string; actionType: string; actionId: string; roundProgress: number; intelSummary: IntelSummary; signalStats: AiSignalStats | null; planScore: number }): ToolEffect
     planIntelAction(args: { playerId: string; round: number; maxRounds: number; intelSummary: IntelSummary; resources: { skills: Record<string, number>; items: Record<string, number> } }): IntelActionPlan
     getItemInfo(itemId: string): unknown
 
-  // AI 记忆方法
-              updateReflectionStatusUI(): void
-
   // 大厅方法（来自 LobbyIndexMixin）
   showLobbyMain(skipAnimation?: boolean): void
   showLobbySubPage(page: string): void
-  openSettingsOverlay(): void
   openCollectionOverlay(): void
   openBattleRecordPanel(): void
-  openShopOverlay(): void
   goToCharacterSelect(): void
   showCharacterSelectPageWithMap(): void
   showCharacterSelectPage(mapProfile: { name?: string; params?: Record<string, unknown> } | null): void
@@ -762,7 +717,6 @@ export interface WarehouseSceneThis {
   updateCarouselPosition(): void
   renderCarousel(): void
   renderMapDetail(): void
-  initLanLobby(): void
   initPlayersUI(): void
   updatePlayerAvatar(playerId: string, avatarEl: HTMLElement | null): void
   isAiLlmEnabledForPlayer(playerId: string): boolean
@@ -773,8 +727,6 @@ export interface WarehouseSceneThis {
   closeCollectionOverlay(): void
   initCollectionPanel(): void
   getCollectionCategories(): string[]
-    hidePlayerInfoPopover(): void
-  hideInfoPopup(): void
   _carouselOffset: number
 
   // 角色选择方法
@@ -845,20 +797,14 @@ export interface WarehouseSceneThis {
   playMusic(key: string): void
   stopMusic(): void
   // 设置相关属性
-  settingsInputId(field: string): string
   AI_MODEL_CONFIGS_STORAGE_KEY: string
   _settingsInitialValues: string | null
 
   // 设置相关方法
-  fillSettingsForm(settings: Record<string, any>): void
   fillLlmSettingsForm(settings: Record<string, any>): void
-  setSettingsStatus(text: string, saved: boolean): void
-  readSettingsForm(): Record<string, any>
   readLlmSettingsForm(): Record<string, any>
-  saveSettingsFromOverlay(): void
   setLlmSettingsStatus(text: string, state: string): void
     toggleRoundPause(): void
-  renderAiThoughtLog(): void
 
   // 出价相关属性
   playerBid(): void
@@ -929,25 +875,6 @@ export interface WarehouseSceneThis {
   // UI 方法（补充）
   enterLobby(): void
   enterLanRoom(): void
-  onLanBackground(): void
-  onLanForeground(): void
-  openSettingsOverlay(): void
-  isSettingsOverlayOpen(): boolean
-  openShopOverlay(): void
-  openAiLogicPanel(): void
-  closeAiLogicPanel(): void
-      openAiFeedbackPanel(): void
-  closeAiFeedbackPanel(): void
-  clearAllAiFeedbacks(): void
-  removeAiFeedback(id: string): void
-  openAiModelConfigOverlay(): void
-  closeAiModelConfigOverlay(): void
-  saveAiModelConfigFromForm(): void
-  hideGameConfirm(): void
-  showCharacterInfoPopup(playerId: string, x: number, y: number): void
-  showLanRestartWaitingDialog(): void
-  showReflectionPendingDialog(): void
-  showReflectionPendingDialogForBack(): void
   toggleItemDrawer(): void
   handleBidKeyInput(key: string): void
   useItem(itemId: string): void

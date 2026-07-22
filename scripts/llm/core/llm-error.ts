@@ -179,8 +179,8 @@ export function setPlayerLlmError(
     const errData = scene._aiLlmErrors[playerId]
     const time = errData ? new Date(errData.timestamp).toLocaleTimeString() : ""
     const content = `<p><strong>玩家：</strong>${pName}</p><p><strong>时间：</strong>${time}</p><p><strong>错误类型：</strong>${errData.brief}</p><p><strong>说明：</strong>${errData.detail}</p>`
-    if (typeof scene.showPlayerInfoPopover === "function") {
-      scene.showPlayerInfoPopover("AI报错信息", content, e.clientX, e.clientY)
+    if (typeof scene.uiOverlayManager.showPlayerInfoPopover === "function") {
+      scene.uiOverlayManager.showPlayerInfoPopover("AI报错信息", content, e.clientX, e.clientY)
     }
   }
 }

@@ -218,11 +218,13 @@ describe("llm-decision - getAiModelConfigForPlayer", () => {
     const mockThis = {
       getLlmSettings: () => ({ independentModelEnabled: true }),
       getAiIndexFromPlayerId,
-      getAiModelConfig: () => ({
-        apiKey: "sk-test",
-        endpoint: "https://api.test.com",
-        model: "gpt-4"
-      })
+      uiOverlayManager: {
+        getAiModelConfig: () => ({
+          apiKey: "sk-test",
+          endpoint: "https://api.test.com",
+          model: "gpt-4"
+        })
+      }
     }
     const result = methods.getAiModelConfigForPlayer.call(mockThis, "ai1")
     expect(result).not.toBeNull()
@@ -233,7 +235,7 @@ describe("llm-decision - getAiModelConfigForPlayer", () => {
     const mockThis = {
       getLlmSettings: () => ({ independentModelEnabled: true }),
       getAiIndexFromPlayerId,
-      getAiModelConfig: () => ({ apiKey: "", model: "gpt-4" })
+      uiOverlayManager: { getAiModelConfig: () => ({ apiKey: "", model: "gpt-4" }) }
     }
     expect(methods.getAiModelConfigForPlayer.call(mockThis, "ai1")).toBeNull()
   })
@@ -241,14 +243,15 @@ describe("llm-decision - getAiModelConfigForPlayer", () => {
     const mockThis = {
       getLlmSettings: () => ({ independentModelEnabled: true }),
       getAiIndexFromPlayerId,
-      getAiModelConfig: () => ({ apiKey: "sk-test", model: "" })
+      uiOverlayManager: { getAiModelConfig: () => ({ apiKey: "sk-test", model: "" }) }
     }
     expect(methods.getAiModelConfigForPlayer.call(mockThis, "ai1")).toBeNull()
   })
   it("无 getAiModelConfig 方法返回 null", () => {
     const mockThis = {
       getLlmSettings: () => ({ independentModelEnabled: true }),
-      getAiIndexFromPlayerId
+      getAiIndexFromPlayerId,
+      uiOverlayManager: {}
     }
     expect(methods.getAiModelConfigForPlayer.call(mockThis, "ai1")).toBeNull()
   })
